@@ -9,6 +9,8 @@ import { RoleSwitcher } from '@/components/common/RoleSwitcher';
 import { FeeSplitCard } from '@/components/deal/FeeSplitCard';
 import { calculateEscrowBreakdown, formatINR } from '@/lib/escrowCalculator';
 import { lookupPincode, formatFullAddress, INDIAN_STATES } from '@/lib/indianAddresses';
+import { GpsLocator } from '@/components/common/GpsLocator';
+
 
 import {
   ShieldCheck,
@@ -301,8 +303,22 @@ function DealWizardContent() {
                 </div>
               </div>
 
+              {/* GPS Auto-Detect */}
+              <div className="pt-1">
+                <GpsLocator
+                  onLocationDetected={(loc) => {
+                    if (loc.flatBuilding) setPickupFlatBuilding(loc.flatBuilding);
+                    setPickupStreetArea(loc.streetArea);
+                    setCity(loc.city);
+                    setStateName(loc.state);
+                    setPincode(loc.pincode);
+                  }}
+                />
+              </div>
+
               <div className="space-y-1">
                 <label className="font-semibold text-zinc-700">Flat, House No., Building Name</label>
+
                 <input
                   type="text"
                   required

@@ -5,7 +5,9 @@ import { SafeDeal } from '@/lib/types';
 import { fundDealEscrow } from '@/lib/store';
 import { formatINR } from '@/lib/escrowCalculator';
 import { lookupPincode, formatFullAddress, INDIAN_STATES } from '@/lib/indianAddresses';
+import { GpsLocator } from '../common/GpsLocator';
 import { ShieldCheck, Lock, CreditCard, CheckCircle2, X, QrCode, ArrowRight } from '../common/Icons';
+
 
 
 interface EscrowPaymentModalProps {
@@ -215,8 +217,22 @@ export const EscrowPaymentModal: React.FC<EscrowPaymentModalProps> = ({
               </div>
             </div>
 
+            {/* GPS Auto-Detect */}
+            <div className="pt-0.5">
+              <GpsLocator
+                onLocationDetected={(loc) => {
+                  if (loc.flatBuilding) setFlatBuilding(loc.flatBuilding);
+                  setStreetArea(loc.streetArea);
+                  setCity(loc.city);
+                  setStateName(loc.state);
+                  setPincode(loc.pincode);
+                }}
+              />
+            </div>
+
             <div className="space-y-1">
               <label className="font-semibold text-zinc-700">Flat, House No., Building Name</label>
+
               <input
                 type="text"
                 required

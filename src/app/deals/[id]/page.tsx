@@ -11,8 +11,11 @@ import { MilestoneTimeline } from '@/components/deal/MilestoneTimeline';
 import { FeeSplitCard } from '@/components/deal/FeeSplitCard';
 import { TamperSealBadge } from '@/components/common/TamperSealBadge';
 import { LiveTrackingMap } from '@/components/courier/LiveTrackingMap';
+import { DriverProfileCard } from '@/components/courier/DriverProfileCard';
+import { PhotoEvidenceVault } from '@/components/deal/PhotoEvidenceVault';
 import { EscrowPaymentModal } from '@/components/deal/EscrowPaymentModal';
 import { DisputeModal } from '@/components/deal/DisputeModal';
+
 import {
   ShieldCheck,
   ShieldAlert,
@@ -258,13 +261,23 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
           <div className="flex items-center justify-between text-xs font-bold text-zinc-700 px-1">
             <span className="flex items-center gap-1.5">
               <Truck className="w-3.5 h-3.5 text-zinc-800" />
-              Live Courier Tracking
+              Live Porter Courier Telemetry
             </span>
-            {deal.status === 'PICKUP_INSPECTION' && (
-              <Link href={`/courier?deal=${deal.id}`} className="text-xs text-blue-600 font-semibold underline">
-                Rider App &rarr;
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/track/${deal.id}`}
+                target="_blank"
+                className="text-xs text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1"
+              >
+                <span>Public Tracking Link</span>
+                <span>↗</span>
               </Link>
-            )}
+              {deal.status === 'PICKUP_INSPECTION' && (
+                <Link href={`/courier?deal=${deal.id}`} className="text-xs text-zinc-700 font-semibold underline">
+                  Rider App &rarr;
+                </Link>
+              )}
+            </div>
           </div>
 
           <LiveTrackingMap
@@ -275,11 +288,22 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
           />
         </div>
 
+        {/* Certified Driver Profile Card */}
+        <DriverProfileCard courier={deal.assignedCourier} />
+
+        {/* Doorstep Photo Evidence Vault */}
+        <PhotoEvidenceVault
+          sealId={deal.tamperSeal?.sealId || 'SSP-BLR-8842-TAMPER-SAFE'}
+          inspectedAt={deal.tamperSeal?.appliedAt || '12 Sep 2026, 02:45 PM IST'}
+          photos={deal.tamperSeal?.inspectionPhotos}
+        />
+
         {/* 50/50 Fee Split & Tamper Seal */}
         <div className="space-y-4">
           <FeeSplitCard pricing={deal.pricing} />
           <TamperSealBadge seal={deal.tamperSeal} isDelivered={isCompleted} />
         </div>
+
 
         {/* Dispute Button */}
         {!isCompleted && !isDisputed && (
