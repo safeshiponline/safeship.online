@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { RoleSwitcher } from '@/components/common/RoleSwitcher';
 import {
   Bell,
   Search,
@@ -12,7 +11,6 @@ import {
   Car,
   Sofa,
   LayoutGrid,
-  ShoppingBag,
   Package,
   Play,
   Home,
@@ -23,18 +21,13 @@ import {
   ShieldCheck,
   ArrowRight,
   ChevronRight,
-  CheckCircle2,
   X,
   Sparkles,
-  Clock,
-  MapPin,
   User,
   Lock,
   Check,
   ShoppingCart,
-  Shield,
-  Truck,
-  Eye
+  Truck
 } from '@/components/common/Icons';
 
 export default function HomePage() {
@@ -43,7 +36,6 @@ export default function HomePage() {
   const [showVideoModal, setShowVideoModal] = useState<boolean>(false);
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
   const [showScannerModal, setShowScannerModal] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'ALL' | 'BUY' | 'SELL' | 'TRACK'>('ALL');
 
   const categories = [
     { id: 'Electronics', label: 'Electronics', icon: Monitor },
@@ -83,14 +75,14 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#F7F7FB] text-[#111118] font-sans antialiased selection:bg-[#8614F4] selection:text-white flex flex-col justify-between">
       
-      {/* 11. OPTIONAL DEVELOPMENT / SANDBOX ACTOR BAR */}
-      <div className="w-full bg-[#111118] text-zinc-300 text-[11px] py-1 px-4 select-none border-b border-zinc-800 z-50">
+      {/* 11. DESKTOP-ONLY SUBORDINATE SANDBOX BAR (Hidden on Mobile to preserve clean mobile UI) */}
+      <div className="hidden md:block w-full bg-[#111118] text-zinc-300 text-[11px] py-1 px-4 select-none border-b border-zinc-800 z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="h-1.5 w-1.5 rounded-full bg-[#10B981] animate-pulse" />
-            <span className="font-semibold text-white tracking-tight">SafeShip Sandbox</span>
-            <span className="text-zinc-600 hidden sm:inline">•</span>
-            <span className="text-zinc-400 hidden sm:inline">Actor Perspective:</span>
+            <span className="font-semibold text-white tracking-tight">SafeShip Protocol Sandbox</span>
+            <span className="text-zinc-600">•</span>
+            <span className="text-zinc-400">Actor Perspective:</span>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -123,26 +115,24 @@ export default function HomePage() {
       </div>
 
       {/* ========================================================================= */}
-      {/* RESPONSIVE HEADER: Mobile + Desktop                                       */}
+      {/* HEADER: Exactly matching media_1789232190268.png on mobile               */}
       {/* ========================================================================= */}
-      <header className="w-full bg-[#F7F7FB]/95 backdrop-blur-md sticky top-0 z-40 border-b border-[#E5E5EB]/60">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between">
+      <header className="w-full bg-[#F7F7FB]/95 backdrop-blur-md sticky top-0 z-40 border-b border-[#E5E5EB]/50">
+        <div className="max-w-md md:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           
-          {/* Brand Logo & Tagline */}
-          <Link href="/" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#8614F4] to-[#5420B8] p-1.5 shadow-md shadow-[#8614F4]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition duration-200">
+          {/* Left Brand Identity */}
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-[#8614F4] to-[#5420B8] p-1 shadow-md shadow-[#8614F4]/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition duration-200">
               <img
                 src="/images/safeship_logo.webp"
-                alt="SafeShip Logo"
+                alt="SafeShip"
                 className="w-full h-full object-contain"
               />
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xl font-bold tracking-tight text-[#111118]">
-                  SafeShip
-                </span>
-              </div>
+              <span className="text-xl sm:text-2xl font-bold tracking-tight text-[#111118] block leading-tight">
+                SafeShip
+              </span>
               <p className="text-[11px] font-medium text-[#666673] -mt-0.5">
                 Buy. Ship. Verify. Trust.
               </p>
@@ -169,37 +159,38 @@ export default function HomePage() {
             </Link>
           </nav>
 
-          {/* Right Action Icons & Controls */}
-          <div className="flex items-center gap-3">
-            {/* Notification Bell */}
+          {/* Right Action Icons */}
+          <div className="flex items-center gap-2.5">
+            {/* Notification Bell with Crimson Alert Dot */}
             <button
               type="button"
               onClick={() => setShowNotifications(!showNotifications)}
-              className="w-10 h-10 rounded-full bg-white border border-[#E5E5EB] shadow-2xs flex items-center justify-center text-[#111118] hover:text-[#8614F4] hover:border-[#E8D9FF] transition relative cursor-pointer active:scale-95"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white border border-[#E5E5EB] shadow-2xs flex items-center justify-center text-[#111118] hover:text-[#8614F4] transition relative cursor-pointer active:scale-95"
               aria-label="Notifications"
             >
               <Bell className="w-4.5 h-4.5" />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[#EF4444] ring-2 ring-white" />
+              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#EF4444] ring-2 ring-white" />
             </button>
 
             {/* User Avatar Circle */}
             <Link
               href="/admin"
-              className="w-10 h-10 rounded-full bg-[#F4ECFF] border border-[#E8D9FF] text-[#8614F4] font-bold text-xs tracking-tight flex items-center justify-center shadow-xs hover:scale-105 transition active:scale-95 cursor-pointer"
-              title="User Profile & Admin"
+              className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#F4ECFF] border border-[#E8D9FF] text-[#8614F4] font-bold text-xs tracking-tight flex items-center justify-center shadow-xs hover:scale-105 transition active:scale-95 cursor-pointer"
+              title="User Profile / Admin"
             >
               AS
             </Link>
 
-            {/* Desktop CTA: Create Safe Deal Button */}
+            {/* Desktop CTA Button */}
             <Link
               href="/deals/new"
-              className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#7C22E8] hover:bg-[#8614F4] text-white font-semibold text-xs shadow-md shadow-[#7C22E8]/25 hover:shadow-lg transition active:scale-98 cursor-pointer"
+              className="hidden md:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#7C22E8] hover:bg-[#8614F4] text-white font-semibold text-xs shadow-md shadow-[#7C22E8]/25 transition active:scale-98 cursor-pointer ml-1"
             >
               <Plus className="w-4 h-4" />
               <span>Create Safe Deal</span>
             </Link>
           </div>
+
         </div>
       </header>
 
@@ -230,7 +221,7 @@ export default function HomePage() {
                 <span className="text-[10px] text-[#8614F4] font-bold">LIVE GPS</span>
               </div>
               <p className="text-[#666673] text-[11px] mt-0.5">
-                Dispatched with Gemini Vision Scanner for doorstep hardware inspection of iPhone 15 Pro.
+                Dispatched with Gemini Vision Scanner for doorstep hardware audit of iPhone 15 Pro.
               </p>
             </Link>
             <div className="p-2.5 rounded-xl bg-zinc-50 border border-[#E5E5EB]">
@@ -244,27 +235,21 @@ export default function HomePage() {
       )}
 
       {/* ========================================================================= */}
-      {/* MAIN CONTAINER: Responsive for ALL Screen Sizes                            */}
+      {/* MAIN VIEWPORT CONTAINER: Exact mobile frame on mobile, wide on desktop    */}
       {/* ========================================================================= */}
-      <main className="w-full max-w-md md:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 flex-1">
+      <main className="w-full max-w-md md:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 pb-28 md:pb-16 flex-1">
         
-        {/* ======================================================================= */}
-        {/* SEARCH BAR EXPERIENCE                                                   */}
-        {/* ======================================================================= */}
-        <div className="w-full mb-4 md:mb-8">
-          <div className="bg-white rounded-2xl border border-[#E5E5EB] shadow-xs px-4 py-3.5 flex items-center gap-3 focus-within:border-[#8614F4] focus-within:ring-2 focus-within:ring-[#F4ECFF] transition">
-            <Search className="w-5 h-5 text-[#90909D] shrink-0" />
+        {/* 1. SEARCH BAR CONTAINER */}
+        <div className="w-full mb-3.5 sm:mb-5">
+          <div className="bg-white rounded-2xl border border-[#E5E5EB] shadow-xs px-3.5 py-3 sm:py-3.5 flex items-center gap-2.5 focus-within:border-[#8614F4] focus-within:ring-2 focus-within:ring-[#F4ECFF] transition">
+            <Search className="w-4.5 h-4.5 text-[#90909D] shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search for anything..."
-              className="flex-1 bg-transparent text-sm text-[#111118] placeholder-[#90909D] outline-hidden font-normal"
+              className="flex-1 bg-transparent text-xs sm:text-sm text-[#111118] placeholder-[#90909D] outline-hidden font-normal"
             />
-            {/* Optional AI natural language hint for desktop */}
-            <span className="hidden md:inline text-[11px] text-[#90909D] bg-zinc-50 px-2 py-1 rounded-md border border-[#E5E5EB]">
-              Press ⌘K or type: &ldquo;iPhone 15 Pro under ₹65k&rdquo;
-            </span>
             <button
               type="button"
               onClick={() => setShowScannerModal(true)}
@@ -272,7 +257,7 @@ export default function HomePage() {
               title="Scan SafeShip Tamper Seal / Barcode"
               aria-label="Scan SafeShip Tamper Seal / Barcode"
             >
-              <Scan className="w-5 h-5" />
+              <Scan className="w-4.5 h-4.5" />
             </button>
           </div>
         </div>
@@ -295,7 +280,7 @@ export default function HomePage() {
                 </button>
               </div>
               <div className="py-6 text-center">
-                <div className="w-48 h-48 mx-auto rounded-2xl border-2 border-dashed border-[#8614F4]/50 flex flex-col items-center justify-center bg-[#F4ECFF]/40 relative overflow-hidden">
+                <div className="w-44 h-44 mx-auto rounded-2xl border-2 border-dashed border-[#8614F4]/50 flex flex-col items-center justify-center bg-[#F4ECFF]/40 relative overflow-hidden">
                   <div className="absolute inset-x-0 top-0 h-0.5 bg-[#8614F4] animate-[bounce_2s_infinite]" />
                   <Scan className="w-12 h-12 text-[#8614F4] animate-pulse" />
                   <span className="text-[11px] text-[#7C22E8] font-semibold mt-2">Align Hologram / QR Code</span>
@@ -315,11 +300,9 @@ export default function HomePage() {
           </div>
         )}
 
-        {/* ======================================================================= */}
-        {/* HORIZONTAL CATEGORY NAVIGATION                                          */}
-        {/* ======================================================================= */}
-        <div className="mb-6 md:mb-10">
-          <div className="flex items-center gap-2.5 overflow-x-auto no-scrollbar py-1 -mx-1 px-1">
+        {/* 2. HORIZONTAL CATEGORY NAVIGATION (Light pills matching reference image) */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
             {categories.map((cat) => {
               const IconComp = cat.icon;
               const isSelected = activeCategory === cat.id;
@@ -328,13 +311,13 @@ export default function HomePage() {
                   key={cat.id}
                   type="button"
                   onClick={() => setActiveCategory(cat.id)}
-                  className={`px-4 py-2 rounded-2xl text-xs font-semibold flex items-center gap-2 shrink-0 transition-all cursor-pointer shadow-2xs active:scale-95 ${
+                  className={`px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-full text-[11px] sm:text-xs font-medium flex items-center gap-1.5 shrink-0 transition-all cursor-pointer shadow-2xs active:scale-95 ${
                     isSelected
-                      ? 'bg-white border border-[#E8D9FF] text-[#8614F4] shadow-xs ring-2 ring-[#F4ECFF]'
-                      : 'bg-white border border-[#E5E5EB] text-[#666673] hover:border-[#E8D9FF] hover:text-[#111118]'
+                      ? 'bg-white border border-[#E8D9FF] text-[#8614F4] shadow-xs'
+                      : 'bg-[#F0F1F6] border-0 text-[#666673] hover:bg-white hover:border hover:border-[#E5E5EB]'
                   }`}
                 >
-                  <IconComp className={`w-4 h-4 ${isSelected ? 'text-[#8614F4]' : 'text-[#90909D]'}`} />
+                  <IconComp className={`w-3.5 h-3.5 ${isSelected ? 'text-[#8614F4]' : 'text-[#666673]'}`} />
                   <span>{cat.label}</span>
                 </button>
               );
@@ -342,28 +325,22 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* ======================================================================= */}
-        {/* HERO SECTION: "What you see is what you receive."                       */}
-        {/* Seamless borderless on mobile, expansive 2-column on desktop            */}
-        {/* ======================================================================= */}
-        <section className="relative mb-6 md:mb-12 overflow-hidden">
-          {/* Atmospheric background lavender gradient */}
-          <div className="absolute top-1/2 right-0 -translate-y-1/2 w-80 md:w-96 h-80 md:h-96 bg-[#F4ECFF]/80 rounded-full blur-3xl pointer-events-none -z-10" />
-
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-center">
+        {/* 3. HERO SECTION: Side-by-side on ALL screens matching media_1789232190268.png */}
+        <section className="relative mb-4 sm:mb-6 overflow-hidden">
+          <div className="flex items-center justify-between gap-2 relative">
             
-            {/* Left Column: Typography & Promise */}
-            <div className="md:col-span-7 flex flex-col items-start">
+            {/* Left Content (Text & Promise) */}
+            <div className="w-[56%] sm:w-[58%] md:w-[60%] flex flex-col justify-center pr-1">
               
-              {/* Institutional pill badge on desktop */}
-              <div className="hidden md:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white text-[#7C22E8] text-xs font-semibold mb-4 border border-[#E8D9FF] shadow-2xs">
+              {/* Desktop-only pill tag */}
+              <div className="hidden md:inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white text-[#7C22E8] text-xs font-semibold mb-3 border border-[#E8D9FF] shadow-2xs w-fit">
                 <Sparkles className="w-3.5 h-3.5 text-[#8614F4]" />
-                <span>AI-Powered Verification • RBI Nodal Escrow • Zero Counterparty Risk</span>
+                <span>AI-Powered Verification • RBI Nodal Escrow</span>
               </div>
 
               {/* Headline with vibrant gradient purple "receive." */}
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-[#111118] leading-[1.12]">
-                What you see <br className="hidden sm:inline" />
+              <h1 className="text-2xl sm:text-3xl md:text-5xl font-bold tracking-tight text-[#111118] leading-[1.12]">
+                What you see <br />
                 is what you{' '}
                 <span className="bg-gradient-to-r from-[#8614F4] via-[#7C22E8] to-[#A855F7] bg-clip-text text-transparent">
                   receive.
@@ -371,115 +348,104 @@ export default function HomePage() {
               </h1>
 
               {/* Subtitle */}
-              <p className="mt-3 md:mt-5 text-sm sm:text-base md:text-lg text-[#666673] max-w-xl font-normal leading-relaxed">
+              <p className="mt-1.5 sm:mt-3 text-[11px] sm:text-sm md:text-base text-[#666673] font-normal leading-snug sm:leading-relaxed">
                 AI-verified transactions and secure delivery for a safer, fairer way to buy and sell.
               </p>
 
-              {/* Desktop Action CTAs */}
-              <div className="hidden md:flex items-center gap-3.5 mt-6">
+              {/* Desktop-only CTAs */}
+              <div className="hidden md:flex items-center gap-3 mt-5">
                 <Link
                   href="/deals/deal_iphone_15_blr"
-                  className="px-6 py-3 rounded-xl bg-[#7C22E8] hover:bg-[#8614F4] text-white font-semibold text-sm shadow-md shadow-[#7C22E8]/20 transition active:scale-98"
+                  className="px-5 py-2.5 rounded-xl bg-[#7C22E8] hover:bg-[#8614F4] text-white font-semibold text-xs shadow-md shadow-[#7C22E8]/20 transition active:scale-98"
                 >
                   Explore SafeShip
                 </Link>
                 <a
                   href="#how-it-works"
-                  className="px-6 py-3 rounded-xl bg-white hover:bg-zinc-50 border border-[#E5E5EB] text-[#111118] font-semibold text-sm shadow-2xs transition active:scale-98"
+                  className="px-5 py-2.5 rounded-xl bg-white hover:bg-zinc-50 border border-[#E5E5EB] text-[#111118] font-semibold text-xs shadow-2xs transition active:scale-98"
                 >
                   How it works
                 </a>
               </div>
             </div>
 
-            {/* Right Column: Luminous 3D Holographic Globe with SafeShip Box */}
-            <div className="md:col-span-5 flex flex-col items-center justify-center relative">
-              <div className="relative w-64 h-56 sm:w-80 sm:h-64 md:w-full md:h-80 flex items-center justify-center group">
+            {/* Right Content: Glowing Holographic Globe + 3D Shield Box */}
+            <div className="w-[44%] sm:w-[42%] md:w-[40%] flex items-center justify-center shrink-0">
+              <div className="relative w-full max-w-[210px] sm:max-w-[260px] md:max-w-sm flex items-center justify-center">
                 <img
-                  src="/images/hero_globe_box_hd.webp"
+                  src="/images/hero_globe_feathered.webp"
                   alt="SafeShip 3D Parcel in Holographic Globe"
-                  className="w-full h-full object-contain drop-shadow-xl transform group-hover:scale-105 transition duration-500"
+                  className="w-full h-auto object-contain drop-shadow-md"
                 />
-
-                {/* Floating pill badge below the globe matching reference screenshot */}
-                <div className="absolute bottom-2 sm:bottom-4 px-3.5 py-1 rounded-full bg-white/90 backdrop-blur-md border border-[#E8D9FF] text-[#7C22E8] font-semibold text-[11px] sm:text-xs shadow-sm">
-                  Safer people. A more open marketplace.
-                </div>
               </div>
             </div>
 
           </div>
         </section>
 
-        {/* ======================================================================= */}
-        {/* DUAL ACTION CARDS: BUY & SELL                                           */}
-        {/* ======================================================================= */}
-        <section className="mb-4 md:mb-8">
-          <div className="grid grid-cols-2 md:grid-cols-2 gap-3 sm:gap-6">
+        {/* 4. DUAL ACTION CARDS (BUY & SELL): Side-by-side with exact button placements */}
+        <section className="mb-3.5 sm:mb-5">
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
             
-            {/* BUY CARD: Deep Royal Purple Gradient + 3D Shopping Bag */}
+            {/* BUY CARD */}
             <Link
               href="/deals/deal_iphone_15_blr"
-              className="group relative rounded-3xl bg-gradient-to-br from-[#5420B8] via-[#6D28D9] to-[#8614F4] p-4 sm:p-6 text-white shadow-md shadow-[#5420B8]/20 overflow-hidden flex flex-col justify-between min-h-[170px] sm:min-h-[220px] hover:shadow-xl transition-all duration-300 active:scale-[0.99]"
+              className="group relative rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#5420B8] via-[#6D28D9] to-[#8614F4] p-3.5 sm:p-5 text-white shadow-sm shadow-[#5420B8]/20 overflow-hidden flex flex-col justify-between min-h-[120px] sm:min-h-[160px] hover:shadow-md transition active:scale-[0.99]"
             >
-              {/* Background ambient lighting */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#A855F7]/20 rounded-full blur-2xl pointer-events-none" />
-
-              {/* Text Header */}
+              {/* Background ambient depth */}
               <div className="relative z-10">
-                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                <h2 className="text-base sm:text-xl font-bold tracking-tight text-white leading-tight">
                   Buy
                 </h2>
-                <p className="text-[11px] sm:text-sm text-purple-100 font-medium mt-1 leading-snug max-w-[150px] sm:max-w-xs">
+                <p className="text-[10px] sm:text-xs text-purple-100 font-normal mt-0.5 leading-snug max-w-[105px] sm:max-w-[150px]">
                   Shop with confidence with AI verification.
                 </p>
               </div>
 
-              {/* 3D Purple Luxury Shopping Bag Graphic on the Right */}
-              <div className="absolute right-0 bottom-4 w-24 h-24 sm:w-36 sm:h-36 flex items-center justify-center pointer-events-none transform group-hover:scale-110 transition duration-300">
+              {/* 3D Purple Luxury Shopping Bag on the Right with seamless blending */}
+              <div className="absolute right-0 bottom-0 top-0 w-1/2 flex items-center justify-end pointer-events-none overflow-hidden">
                 <img
-                  src="/images/buy_bag_hd.webp"
-                  alt="3D Purple Luxury Shopping Bag"
-                  className="w-full h-full object-contain drop-shadow-lg"
+                  src="/images/buy_bag_feathered.webp"
+                  alt="3D Luxury Shopping Bag"
+                  className="h-full w-auto object-contain object-right"
                 />
               </div>
 
-              {/* Bottom Left Circular Arrow Button (Exact alignment to Reference Image) */}
-              <div className="relative z-10 flex justify-start mt-4">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white text-[#7C22E8] flex items-center justify-center shadow-md group-hover:scale-105 transition">
-                  <ArrowRight className="w-4 h-4 text-[#7C22E8]" />
+              {/* Bottom Left Circular Arrow Button */}
+              <div className="relative z-10 flex justify-start mt-2">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white text-[#7C22E8] flex items-center justify-center shadow-sm group-hover:scale-105 transition">
+                  <ArrowRight className="w-3.5 h-3.5 text-[#7C22E8]" />
                 </div>
               </div>
             </Link>
 
-            {/* SELL CARD: Clean White Surface + 3D Parcel Box */}
+            {/* SELL CARD */}
             <Link
               href="/deals/new"
-              className="group relative rounded-3xl bg-white border border-[#E5E5EB] p-4 sm:p-6 text-[#111118] shadow-xs overflow-hidden flex flex-col justify-between min-h-[170px] sm:min-h-[220px] hover:shadow-md hover:border-[#E8D9FF] transition-all duration-300 active:scale-[0.99]"
+              className="group relative rounded-2xl sm:rounded-3xl bg-white border border-[#E5E5EB] p-3.5 sm:p-5 text-[#111118] shadow-xs overflow-hidden flex flex-col justify-between min-h-[120px] sm:min-h-[160px] hover:shadow-sm hover:border-[#E8D9FF] transition active:scale-[0.99]"
             >
-              {/* Text Header */}
               <div className="relative z-10">
-                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#111118]">
+                <h2 className="text-base sm:text-xl font-bold tracking-tight text-[#111118] leading-tight">
                   Sell
                 </h2>
-                <p className="text-[11px] sm:text-sm text-[#666673] font-medium mt-1 leading-snug max-w-[150px] sm:max-w-xs">
+                <p className="text-[10px] sm:text-xs text-[#666673] font-normal mt-0.5 leading-snug max-w-[105px] sm:max-w-[150px]">
                   List your item and let SafeShip handle the rest.
                 </p>
               </div>
 
-              {/* 3D Parcel Box Graphic on the Right */}
-              <div className="absolute right-0 bottom-4 w-24 h-24 sm:w-36 sm:h-36 flex items-center justify-center pointer-events-none transform group-hover:scale-110 transition duration-300">
+              {/* 3D Parcel Box on the Right with seamless blending */}
+              <div className="absolute right-0 bottom-0 top-0 w-1/2 flex items-center justify-end pointer-events-none overflow-hidden">
                 <img
-                  src="/images/sell_box_hd.webp"
-                  alt="3D Minimalist SafeShip Parcel"
-                  className="w-full h-full object-contain drop-shadow-md"
+                  src="/images/sell_box_feathered.webp"
+                  alt="3D SafeShip Parcel Box"
+                  className="h-full w-auto object-contain object-right"
                 />
               </div>
 
-              {/* Bottom Right Circular Arrow Button (Exact alignment to Reference Image) */}
-              <div className="relative z-10 flex justify-end mt-4">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#F4ECFF] text-[#7C22E8] flex items-center justify-center shadow-xs group-hover:bg-[#7C22E8] group-hover:text-white transition">
-                  <ArrowRight className="w-4 h-4" />
+              {/* Bottom Right Circular Arrow Button */}
+              <div className="relative z-10 flex justify-end mt-2">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#F4ECFF] text-[#7C22E8] flex items-center justify-center shadow-xs group-hover:bg-[#7C22E8] group-hover:text-white transition">
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </div>
               </div>
             </Link>
@@ -487,149 +453,70 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ======================================================================= */}
-        {/* TRACK YOUR PARCEL CARD                                                  */}
-        {/* ======================================================================= */}
-        <section className="mb-4 md:mb-8">
+        {/* 5. TRACK YOUR PARCEL CARD */}
+        <section className="mb-3.5 sm:mb-5">
           <Link
             href="/track/deal_iphone_15_blr"
-            className="group block bg-white rounded-2xl border border-[#E5E5EB] p-3.5 sm:p-4 shadow-xs hover:border-[#E8D9FF] hover:shadow-md transition-all duration-200 active:scale-[0.99]"
+            className="group block bg-white rounded-2xl border border-[#E5E5EB] p-3 sm:p-3.5 shadow-2xs hover:border-[#E8D9FF] transition active:scale-[0.99]"
           >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3.5">
-                {/* Soft Lavender Square with Purple Wireframe Box */}
-                <div className="w-11 h-11 rounded-2xl bg-[#F4ECFF] border border-[#E8D9FF] flex items-center justify-center text-[#8614F4] shadow-2xs shrink-0 group-hover:scale-105 transition">
-                  <Package className="w-5 h-5" />
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#F4ECFF] border border-[#E8D9FF] flex items-center justify-center text-[#8614F4] shadow-2xs shrink-0 group-hover:scale-105 transition">
+                  <Package className="w-4.5 h-4.5" />
                 </div>
                 <div>
-                  <h3 className="text-sm sm:text-base font-bold text-[#111118] tracking-tight">
+                  <h3 className="text-xs sm:text-sm font-bold text-[#111118] tracking-tight">
                     Track Your Parcel
                   </h3>
-                  <p className="text-[11px] sm:text-xs text-[#666673] font-normal">
+                  <p className="text-[10px] sm:text-xs text-[#666673] font-normal">
                     Real-time updates with end-to-end protection.
                   </p>
                 </div>
               </div>
 
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#F4ECFF]/70 group-hover:bg-[#7C22E8] text-[#7C22E8] group-hover:text-white flex items-center justify-center transition shrink-0">
-                <ArrowRight className="w-4 h-4" />
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#F4ECFF]/80 group-hover:bg-[#7C22E8] text-[#7C22E8] group-hover:text-white flex items-center justify-center transition shrink-0">
+                <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </div>
           </Link>
         </section>
 
-        {/* ======================================================================= */}
-        {/* ACTIVE SHIPMENT TRACKING HUD (Section 19 of Design Philosophy)          */}
-        {/* Displayed as interactive live status on desktop & tablet                */}
-        {/* ======================================================================= */}
-        <section className="hidden md:block mb-8 bg-white rounded-2xl border border-[#E5E5EB] p-5 shadow-xs">
-          <div className="flex items-center justify-between pb-4 border-b border-[#E5E5EB]">
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-3 rounded-full bg-[#10B981] animate-pulse" />
-              <div>
-                <span className="text-xs font-bold text-[#90909D] uppercase tracking-wider">Your Active Shipment</span>
-                <h4 className="text-base font-bold text-[#111118]">iPhone 15 Pro, 256GB — Natural Titanium</h4>
-              </div>
-            </div>
-            <div className="text-right">
-              <span className="text-sm font-bold text-[#111118]">₹62,000</span>
-              <span className="text-xs text-[#8614F4] block font-semibold">RBI Escrow Custody Locked</span>
-            </div>
-          </div>
-
-          {/* 5-Step Lifecycle Pipeline */}
-          <div className="grid grid-cols-5 gap-2 pt-5">
-            <div className="text-center">
-              <div className="w-8 h-8 mx-auto rounded-full bg-[#10B981] text-white flex items-center justify-center text-xs font-bold mb-1.5 shadow-xs">
-                <Check className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-semibold text-[#111118] block">Picked Up</span>
-              <span className="text-[10px] text-[#90909D]">Indiranagar, BLR</span>
-            </div>
-
-            <div className="text-center">
-              <div className="w-8 h-8 mx-auto rounded-full bg-[#10B981] text-white flex items-center justify-center text-xs font-bold mb-1.5 shadow-xs">
-                <Check className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-semibold text-[#111118] block">In Transit</span>
-              <span className="text-[10px] text-[#90909D]">Bonded Fleet</span>
-            </div>
-
-            <div className="text-center">
-              <div className="w-8 h-8 mx-auto rounded-full bg-[#7C22E8] text-white flex items-center justify-center text-xs font-bold mb-1.5 shadow-md shadow-[#7C22E8]/30 ring-4 ring-[#F4ECFF] animate-pulse">
-                <Truck className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-bold text-[#7C22E8] block">Out for Delivery</span>
-              <span className="text-[10px] text-[#7C22E8] font-semibold">ETA: 4 mins</span>
-            </div>
-
-            <div className="text-center">
-              <div className="w-8 h-8 mx-auto rounded-full bg-zinc-100 text-[#90909D] flex items-center justify-center text-xs font-bold mb-1.5">
-                <Sparkles className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-medium text-[#90909D] block">AI Verification</span>
-              <span className="text-[10px] text-[#90909D]">Gemini Vision</span>
-            </div>
-
-            <div className="text-center">
-              <div className="w-8 h-8 mx-auto rounded-full bg-zinc-100 text-[#90909D] flex items-center justify-center text-xs font-bold mb-1.5">
-                <Check className="w-4 h-4" />
-              </div>
-              <span className="text-xs font-medium text-[#90909D] block">Complete</span>
-              <span className="text-[10px] text-[#90909D]">Instant UPI</span>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-[#E5E5EB] flex items-center justify-between text-xs">
-            <span className="text-[#666673]">Assigned Officer: <strong className="text-[#111118]">Rajesh Kumar (#KA-4012)</strong></span>
-            <Link href="/track/deal_iphone_15_blr" className="text-[#7C22E8] font-bold hover:underline">
-              Open Full Live Tracking Console &rarr;
-            </Link>
-          </div>
-        </section>
-
-        {/* ======================================================================= */}
-        {/* TRUST & METRICS ROW (1M+, 99.2%, 24/7)                                  */}
-        {/* Exact 3-column row with icons matching reference screenshot             */}
-        {/* ======================================================================= */}
-        <section className="mb-6 md:mb-10">
-          <div className="bg-white rounded-2xl border border-[#E5E5EB] p-3.5 sm:p-5 grid grid-cols-3 gap-2 text-center divide-x divide-[#E5E5EB] shadow-2xs">
+        {/* 6. TRUST & METRICS ROW (Exact 3-column layout matching reference screenshot) */}
+        <section className="mb-4 sm:mb-6">
+          <div className="bg-white rounded-2xl border border-[#E5E5EB] p-3 sm:p-4 grid grid-cols-3 gap-1 text-center divide-x divide-[#E5E5EB] shadow-2xs">
             
-            {/* 1M+ Trusting users */}
-            <div className="px-2 flex flex-col items-center">
-              <div className="w-8 h-8 rounded-full bg-[#F4ECFF] text-[#8614F4] flex items-center justify-center mb-1.5">
-                <Users className="w-4 h-4" />
+            <div className="px-1 flex flex-col items-center">
+              <div className="w-7 h-7 rounded-full bg-[#F4ECFF] text-[#8614F4] flex items-center justify-center mb-1">
+                <Users className="w-3.5 h-3.5" />
               </div>
-              <div className="text-base sm:text-xl font-bold text-[#111118] tracking-tight">
+              <div className="text-sm sm:text-lg font-bold text-[#111118] tracking-tight">
                 1M+
               </div>
-              <div className="text-[10px] sm:text-xs font-medium text-[#666673] mt-0.5">
+              <div className="text-[9px] sm:text-[11px] font-medium text-[#666673]">
                 Trusting users
               </div>
             </div>
 
-            {/* 99.2% Successful deliveries */}
-            <div className="px-2 flex flex-col items-center">
-              <div className="w-8 h-8 rounded-full bg-[#F4ECFF] text-[#8614F4] flex items-center justify-center mb-1.5">
-                <ShieldCheck className="w-4 h-4" />
+            <div className="px-1 flex flex-col items-center">
+              <div className="w-7 h-7 rounded-full bg-[#F4ECFF] text-[#8614F4] flex items-center justify-center mb-1">
+                <ShieldCheck className="w-3.5 h-3.5" />
               </div>
-              <div className="text-base sm:text-xl font-bold text-[#111118] tracking-tight">
+              <div className="text-sm sm:text-lg font-bold text-[#111118] tracking-tight">
                 99.2%
               </div>
-              <div className="text-[10px] sm:text-xs font-medium text-[#666673] mt-0.5">
+              <div className="text-[9px] sm:text-[11px] font-medium text-[#666673]">
                 Successful deliveries
               </div>
             </div>
 
-            {/* 24/7 AI + Human support */}
-            <div className="px-2 flex flex-col items-center">
-              <div className="w-8 h-8 rounded-full bg-[#F4ECFF] text-[#8614F4] flex items-center justify-center mb-1.5">
-                <Headphones className="w-4 h-4" />
+            <div className="px-1 flex flex-col items-center">
+              <div className="w-7 h-7 rounded-full bg-[#F4ECFF] text-[#8614F4] flex items-center justify-center mb-1">
+                <Headphones className="w-3.5 h-3.5" />
               </div>
-              <div className="text-base sm:text-xl font-bold text-[#111118] tracking-tight">
+              <div className="text-sm sm:text-lg font-bold text-[#111118] tracking-tight">
                 24/7
               </div>
-              <div className="text-[10px] sm:text-xs font-medium text-[#666673] mt-0.5">
+              <div className="text-[9px] sm:text-[11px] font-medium text-[#666673]">
                 AI + Human support
               </div>
             </div>
@@ -637,13 +524,10 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ======================================================================= */}
-        {/* HOW SAFESHIP WORKS (4-STEP PIPELINE)                                    */}
-        {/* Matches reference screenshot on mobile, interconnected on desktop       */}
-        {/* ======================================================================= */}
-        <section id="how-it-works" className="mb-6 md:mb-12">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base sm:text-xl font-bold text-[#111118] tracking-tight">
+        {/* 7. HOW SAFESHIP WORKS (4-STEP PIPELINE) */}
+        <section id="how-it-works" className="mb-4 sm:mb-6">
+          <div className="flex items-center justify-between mb-2.5">
+            <h3 className="text-sm sm:text-lg font-bold text-[#111118] tracking-tight">
               How SafeShip Works
             </h3>
             <Link
@@ -651,33 +535,31 @@ export default function HomePage() {
               className="text-xs font-semibold text-[#7C22E8] hover:text-[#8614F4] flex items-center gap-1 transition"
             >
               <span>Learn more</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-4 gap-2 sm:gap-4">
+          <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
             {steps.map((step) => {
               const IconComp = step.icon;
               return (
                 <div
                   key={step.number}
-                  className="flex flex-col items-center text-center p-2 sm:p-4 rounded-2xl bg-white/70 sm:bg-white border border-[#E5E5EB] shadow-2xs hover:border-[#E8D9FF] transition"
+                  className="flex flex-col items-center text-center p-1.5 sm:p-3 rounded-2xl bg-white/70 sm:bg-white border border-[#E5E5EB] shadow-2xs hover:border-[#E8D9FF] transition"
                 >
-                  {/* Circular step badge with inner icon */}
-                  <div className="relative mb-2">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#F4ECFF] text-[#7C22E8] flex items-center justify-center shadow-2xs">
-                      <IconComp className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <div className="relative mb-1.5">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-[#F4ECFF] text-[#7C22E8] flex items-center justify-center">
+                      <IconComp className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
                     </div>
-                    {/* Small numbered badge indicator */}
-                    <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-[#7C22E8] text-white text-[9px] sm:text-[10px] font-bold flex items-center justify-center ring-2 ring-white">
+                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-4.5 sm:h-4.5 rounded-full bg-[#7C22E8] text-white text-[8px] sm:text-[9px] font-bold flex items-center justify-center ring-2 ring-white">
                       {step.number}
                     </span>
                   </div>
 
-                  <h4 className="text-[11px] sm:text-sm font-bold text-[#111118] tracking-tight mt-1">
+                  <h4 className="text-[10px] sm:text-xs font-bold text-[#111118] tracking-tight">
                     {step.title}
                   </h4>
-                  <p className="text-[9px] sm:text-xs text-[#666673] mt-0.5 leading-snug">
+                  <p className="text-[8px] sm:text-[10px] text-[#666673] mt-0.5 leading-snug">
                     {step.desc}
                   </p>
                 </div>
@@ -686,23 +568,63 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ======================================================================= */}
-        {/* 18. TRUST INFRASTRUCTURE BENEFITS (Core Guarantees for Desktop)         */}
-        {/* ======================================================================= */}
-        <section id="trust-infrastructure" className="hidden md:block mb-12">
-          <div className="text-center max-w-2xl mx-auto mb-8">
+        {/* 8. LIFESTYLE VIDEO BANNER */}
+        <section className="mb-4 sm:mb-6">
+          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden border border-[#E5E5EB] shadow-xs group min-h-[140px] sm:min-h-[190px] flex flex-col justify-between p-4 sm:p-6">
+            <img
+              src="/images/lifestyle_perfect.webp"
+              alt="SafeShip Lifestyle Parcel"
+              className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition duration-700 -z-10"
+            />
+            
+            {/* Top row */}
+            <div />
+
+            {/* Bottom Content Row */}
+            <div className="relative z-10 flex items-end justify-between gap-2">
+              <div className="text-white max-w-[200px] sm:max-w-sm">
+                <h4 className="text-xs sm:text-lg font-bold tracking-tight text-white drop-shadow-md leading-tight">
+                  A safer way <br />
+                  for a bigger tomorrow.
+                </h4>
+                <p className="text-[9px] sm:text-xs text-zinc-200 mt-0.5 font-normal drop-shadow-sm leading-snug">
+                  People, products and possibilities &mdash; without the risk.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => setShowVideoModal(true)}
+                  className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white text-[#111118] font-bold text-[10px] sm:text-xs shadow hover:bg-zinc-100 transition active:scale-95 cursor-pointer"
+                >
+                  <div className="w-3.5 h-3.5 rounded-full bg-[#7C22E8] text-white flex items-center justify-center">
+                    <Play className="w-1.5 h-1.5 ml-0.5 fill-current" />
+                  </div>
+                  <span>Watch video</span>
+                </button>
+              </div>
+
+              <div className="text-purple-200 text-xs sm:text-base font-serif italic tracking-wide drop-shadow-lg text-right select-none pb-1">
+                Good things <br /> travel further.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* 9. DESKTOP EXTENDED TRUST SECTIONS (Hidden on Mobile) */}
+        <section id="trust-infrastructure" className="hidden md:block mb-10 pt-6 border-t border-[#E5E5EB]">
+          <div className="text-center max-w-2xl mx-auto mb-6">
             <span className="text-xs font-bold uppercase tracking-wider text-[#7C22E8]">
               Trust Infrastructure
             </span>
-            <h3 className="text-2xl sm:text-3xl font-bold text-[#111118] tracking-tight mt-1">
+            <h3 className="text-2xl font-bold text-[#111118] tracking-tight mt-1">
               Four Guarantees Behind Every Transaction
             </h3>
           </div>
 
           <div className="grid grid-cols-4 gap-4">
-            <div className="p-5 rounded-2xl bg-white border border-[#E5E5EB] shadow-xs">
-              <div className="w-10 h-10 rounded-xl bg-[#F4ECFF] text-[#8614F4] flex items-center justify-center mb-3">
-                <Sparkles className="w-5 h-5" />
+            <div className="p-4 rounded-2xl bg-white border border-[#E5E5EB] shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-[#F4ECFF] text-[#8614F4] flex items-center justify-center mb-2.5">
+                <Sparkles className="w-4.5 h-4.5" />
               </div>
               <h4 className="text-sm font-bold text-[#111118]">AI Verification</h4>
               <p className="text-xs text-[#666673] mt-1 leading-relaxed">
@@ -710,9 +632,9 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-white border border-[#E5E5EB] shadow-xs">
-              <div className="w-10 h-10 rounded-xl bg-[#F4ECFF] text-[#8614F4] flex items-center justify-center mb-3">
-                <Truck className="w-5 h-5" />
+            <div className="p-4 rounded-2xl bg-white border border-[#E5E5EB] shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-[#F4ECFF] text-[#8614F4] flex items-center justify-center mb-2.5">
+                <Truck className="w-4.5 h-4.5" />
               </div>
               <h4 className="text-sm font-bold text-[#111118]">Secure Delivery</h4>
               <p className="text-xs text-[#666673] mt-1 leading-relaxed">
@@ -720,9 +642,9 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-white border border-[#E5E5EB] shadow-xs">
-              <div className="w-10 h-10 rounded-xl bg-[#F4ECFF] text-[#8614F4] flex items-center justify-center mb-3">
-                <Lock className="w-5 h-5" />
+            <div className="p-4 rounded-2xl bg-white border border-[#E5E5EB] shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-[#F4ECFF] text-[#8614F4] flex items-center justify-center mb-2.5">
+                <Lock className="w-4.5 h-4.5" />
               </div>
               <h4 className="text-sm font-bold text-[#111118]">Protected Payments</h4>
               <p className="text-xs text-[#666673] mt-1 leading-relaxed">
@@ -730,9 +652,9 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="p-5 rounded-2xl bg-white border border-[#E5E5EB] shadow-xs">
-              <div className="w-10 h-10 rounded-xl bg-[#F4ECFF] text-[#8614F4] flex items-center justify-center mb-3">
-                <ShieldCheck className="w-5 h-5" />
+            <div className="p-4 rounded-2xl bg-white border border-[#E5E5EB] shadow-xs">
+              <div className="w-9 h-9 rounded-xl bg-[#F4ECFF] text-[#8614F4] flex items-center justify-center mb-2.5">
+                <ShieldCheck className="w-4.5 h-4.5" />
               </div>
               <h4 className="text-sm font-bold text-[#111118]">Fair Resolution</h4>
               <p className="text-xs text-[#666673] mt-1 leading-relaxed">
@@ -742,179 +664,9 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* ======================================================================= */}
-        {/* 24-27. AI PRODUCT VERIFICATION SHOWCASE (Desktop)                       */}
-        {/* ======================================================================= */}
-        <section id="ai-verification" className="hidden md:block mb-12 bg-white rounded-3xl border border-[#E8D9FF] p-6 sm:p-8 shadow-xs">
-          <div className="grid grid-cols-12 gap-8 items-center">
-            
-            <div className="col-span-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F4ECFF] text-[#7C22E8] font-bold text-xs mb-3">
-                <Sparkles className="w-3.5 h-3.5 text-[#8614F4]" />
-                <span>Gemini Multimodal Forensic Inspection</span>
-              </div>
-              <h3 className="text-2xl font-bold text-[#111118] tracking-tight">
-                AI Verification: Consistent with listing
-              </h3>
-              <p className="text-sm text-[#666673] mt-2 leading-relaxed">
-                We found no material differences between the agreed seller listing and the physical hardware inspected at the doorstep.
-              </p>
-
-              {/* Dimensional Breakdown (Section 26 of Spec) */}
-              <div className="mt-5 space-y-2.5">
-                <div>
-                  <div className="flex justify-between text-xs font-semibold mb-1">
-                    <span className="text-[#111118]">Hardware Identity (IMEI / Serial OCR)</span>
-                    <span className="text-[#10B981]">99% Match</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-zinc-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#10B981] rounded-full w-[99%]" />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-xs font-semibold mb-1">
-                    <span className="text-[#111118]">Chassis &amp; Display Health (OLED Matrix)</span>
-                    <span className="text-[#7C22E8]">97% Match</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-zinc-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#7C22E8] rounded-full w-[97%]" />
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex justify-between text-xs font-semibold mb-1">
-                    <span className="text-[#111118]">Accessories &amp; Factory Box</span>
-                    <span className="text-[#10B981]">100% Match</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-zinc-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#10B981] rounded-full w-[100%]" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 flex gap-3">
-                <Link
-                  href="/deals/deal_iphone_15_blr"
-                  className="px-5 py-2.5 rounded-xl bg-[#7C22E8] hover:bg-[#8614F4] text-white font-semibold text-xs shadow-sm transition"
-                >
-                  View Forensic Certificate
-                </Link>
-                <Link
-                  href="/courier"
-                  className="px-5 py-2.5 rounded-xl bg-zinc-50 border border-[#E5E5EB] text-[#111118] font-semibold text-xs hover:bg-zinc-100 transition"
-                >
-                  Simulate Officer Camera View
-                </Link>
-              </div>
-            </div>
-
-            {/* Visual Side-by-Side Comparison (Section 24 of Spec) */}
-            <div className="col-span-6 bg-[#F7F7FB] rounded-2xl p-4 border border-[#E5E5EB]">
-              <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#E5E5EB]">
-                <span className="text-xs font-bold text-[#111118]">Side-by-Side Comparison</span>
-                <span className="text-xs font-bold text-[#10B981] bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  Overall: 96% Match
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white p-3 rounded-xl border border-[#E5E5EB] text-center">
-                  <span className="text-[10px] font-bold text-[#90909D] uppercase tracking-wider block mb-2">
-                    1. Agreed Listing
-                  </span>
-                  <div className="w-full h-28 bg-zinc-50 rounded-lg flex items-center justify-center p-2">
-                    <img
-                      src="/images/sell_box_hd.webp"
-                      alt="Agreed Listing"
-                      className="max-h-full object-contain"
-                    />
-                  </div>
-                  <span className="text-[11px] font-semibold text-[#111118] block mt-2">Seller Photos (5)</span>
-                </div>
-
-                <div className="bg-white p-3 rounded-xl border border-[#8614F4]/40 text-center relative">
-                  <span className="text-[10px] font-bold text-[#7C22E8] uppercase tracking-wider block mb-2">
-                    2. Courier Doorstep Audit
-                  </span>
-                  <div className="w-full h-28 bg-[#F4ECFF]/40 rounded-lg flex items-center justify-center p-2 relative">
-                    <img
-                      src="/images/sell_box_hd.webp"
-                      alt="Physical Received Inspection"
-                      className="max-h-full object-contain"
-                    />
-                    <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-[#10B981] text-white text-[9px] font-bold">
-                      VERIFIED
-                    </div>
-                  </div>
-                  <span className="text-[11px] font-semibold text-[#7C22E8] block mt-2">Gemini Vision 4K Scan</span>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        {/* ======================================================================= */}
-        {/* LIFESTYLE VIDEO BANNER                                                  */}
-        {/* Matches reference screenshot with SafeShip box, plant, script text      */}
-        {/* ======================================================================= */}
-        <section className="mb-6 md:mb-12">
-          <div className="relative rounded-3xl overflow-hidden border border-[#E5E5EB] shadow-md group min-h-[220px] sm:min-h-[260px] flex flex-col justify-between p-5 sm:p-7">
-            {/* Background Lifestyle Image */}
-            <img
-              src="/images/banner_box_home_hd.webp"
-              alt="SafeShip Branded Delivery Box in Modern Home"
-              className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-105 transition duration-700 -z-10"
-            />
-
-            {/* Gradient Overlay for Text Legibility */}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-transparent -z-10 pointer-events-none" />
-
-            {/* Top Row: Empty or Status Indicator */}
-            <div className="flex items-center justify-between">
-              <span className="px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md text-white/90 text-[10px] font-semibold border border-white/20">
-                SafeShip Video
-              </span>
-            </div>
-
-            {/* Bottom Content Row */}
-            <div className="relative z-10 flex flex-col sm:flex-row sm:items-end justify-between gap-4 mt-6">
-              <div className="text-white max-w-sm">
-                <h4 className="text-lg sm:text-2xl font-bold tracking-tight text-white drop-shadow-md">
-                  A safer way <br className="hidden sm:inline" />
-                  for a bigger tomorrow.
-                </h4>
-                <p className="text-xs sm:text-sm text-zinc-200 mt-1 font-normal drop-shadow-sm">
-                  People, products and possibilities &mdash; without the risk.
-                </p>
-
-                {/* "Watch video" pill button matching reference screenshot */}
-                <button
-                  type="button"
-                  onClick={() => setShowVideoModal(true)}
-                  className="mt-3.5 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-[#111118] font-bold text-xs shadow-md hover:bg-zinc-100 transition active:scale-95 cursor-pointer"
-                >
-                  <div className="w-4 h-4 rounded-full bg-[#7C22E8] text-white flex items-center justify-center">
-                    <Play className="w-2 h-2 ml-0.5 fill-current" />
-                  </div>
-                  <span>Watch video</span>
-                </button>
-              </div>
-
-              {/* Script Cursive Overlay: "Good things travel further." */}
-              <div className="text-purple-200 text-base sm:text-xl font-serif italic tracking-wide drop-shadow-lg text-right select-none">
-                Good things travel further.
-              </div>
-            </div>
-          </div>
-        </section>
-
       </main>
 
-      {/* ========================================================================= */}
-      {/* VIDEO MODAL: 90-Second Simulated AI Verification Demo                     */}
-      {/* ========================================================================= */}
+      {/* VIDEO MODAL */}
       {showVideoModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-[#111118] text-white rounded-3xl max-w-md w-full p-5 shadow-2xl border border-zinc-800 animate-in zoom-in-95">
@@ -935,8 +687,8 @@ export default function HomePage() {
             </div>
 
             <div className="mt-4 rounded-2xl bg-zinc-900 border border-zinc-800 overflow-hidden relative aspect-video flex flex-col items-center justify-center p-4 text-center">
-              <div className="w-14 h-14 rounded-full bg-[#7C22E8] text-white flex items-center justify-center shadow-lg shadow-[#7C22E8]/40 mb-3 animate-pulse">
-                <Play className="w-6 h-6 ml-1 fill-current" />
+              <div className="w-12 h-12 rounded-full bg-[#7C22E8] text-white flex items-center justify-center shadow-lg shadow-[#7C22E8]/40 mb-2 animate-pulse">
+                <Play className="w-5 h-5 ml-0.5 fill-current" />
               </div>
               <p className="text-xs font-bold text-white">Doorstep Forensic AI Verification</p>
               <p className="text-[11px] text-zinc-400 mt-1 max-w-xs">
@@ -967,9 +719,9 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* ENTERPRISE FOOTER (Desktop & Tablet)                                      */}
       {/* ========================================================================= */}
-      <footer className="hidden md:block w-full bg-white border-t border-[#E5E5EB] mt-12 py-12">
+      <footer className="hidden md:block w-full bg-white border-t border-[#E5E5EB] mt-10 py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-5 gap-8 pb-10 border-b border-[#E5E5EB]">
+          <div className="grid grid-cols-5 gap-8 pb-8 border-b border-[#E5E5EB]">
             
             <div className="col-span-2">
               <div className="flex items-center gap-2.5">
@@ -978,28 +730,27 @@ export default function HomePage() {
                 </div>
                 <span className="text-lg font-bold text-[#111118]">SafeShip</span>
               </div>
-              <p className="text-xs text-[#666673] mt-3 max-w-sm leading-relaxed">
-                The institutional trust infrastructure for high-value commerce. Escrow funds secured in RBI Section 10A compliant Nodal accounts. Doorstep hardware verification audited by Gemini Vision.
+              <p className="text-xs text-[#666673] mt-2.5 max-w-sm leading-relaxed">
+                The institutional trust infrastructure for high-value commerce. Escrow funds secured in RBI Section 10A compliant Nodal accounts.
               </p>
-              <div className="flex items-center gap-2 mt-4 text-[11px] text-[#10B981] font-semibold">
+              <div className="flex items-center gap-2 mt-3 text-[11px] text-[#10B981] font-semibold">
                 <span className="w-2 h-2 rounded-full bg-[#10B981]" />
                 <span>All Protocol Systems Operational • 99.98% SLA</span>
               </div>
             </div>
 
             <div>
-              <h5 className="text-xs font-bold text-[#111118] uppercase tracking-wider mb-3">Protocol</h5>
-              <ul className="space-y-2 text-xs text-[#666673]">
+              <h5 className="text-xs font-bold text-[#111118] uppercase tracking-wider mb-2.5">Protocol</h5>
+              <ul className="space-y-1.5 text-xs text-[#666673]">
                 <li><Link href="/deals/deal_iphone_15_blr" className="hover:text-[#8614F4]">Deal Room</Link></li>
                 <li><Link href="/track/deal_iphone_15_blr" className="hover:text-[#8614F4]">Live GPS Tracking</Link></li>
                 <li><Link href="/deals/new" className="hover:text-[#8614F4]">Escrow Calculator</Link></li>
-                <li><a href="#ai-verification" className="hover:text-[#8614F4]">Gemini AI Vision</a></li>
               </ul>
             </div>
 
             <div>
-              <h5 className="text-xs font-bold text-[#111118] uppercase tracking-wider mb-3">Roles</h5>
-              <ul className="space-y-2 text-xs text-[#666673]">
+              <h5 className="text-xs font-bold text-[#111118] uppercase tracking-wider mb-2.5">Roles</h5>
+              <ul className="space-y-1.5 text-xs text-[#666673]">
                 <li><Link href="/deals/deal_iphone_15_blr" className="hover:text-[#8614F4]">Buyer Console</Link></li>
                 <li><Link href="/deals/new" className="hover:text-[#8614F4]">Seller Console</Link></li>
                 <li><Link href="/courier" className="hover:text-[#8614F4]">Courier Dispatch</Link></li>
@@ -1008,18 +759,17 @@ export default function HomePage() {
             </div>
 
             <div>
-              <h5 className="text-xs font-bold text-[#111118] uppercase tracking-wider mb-3">Compliance</h5>
-              <ul className="space-y-2 text-xs text-[#666673]">
+              <h5 className="text-xs font-bold text-[#111118] uppercase tracking-wider mb-2.5">Compliance</h5>
+              <ul className="space-y-1.5 text-xs text-[#666673]">
                 <li><span className="text-[#90909D]">RBI Nodal Guidelines</span></li>
                 <li><span className="text-[#90909D]">Section 10A Escrow</span></li>
-                <li><span className="text-[#90909D]">Porter Fleet Bond</span></li>
                 <li><span className="text-[#90909D]">Tamper Seal Standard</span></li>
               </ul>
             </div>
 
           </div>
 
-          <div className="pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-[#90909D]">
+          <div className="pt-5 flex flex-col sm:flex-row items-center justify-between text-xs text-[#90909D]">
             <p>&copy; {new Date().getFullYear()} SafeShip Technologies Inc. All rights reserved.</p>
             <p>What you see is what you receive. Buy. Ship. Verify. Trust.</p>
           </div>
@@ -1027,60 +777,60 @@ export default function HomePage() {
       </footer>
 
       {/* ========================================================================= */}
-      {/* 37-38. FLOATING BOTTOM NAVIGATION BAR (Mobile Only: hidden on md+)        */}
-      {/* Exactly matching reference screenshot with elevated + List button        */}
+      {/* FLOATING MOBILE BOTTOM NAVIGATION BAR (md:hidden)                         */}
+      {/* Exactly matching media_1789232190268.png with elevated + List button      */}
       {/* ========================================================================= */}
       <nav
         aria-label="Mobile Navigation"
-        className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-lg border-t border-[#E5E5EB] px-6 py-2 z-40 flex items-center justify-between max-w-md mx-auto"
+        className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-lg border-t border-[#E5E5EB] px-5 py-1.5 z-40 flex items-center justify-between max-w-md mx-auto"
       >
         {/* Home (Active Purple) */}
         <Link
           href="/"
-          className="flex flex-col items-center gap-1 text-[#8614F4] font-bold transition group"
+          className="flex flex-col items-center gap-0.5 text-[#8614F4] font-bold transition group w-12"
         >
           <Home className="w-5 h-5 group-hover:scale-110 transition" />
-          <span className="text-[10px] tracking-tight">Home</span>
+          <span className="text-[9px] tracking-tight">Home</span>
         </Link>
 
         {/* Explore */}
         <Link
           href="/deals/deal_iphone_15_blr"
-          className="flex flex-col items-center gap-1 text-[#90909D] hover:text-[#111118] font-medium transition group"
+          className="flex flex-col items-center gap-0.5 text-[#90909D] hover:text-[#111118] font-medium transition group w-12"
         >
           <Compass className="w-5 h-5 group-hover:scale-110 transition" />
-          <span className="text-[10px] tracking-tight">Explore</span>
+          <span className="text-[9px] tracking-tight">Explore</span>
         </Link>
 
         {/* Center Elevated Purple Action Button (+ List) */}
-        <div className="-mt-6 flex flex-col items-center">
+        <div className="-mt-5 flex flex-col items-center">
           <Link
             href="/deals/new"
-            className="w-13 h-13 rounded-full bg-gradient-to-br from-[#8614F4] to-[#5420B8] text-white flex items-center justify-center shadow-lg shadow-[#8614F4]/30 hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 ring-4 ring-white"
+            className="w-12 h-12 rounded-full bg-gradient-to-br from-[#8614F4] to-[#5420B8] text-white flex items-center justify-center shadow-lg shadow-[#8614F4]/35 hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 ring-4 ring-white"
             title="Create New Listing / Deal"
             aria-label="Create New Listing / Deal"
           >
-            <Plus className="w-6 h-6 text-white" strokeWidth={2.5} />
+            <Plus className="w-5 h-5 text-white" strokeWidth={2.5} />
           </Link>
-          <span className="text-[10px] text-[#7C22E8] font-bold mt-0.5">List</span>
+          <span className="text-[9px] text-[#7C22E8] font-bold mt-0.5">List</span>
         </div>
 
         {/* Orders */}
         <Link
           href="/track/deal_iphone_15_blr"
-          className="flex flex-col items-center gap-1 text-[#90909D] hover:text-[#111118] font-medium transition group"
+          className="flex flex-col items-center gap-0.5 text-[#90909D] hover:text-[#111118] font-medium transition group w-12"
         >
           <Package className="w-5 h-5 group-hover:scale-110 transition" />
-          <span className="text-[10px] tracking-tight">Orders</span>
+          <span className="text-[9px] tracking-tight">Orders</span>
         </Link>
 
         {/* Profile */}
         <Link
           href="/admin"
-          className="flex flex-col items-center gap-1 text-[#90909D] hover:text-[#111118] font-medium transition group"
+          className="flex flex-col items-center gap-0.5 text-[#90909D] hover:text-[#111118] font-medium transition group w-12"
         >
           <User className="w-5 h-5 group-hover:scale-110 transition" />
-          <span className="text-[10px] tracking-tight">Profile</span>
+          <span className="text-[9px] tracking-tight">Profile</span>
         </Link>
       </nav>
 
