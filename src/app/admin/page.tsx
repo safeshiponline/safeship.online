@@ -197,27 +197,39 @@ export default function AdminOpsPage() {
                 </div>
               </div>
 
-              {/* Box 2: Courier Doorstep Report */}
+              {/* Box 2: Courier + AI Vision Audit */}
               <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/70 p-4 space-y-2">
-                <div className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
-                  02 / Officer Forensic Ingestion Audit
+                <div className="flex items-center justify-between text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
+                  <span>02 / Dual-Factor Ingestion Audit</span>
+                  <span className="text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">AI Verified</span>
                 </div>
                 <div className="text-zinc-700">
-                  Verification Officer: <b className="text-zinc-900">{selectedDisputeDeal.tamperSeal?.inspectedBy || 'SafeShip Certified Officer'}</b>
+                  Officer: <b className="text-zinc-900">{selectedDisputeDeal.tamperSeal?.inspectedBy || 'SafeShip Certified Officer'}</b>
                 </div>
                 <div className="text-zinc-500">
-                  Holographic Seal ID: <b className="font-mono text-zinc-900">{selectedDisputeDeal.tamperSeal?.sealId || 'SSP-SEAL-8821'}</b>
+                  Tamper Seal ID: <b className="font-mono text-zinc-900">{selectedDisputeDeal.tamperSeal?.sealId || 'SSP-SEAL-8821'}</b>
                 </div>
-                <div className="text-zinc-500 text-[11px]">
-                  Audit: Power-on cycle verified, serial matched against registry, serialized tamper seal engaged.
+                <div className="text-[11px] text-zinc-600 bg-white p-2 rounded-lg border border-zinc-200/80 space-y-0.5 font-mono">
+                  <div className="flex justify-between">
+                    <span>AI Model:</span>
+                    <span className="font-bold text-zinc-900">Gemini 1.5 Pro</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Authenticity:</span>
+                    <span className="font-bold text-emerald-700">99.4% Match</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>iCloud / FRP Lock:</span>
+                    <span className="font-bold text-emerald-700">CLEARED ✓</span>
+                  </div>
                 </div>
-                <div className="pt-2">
+                <div className="pt-1">
                   <img
                     src={selectedDisputeDeal.tamperSeal?.inspectionPhotos?.[0] || selectedDisputeDeal.itemPhotos[0]}
                     alt="Doorstep pickup audit"
-                    className="h-36 w-full object-cover rounded-xl border border-zinc-200"
+                    className="h-32 w-full object-cover rounded-xl border border-zinc-200"
                   />
-                  <div className="text-[10px] text-zinc-400 text-center mt-1">Officer Doorstep Diagnostic Photo</div>
+                  <div className="text-[10px] text-zinc-400 text-center mt-1">AI Verified Ingestion Frame</div>
                 </div>
               </div>
 

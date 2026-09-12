@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { SafeDeal, InspectionChecklist } from '@/lib/types';
 import { completeCourierPickup } from '@/lib/store';
 import { formatINR } from '@/lib/escrowCalculator';
-import { ShieldCheck, Camera, Check, QrCode, Lock, X } from '../common/Icons';
+import { ShieldCheck, Camera, Check, QrCode, Lock, X, Sparkles } from '../common/Icons';
+import { AiVisionScannerModal } from './AiVisionScannerModal';
 
 interface InspectionChecklistModalProps {
   deal: SafeDeal;
@@ -19,6 +20,7 @@ export const InspectionChecklistModal: React.FC<InspectionChecklistModalProps> =
   onClose,
   onSuccess
 }) => {
+  const [mode, setMode] = useState<'AI' | 'MANUAL'>('AI');
   const [powersOn, setPowersOn] = useState(true);
   const [cosmeticMatches, setCosmeticMatches] = useState(true);
   const [serialVerified, setSerialVerified] = useState(true);
@@ -30,6 +32,18 @@ export const InspectionChecklistModal: React.FC<InspectionChecklistModalProps> =
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!isOpen) return null;
+
+  if (mode === 'AI') {
+    return (
+      <AiVisionScannerModal
+        deal={deal}
+        isOpen={isOpen}
+        onClose={onClose}
+        onSuccess={onSuccess}
+        onSwitchToManual={() => setMode('MANUAL')}
+      />
+    );
+  }
 
   const handleAddPhoto = () => {
     const mockPhotos = [
@@ -80,16 +94,30 @@ export const InspectionChecklistModal: React.FC<InspectionChecklistModalProps> =
         </button>
 
         {/* Header */}
+        <button
+          type="button"
+          onClick={() => setMode('AI')}
+          className="mb-4 w-full py-2.5 px-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-xs flex items-center justify-between hover:bg-emerald-100 transition cursor-pointer shadow-2xs"
+        >
+          <span className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-emerald-600 animate-pulse" />
+            <span>Switch to SafeShip Vision™ AI Mode (Gemini 1.5 Multimodal)</span>
+          </span>
+          <span className="text-[10px] font-mono uppercase font-bold text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-200">
+            Launch AI Scanner &rarr;
+          </span>
+        </button>
+
         <div className="flex items-center gap-3 mb-4">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-900 text-white shadow-xs">
             <ShieldCheck className="w-6 h-6 text-emerald-400" />
           </div>
           <div>
             <div className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
-              Porter Courier Field Portal
+              Bonded Officer Field Portal
             </div>
             <h3 className="text-base font-bold text-zinc-950">
-              5-Point Doorstep Hardware Verification
+              Manual Hardware Verification Checklist
             </h3>
           </div>
         </div>

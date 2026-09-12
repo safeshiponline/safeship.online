@@ -1,6 +1,6 @@
 'use client';
 
-import { SafeDeal, DealStatus, InspectionChecklist, TamperSeal, FeeSplitOption, ItemCategory } from './types';
+import { SafeDeal, DealStatus, InspectionChecklist, TamperSeal, FeeSplitOption, ItemCategory, AiDiagnosticReport } from './types';
 import { INITIAL_DEALS } from './mockData';
 import { calculateEscrowBreakdown } from './escrowCalculator';
 
@@ -199,7 +199,13 @@ export function fundDealEscrow(dealId: string, buyerData: { name: string; email:
   return deal;
 }
 
-export function completeCourierPickup(dealId: string, checklist: InspectionChecklist, sealId: string, photos: string[]): SafeDeal | null {
+export function completeCourierPickup(
+  dealId: string,
+  checklist: InspectionChecklist,
+  sealId: string,
+  photos: string[],
+  aiReport?: AiDiagnosticReport
+): SafeDeal | null {
   const deals = getStoredDeals();
   const index = deals.findIndex((d) => d.id === dealId);
   if (index === -1) return null;
@@ -207,24 +213,38 @@ export function completeCourierPickup(dealId: string, checklist: InspectionCheck
   const deal = deals[index];
   deal.status = 'IN_TRANSIT';
   deal.inspectionChecklist = checklist;
+  if (aiReport) {
+    deal.aiDiagnosticReport = aiReport;
+  }
   deal.tamperSeal = {
     sealId,
     barcode: Math.floor(100000000000 + Math.random() * 900000000000).toString(),
     appliedAt: new Date().toISOString(),
     inspectedBy: deal.assignedCourier?.name || 'SafeShip Certified Custody Agent',
-    inspectionPhotos: photos.length > 0 ? photos : deal.itemPhotos
+    inspectionPhotos: photos.length > 0 ? photos : deal.itemPhotos,
+    aiReport: aiReport
   };
 
   // Milestone 1 Payout (30% advance released to seller UPI)
   const milestone1 = deal.pricing.milestones.stage1PickupPayout;
   deal.escrowVault.milestone1ReleasedAt = new Date().toISOString();
 
+  if (aiReport) {
+    deal.auditTrail.push({
+      id: `aud_${Date.now()}_ai`,
+      timestamp: new Date().toISOString(),
+      actor: 'SYSTEM',
+      title: `SafeShip Vision™ Multimodal AI Diagnostic Cleared (${aiReport.authenticityScore}% Score)`,
+      description: `Gemini 1.5 Pro Neural Vision verified 5-frame diagnostic: OCR IMEI match, 0 OLED dead pixels, iCloud lock disengaged.`
+    });
+  }
+
   deal.auditTrail.push({
     id: `aud_${Date.now()}`,
     timestamp: new Date().toISOString(),
     actor: 'COURIER',
-    title: `Device Inspected & Sealed (Tamper Seal #${sealId})`,
-    description: `Courier confirmed boot sequence & serial match. Applied holographic tamper-proof seal #${sealId}.`
+    title: `Dual-Factor Verified & Sealed (Tamper Seal #${sealId})`,
+    description: `Bonded Officer and SafeShip Vision™ AI jointly authenticated hardware specs. Applied holographic tamper-proof seal #${sealId}.`
   });
 
   deal.auditTrail.push({
@@ -232,7 +252,7 @@ export function completeCourierPickup(dealId: string, checklist: InspectionCheck
     timestamp: new Date().toISOString(),
     actor: 'SYSTEM',
     title: `Milestone 1 Advance Sent to UPI (₹${milestone1.toLocaleString('en-IN')})`,
-    description: `30% advance payout credited instantly to ${deal.seller.upiId} upon physical pickup.`
+    description: `30% advance payout credited instantly to ${deal.seller.upiId} upon dual-factor custody seal.`
   });
 
   deals[index] = deal;

@@ -26,7 +26,8 @@ import {
   ShoppingBag,
   Store,
   Phone,
-  ArrowRight
+  ArrowRight,
+  Sparkles
 } from '@/components/common/Icons';
 
 export default function DealRoomPage({ params }: { params: Promise<{ id: string }> }) {
@@ -100,6 +101,10 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
                 </span>
                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
                   {deal.status.replace(/_/g, ' ')}
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-900 border border-emerald-200/80 flex items-center gap-1 shadow-2xs font-mono">
+                  <Sparkles className="w-3 h-3 text-emerald-600 animate-pulse" />
+                  <span>SafeShip Vision™ AI Mode Active</span>
                 </span>
                 <span className="text-xs text-zinc-400 font-medium">
                   • {deal.city} Hub
@@ -303,11 +308,12 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
         {/* Certified Driver Profile Card */}
         <DriverProfileCard courier={deal.assignedCourier} />
 
-        {/* Doorstep Photo Evidence Vault */}
+        {/* Doorstep Photo Evidence Vault & AI Certificate */}
         <PhotoEvidenceVault
           sealId={deal.tamperSeal?.sealId || 'SSP-BLR-8842-TAMPER-SAFE'}
           inspectedAt={deal.tamperSeal?.appliedAt || '12 Sep 2026, 02:45 PM IST'}
           photos={deal.tamperSeal?.inspectionPhotos}
+          aiReport={deal.aiDiagnosticReport || deal.tamperSeal?.aiReport}
         />
 
         {/* 50/50 Fee Split & Tamper Seal */}

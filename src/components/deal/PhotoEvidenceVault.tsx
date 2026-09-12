@@ -1,13 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ShieldCheck, CheckCircle2, Lock, X } from '../common/Icons';
+import { ShieldCheck, CheckCircle2, Lock, X, Sparkles } from '../common/Icons';
+import { AiDiagnosticReport } from '@/lib/types';
 
 interface PhotoEvidenceVaultProps {
   sealId?: string;
   inspectedAt?: string;
   inspectorName?: string;
   photos?: string[];
+  aiReport?: AiDiagnosticReport;
   className?: string;
 }
 
@@ -16,30 +18,35 @@ export const PhotoEvidenceVault: React.FC<PhotoEvidenceVaultProps> = ({
   inspectedAt = '12 Sep 2026, 02:45 PM IST',
   inspectorName = 'Vikram Singh (Porter Fleet #884)',
   photos,
+  aiReport,
   className = '',
 }) => {
-  const [selectedPhoto, setSelectedPhoto] = useState<{ url: string; title: string; desc: string } | null>(null);
+  const [selectedPhoto, setSelectedPhoto] = useState<{ url: string; title: string; desc: string; ocr?: string } | null>(null);
 
   const defaultEvidence = [
     {
       url: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=800&q=80',
-      title: '1. Power-On & Display Check',
-      desc: 'Screen illuminated, battery health verified at 98%, no dead pixels or display lines.',
+      title: '1. Power-On & OLED Panel Test',
+      desc: 'Screen illuminated, zero dead pixels, Delta E < 0.8 panel uniformity confirmed by Gemini Vision.',
+      ocr: 'PANEL: 100% HEALTH',
     },
     {
       url: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80',
-      title: '2. Serial & IMEI Match',
-      desc: 'Serial number F2LL99XMD6T verified against original invoice and Apple Settings.',
+      title: '2. Settings IMEI / Serial OCR',
+      desc: 'Serial number F2LL99XMD6T extracted via OCR. 99.8% match confidence against invoice.',
+      ocr: 'IMEI: 354892110482910 [MATCH]',
     },
     {
       url: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=800&q=80',
-      title: '3. Cosmetic & Port Integrity',
-      desc: 'Camera lenses pristine, titanium corners unblemished, USB-C charging port clean.',
+      title: '3. 45° Chassis & Cosmetic Scan',
+      desc: 'Specular reflectance gradient mapped. Titanium rails clean, zero structural deformities.',
+      ocr: 'COSMETIC: GRADE A+ MINT',
     },
     {
       url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80',
       title: '4. Holographic Tamper Bag Sealed',
-      desc: `Applied security seal #${sealId}. Tamper-evident void pattern armed.`,
+      desc: `Applied serialized tamper pouch #${sealId}. Armed with tamper-evident void pattern.`,
+      ocr: `SEAL: #${sealId}`,
     },
   ];
 
@@ -48,27 +55,79 @@ export const PhotoEvidenceVault: React.FC<PhotoEvidenceVaultProps> = ({
         url,
         title: defaultEvidence[idx].title,
         desc: defaultEvidence[idx].desc,
+        ocr: defaultEvidence[idx].ocr,
       }))
     : defaultEvidence;
 
+  const score = aiReport?.authenticityScore || 99.4;
+
   return (
-    <div className={`rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 shadow-xs ${className}`}>
-      <div className="flex items-center justify-between pb-3 border-b border-zinc-100 mb-3.5">
-        <div>
-          <div className="flex items-center gap-1.5">
-            <h3 className="text-xs sm:text-sm font-bold text-zinc-950">Doorstep Inspection Evidence Vault</h3>
-            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
-              Verified
-            </span>
+    <div className={`rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4 ${className}`}>
+      {/* SafeShip Vision AI Diagnostic Certificate Banner */}
+      <div className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/70 via-white to-emerald-50/40 p-4 sm:p-5 shadow-2xs space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-200/60 pb-3">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-xl bg-zinc-950 text-white flex items-center justify-center shadow-xs">
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-bold text-emerald-900 uppercase tracking-wider">
+                  SafeShip Vision™ AI Diagnostic Certificate
+                </span>
+                <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
+                  Gemini 1.5 Pro Neural
+                </span>
+              </div>
+              <h4 className="text-sm font-black text-zinc-950 tracking-tight mt-0.5">
+                Dual-Factor Quality Assurance Certified
+              </h4>
+            </div>
           </div>
+
+          <div className="text-right">
+            <span className="text-[10px] font-mono text-zinc-400 block uppercase">Authenticity Confidence</span>
+            <span className="text-base font-black font-mono text-emerald-700">{score}% Certified</span>
+          </div>
+        </div>
+
+        {/* AI Key Checks Grid */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+          <div className="bg-white/80 rounded-xl p-2.5 border border-emerald-200/70">
+            <div className="text-[10px] font-mono text-zinc-400 uppercase font-bold">OLED Panel Health</div>
+            <div className="font-bold text-zinc-950 mt-0.5">Optimal (0 Burn-in)</div>
+          </div>
+          <div className="bg-white/80 rounded-xl p-2.5 border border-emerald-200/70">
+            <div className="text-[10px] font-mono text-zinc-400 uppercase font-bold">OCR Serial Match</div>
+            <div className="font-bold text-emerald-700 mt-0.5">100% Invoice Match ✓</div>
+          </div>
+          <div className="bg-white/80 rounded-xl p-2.5 border border-emerald-200/70">
+            <div className="text-[10px] font-mono text-zinc-400 uppercase font-bold">iCloud / FRP Lock</div>
+            <div className="font-bold text-emerald-700 mt-0.5">Cleared (Clean ESN) ✓</div>
+          </div>
+          <div className="bg-white/80 rounded-xl p-2.5 border border-emerald-200/70">
+            <div className="text-[10px] font-mono text-zinc-400 uppercase font-bold">Cosmetic Grade</div>
+            <div className="font-bold text-zinc-950 mt-0.5">Grade A+ (Mint)</div>
+          </div>
+        </div>
+
+        <div className="text-[10px] text-zinc-500 flex items-center justify-between pt-1 font-mono">
+          <span>Dual Sign-Off: {inspectorName} + Gemini Neural Engine</span>
+          <span className="text-emerald-700 font-bold">Token #{aiReport?.reportId || 'SVR-GEMINI-894102'}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between pb-2 border-b border-zinc-100">
+        <div>
+          <h3 className="text-xs sm:text-sm font-bold text-zinc-950">Ingested Doorstep Forensic Evidence</h3>
           <p className="text-[11px] text-zinc-500 mt-0.5">
-            Captured by {inspectorName} • {inspectedAt}
+            Captured during live officer doorstep audit • {inspectedAt}
           </p>
         </div>
 
         <div className="text-right">
-          <span className="text-[10px] font-mono text-zinc-400 block">Seal ID</span>
-          <span className="text-xs font-mono font-bold text-zinc-800">{sealId}</span>
+          <span className="text-[10px] font-mono text-zinc-400 block">Tamper Seal ID</span>
+          <span className="text-xs font-mono font-bold text-zinc-900 bg-zinc-50 px-2 py-0.5 rounded border border-zinc-200">{sealId}</span>
         </div>
       </div>
 

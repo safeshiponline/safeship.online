@@ -36,6 +36,44 @@ export interface InspectionChecklist {
   sellerSignature?: string;
 }
 
+export interface AiInspectionFrame {
+  id: string;
+  stepName: string;
+  targetCheck: string;
+  instructionPrompt: string;
+  photoUrl: string;
+  confidenceScore: number;
+  ocrExtracted?: string;
+  detectedAnomalies?: string[];
+  status: 'ANALYZING' | 'VERIFIED' | 'DISCREPANCY_FLAGGED';
+}
+
+export interface AiDiagnosticReport {
+  reportId: string;
+  modelEngine: 'Gemini 1.5 Pro Multimodal' | 'SafeShip Vision Neural v2.4';
+  authenticityScore: number; // e.g. 99.2%
+  cosmeticGrade: 'A+ (Mint / Scratchless)' | 'A (Minor Wear)' | 'B (Visible Scuffs)' | 'REJECT';
+  imeiOcrResult: {
+    extractedImei: string;
+    expectedImei?: string;
+    matchStatus: 'MATCHED' | 'MISMATCH' | 'UNREADABLE';
+    confidence: number;
+  };
+  activationLockStatus: 'CLEARED' | 'LOCKED' | 'BYPASS_DETECTED';
+  displayOledHealth: 'OPTIMAL' | 'BURN_IN_DETECTED' | 'MICRO_FRACTURE';
+  batteryDiagnosticEstimate?: string;
+  aiPassed: boolean;
+  scannedAt: string;
+  anomaliesFound: string[];
+  guidanceFeedback: string;
+  framesAnalyzed: AiInspectionFrame[];
+  dualSignOff: {
+    aiModelVerified: boolean;
+    officerBadgeNumber: string;
+    officerSignatureTimestamp: string;
+  };
+}
+
 export interface TamperSeal {
   sealId: string;
   barcode: string;
@@ -43,6 +81,7 @@ export interface TamperSeal {
   inspectedBy: string;
   inspectionPhotos: string[];
   intactVerifiedAtDelivery?: boolean;
+  aiReport?: AiDiagnosticReport;
 }
 
 export interface CourierAgent {
@@ -138,6 +177,7 @@ export interface SafeDeal {
   assignedCourier?: CourierAgent;
   inspectionChecklist?: InspectionChecklist;
   tamperSeal?: TamperSeal;
+  aiDiagnosticReport?: AiDiagnosticReport;
 
   // Escrow Vault State (RBI Nodal Account Simulation)
   escrowVault: {

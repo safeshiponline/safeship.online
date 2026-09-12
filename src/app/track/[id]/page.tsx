@@ -164,6 +164,7 @@ export default function StandaloneTrackingPage({
               sealId={deal.tamperSeal?.sealId || 'SSP-BLR-8842-TAMPER-SAFE'}
               inspectedAt={deal.tamperSeal?.appliedAt || '12 Sep 2026, 02:45 PM IST'}
               photos={deal.tamperSeal?.inspectionPhotos}
+              aiReport={deal.aiDiagnosticReport || deal.tamperSeal?.aiReport}
             />
 
             <TamperSealBadge

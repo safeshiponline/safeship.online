@@ -128,15 +128,17 @@ export default function HomePage() {
                 <span className="h-8 w-8 rounded-xl bg-zinc-950 text-white font-mono font-bold text-xs flex items-center justify-center">
                   02
                 </span>
-                <span className="text-[11px] font-mono font-semibold text-zinc-400">FORENSIC AUDIT</span>
+                <span className="text-[11px] font-mono font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  GEMINI AI + OFFICER
+                </span>
               </div>
-              <h3 className="text-lg font-bold text-zinc-950 tracking-tight">Doorstep Hardware Certification</h3>
+              <h3 className="text-lg font-bold text-zinc-950 tracking-tight">Dual-Factor AI & Doorstep Certification</h3>
               <p className="text-xs text-zinc-600 leading-relaxed">
-                A bonded Porter courier arrives at the seller&apos;s doorstep. The rider executes a mandatory 5-point hardware diagnostic: verifying boot sequence, display lines, iCloud/Google factory reset, and IMEI match before sealing into a tamper-evident holographic bag.
+                SafeShip Vision™ (powered by Gemini 1.5 Pro) guides the officer through a 5-frame multimodal quality assurance scan: testing OLED panel uniformity, OCR IMEI extraction, and iCloud / Google factory reset verification before sealing into a tamper-evident holographic bag.
               </p>
               <div className="pt-2 text-[11px] text-zinc-500 font-medium flex items-center gap-1.5">
                 <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>30% advance disbursed to Seller UPI upon seal</span>
+                <span>30% advance disbursed to Seller UPI upon dual sign-off</span>
               </div>
             </div>
 
@@ -194,7 +196,7 @@ export default function HomePage() {
                     <td className="py-4 px-6 font-bold text-zinc-900">Hardware Genuineness</td>
                     <td className="py-4 px-6 text-zinc-500">Blind cardboard delivery. High incidence of soap, bricks, or replicas.</td>
                     <td className="py-4 px-6 font-semibold text-emerald-800 bg-zinc-50/40">
-                      5-point hardware diagnostic test conducted at seller doorstep prior to custody.
+                      Dual-Factor Forensic Audit: SafeShip Vision™ (Gemini Multimodal AI) + Bonded Verification Officer. OCR serial match, zero OLED burn-in, iCloud lock check.
                     </td>
                   </tr>
                   <tr>
