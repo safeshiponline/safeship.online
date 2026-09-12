@@ -9,6 +9,7 @@ interface MilestoneTimelineProps {
   status: DealStatus;
   milestone1Amount?: number;
   finalAmount?: number;
+  className?: string;
 }
 
 interface Step {
@@ -21,38 +22,38 @@ interface Step {
 const STEPS: Step[] = [
   {
     key: 'AGREEMENT',
-    title: 'Terms & 50/50 Split',
-    subtitle: 'Agreed on OLX / Reddit',
+    title: 'Mutual Agreement',
+    subtitle: '50/50 Fee Split Confirmed',
     icon: ShieldCheck
   },
   {
     key: 'ESCROW',
-    title: 'RBI Nodal Escrow',
-    subtitle: 'Buyer locks 100% via UPI',
+    title: 'RBI Nodal Lock',
+    subtitle: '100% Capital Secured',
     icon: Lock
   },
   {
     key: 'PICKUP',
-    title: 'Doorstep Check & Seal',
-    subtitle: 'Milestone 1 (30% to UPI)',
+    title: 'Doorstep Hardware Audit',
+    subtitle: '30% Advance to Seller UPI',
     icon: Truck
   },
   {
     key: 'TRANSIT',
-    title: 'Insured Hyperlocal Transit',
-    subtitle: 'Live Rider GPS',
+    title: 'Tamper-Sealed Transit',
+    subtitle: 'Live Telemetry & GPS',
     icon: Clock
   },
   {
     key: 'DELIVERY',
-    title: 'Doorstep Unboxing Check',
-    subtitle: 'Verify unbroken seal',
+    title: 'Delivery Inspection',
+    subtitle: 'Seal Verified Intact',
     icon: ShieldCheck
   },
   {
     key: 'COMPLETED',
-    title: '6-Digit OTP Handshake',
-    subtitle: 'Remaining 70% released',
+    title: 'Atomic Settlement',
+    subtitle: 'Remaining 70% Released',
     icon: DollarSign
   }
 ];
@@ -88,31 +89,32 @@ function getStepIndex(status: DealStatus): number {
 export const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
   status,
   milestone1Amount,
-  finalAmount
+  finalAmount,
+  className = ''
 }) => {
   const currentIndex = getStepIndex(status);
   const isDisputed = status === 'DISPUTED';
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
+    <div className={`rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-6 shadow-xs ${className}`}>
+      <div className="flex items-center justify-between mb-5">
         <div>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-400">
             Escrow Custody & Inspection Pipeline
           </h3>
-          <p className="text-xs text-slate-500">
-            Funds and goods are 100% secured under SafeShip&apos;s RBI Nodal Escrow protocol
+          <p className="text-xs text-zinc-500 mt-0.5">
+            Institutional verification protocol under RBI Section 10A PSSA guidelines
           </p>
         </div>
         {isDisputed && (
-          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold">
+          <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold font-mono">
             <AlertTriangle className="w-3.5 h-3.5" />
-            Dispute Under Review
+            Escrow Frozen / Under Arbitration
           </span>
         )}
       </div>
 
-      {/* Progress Bar and Steps */}
+      {/* Desktop Progress Stepper */}
       <div className="relative">
         <div className="hidden lg:grid grid-cols-6 gap-3">
           {STEPS.map((step, idx) => {
@@ -125,45 +127,45 @@ export const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
                 {/* Connector line */}
                 {idx < STEPS.length - 1 && (
                   <div
-                    className={`absolute top-4 left-1/2 w-full h-0.5 -z-0 transition-colors ${
-                      idx < currentIndex ? 'bg-emerald-500' : 'bg-slate-200'
+                    className={`absolute top-4 left-1/2 w-full h-[2px] -z-0 transition-colors ${
+                      idx < currentIndex ? 'bg-zinc-950' : 'bg-zinc-200'
                     }`}
                   />
                 )}
 
                 {/* Node circle */}
                 <div
-                  className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-full border-2 transition-all ${
+                  className={`relative z-10 flex h-8 w-8 items-center justify-center rounded-xl border transition-all ${
                     isCompleted
-                      ? 'border-emerald-600 bg-emerald-600 text-white font-bold'
+                      ? 'border-zinc-950 bg-zinc-950 text-white font-bold'
                       : isCurrent
                       ? isDisputed
-                        ? 'border-rose-600 bg-rose-50 text-rose-700 animate-pulse'
-                        : 'border-blue-600 bg-blue-50 text-blue-700 shadow-sm animate-pulse'
-                      : 'border-slate-300 bg-slate-100 text-slate-400'
+                        ? 'border-rose-600 bg-rose-50 text-rose-700 animate-pulse ring-2 ring-rose-200'
+                        : 'border-zinc-950 bg-zinc-950 text-white shadow-md ring-4 ring-zinc-100'
+                      : 'border-zinc-200 bg-zinc-50 text-zinc-400'
                   }`}
                 >
                   {isCompleted ? (
-                    <CheckCircle2 className="w-4 h-4" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                   ) : (
                     <Icon className="w-4 h-4" />
                   )}
                 </div>
 
                 {/* Labels */}
-                <div className="mt-2.5">
+                <div className="mt-2.5 space-y-0.5">
                   <div
-                    className={`text-xs font-semibold ${
+                    className={`text-xs font-bold tracking-tight ${
                       isCurrent
-                        ? 'text-blue-700 font-bold'
+                        ? 'text-zinc-950'
                         : isCompleted
-                        ? 'text-slate-900'
-                        : 'text-slate-500'
+                        ? 'text-zinc-800'
+                        : 'text-zinc-400'
                     }`}
                   >
                     {step.title}
                   </div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">
+                  <div className="text-[11px] text-zinc-500">
                     {step.key === 'PICKUP' && milestone1Amount
                       ? `Advance: ${formatINR(milestone1Amount)}`
                       : step.key === 'COMPLETED' && finalAmount
@@ -176,42 +178,41 @@ export const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
           })}
         </div>
 
-        {/* Mobile View: Vertical / Compact Steps */}
+        {/* Mobile View: Vertical Clean Steps */}
         <div className="lg:hidden space-y-2">
           {STEPS.map((step, idx) => {
-            const Icon = step.icon;
             const isCompleted = idx < currentIndex || status === 'COMPLETED';
             const isCurrent = idx === currentIndex && status !== 'COMPLETED';
 
             return (
               <div
                 key={step.key}
-                className={`flex items-center gap-3 p-2.5 rounded-xl border transition ${
+                className={`flex items-center gap-3 p-3 rounded-2xl border transition ${
                   isCurrent
-                    ? 'border-blue-300 bg-blue-50/70 text-blue-900'
+                    ? 'border-zinc-950 bg-zinc-50/80 text-zinc-950 font-medium'
                     : isCompleted
-                    ? 'border-slate-200 bg-slate-50 text-slate-800'
-                    : 'border-transparent text-slate-400 opacity-60'
+                    ? 'border-zinc-200 bg-white text-zinc-800'
+                    : 'border-transparent text-zinc-400 opacity-50'
                 }`}
               >
                 <div
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-xl text-xs font-bold ${
                     isCompleted
-                      ? 'bg-emerald-600 text-white'
+                      ? 'bg-zinc-950 text-white'
                       : isCurrent
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-200 text-slate-600'
+                      ? 'bg-zinc-950 text-white shadow-xs'
+                      : 'bg-zinc-100 text-zinc-500'
                   }`}
                 >
-                  {isCompleted ? <CheckCircle2 className="w-4 h-4" /> : idx + 1}
+                  {isCompleted ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : idx + 1}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-xs font-semibold">{step.title}</div>
-                  <div className="text-[11px] text-slate-500 truncate">{step.subtitle}</div>
+                  <div className="text-xs font-bold tracking-tight">{step.title}</div>
+                  <div className="text-[11px] text-zinc-500 truncate">{step.subtitle}</div>
                 </div>
                 {isCurrent && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-blue-700 bg-blue-100 px-2 py-0.5 rounded">
-                    Current
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-950 bg-zinc-200 px-2 py-0.5 rounded">
+                    Active
                   </span>
                 )}
               </div>

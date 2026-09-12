@@ -15,7 +15,6 @@ import { DriverProfileCard } from '@/components/courier/DriverProfileCard';
 import { PhotoEvidenceVault } from '@/components/deal/PhotoEvidenceVault';
 import { EscrowPaymentModal } from '@/components/deal/EscrowPaymentModal';
 import { DisputeModal } from '@/components/deal/DisputeModal';
-
 import {
   ShieldCheck,
   ShieldAlert,
@@ -55,9 +54,9 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
   if (!deal) {
     return (
       <div className="min-h-screen bg-white text-zinc-900 flex flex-col items-center justify-center p-4">
-        <div className="text-sm font-semibold text-zinc-600">Loading deal...</div>
-        <Link href="/deals/deal_iphone_15_blr" className="mt-2 text-xs font-bold text-blue-600 underline">
-          Open Demo Deal
+        <div className="text-sm font-semibold text-zinc-600">Retrieving certified transaction ledger...</div>
+        <Link href="/deals/deal_iphone_15_blr" className="mt-2 text-xs font-bold text-zinc-900 underline">
+          Open Demo Deal Room
         </Link>
       </div>
     );
@@ -82,7 +81,7 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
   const totalPayable = deal.pricing.buyerShare.totalToPay;
 
   return (
-    <div className="min-h-screen bg-zinc-50/50 text-zinc-900 flex flex-col pb-24 sm:pb-12 antialiased">
+    <div className="min-h-screen bg-zinc-50/60 text-zinc-900 flex flex-col pb-24 sm:pb-16 antialiased selection:bg-zinc-950 selection:text-white">
       <RoleSwitcher
         currentRole={role}
         onRoleChange={(newRole) => setRole(newRole)}
@@ -90,41 +89,44 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
       />
       <Navbar />
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 py-4 sm:py-6 space-y-4">
-        {/* Deal Header Card */}
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 uppercase tracking-wider">
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+        {/* Deal Room Master Header */}
+        <div className="rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-7 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div className="space-y-1.5 max-w-2xl">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-zinc-950 text-white uppercase tracking-wider">
+                  ESCROW #{deal.id.slice(-8).toUpperCase()}
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
                   {deal.status.replace(/_/g, ' ')}
                 </span>
-                <span className="text-xs text-zinc-500 font-medium">
-                  {deal.city}
+                <span className="text-xs text-zinc-400 font-medium">
+                  • {deal.city} Hub
                 </span>
               </div>
-              <h1 className="text-base sm:text-lg font-bold text-zinc-950 leading-snug">
+              <h1 className="text-xl sm:text-2xl font-black text-zinc-950 tracking-tight leading-snug">
                 {deal.title}
               </h1>
-              <div className="text-xs text-zinc-500 line-clamp-2">
+              <div className="text-xs text-zinc-500 line-clamp-2 leading-relaxed font-normal">
                 {deal.description}
               </div>
             </div>
 
-            <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 border-zinc-100 pt-2 sm:pt-0">
+            <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 border-zinc-100 pt-3 sm:pt-0 gap-2">
               <div className="sm:text-right">
-                <div className="text-[10px] text-zinc-400 font-medium uppercase">Agreed Price</div>
-                <div className="text-xl sm:text-2xl font-black font-mono text-zinc-950">
+                <div className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Agreed Valuation</div>
+                <div className="text-2xl sm:text-3xl font-black font-mono text-zinc-950 tracking-tight">
                   {formatINR(deal.declaredValue)}
                 </div>
               </div>
               <button
                 type="button"
                 onClick={copyDealUrl}
-                className="px-2.5 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-semibold flex items-center gap-1 transition"
+                className="px-3 py-1.5 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-zinc-100 text-zinc-800 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
               >
                 {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedLink ? 'Copied' : 'Share'}</span>
+                <span>{copiedLink ? 'Link Copied' : 'Share Deal Link'}</span>
               </button>
             </div>
           </div>
@@ -137,87 +139,97 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
           finalAmount={deal.pricing.milestones.stage2FinalPayout}
         />
 
-        {/* Dynamic Persona Card */}
-        <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-5 shadow-xs space-y-3">
+        {/* Persona Control Console */}
+        <div className="rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-zinc-100 text-zinc-800">
+              <span className="p-1.5 rounded-xl bg-zinc-950 text-white">
                 {role === 'BUYER' ? <ShoppingBag className="w-4 h-4" /> : <Store className="w-4 h-4" />}
               </span>
-              <div className="text-xs font-bold text-zinc-900">
-                {role === 'BUYER' ? 'Buyer Dashboard' : 'Seller Dashboard'}
+              <div>
+                <div className="text-xs font-bold text-zinc-950 tracking-tight">
+                  {role === 'BUYER' ? 'Buyer Custody Console' : 'Seller Liquidity Console'}
+                </div>
+                <div className="text-[10px] text-zinc-400 font-medium">
+                  {role === 'BUYER' ? deal.buyer.name : deal.seller.name}
+                </div>
               </div>
             </div>
-            <span className="text-[10px] text-zinc-400 font-mono">
-              Role: {role}
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-zinc-100 text-zinc-700 uppercase tracking-wider">
+              {role} VIEW
             </span>
           </div>
 
           {/* BUYER PERSPECTIVE */}
           {role === 'BUYER' && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {/* If waiting for payment */}
               {(!deal.escrowVault.depositedAmount || deal.status === 'PENDING_ACCEPTANCE' || deal.status === 'ESCROW_PENDING') && (
-                <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <div className="space-y-0.5 text-center sm:text-left">
-                    <div className="text-xs font-bold text-zinc-900 flex items-center gap-1.5 justify-center sm:justify-start">
-                      <Lock className="w-3.5 h-3.5 text-zinc-700" />
-                      Deposit {formatINR(totalPayable)} in Escrow
+                <div className="p-4 sm:p-5 rounded-2xl bg-zinc-50 border border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="space-y-1 text-center sm:text-left">
+                    <div className="text-sm font-bold text-zinc-950 flex items-center gap-2 justify-center sm:justify-start">
+                      <Lock className="w-4 h-4 text-zinc-900" />
+                      <span>Lock {formatINR(totalPayable)} in RBI Nodal Escrow</span>
                     </div>
-                    <div className="text-[11px] text-zinc-500 max-w-sm">
-                      Funds stay 100% protected until courier inspects and delivers device to your door.
+                    <div className="text-xs text-zinc-500 max-w-md leading-relaxed">
+                      Funds are held under RBI Section 10A PSSA trusteeship. Your capital is never transferred to the seller until you verify the unbroken tamper seal and give your delivery OTP.
                     </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => setIsPaymentOpen(true)}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs tracking-tight shadow-xs transition flex items-center justify-center gap-2 cursor-pointer shrink-0"
                   >
-                    <Lock className="w-3.5 h-3.5" />
-                    <span>Pay {formatINR(totalPayable)} (UPI)</span>
+                    <Lock className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Lock Escrow ({formatINR(totalPayable)})</span>
                   </button>
                 </div>
               )}
 
               {/* If Escrow Funded: Show Delivery OTP */}
               {deal.escrowVault.depositedAmount > 0 && !isCompleted && (
-                <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200 space-y-2">
+                <div className="p-5 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-zinc-900">
-                      Your Delivery OTP / Release PIN
-                    </span>
-                    <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      Escrow Locked
+                    <div>
+                      <span className="text-xs font-bold text-zinc-950 uppercase tracking-wider">
+                        Private Delivery Handshake OTP
+                      </span>
+                      <p className="text-[11px] text-zinc-500 mt-0.5">
+                        Required by courier to release package and disburse remaining 70% to seller
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                      ESCROW LOCKED
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between bg-white border border-zinc-200 rounded-xl p-3 shadow-xs">
-                    <span className="text-2xl sm:text-3xl font-mono font-black tracking-widest text-zinc-950">
+                  <div className="flex items-center justify-between bg-white border border-zinc-200 rounded-2xl p-4 shadow-2xs">
+                    <span className="text-3xl sm:text-4xl font-mono font-black tracking-widest text-zinc-950">
                       {deal.buyerReleasePin}
                     </span>
                     <button
                       type="button"
                       onClick={copyPin}
-                      className="px-2.5 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-medium flex items-center gap-1 transition"
+                      className="px-3 py-1.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
                     >
                       {copiedPin ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedPin ? 'Copied' : 'Copy'}</span>
+                      <span>{copiedPin ? 'Copied' : 'Copy OTP'}</span>
                     </button>
                   </div>
 
-                  <p className="text-[11px] text-zinc-500 leading-relaxed">
-                    ⚠️ <strong>Keep this private.</strong> Only share this OTP with the courier after you check the unbroken tamper seal and confirm the device turns on.
+                  <p className="text-[11px] text-zinc-500 leading-relaxed font-medium">
+                    ⚠️ <strong>Anti-Scam Protocol:</strong> Do not disclose this OTP over the phone or WhatsApp. Only speak this OTP to the rider after inspecting the unbroken holographic seal at your door.
                   </p>
                 </div>
               )}
 
               {isCompleted && (
-                <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-center space-y-1">
-                  <div className="font-bold text-xs text-emerald-800">
-                    ✓ Deal Successfully Completed
+                <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-1.5">
+                  <div className="font-extrabold text-sm text-emerald-900 tracking-tight">
+                    ✓ Transaction Atomically Settled & Verified
                   </div>
-                  <div className="text-[11px] text-emerald-700">
-                    Funds released to seller via instant UPI transfer.
+                  <div className="text-xs text-emerald-700">
+                    Remaining 70% disbursed to seller&apos;s UPI ({deal.seller.upiId}). Custody successfully transferred.
                   </div>
                 </div>
               )}
@@ -226,30 +238,30 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
 
           {/* SELLER PERSPECTIVE */}
           {role === 'SELLER' && (
-            <div className="space-y-3">
-              <div className="p-4 rounded-xl bg-zinc-50 border border-zinc-200 space-y-2">
+            <div className="space-y-4">
+              <div className="p-5 rounded-2xl bg-zinc-50 border border-zinc-200 space-y-3">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-zinc-500">Your Net Payout</span>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                    {isCompleted ? 'PAID TO UPI' : isVaultLocked ? 'GUARANTEED' : 'AWAITING BUYER'}
+                  <span className="font-bold text-zinc-500 uppercase tracking-wider text-[10px]">Net Payout Entitlement</span>
+                  <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    {isCompleted ? 'SETTLED TO UPI' : isVaultLocked ? 'CAPITAL LOCKED IN VAULT' : 'AWAITING BUYER DEPOSIT'}
                   </span>
                 </div>
 
-                <div className="text-2xl font-black font-mono text-zinc-950">
+                <div className="text-3xl font-black font-mono text-zinc-950">
                   {formatINR(deal.pricing.sellerShare.netPayout)}
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-zinc-600 pt-1 border-t border-zinc-200/60">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-zinc-600 pt-2 border-t border-zinc-200/70 font-medium">
                   <div>
-                    Advance (Pickup): <strong>{formatINR(deal.pricing.milestones.stage1PickupPayout)}</strong>
+                    Advance (30% on Pickup): <strong className="text-zinc-950 font-mono">{formatINR(deal.pricing.milestones.stage1PickupPayout)}</strong>
                   </div>
                   <div>
-                    Balance (OTP): <strong>{formatINR(deal.pricing.milestones.stage2FinalPayout)}</strong>
+                    Balance (70% on Delivery): <strong className="text-zinc-950 font-mono">{formatINR(deal.pricing.milestones.stage2FinalPayout)}</strong>
                   </div>
                 </div>
 
                 <div className="text-[11px] text-zinc-500 pt-1">
-                  Payout Target: <strong className="font-mono text-zinc-800">{deal.seller.upiId}</strong>
+                  Settlement Destination: <strong className="font-mono text-zinc-950 bg-white px-2 py-0.5 rounded border border-zinc-200">{deal.seller.upiId}</strong>
                 </div>
               </div>
             </div>
@@ -257,24 +269,24 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
         </div>
 
         {/* Live Rider & Telemetry Map */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs font-bold text-zinc-700 px-1">
-            <span className="flex items-center gap-1.5">
-              <Truck className="w-3.5 h-3.5 text-zinc-800" />
-              Live Porter Courier Telemetry
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between text-xs font-bold text-zinc-900 px-1">
+            <span className="flex items-center gap-2">
+              <Truck className="w-4 h-4 text-zinc-950" />
+              <span>Porter Bonded Courier Telemetry</span>
             </span>
             <div className="flex items-center gap-3">
               <Link
                 href={`/track/${deal.id}`}
                 target="_blank"
-                className="text-xs text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1"
+                className="text-xs text-zinc-900 hover:text-black font-bold flex items-center gap-1 underline underline-offset-2"
               >
-                <span>Public Tracking Link</span>
+                <span>Standalone Public Tracking Portal</span>
                 <span>↗</span>
               </Link>
               {deal.status === 'PICKUP_INSPECTION' && (
-                <Link href={`/courier?deal=${deal.id}`} className="text-xs text-zinc-700 font-semibold underline">
-                  Rider App &rarr;
+                <Link href={`/courier?deal=${deal.id}`} className="text-xs text-blue-600 font-semibold underline">
+                  Rider Inspection View &rarr;
                 </Link>
               )}
             </div>
@@ -304,16 +316,15 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
           <TamperSealBadge seal={deal.tamperSeal} isDelivered={isCompleted} />
         </div>
 
-
         {/* Dispute Button */}
         {!isCompleted && !isDisputed && (
           <div className="text-center pt-2">
             <button
               type="button"
               onClick={() => setIsDisputeOpen(true)}
-              className="text-xs text-rose-600 hover:text-rose-700 font-medium underline cursor-pointer"
+              className="text-xs text-zinc-500 hover:text-rose-600 font-medium underline transition cursor-pointer"
             >
-              Report an issue / Freeze Escrow
+              Initiate Dispute Arbitration / Freeze Escrow
             </button>
           </div>
         )}
@@ -321,10 +332,10 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
 
       {/* FIXED MOBILE BOTTOM FLOATING ACTION BAR */}
       {role === 'BUYER' && (!deal.escrowVault.depositedAmount || deal.status === 'PENDING_ACCEPTANCE' || deal.status === 'ESCROW_PENDING') && (
-        <div className="sm:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-zinc-200 p-3 pb-safe z-40 shadow-lg">
+        <div className="sm:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t border-zinc-200 p-3 pb-safe z-40 shadow-xl">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <div className="text-[10px] text-zinc-500 uppercase font-medium">Total Payable</div>
+              <div className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">Required Escrow</div>
               <div className="text-base font-black font-mono text-zinc-950">
                 {formatINR(totalPayable)}
               </div>
@@ -332,9 +343,9 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
             <button
               type="button"
               onClick={() => setIsPaymentOpen(true)}
-              className="flex-1 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-bold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
+              className="flex-1 py-3.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs tracking-tight transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <Lock className="w-3.5 h-3.5" />
+              <Lock className="w-3.5 h-3.5 text-emerald-400" />
               <span>Lock Escrow via UPI</span>
             </button>
           </div>

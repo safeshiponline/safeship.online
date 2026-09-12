@@ -117,7 +117,7 @@ function DealWizardContent() {
 
   const dealShareUrl = typeof window !== 'undefined' && createdDealId
     ? `${window.location.origin}/deals/${createdDealId}`
-    : `https://safeship.in/deals/${createdDealId || 'deal_sample'}`;
+    : `https://safeship.online/deals/${createdDealId || 'deal_sample'}`;
 
   const copyShareLink = () => {
     navigator.clipboard.writeText(dealShareUrl);
@@ -126,29 +126,29 @@ function DealWizardContent() {
   };
 
   const whatsappMessage = encodeURIComponent(
-    `Hi! I created a secure deal for ${title} on SafeShip with doorstep inspection and 50/50 split. Check it here: ${dealShareUrl}`
+    `SafeShip Escrow: Review hardware specifications and lock escrow for ${title} under RBI Nodal protection: ${dealShareUrl}`
   );
 
   return (
-    <div className="min-h-screen bg-zinc-50/50 text-zinc-900 flex flex-col antialiased">
+    <div className="min-h-screen bg-zinc-50/60 text-zinc-900 flex flex-col antialiased selection:bg-zinc-950 selection:text-white">
       <RoleSwitcher currentRole="SELLER" />
       <Navbar />
 
-      <main className="flex-1 max-w-xl w-full mx-auto px-4 py-5 sm:py-8">
+      <main className="flex-1 max-w-xl w-full mx-auto px-4 py-6 sm:py-10">
         {/* Compact Stepper */}
-        <div className="mb-5">
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-1.5">
+        <div className="mb-6">
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-2">
             <span>
-              {step === 1 && 'Step 1 of 4 • Device Details'}
-              {step === 2 && 'Step 2 of 4 • Pickup & UPI'}
-              {step === 3 && 'Step 3 of 4 • 50/50 Split'}
-              {step === 4 && 'Step 4 of 4 • Deal Ready'}
+              {step === 1 && '01 / Hardware Specifications'}
+              {step === 2 && '02 / Custody Origin & Payout'}
+              {step === 3 && '03 / Symmetric Escrow Economics'}
+              {step === 4 && '04 / Contract Initialized'}
             </span>
-            <span className="font-mono text-zinc-900">{formatINR(declaredValue)}</span>
+            <span className="font-mono text-zinc-950 font-bold">{formatINR(declaredValue)}</span>
           </div>
-          <div className="h-1.5 w-full bg-zinc-200 rounded-full overflow-hidden">
+          <div className="h-1.5 w-full bg-zinc-200/80 rounded-full overflow-hidden">
             <div
-              className="h-full bg-zinc-900 transition-all duration-300 rounded-full"
+              className="h-full bg-zinc-950 transition-all duration-300 rounded-full"
               style={{ width: `${(step / 4) * 100}%` }}
             />
           </div>
@@ -156,15 +156,17 @@ function DealWizardContent() {
 
         {/* STEP 1: ITEM DETAILS */}
         {step === 1 && (
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
+          <div className="rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-7 shadow-xs space-y-5">
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-zinc-950">What are you selling?</h2>
-              <p className="text-xs text-zinc-500">Provide details so our courier can test condition at pickup.</p>
+              <div className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider">Lot Specification</div>
+              <h2 className="text-lg sm:text-xl font-black text-zinc-950 tracking-tight mt-0.5">What hardware are you selling?</h2>
+              <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Enter technical parameters to establish the certified doorstep verification checklist.</p>
             </div>
 
-            <div className="space-y-3 text-xs">
-              <div className="space-y-1">
-                <label className="font-semibold text-zinc-700">Device / Listing Title</label>
+            <div className="space-y-3.5 text-xs">
+              <div className="space-y-1.5">
+                <label className="font-bold text-zinc-800">Device Model & Specification</label>
+
                 <input
                   type="text"
                   required
@@ -245,9 +247,9 @@ function DealWizardContent() {
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="w-full mt-3 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
+                className="w-full mt-3 py-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer shadow-xs"
               >
-                <span>Continue to Pickup & UPI</span>
+                <span>Proceed to Origin Coordinates & Settlement Rail</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -256,10 +258,11 @@ function DealWizardContent() {
 
         {/* STEP 2: PICKUP DETAILS */}
         {step === 2 && (
-          <div className="rounded-2xl border border-zinc-200 bg-white p-4 sm:p-6 shadow-xs space-y-4">
+          <div className="rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-7 shadow-xs space-y-5">
             <div>
-              <h2 className="text-base sm:text-lg font-bold text-zinc-950">Pickup & Seller UPI</h2>
-              <p className="text-xs text-zinc-500">Where will our courier collect the device and send your payout?</p>
+              <div className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider">Custody Dispatch & Settlement</div>
+              <h2 className="text-lg sm:text-xl font-black text-zinc-950 tracking-tight mt-0.5">Custody Origin & Payout Destination</h2>
+              <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Designate courier pickup coordinates and your UPI ID for the 30% advance milestone payout.</p>
             </div>
 
             <div className="space-y-3 text-xs">
@@ -318,7 +321,6 @@ function DealWizardContent() {
 
               <div className="space-y-1">
                 <label className="font-semibold text-zinc-700">Flat, House No., Building Name</label>
-
                 <input
                   type="text"
                   required
@@ -398,21 +400,20 @@ function DealWizardContent() {
                 </div>
               </div>
 
-
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="w-1/3 py-2.5 rounded-xl border border-zinc-200 text-zinc-700 font-medium text-xs"
+                  className="w-1/3 py-2.5 rounded-xl border border-zinc-200 bg-white text-zinc-700 font-medium text-xs hover:bg-zinc-50 transition"
                 >
                   Back
                 </button>
                 <button
                   type="button"
                   onClick={() => setStep(3)}
-                  className="w-2/3 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
+                  className="w-2/3 py-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer shadow-xs"
                 >
-                  <span>Select Fee Split</span>
+                  <span>Review Settlement Terms</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -434,17 +435,17 @@ function DealWizardContent() {
               <button
                 type="button"
                 onClick={() => setStep(2)}
-                className="w-1/3 py-3 rounded-xl border border-zinc-200 bg-white text-zinc-700 font-medium text-xs shadow-xs"
+                className="w-1/3 py-3 rounded-xl border border-zinc-200 bg-white text-zinc-700 font-medium text-xs shadow-xs hover:bg-zinc-50 transition"
               >
                 Back
               </button>
               <button
                 type="button"
                 onClick={handleCreateDeal}
-                className="w-2/3 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-xs shadow-xs transition flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
+                className="w-2/3 py-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs shadow-xs transition flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
               >
-                <ShieldCheck className="w-4 h-4" />
-                <span>Create & Get Share Link</span>
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                <span>Initialize Escrow & Generate Vault</span>
               </button>
             </div>
           </div>
@@ -452,32 +453,33 @@ function DealWizardContent() {
 
         {/* STEP 4: DEAL READY & SHARE */}
         {step === 4 && (
-          <div className="rounded-2xl border border-zinc-200 bg-white p-5 sm:p-8 shadow-xs text-center space-y-5">
-            <div className="h-12 w-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto">
-              <ShieldCheck className="w-6 h-6" />
+          <div className="rounded-3xl border border-zinc-200/90 bg-white p-6 sm:p-9 shadow-xs text-center space-y-6">
+            <div className="h-14 w-14 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
+              <ShieldCheck className="w-7 h-7" />
             </div>
 
             <div>
-              <div className="text-xs font-bold uppercase tracking-wider text-emerald-700">
-                Deal Room Activated
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/60 text-[10px] font-mono font-bold text-emerald-800 uppercase tracking-wider mb-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Escrow Protocol Activated
               </div>
-              <h2 className="text-xl font-bold text-zinc-950 mt-1">
-                Share Link with Buyer
+              <h2 className="text-xl sm:text-2xl font-black text-zinc-950 tracking-tight">
+                Transmit Vault to Counterparty
               </h2>
-              <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
-                Buyer will review specs and lock funds via UPI. Once funded, a courier is automatically dispatched.
+              <p className="text-xs text-zinc-500 mt-2 max-w-md mx-auto leading-relaxed">
+                Your counterparty will review hardware specifications and lock collateral into the RBI-regulated nodal escrow vault. Bonded logistics dispatch triggers automatically upon UPI / IMPS lock.
               </p>
             </div>
 
             {/* Copy Link input */}
-            <div className="rounded-xl bg-zinc-50 border border-zinc-200 p-2 flex items-center justify-between gap-2">
+            <div className="rounded-2xl bg-zinc-50 border border-zinc-200/80 p-2 sm:p-2.5 flex items-center justify-between gap-2 shadow-inner">
               <span className="font-mono text-xs text-zinc-700 truncate pl-2 text-left">
                 {dealShareUrl}
               </span>
               <button
                 type="button"
                 onClick={copyShareLink}
-                className="px-3.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-white font-semibold text-xs flex items-center gap-1 shrink-0 active:scale-95 transition"
+                className="px-3.5 py-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs flex items-center gap-1.5 shrink-0 active:scale-95 transition shadow-xs"
               >
                 {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 <span>{copied ? 'Copied' : 'Copy'}</span>
@@ -489,19 +491,19 @@ function DealWizardContent() {
               href={`https://api.whatsapp.com/send?text=${whatsappMessage}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition flex items-center justify-center gap-2 shadow-xs active:scale-98"
+              className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition flex items-center justify-center gap-2 shadow-xs active:scale-98"
             >
-              <span>Share Directly to WhatsApp</span>
+              <span>Transmit Protocol Link via WhatsApp</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </a>
 
-            <div className="pt-1">
+            <div className="pt-2">
               <button
                 type="button"
                 onClick={() => router.push(`/deals/${createdDealId}`)}
-                className="text-xs text-zinc-600 hover:text-zinc-950 underline font-medium"
+                className="text-xs font-semibold text-zinc-600 hover:text-zinc-950 underline underline-offset-4 transition"
               >
-                Open Live Deal Room &rarr;
+                Access Live Multi-Party Settlement Console &rarr;
               </button>
             </div>
           </div>

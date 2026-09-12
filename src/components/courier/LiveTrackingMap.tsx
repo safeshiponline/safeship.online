@@ -79,10 +79,10 @@ export const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 text-xs font-semibold shadow-2xs transition"
           >
             <Phone className="w-3.5 h-3.5 text-zinc-700" />
-            <span>Call Rider</span>
+            <span>Contact Officer</span>
           </a>
-          <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
+          <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <span>Live GPS Active</span>
           </span>
         </div>
@@ -124,17 +124,17 @@ export const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
             <MapPin className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="mt-1 px-2 py-0.5 rounded-md bg-white border border-zinc-200 text-[10px] font-bold text-zinc-800 shadow-xs whitespace-nowrap">
-            Pickup (Seller)
+            Origin Coordinates
           </div>
         </div>
 
         {/* Delivery Pin */}
         <div className="absolute top-[75px] right-[55px] translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-white shadow-md ring-2 ring-white">
-            <ShieldCheck className="w-4 h-4" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-950 text-white shadow-md ring-2 ring-white">
+            <ShieldCheck className="w-4 h-4 text-emerald-400" />
           </div>
-          <div className="mt-1 px-2 py-0.5 rounded-md bg-white border border-zinc-200 text-[10px] font-bold text-blue-700 shadow-xs whitespace-nowrap">
-            Drop-off (Buyer)
+          <div className="mt-1 px-2 py-0.5 rounded-md bg-white border border-zinc-200 text-[10px] font-bold text-zinc-900 shadow-xs whitespace-nowrap">
+            Settlement Destination
           </div>
         </div>
 
@@ -159,41 +159,41 @@ export const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
         </div>
 
         {/* Telemetry HUD Bottom Bar */}
-        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between rounded-xl bg-white/95 backdrop-blur-xs border border-zinc-200 px-3.5 py-2 shadow-xs text-xs">
+        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between rounded-2xl bg-white/95 backdrop-blur-xs border border-zinc-200 px-4 py-2.5 shadow-xs text-xs">
           <div className="flex items-center gap-2">
             <Navigation className="w-4 h-4 text-zinc-900 shrink-0" />
             <div className="truncate">
-              <span className="font-medium text-zinc-500">Status: </span>
+              <span className="font-medium text-zinc-400 text-[11px] uppercase tracking-wider">Telemetry State: </span>
               <span className="text-zinc-950 font-bold">
                 {status === 'PICKUP_INSPECTION'
-                  ? 'At Seller Location • Conducting 5-Point Checklist'
+                  ? 'At Seller Premise • Executing 5-Point Forensic Audit'
                   : status === 'IN_TRANSIT'
-                  ? 'In Transit with Sealed Hologram Bag'
+                  ? 'In Transit • Tamper Pouch Intact & Telemetry Monitored'
                   : status === 'OUT_FOR_DELIVERY'
-                  ? 'Arriving at Buyer Doorstep'
+                  ? 'Arriving at Destination • Awaiting Counterparty OTP'
                   : status === 'COMPLETED'
-                  ? 'Delivered & Handshake Completed'
-                  : 'Rider Dispatched (Porter)'}
+                  ? 'Delivered & Handshake Finalized'
+                  : 'Bonded Officer Dispatched (Porter Logistics)'}
               </span>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-2 text-zinc-500 text-[11px] font-mono shrink-0">
-            <span>Distance: <strong className="text-zinc-900">3.4 km</strong></span>
+          <div className="hidden sm:flex items-center gap-2.5 text-zinc-500 text-[11px] font-mono shrink-0">
+            <span>Distance: <strong className="text-zinc-950">3.4 km</strong></span>
             <span>•</span>
-            <span>ETA: <strong className="text-zinc-900">{status === 'COMPLETED' ? 'Delivered' : `${Math.round(etaMinutes)} mins`}</strong></span>
+            <span>ETA: <strong className="text-zinc-950">{status === 'COMPLETED' ? 'Delivered' : `${Math.round(etaMinutes)} mins`}</strong></span>
           </div>
         </div>
       </div>
 
       {/* Address route bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-zinc-100 bg-white p-3 text-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-zinc-100 bg-white p-3.5 text-xs">
         <div className="px-2 py-1">
-          <div className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">Pickup Address (Seller)</div>
-          <div className="font-semibold text-zinc-800 mt-0.5 truncate">{pickupAddress}</div>
+          <div className="text-[10px] font-mono uppercase font-bold tracking-wider text-zinc-400">Custody Origin (Seller Premise)</div>
+          <div className="font-semibold text-zinc-900 mt-0.5 truncate">{pickupAddress}</div>
         </div>
         <div className="px-2 py-1">
-          <div className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">Delivery Address (Buyer)</div>
-          <div className="font-semibold text-zinc-800 mt-0.5 truncate">{deliveryAddress}</div>
+          <div className="text-[10px] font-mono uppercase font-bold tracking-wider text-zinc-400">Settlement Destination (Buyer Premise)</div>
+          <div className="font-semibold text-zinc-900 mt-0.5 truncate">{deliveryAddress}</div>
         </div>
       </div>
     </div>
