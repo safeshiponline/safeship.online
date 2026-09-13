@@ -33,7 +33,12 @@ export function saveStoredDeals(deals: SafeDeal[]): void {
 
 export function getDealById(id: string): SafeDeal | undefined {
   const deals = getStoredDeals();
-  return deals.find((d) => d.id === id);
+  const found = deals.find((d) => d.id === id);
+  if (found) return found;
+  const initFound = INITIAL_DEALS.find((d) => d.id === id);
+  if (initFound) return initFound;
+  // Fallback for demo routes like /track/SS48291 or custom deal links
+  return INITIAL_DEALS[0];
 }
 
 export function createNewDeal(params: {

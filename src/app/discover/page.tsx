@@ -4,267 +4,294 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { SafeShipLogo } from '@/components/common/SafeShipLogo';
 import {
-  Search,
-  MapPin,
-  ShieldCheck,
-  Star,
-  Package,
-  Eye,
+  ArrowLeft,
   ArrowRight,
-  ChevronRight,
-  Filter,
-  ArrowLeft
+  ArrowLeftRight,
+  ShieldCheck,
+  Check,
+  Package,
+  Camera,
+  Eye,
+  Truck,
+  Sparkles,
+  MapPin,
+  Clock,
+  Phone
 } from '@/components/common/Icons';
 
-export default function DiscoverPage() {
-  const [activeCategory, setActiveCategory] = useState<string>('All');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+export default function ExchangeHubPage() {
+  const [item1Category, setItem1Category] = useState('Smartphones & Tablets');
+  const [item2Category, setItem2Category] = useState('Laptops & Computers');
+  const [distanceKm, setDistanceKm] = useState(280);
 
-  const categories = ['All', 'Electronics', 'Furniture', 'Fashion', 'Vehicles', 'Gaming'];
+  const exchangeFee = 499;
+  const insuranceFee = 49;
+  const upfrontTotal = exchangeFee + insuranceFee; // ₹548
 
-  const items = [
+  const swapExamples = [
     {
-      id: 'item_1',
-      title: 'iPhone 15 Pro, 256GB - Natural Titanium',
-      price: 65000,
-      originalPrice: 134900,
-      condition: 'Used - Mint',
-      location: 'Patrika Gate, Jaipur',
-      seller: 'Rohan Verma',
-      sellerRating: 4.9,
-      dealsCompleted: 42,
-      category: 'Electronics',
-      image: '/images/sell_box_feathered.webp',
-      openBoxEnabled: true,
-      deliveryEta: 'Arrives in 1-2 days',
+      give: 'iPhone 14 Pro, 128GB',
+      giveVal: '₹48,000',
+      receive: 'MacBook Air M2, 256GB',
+      receiveVal: '₹51,000',
+      diff: 'Partner pays +₹3,000',
+      route: 'Jaipur ⇄ Delhi (280 km)',
+      status: 'Open-Box Verified',
     },
     {
-      id: 'item_2',
-      title: 'Apple MacBook Air M1, 8GB / 256GB SSD',
-      price: 53000,
-      originalPrice: 99900,
-      condition: 'Used - Excellent',
-      location: 'Connaught Place, Delhi',
-      seller: 'Priya Sharma',
-      sellerRating: 4.8,
-      dealsCompleted: 28,
-      category: 'Electronics',
-      image: '/images/tech_deals_items.webp',
-      openBoxEnabled: true,
-      deliveryEta: 'Arrives in 1 day',
+      give: 'PlayStation 5 Disc Edition',
+      giveVal: '₹38,000',
+      receive: 'Xbox Series X + 2 Games',
+      receiveVal: '₹38,000',
+      diff: 'Even Swap (₹0)',
+      route: 'Mumbai ⇄ Pune (150 km)',
+      status: 'Doorstep Audited',
     },
     {
-      id: 'item_3',
-      title: 'Royal Enfield Classic Helmet (Matte Black)',
-      price: 3500,
-      originalPrice: 6500,
-      condition: 'Used - Like New',
-      location: 'Malviya Nagar, Jaipur',
-      seller: 'Vikram Singh',
-      sellerRating: 5.0,
-      dealsCompleted: 14,
-      category: 'Vehicles',
-      image: '/images/sell_box_feathered.webp',
-      openBoxEnabled: true,
-      deliveryEta: 'Same day delivery',
-    },
-    {
-      id: 'item_4',
-      title: 'Xbox Series S, 512GB + Wireless Controller',
-      price: 18500,
-      originalPrice: 34990,
-      condition: 'Used - Good',
-      location: 'Cyber City, Gurgaon',
-      seller: 'Aman Deep',
-      sellerRating: 4.7,
-      dealsCompleted: 19,
-      category: 'Gaming',
-      image: '/images/sell_box_feathered.webp',
-      openBoxEnabled: true,
-      deliveryEta: 'Arrives in 2 days',
-    },
-    {
-      id: 'item_5',
-      title: 'Sony Alpha A7 III Full Frame Camera Body',
-      price: 75000,
-      originalPrice: 164990,
-      condition: 'Used - Excellent (12k shutter)',
-      location: 'Indiranagar, Bengaluru',
-      seller: 'Karthik Raja',
-      sellerRating: 4.9,
-      dealsCompleted: 35,
-      category: 'Electronics',
-      image: '/images/tech_deals_items.webp',
-      openBoxEnabled: true,
-      deliveryEta: 'Arrives in 2-3 days',
-    },
-    {
-      id: 'item_6',
-      title: 'Modern 3-Seater Velvet Fabric Sofa (Grey)',
-      price: 14500,
-      originalPrice: 32000,
-      condition: 'Used - Excellent',
-      location: 'Mansarovar, Jaipur',
-      seller: 'Sunita Jain',
-      sellerRating: 4.8,
-      dealsCompleted: 9,
-      category: 'Furniture',
-      image: '/images/sell_box_feathered.webp',
-      openBoxEnabled: true,
-      deliveryEta: 'Same day delivery',
+      give: 'Sony A7 III Camera Body',
+      giveVal: '₹75,000',
+      receive: 'Fujifilm X-T5 + 18-55mm',
+      receiveVal: '₹78,000',
+      diff: 'Partner pays +₹3,000',
+      route: 'Bengaluru ⇄ Chennai (350 km)',
+      status: 'Dual Handoff Clear',
     },
   ];
 
-  const filteredItems = items.filter((it) => {
-    if (activeCategory !== 'All' && it.category !== activeCategory) return false;
-    if (searchQuery && !it.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
-    return true;
-  });
-
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col justify-between">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col justify-between selection:bg-[#0066FF] selection:text-white">
       
       {/* Header */}
-      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-30 px-4 py-3">
-        <div className="max-w-6xl mx-auto flex items-center justify-between gap-3">
-          <Link
-            href="/"
-            className="w-9 h-9 rounded-full bg-[#F1F5F9] hover:bg-[#E2E8F0] flex items-center justify-center text-[#0F172A] transition shrink-0"
-          >
-            <ArrowLeft className="w-4.5 h-4.5" />
+      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-40 px-4 py-3">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <SafeShipLogo className="w-8 h-8 group-hover:scale-105 transition" />
+            <div>
+              <span className="text-lg font-black tracking-tight text-[#0F172A] block leading-none">
+                SafeShip
+              </span>
+              <p className="text-[10px] font-semibold text-[#64748B] mt-0.5">
+                Ship Smart. Trust More.
+              </p>
+            </div>
           </Link>
 
-          {/* Search bar */}
-          <div className="flex-1 max-w-xl relative">
-            <Search className="w-4.5 h-4.5 text-[#94A3B8] absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search verified deals near you..."
-              className="w-full pl-10 pr-4 py-2 rounded-xl bg-[#F1F5F9] border border-[#E2E8F0] text-xs sm:text-sm text-[#0F172A] outline-hidden focus:border-[#0066FF] focus:bg-white transition"
-            />
+          <div className="flex items-center gap-3">
+            <Link
+              href="/deals/new?type=exchange"
+              className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition active:scale-95 flex items-center gap-1.5"
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5" />
+              <span>Start 2-Way Exchange</span>
+            </Link>
           </div>
-
-          <Link
-            href="/deals/new"
-            className="px-3.5 py-2 rounded-xl bg-[#0066FF] text-white font-bold text-xs shadow-xs hover:bg-[#0052FF] transition shrink-0"
-          >
-            + Sell Item
-          </Link>
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-6xl mx-auto w-full p-4 sm:p-6 flex-1">
+      {/* Hero Section */}
+      <main className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-10 flex-1 space-y-8">
         
-        {/* Category Pills */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-3">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              type="button"
-              onClick={() => setActiveCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition shrink-0 cursor-pointer ${
-                activeCategory === cat
-                  ? 'bg-[#0066FF] text-white shadow-xs'
-                  : 'bg-white border border-[#E2E8F0] text-[#64748B] hover:text-[#0F172A]'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+        {/* Banner */}
+        <div className="bg-gradient-to-br from-[#FFF7ED] via-white to-[#EFF6FF] rounded-3xl border border-amber-200 p-6 sm:p-8 shadow-xs relative overflow-hidden">
+          <div className="max-w-2xl space-y-3">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold">
+              <ArrowLeftRight className="w-3.5 h-3.5 text-amber-700" />
+              <span>MUTUAL 2-WAY HARDWARE AUDIT</span>
+            </div>
 
-        {/* Section Title */}
-        <div className="flex items-center justify-between mt-3 mb-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">
-              Trending Near You
+            <h1 className="text-2xl sm:text-4xl font-black text-[#0F172A] tracking-tight leading-tight">
+              Swap gadgets safely. <br />
+              <span className="text-amber-600">Simultaneous doorstep inspection.</span>
             </h1>
-            <p className="text-xs text-[#64748B] mt-0.5">
-              Protected by SafeShip Open-Box Doorstep Inspection. You only pay after inspecting!
+
+            <p className="text-xs sm:text-sm text-[#475569] leading-relaxed">
+              Exchanging your phone for a laptop or upgrading gear with someone online? SafeShip couriers physically inspect both items side-by-side at the doorstep before completing the swap.
             </p>
-          </div>
-          <span className="text-xs font-bold text-[#0066FF] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-            {filteredItems.length} Deals Available
-          </span>
-        </div>
 
-        {/* Listings Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {filteredItems.map((item) => (
-            <div
-              key={item.id}
-              className="bg-white rounded-3xl border border-[#E2E8F0] overflow-hidden shadow-2xs hover:shadow-md hover:border-[#BFDBFE] transition duration-200 flex flex-col justify-between"
-            >
-              <div>
-                {/* Image & Badges */}
-                <div className="relative aspect-16/10 bg-[#F8FAFC] border-b border-[#F1F5F9] flex items-center justify-center p-4">
-                  <img
-                    src={item.image}
-                    alt={item.title}
-                    className="max-h-full object-contain"
-                  />
-                  <div className="absolute top-3 left-3 px-2 py-0.5 rounded-md bg-purple-600 text-white text-[10px] font-bold flex items-center gap-1 shadow-xs">
-                    <Eye className="w-3 h-3" />
-                    <span>Open-Box Included</span>
-                  </div>
-                  <span className="absolute bottom-2 right-2 text-[10px] font-bold bg-white/90 backdrop-blur-xs px-2 py-0.5 rounded text-[#64748B] border border-[#E2E8F0]">
-                    {item.condition}
-                  </span>
-                </div>
-
-                {/* Content */}
-                <div className="p-4">
-                  <h3 className="text-sm font-bold text-[#0F172A] line-clamp-2 leading-snug">
-                    {item.title}
-                  </h3>
-
-                  {/* Price Row */}
-                  <div className="mt-2 flex items-baseline gap-2">
-                    <span className="text-lg font-black text-[#0F172A]">
-                      ₹{item.price.toLocaleString('en-IN')}
-                    </span>
-                    <span className="text-xs text-[#94A3B8] line-through">
-                      ₹{item.originalPrice.toLocaleString('en-IN')}
-                    </span>
-                  </div>
-
-                  {/* Location & Seller Info */}
-                  <div className="mt-3 pt-2.5 border-t border-[#F1F5F9] flex items-center justify-between text-[11px] text-[#64748B]">
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3 text-[#0066FF]" />
-                      <span>{item.location}</span>
-                    </span>
-                    <span className="flex items-center gap-1 font-semibold text-amber-600">
-                      <Star className="w-3 h-3 fill-current" />
-                      <span>{item.sellerRating}</span>
-                    </span>
-                  </div>
-                </div>
+            {/* Fee Badge */}
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              <div className="px-3.5 py-2 rounded-2xl bg-white border border-amber-300 shadow-2xs">
+                <span className="text-[10px] font-bold text-slate-400 block uppercase">Upfront Delivery Charge</span>
+                <span className="text-lg font-black text-amber-700">₹548 all-inclusive</span>
+                <span className="text-[10px] text-slate-500 block">(₹499 roundtrip courier + ₹49 insurance)</span>
               </div>
 
-              {/* Action Button */}
-              <div className="p-4 pt-0">
-                <Link
-                  href={`/open-box?item=${encodeURIComponent(item.title)}&price=${item.price}`}
-                  className="w-full py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition active:scale-95"
-                >
-                  <span>Buy with SafeShip</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-                <div className="text-center mt-1.5">
-                  <span className="text-[10px] text-emerald-600 font-semibold">
-                    Pay only ₹349 delivery now &bull; Item price upon open-box!
-                  </span>
-                </div>
+              <div className="px-3.5 py-2 rounded-2xl bg-emerald-50 border border-emerald-200">
+                <span className="text-[10px] font-bold text-emerald-800 block uppercase">Product Capital Escrow</span>
+                <span className="text-lg font-black text-emerald-700">₹0 locked</span>
+                <span className="text-[10px] text-emerald-600 block">Zero escrow lockups</span>
               </div>
             </div>
-          ))}
+
+            <div className="pt-4">
+              <Link
+                href="/deals/new?type=exchange"
+                className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm shadow-md transition active:scale-95"
+              >
+                <span>Initiate 2-Way Exchange</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
         </div>
 
+        {/* How 2-Way Exchange Works (4 Pillars) */}
+        <section className="space-y-4">
+          <div className="text-center sm:text-left">
+            <h2 className="text-xl font-black text-[#0F172A]">
+              How SafeShip 2-Way Exchange Works
+            </h2>
+            <p className="text-xs text-[#64748B] mt-0.5">
+              The only platform in India that protects both sides of a hardware swap.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            {[
+              {
+                step: '1',
+                title: 'Agree on Swap Items',
+                desc: 'Enter what you give (Item A) and what you receive (Item B), plus any cash difference.',
+                icon: ArrowLeftRight,
+              },
+              {
+                step: '2',
+                title: 'Pay Delivery Only',
+                desc: 'Only ₹548 roundtrip delivery charge is paid upfront. No product funds locked.',
+                icon: Package,
+              },
+              {
+                step: '3',
+                title: 'Doorstep Dual Audit',
+                desc: 'Bonded courier Rahul K. inspects both items simultaneously with AI vision verification.',
+                icon: Eye,
+              },
+              {
+                step: '4',
+                title: 'Mutual Handshake',
+                desc: 'Both parties sign off, cash difference is settled via UPI, and devices are swapped.',
+                icon: Check,
+              },
+            ].map((st) => {
+              const Icon = st.icon;
+              return (
+                <div
+                  key={st.step}
+                  className="bg-white rounded-2xl p-4 border border-[#E2E8F0] shadow-2xs flex flex-col justify-between space-y-2"
+                >
+                  <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 font-black text-xs flex items-center justify-center border border-amber-200">
+                    {st.step}
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-[#0F172A]">{st.title}</h3>
+                    <p className="text-[11px] text-[#64748B] mt-1 leading-relaxed">{st.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Live Swap Examples */}
+        <section className="space-y-3">
+          <h2 className="text-sm font-bold text-[#0F172A] uppercase tracking-wider text-[#64748B]">
+            Recent 2-Way Swaps Managed by SafeShip
+          </h2>
+
+          <div className="space-y-2.5">
+            {swapExamples.map((ex, idx) => (
+              <div
+                key={idx}
+                className="bg-white rounded-2xl p-4 border border-[#E2E8F0] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-[#FFF7ED] border border-amber-200 flex items-center justify-center text-amber-600 shrink-0">
+                    <ArrowLeftRight className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-xs font-bold text-[#0F172A] flex items-center gap-2">
+                      <span>{ex.give}</span>
+                      <span className="text-amber-600">⇄</span>
+                      <span>{ex.receive}</span>
+                    </div>
+                    <div className="text-[11px] text-[#64748B] mt-0.5">
+                      {ex.route} &bull; <strong className="text-[#0F172A]">{ex.diff}</strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#F1F5F9]">
+                  <span className="text-[10px] font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                    {ex.status}
+                  </span>
+                  <Link
+                    href="/open-box?type=exchange"
+                    className="text-xs font-bold text-[#0066FF] hover:underline"
+                  >
+                    View Audit Demo &rarr;
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* 1-Way vs 2-Way Delivery Fee Comparison Table */}
+        <section className="bg-white rounded-3xl p-5 sm:p-6 border border-[#E2E8F0] shadow-xs">
+          <h2 className="text-base font-black text-[#0F172A] mb-3">
+            Transparent Logistics Pricing
+          </h2>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead>
+                <tr className="border-b border-[#E2E8F0] text-[#64748B]">
+                  <th className="py-2.5 font-bold">Feature</th>
+                  <th className="py-2.5 font-bold text-[#0066FF]">1-Way Safe Delivery</th>
+                  <th className="py-2.5 font-bold text-amber-700">2-Way Item Exchange</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#F1F5F9] text-[#334155]">
+                <tr>
+                  <td className="py-2.5 font-semibold">Courier Handoff Legs</td>
+                  <td className="py-2.5">Single pickup &amp; doorstep drop</td>
+                  <td className="py-2.5 font-bold text-amber-700">Dual roundtrip collection &amp; drop</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 font-semibold">Doorstep Open-Box Inspection</td>
+                  <td className="py-2.5 text-emerald-600 font-bold">Included (₹0)</td>
+                  <td className="py-2.5 text-emerald-600 font-bold">Included (Both Devices Checked)</td>
+                </tr>
+                <tr>
+                  <td className="py-2.5 font-semibold">Cargo Transit Insurance</td>
+                  <td className="py-2.5">₹29 (1 item)</td>
+                  <td className="py-2.5">₹49 (Both items covered)</td>
+                </tr>
+                <tr className="font-bold text-sm bg-slate-50">
+                  <td className="py-3 text-[#0F172A]">Total Upfront Delivery Fee</td>
+                  <td className="py-3 text-[#0066FF]">₹349</td>
+                  <td className="py-3 text-amber-700">₹548</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-[#F1F5F9] flex justify-end">
+            <Link
+              href="/deals/new?type=exchange"
+              className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition active:scale-95"
+            >
+              Book 2-Way Exchange (₹548) &rarr;
+            </Link>
+          </div>
+        </section>
+
       </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-[#E2E8F0] py-4 px-4 text-center text-xs text-[#94A3B8]">
+        &copy; {new Date().getFullYear()} SafeShip Technologies India Pvt Ltd. Zero escrow lockups &bull; 2-Way hardware exchange infrastructure.
+      </footer>
 
     </div>
   );

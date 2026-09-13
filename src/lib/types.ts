@@ -179,6 +179,16 @@ export interface SafeDeal {
   tamperSeal?: TamperSeal;
   aiDiagnosticReport?: AiDiagnosticReport;
 
+  // 2-Way Item Exchange
+  isExchange?: boolean;
+  exchangeItem?: {
+    title: string;
+    condition: string;
+    declaredValue: number;
+    cashDifference?: number;
+    photos?: string[];
+  };
+
   // Escrow Vault State (RBI Nodal Account Simulation)
   escrowVault: {
     depositedAmount: number;

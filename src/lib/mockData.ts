@@ -3,6 +3,222 @@ import { calculateEscrowBreakdown } from './escrowCalculator';
 
 export const INITIAL_DEALS: SafeDeal[] = [
   {
+    id: 'SS48291',
+    title: 'Apple iPhone 15 Pro 256GB (Natural Titanium)',
+    description: 'Direct courier delivery from Jaipur to Delhi with Open-Box doorstep verification. Paid ₹349 delivery fee upfront. ₹65,000 payable upon open-box acceptance.',
+    category: 'SMARTPHONES_TABLETS',
+    declaredValue: 65000,
+    condition: 'Mint / Like New',
+    serialNumber: 'F2LL99XMD6T',
+    city: 'Jaipur',
+    pincode: '302017',
+    itemPhotos: [
+      '/images/sell_box_feathered.webp',
+      'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=1000&q=80'
+    ],
+    seller: {
+      id: 'usr_seller_rohan',
+      name: 'Rohan Verma',
+      email: 'rohan.verma@gmail.com',
+      phone: '+91 98290 12890',
+      pickupAddress: 'Patrika Gate, Malviya Nagar, Jaipur',
+      city: 'Jaipur',
+      pincode: '302017',
+      upiId: 'rohan.verma@okaxis',
+      rating: 4.9,
+      dealsCompleted: 14
+    },
+    buyer: {
+      id: 'usr_buyer_priya',
+      name: 'Priya Sharma',
+      email: 'priya.sharma@delhi.in',
+      phone: '+91 98110 88912',
+      deliveryAddress: 'Connaught Place, Central Delhi',
+      city: 'Delhi',
+      pincode: '110001',
+      rating: 5.0,
+      dealsCompleted: 9
+    },
+    pricing: calculateEscrowBreakdown({
+      itemPrice: 65000,
+      deliveryTier: 'INTERCITY_INSURED',
+      feeSplitOption: 'BUYER_PAYS_ALL',
+      milestoneAdvancePercent: 30
+    }),
+    deliveryTier: 'INTERCITY_INSURED',
+    buyerReleasePin: '482910',
+    sellerPickupCode: '8291',
+    status: 'IN_TRANSIT',
+    assignedCourier: {
+      id: 'cr_rahul_k',
+      name: 'Rahul K.',
+      rating: 4.9,
+      completedDeliveries: 1480,
+      phone: '+91 98765 43210',
+      vehicleModel: 'Bajaj Pulsar 150 (Silver)',
+      plateNumber: 'KA 03 HY 4012',
+      fleetPartner: 'SafeShip Direct Fleet',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80',
+      currentLocation: {
+        lat: 28.4595,
+        lng: 77.0266,
+        heading: 35,
+        address: 'Delhi-Jaipur Expressway (Gurugram Bypass, ~32 km away)'
+      }
+    },
+    inspectionChecklist: {
+      powersOn: true,
+      cosmeticMatchesDescription: true,
+      serialNumberVerified: true,
+      accessoriesIncluded: true,
+      noPhysicalLiquidDamage: true,
+      notes: 'Initial pickup inspection verified in Jaipur. Open-box inspection pending at buyer doorstep.'
+    },
+    tamperSeal: {
+      sealId: 'SSP-DEL-4829-TAMPER-SAFE',
+      barcode: '9948291048291',
+      appliedAt: '2026-09-13T09:30:00Z',
+      inspectedBy: 'Rahul K. (Agent #KA-4012)',
+      inspectionPhotos: [
+        '/images/sell_box_feathered.webp'
+      ]
+    },
+    escrowVault: {
+      depositedAmount: 349,
+      isLocked: false,
+      depositedAt: '2026-09-13T08:00:00Z',
+      milestone1Amount: 0,
+      finalAmount: 65000,
+      paymentMethodUsed: 'UPI (Delivery Fee Pre-paid ₹349)',
+      utrNumber: 'UTR-HDFC-20260913-482910'
+    },
+    auditTrail: [
+      {
+        id: 'aud_ss_1',
+        timestamp: '2026-09-13T07:45:00Z',
+        actor: 'SELLER',
+        title: 'Shipment Created',
+        description: 'Rohan V. initiated shipment from Jaipur to Delhi with Open-Box delivery enabled.'
+      },
+      {
+        id: 'aud_ss_2',
+        timestamp: '2026-09-13T08:00:00Z',
+        actor: 'BUYER',
+        title: 'Delivery Fee Paid (₹349)',
+        description: 'Upfront delivery charges secured. Product amount payable upon doorstep open-box inspection.'
+      },
+      {
+        id: 'aud_ss_3',
+        timestamp: '2026-09-13T09:30:00Z',
+        actor: 'COURIER',
+        title: 'Picked Up by Rahul K.',
+        description: 'Courier verified sealed package at Patrika Gate, Jaipur. In transit to Delhi.'
+      }
+    ],
+    createdAt: '2026-09-13T07:45:00Z',
+    updatedAt: '2026-09-13T09:30:00Z'
+  },
+  {
+    id: 'SS-EXCH-992',
+    title: '2-Way Swap: iPhone 14 Pro 128GB ⇄ MacBook Air M2 256GB',
+    description: 'Mutual 2-way hardware swap. Courier audits both devices simultaneously at doorstep before handoff. Upfront delivery charge: ₹548 pre-paid.',
+    category: 'SMARTPHONES_TABLETS',
+    declaredValue: 48000,
+    condition: 'Mint / Like New',
+    serialNumber: 'IPH14P-99201',
+    city: 'Jaipur',
+    pincode: '302017',
+    isExchange: true,
+    exchangeItem: {
+      title: 'Apple MacBook Air M2, 8GB/256GB (Space Grey)',
+      condition: 'Mint / Like New',
+      declaredValue: 51000,
+      cashDifference: 3000,
+      photos: ['/images/sell_box_feathered.webp']
+    },
+    itemPhotos: [
+      '/images/sell_box_feathered.webp',
+      'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=1000&q=80'
+    ],
+    seller: {
+      id: 'usr_seller_arjun',
+      name: 'Arjun Mehta',
+      email: 'arjun.mehta@gmail.com',
+      phone: '+91 98291 55432',
+      pickupAddress: 'C-Scheme, Ashok Nagar, Jaipur',
+      city: 'Jaipur',
+      pincode: '302001',
+      upiId: 'arjun.mehta@okaxis',
+      rating: 4.95,
+      dealsCompleted: 8
+    },
+    buyer: {
+      id: 'usr_buyer_kabir',
+      name: 'Kabir Malhotra',
+      email: 'kabir.m@gmail.com',
+      phone: '+91 98100 44219',
+      deliveryAddress: 'Greater Kailash 1, New Delhi',
+      city: 'Delhi',
+      pincode: '110048',
+      rating: 4.88,
+      dealsCompleted: 12
+    },
+    pricing: calculateEscrowBreakdown({
+      itemPrice: 48000,
+      deliveryTier: 'INTERCITY_INSURED',
+      feeSplitOption: 'SPLIT_50_50',
+      milestoneAdvancePercent: 30
+    }),
+    deliveryTier: 'INTERCITY_INSURED',
+    buyerReleasePin: '992014',
+    sellerPickupCode: '9920',
+    status: 'IN_TRANSIT',
+    assignedCourier: {
+      id: 'cr_rahul_k',
+      name: 'Rahul K.',
+      rating: 4.9,
+      completedDeliveries: 1480,
+      phone: '+91 98765 43210',
+      vehicleModel: 'Bajaj Pulsar 150 (Silver)',
+      plateNumber: 'KA 03 HY 4012',
+      fleetPartner: 'SafeShip Direct Fleet',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80',
+      currentLocation: {
+        lat: 28.5245,
+        lng: 77.1855,
+        heading: 45,
+        address: 'Mehrauli-Gurgaon Road, Near Delhi Border (~18 km away)'
+      }
+    },
+    escrowVault: {
+      depositedAmount: 548,
+      isLocked: false,
+      depositedAt: '2026-09-13T08:15:00Z',
+      milestone1Amount: 0,
+      finalAmount: 3000,
+      paymentMethodUsed: 'UPI (2-Way Exchange Delivery Fee Pre-paid ₹548)',
+      utrNumber: 'UTR-HDFC-20260913-992014'
+    },
+    auditTrail: [
+      {
+        id: 'aud_ex_1',
+        timestamp: '2026-09-13T08:00:00Z',
+        actor: 'SELLER',
+        title: '2-Way Exchange Initiated',
+        description: 'Arjun M. offered iPhone 14 Pro in exchange for Kabir M.\'s MacBook Air M2.'
+      },
+      {
+        id: 'aud_ex_2',
+        timestamp: '2026-09-13T08:15:00Z',
+        actor: 'BUYER',
+        title: 'Exchange Confirmed & Delivery Fee Paid (₹548)',
+        description: '2-Way courier roundtrip fee secured. Hardware inspection scheduled at delivery.'
+      }
+    ],
+    createdAt: '2026-09-13T08:00:00Z',
+    updatedAt: '2026-09-13T09:30:00Z'
+  },
+  {
     id: 'deal_iphone_15_blr',
     title: 'Apple iPhone 15 Pro Max 256GB (Natural Titanium, Indian Bill & Box)',
     description: 'Purchased from Apple Store BKC, 98% Battery Health, AppleCare+ active until Dec 2026. 100% scratchless, original box and braided Type-C cable included.',

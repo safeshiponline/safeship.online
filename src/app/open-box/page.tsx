@@ -1,10 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { SafeShipLogo } from '@/components/common/SafeShipLogo';
 import {
   ArrowLeft,
+  ArrowLeftRight,
   Check,
   CheckCircle2,
   Clock,
@@ -21,12 +23,23 @@ import {
 } from '@/components/common/Icons';
 
 export default function OpenBoxPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center text-xs font-semibold text-[#64748B]">Loading Open-Box Inspection Console...</div>}>
+      <OpenBoxContent />
+    </Suspense>
+  );
+}
+
+function OpenBoxContent() {
+  const searchParams = useSearchParams();
+  const isExchange = searchParams.get('type') === 'exchange' || searchParams.get('deal') === 'SS-EXCH-992';
+
   const [timeLeft, setTimeLeft] = useState<number>(272); // 04:32 in seconds
   const [checklist, setChecklist] = useState({
-    correctProduct: true,
-    visibleCondition: true,
-    allAccessories: true,
-    noMajorDamage: true,
+    check1: true,
+    check2: true,
+    check3: true,
+    check4: true,
   });
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
   const [showDisputeModal, setShowDisputeModal] = useState<boolean>(false);
@@ -49,13 +62,21 @@ export default function OpenBoxPage() {
 
   const allChecked = Object.values(checklist).every(Boolean);
 
-  const disputeReasons = [
-    'Product mismatch (different model or color)',
-    'Physical damage (cracked display or dented chassis)',
-    'Missing accessories (charger, cable, or original box missing)',
-    'Condition not as described (scratches or battery health issue)',
-    'Suspected counterfeit or fake unit',
-  ];
+  const disputeReasons = isExchange
+    ? [
+        'Device 2 physical damage or scratches not disclosed',
+        'Device 2 battery health significantly lower than agreed',
+        'Activation lock / iCloud still linked on trade-in device',
+        'Missing original accessories or charger',
+        'Partner backed out of agreed trade valuation difference'
+      ]
+    : [
+        'Product mismatch (different model or color)',
+        'Physical damage (cracked display or dented chassis)',
+        'Missing accessories (charger, cable, or original box missing)',
+        'Condition not as described (scratches or battery health issue)',
+        'Suspected counterfeit or fake unit',
+      ];
 
   if (isAccepted) {
     return (
@@ -65,19 +86,27 @@ export default function OpenBoxPage() {
             <Check className="w-8 h-8" />
           </div>
           <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-            Delivered Safely &bull; Open-Box Verified
+            {isExchange ? '2-Way Swap Verified & Completed' : 'Delivered Safely • Open-Box Verified'}
           </span>
           <h2 className="text-2xl font-black text-[#0F172A] mt-3">
-            Transaction Complete!
+            {isExchange ? 'Exchange Complete!' : 'Transaction Complete!'}
           </h2>
           <p className="text-sm text-[#475569] mt-2 leading-relaxed">
-            You inspected the <strong>iPhone 15 Pro</strong> and accepted delivery. Payment of <strong>₹65,000</strong> has been safely released to the seller.
+            {isExchange ? (
+              <>
+                Both devices were inspected and approved by courier Rahul K. You received the <strong>MacBook Air M2</strong> and handed over the <strong>iPhone 14 Pro</strong>.
+              </>
+            ) : (
+              <>
+                You inspected the <strong>iPhone 15 Pro, 256GB</strong> and accepted delivery. Payment of <strong>₹65,000</strong> has been safely released to the seller.
+              </>
+            )}
           </p>
 
           <div className="mt-6 p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] text-left text-xs space-y-2">
             <div className="flex justify-between">
-              <span className="text-[#64748B]">Order ID:</span>
-              <span className="font-bold text-[#0F172A]">#SS48291</span>
+              <span className="text-[#64748B]">Order Reference:</span>
+              <span className="font-bold text-[#0F172A]">{isExchange ? '#SS-EXCH-992' : '#SS48291'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[#64748B]">Courier Partner:</span>
@@ -85,24 +114,26 @@ export default function OpenBoxPage() {
             </div>
             <div className="flex justify-between">
               <span className="text-[#64748B]">Delivery Fee (Pre-paid):</span>
-              <span className="font-bold text-[#0F172A]">₹349</span>
+              <span className="font-bold text-[#0F172A]">{isExchange ? '₹548 (2-Way Roundtrip)' : '₹349 (1-Way Direct)'}</span>
             </div>
             <div className="flex justify-between pt-2 border-t border-[#E2E8F0]">
-              <span className="text-[#0F172A] font-bold">Item Payment:</span>
-              <span className="font-bold text-emerald-600">₹65,000 Settled via UPI</span>
+              <span className="text-[#0F172A] font-bold">{isExchange ? 'Exchange Balance Settle:' : 'Item Payment:'}</span>
+              <span className="font-bold text-emerald-600">
+                {isExchange ? '₹3,000 Trade Difference Settled' : '₹65,000 Settled via UPI'}
+              </span>
             </div>
           </div>
 
           <div className="mt-6 flex flex-col gap-2">
             <Link
               href="/"
-              className="w-full py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition"
+              className="w-full py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition text-center cursor-pointer"
             >
               Back to Home
             </Link>
             <Link
               href="/track/SS48291"
-              className="w-full py-3 rounded-xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-sm hover:bg-[#F8FAFC] transition"
+              className="w-full py-3 rounded-xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-sm hover:bg-[#F8FAFC] transition text-center cursor-pointer"
             >
               View Delivery Receipt
             </Link>
@@ -120,26 +151,34 @@ export default function OpenBoxPage() {
             <AlertTriangle className="w-8 h-8" />
           </div>
           <span className="text-xs font-bold text-amber-600 uppercase tracking-wider bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
-            Open-Box Return Initiated
+            {isExchange ? '2-Way Swap Cancelled' : 'Open-Box Return Initiated'}
           </span>
           <h2 className="text-2xl font-black text-[#0F172A] mt-3">
-            Package Rejected Safely
+            {isExchange ? 'Swap Aborted Safely' : 'Package Rejected Safely'}
           </h2>
           <p className="text-sm text-[#475569] mt-2 leading-relaxed">
-            Because you used SafeShip Open-Box Delivery, <strong>₹0 product funds</strong> were charged to you. The parcel has been handed back to courier Rahul K. to return to the sender in Jaipur.
+            {isExchange ? (
+              <>
+                Because you used SafeShip Open-Box Verification, <strong>neither item was transferred</strong>. Both devices remain with their original owners, and ₹0 product fees were charged.
+              </>
+            ) : (
+              <>
+                Because you used SafeShip Open-Box Delivery, <strong>₹0 product funds</strong> were charged to you. The parcel has been handed back to courier Rahul K. to return to sender in Jaipur.
+              </>
+            )}
           </p>
 
           <div className="mt-6 p-4 rounded-2xl bg-[#FFFBEB] border border-[#FDE68A] text-left text-xs space-y-1.5 text-[#92400E]">
-            <div className="font-bold">Return Reason Recorded:</div>
-            <div>&bull; {selectedDisputeReason || 'Customer rejected during open-box inspection'}</div>
+            <div className="font-bold">Inspection Finding Recorded:</div>
+            <div>&bull; {selectedDisputeReason || 'Discrepancy detected during doorstep open-box check'}</div>
             <div className="text-[11px] text-[#B45309] mt-1">
-              Photographic evidence captured by courier Rahul K. has been uploaded to the deal ledger.
+              Photographic evidence captured by courier Rahul K. has been uploaded to the digital audit ledger.
             </div>
           </div>
 
           <Link
             href="/"
-            className="mt-6 block w-full py-3 rounded-xl bg-[#0F172A] hover:bg-black text-white font-bold text-sm shadow-md transition"
+            className="mt-6 block w-full py-3 rounded-xl bg-[#0F172A] hover:bg-black text-white font-bold text-sm shadow-md transition text-center cursor-pointer"
           >
             Back to Home
           </Link>
@@ -149,7 +188,7 @@ export default function OpenBoxPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col selection:bg-[#0066FF] selection:text-white">
       
       {/* Top App Bar */}
       <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-30 px-4 py-3">
@@ -163,14 +202,16 @@ export default function OpenBoxPage() {
 
           <div className="text-center">
             <span className="text-xs font-bold text-purple-600 uppercase tracking-wider bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
-              Open-Box Delivery (The Moat)
+              {isExchange ? '2-Way Swap Moat' : 'Open-Box Delivery (The Moat)'}
             </span>
             <h1 className="text-sm font-bold text-[#0F172A] mt-0.5">
-              Order #SS48291
+              Order {isExchange ? '#SS-EXCH-992' : '#SS48291'}
             </h1>
           </div>
 
-          <div className="w-9 h-9" />
+          <Link href="/" className="w-9 h-9 flex items-center justify-center">
+            <SafeShipLogo className="w-7 h-7" />
+          </Link>
         </div>
       </header>
 
@@ -188,10 +229,12 @@ export default function OpenBoxPage() {
                 </span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1">
-                Your package has arrived! 📦
+                {isExchange ? 'Ready for 2-Way Swap ⇄' : 'Your package has arrived! 📦'}
               </h2>
               <p className="text-xs text-slate-300 mt-1 max-w-sm">
-                Open the parcel with the delivery partner and verify all 4 checks before paying.
+                {isExchange
+                  ? 'Verify both items with the delivery officer side-by-side before completing the exchange.'
+                  : 'Open the parcel with the delivery partner and verify all 4 checks before paying.'}
               </p>
             </div>
 
@@ -201,7 +244,7 @@ export default function OpenBoxPage() {
                 {formatTimer(timeLeft)}
               </div>
               <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
-                Time Remaining
+                Inspection Window
               </span>
             </div>
           </div>
@@ -215,10 +258,10 @@ export default function OpenBoxPage() {
               <div>
                 <div className="text-xs font-bold text-white flex items-center gap-1.5">
                   <span>Rahul K.</span>
-                  <span className="text-[10px] text-amber-300 font-semibold">&starf; 4.9 (1,480 deliveries)</span>
+                  <span className="text-[10px] text-amber-300 font-semibold">★ 4.9 (1,480 deliveries)</span>
                 </div>
                 <div className="text-[11px] text-slate-400">
-                  Bonded SafeShip Officer &bull; Ka-4012
+                  Bonded SafeShip Officer &bull; KA-4012
                 </div>
               </div>
             </div>
@@ -226,7 +269,7 @@ export default function OpenBoxPage() {
             <button
               type="button"
               onClick={() => alert('Calling Courier Rahul K. at +91 98765 43210...')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700 transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700 transition cursor-pointer"
             >
               <Phone className="w-3.5 h-3.5 text-emerald-400" />
               <span>Call Driver</span>
@@ -258,7 +301,7 @@ export default function OpenBoxPage() {
             <div className="absolute inset-4 border border-blue-400/40 rounded-xl pointer-events-none flex flex-col justify-between p-2">
               <div className="flex justify-between text-[10px] text-blue-300 font-mono">
                 <span>[SCANNING IMEI / SERIAL]</span>
-                <span>MATCH: 354892...</span>
+                <span>MATCH: {isExchange ? 'IPH14P-99201' : '354892...'}</span>
               </div>
               <div className="flex justify-between text-[10px] text-emerald-400 font-mono">
                 <span>CHASSIS: GRADE A+</span>
@@ -273,10 +316,10 @@ export default function OpenBoxPage() {
           <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#E2E8F0]">
             <div>
               <h3 className="text-sm font-bold text-[#0F172A]">
-                Check these 4 items:
+                {isExchange ? 'Verify these 4 swap conditions:' : 'Check these 4 items:'}
               </h3>
               <p className="text-[11px] text-[#64748B]">
-                Tap each checkmark as you and the courier verify the hardware.
+                Tap each checkmark as you and courier Rahul K. inspect the items.
               </p>
             </div>
             <span className="text-xs font-bold text-[#0066FF]">
@@ -290,16 +333,16 @@ export default function OpenBoxPage() {
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
-                  checked={checklist.correctProduct}
-                  onChange={(e) => setChecklist({ ...checklist, correctProduct: e.target.checked })}
+                  checked={checklist.check1}
+                  onChange={(e) => setChecklist({ ...checklist, check1: e.target.checked })}
                   className="w-5 h-5 text-[#0066FF] rounded-md focus:ring-[#0066FF]"
                 />
                 <div>
                   <span className="text-xs font-bold text-[#0F172A] block">
-                    1. Correct Product
+                    {isExchange ? '1. Outgoing Device Verified' : '1. Correct Product'}
                   </span>
                   <span className="text-[11px] text-[#64748B]">
-                    iPhone 15 Pro, 256GB &bull; Natural Titanium
+                    {isExchange ? 'iPhone 14 Pro 128GB • iCloud signed out, factory reset' : 'iPhone 15 Pro, 256GB • Natural Titanium'}
                   </span>
                 </div>
               </div>
@@ -311,16 +354,16 @@ export default function OpenBoxPage() {
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
-                  checked={checklist.visibleCondition}
-                  onChange={(e) => setChecklist({ ...checklist, visibleCondition: e.target.checked })}
+                  checked={checklist.check2}
+                  onChange={(e) => setChecklist({ ...checklist, check2: e.target.checked })}
                   className="w-5 h-5 text-[#0066FF] rounded-md focus:ring-[#0066FF]"
                 />
                 <div>
                   <span className="text-xs font-bold text-[#0F172A] block">
-                    2. Visible Condition
+                    {isExchange ? '2. Incoming Device Hardware Inspection' : '2. Visible Condition'}
                   </span>
                   <span className="text-[11px] text-[#64748B]">
-                    Zero screen cracks, camera glass pristine, clean ports
+                    {isExchange ? 'MacBook Air M2 • Scratchless chassis, battery cycle < 50' : 'Zero screen cracks, camera glass pristine, clean ports'}
                   </span>
                 </div>
               </div>
@@ -332,16 +375,16 @@ export default function OpenBoxPage() {
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
-                  checked={checklist.allAccessories}
-                  onChange={(e) => setChecklist({ ...checklist, allAccessories: e.target.checked })}
+                  checked={checklist.check3}
+                  onChange={(e) => setChecklist({ ...checklist, check3: e.target.checked })}
                   className="w-5 h-5 text-[#0066FF] rounded-md focus:ring-[#0066FF]"
                 />
                 <div>
                   <span className="text-xs font-bold text-[#0F172A] block">
-                    3. All Accessories Included
+                    {isExchange ? '3. All Cables & Accessories Present' : '3. All Accessories Included'}
                   </span>
                   <span className="text-[11px] text-[#64748B]">
-                    Braided USB-C cable, original box, SIM ejector
+                    {isExchange ? 'Original 30W Apple adapter, MagSafe braided cable, retail box' : 'Braided USB-C cable, original box, SIM ejector'}
                   </span>
                 </div>
               </div>
@@ -353,16 +396,16 @@ export default function OpenBoxPage() {
               <div className="flex items-center gap-3">
                 <input
                   type="checkbox"
-                  checked={checklist.noMajorDamage}
-                  onChange={(e) => setChecklist({ ...checklist, noMajorDamage: e.target.checked })}
+                  checked={checklist.check4}
+                  onChange={(e) => setChecklist({ ...checklist, check4: e.target.checked })}
                   className="w-5 h-5 text-[#0066FF] rounded-md focus:ring-[#0066FF]"
                 />
                 <div>
                   <span className="text-xs font-bold text-[#0F172A] block">
-                    4. No Major Damage / Working OLED
+                    {isExchange ? '4. Cash Balance & Mutual Approval' : '4. No Major Damage / Working OLED'}
                   </span>
                   <span className="text-[11px] text-[#64748B]">
-                    Display turns on normally, touch digitizer responsive
+                    {isExchange ? 'Trade difference (₹3,000) confirmed, both parties agree to swap' : 'Display turns on normally, touch digitizer responsive'}
                   </span>
                 </div>
               </div>
@@ -374,20 +417,24 @@ export default function OpenBoxPage() {
         {/* Pricing Clarity: Upfront Delivery Fee vs Product Price */}
         <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs">
           <h3 className="text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
-            Payment Breakdown
+            Payment &amp; Delivery Summary
           </h3>
           <div className="space-y-1.5 text-xs">
             <div className="flex justify-between text-[#475569]">
               <span>Delivery Charge (Paid upon booking):</span>
-              <span className="font-semibold text-emerald-600">₹349 &bull; PAID</span>
+              <span className="font-semibold text-emerald-600">
+                {isExchange ? '₹548 (2-Way Roundtrip) • PAID' : '₹349 (1-Way Direct) • PAID'}
+              </span>
             </div>
             <div className="flex justify-between text-[#475569]">
               <span>Open-Box Doorstep Verification:</span>
               <span className="font-semibold text-[#0F172A]">Included (₹0)</span>
             </div>
             <div className="flex justify-between text-sm font-bold text-[#0F172A] pt-2 border-t border-[#E2E8F0]">
-              <span>Amount Due Upon Acceptance:</span>
-              <span className="text-base text-[#0066FF]">₹65,000</span>
+              <span>{isExchange ? 'Trade Difference Due on Handoff:' : 'Amount Due Upon Acceptance:'}</span>
+              <span className="text-base text-[#0066FF]">
+                {isExchange ? '₹3,000' : '₹65,000'}
+              </span>
             </div>
           </div>
         </div>
@@ -405,15 +452,15 @@ export default function OpenBoxPage() {
             }`}
           >
             <CheckCircle2 className="w-5 h-5" />
-            <span>Accept Delivery &bull; Pay ₹65,000</span>
+            <span>{isExchange ? 'Accept 2-Way Swap & Settle ₹3,000' : 'Accept Delivery & Pay ₹65,000'}</span>
           </button>
 
           <button
             type="button"
             onClick={() => setShowDisputeModal(true)}
-            className="w-full py-3.5 rounded-2xl bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 font-bold text-xs shadow-2xs transition active:scale-98"
+            className="w-full py-3.5 rounded-2xl bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 font-bold text-xs shadow-2xs transition active:scale-98 cursor-pointer"
           >
-            Report an Issue / Return to Sender
+            {isExchange ? 'Abort Exchange / Keep Original Devices' : 'Report an Issue / Return to Sender'}
           </button>
         </div>
 
@@ -431,7 +478,7 @@ export default function OpenBoxPage() {
               <button
                 type="button"
                 onClick={() => setShowPaymentModal(false)}
-                className="text-[#94A3B8] hover:text-[#0F172A]"
+                className="text-[#94A3B8] hover:text-[#0F172A] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -442,7 +489,9 @@ export default function OpenBoxPage() {
               <div className="w-48 h-48 mx-auto my-3 p-3 bg-white rounded-2xl border-2 border-[#0066FF] shadow-inner flex flex-col items-center justify-center">
                 <QrCode className="w-36 h-36 text-[#0F172A]" />
               </div>
-              <div className="text-2xl font-black text-[#0F172A]">₹65,000</div>
+              <div className="text-2xl font-black text-[#0F172A]">
+                {isExchange ? '₹3,000' : '₹65,000'}
+              </div>
               <p className="text-[11px] text-emerald-600 font-semibold mt-1">
                 UPI &bull; Credit/Debit Card &bull; Netbanking
               </p>
@@ -454,9 +503,9 @@ export default function OpenBoxPage() {
                 setShowPaymentModal(false);
                 setIsAccepted(true);
               }}
-              className="w-full py-3.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition active:scale-95"
+              className="w-full py-3.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition active:scale-95 cursor-pointer"
             >
-              Confirm Payment &amp; Release to Seller &rarr;
+              {isExchange ? 'Confirm Swap & Release Funds →' : 'Confirm Payment & Release to Seller →'}
             </button>
           </div>
         </div>
@@ -474,14 +523,16 @@ export default function OpenBoxPage() {
               <button
                 type="button"
                 onClick={() => setShowDisputeModal(false)}
-                className="text-[#94A3B8] hover:text-[#0F172A]"
+                className="text-[#94A3B8] hover:text-[#0F172A] cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <p className="text-xs text-[#64748B] mt-3">
-              Select the issue detected during your open-box inspection. The package will be returned immediately with <strong>₹0 product charge</strong> to you.
+              {isExchange
+                ? 'Select the issue detected during your 2-way open-box check. Both devices will be retained by their original owners with ₹0 product charges.'
+                : 'Select the issue detected during your open-box inspection. The package will be returned immediately with ₹0 product charge to you.'}
             </p>
 
             <div className="mt-3 space-y-2">
@@ -490,7 +541,7 @@ export default function OpenBoxPage() {
                   key={reason}
                   type="button"
                   onClick={() => setSelectedDisputeReason(reason)}
-                  className={`w-full p-2.5 rounded-xl text-left text-xs transition border ${
+                  className={`w-full p-2.5 rounded-xl text-left text-xs transition border cursor-pointer ${
                     selectedDisputeReason === reason
                       ? 'bg-rose-50 border-rose-400 text-rose-800 font-bold'
                       : 'bg-white border-[#E2E8F0] hover:bg-slate-50 text-[#334155]'
@@ -509,14 +560,14 @@ export default function OpenBoxPage() {
                   setShowDisputeModal(false);
                   setIsReturned(true);
                 }}
-                className="flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white font-bold text-xs transition"
+                className="flex-1 py-3 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-40 text-white font-bold text-xs transition cursor-pointer"
               >
-                Initiate Instant Return
+                {isExchange ? 'Cancel Swap & Keep Items' : 'Initiate Instant Return'}
               </button>
               <button
                 type="button"
                 onClick={() => setShowDisputeModal(false)}
-                className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#475569] font-semibold text-xs"
+                className="px-4 py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#475569] font-semibold text-xs cursor-pointer"
               >
                 Cancel
               </button>
