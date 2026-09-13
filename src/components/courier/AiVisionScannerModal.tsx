@@ -95,19 +95,19 @@ export const AiVisionScannerModal: React.FC<AiVisionScannerModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 backdrop-blur-sm p-3 sm:p-4 overflow-y-auto antialiased">
       <div className="relative w-full max-w-2xl rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-7 shadow-2xl text-zinc-900 max-h-[94vh] flex flex-col overflow-hidden">
         {/* Top bar */}
-        <div className="flex items-center justify-between pb-4 border-b border-zinc-100 shrink-0">
+        <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0] shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-2xl bg-zinc-950 text-white flex items-center justify-center shadow-xs">
-              <Sparkles className="w-4 h-4 text-emerald-400 animate-pulse" />
+            <div className="h-9 w-9 rounded-2xl bg-[#0066FF] text-white flex items-center justify-center shadow-xs">
+              <Sparkles className="w-4 h-4 text-white animate-pulse" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-[10px] font-mono font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 uppercase tracking-wider">
+                <span className="text-[10px] font-mono font-bold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 uppercase tracking-wider">
                   SafeShip Vision™ AI Mode
                 </span>
-                <span className="text-[10px] font-mono text-zinc-400">Gemini 1.5 Pro</span>
+                <span className="text-[10px] font-mono text-[#64748B]">Gemini 1.5 Pro</span>
               </div>
-              <h3 className="text-base font-black text-zinc-950 tracking-tight">
+              <h3 className="text-base font-black text-[#0F172A] tracking-tight">
                 Multimodal Hardware Forensic Quality Assurance
               </h3>
             </div>
@@ -116,7 +116,7 @@ export const AiVisionScannerModal: React.FC<AiVisionScannerModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="text-zinc-400 hover:text-zinc-700 p-1.5 rounded-xl hover:bg-zinc-100 transition cursor-pointer"
+            className="text-slate-400 hover:text-[#0F172A] p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -139,10 +139,10 @@ export const AiVisionScannerModal: React.FC<AiVisionScannerModalProps> = ({
                       disabled={!isDone && !isCurrent}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
                         isCurrent
-                          ? 'bg-zinc-950 text-white shadow-xs'
+                          ? 'bg-[#0066FF] text-white shadow-xs'
                           : isDone
-                          ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                          : 'bg-zinc-100 text-zinc-400 opacity-60'
+                          ? 'bg-blue-50 text-[#0066FF] border border-blue-200 font-bold'
+                          : 'bg-slate-100 text-slate-400 opacity-60'
                       }`}
                     >
                       <span>{isDone ? '✓' : `0${idx + 1}`}</span>
@@ -153,7 +153,7 @@ export const AiVisionScannerModal: React.FC<AiVisionScannerModalProps> = ({
               </div>
 
               {/* Viewfinder Canvas */}
-              <div className="relative rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-950 shadow-inner aspect-video flex items-center justify-center">
+              <div className="relative rounded-2xl overflow-hidden border border-[#CBD5E1] bg-slate-900 shadow-inner aspect-video flex items-center justify-center">
                 {/* Viewfinder Background Photo */}
                 <img
                   src={currentStep.simulatedSamplePhoto}
@@ -174,14 +174,14 @@ export const AiVisionScannerModal: React.FC<AiVisionScannerModalProps> = ({
 
                 {/* Scanning Laser Bar (When analyzing) */}
                 {analyzingFrame && (
-                  <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-emerald-400 via-white to-emerald-400 shadow-[0_0_15px_#10b981] animate-bounce" />
+                  <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-blue-400 via-white to-blue-400 shadow-[0_0_15px_#0066ff] animate-bounce" />
                 )}
 
                 {/* Optical Reticle */}
                 <div className="absolute inset-6 border border-white/30 rounded-2xl pointer-events-none flex flex-col justify-between p-3">
-                  <div className="flex justify-between items-center text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider drop-shadow-md">
+                  <div className="flex justify-between items-center text-[10px] font-mono text-blue-300 font-bold uppercase tracking-wider drop-shadow-md">
                     <span className="flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="h-2 w-2 rounded-full bg-[#0066FF] animate-pulse" />
                       Live Stream: 4K 60FPS
                     </span>
                     <span>AI Model: Gemini Multimodal Vision</span>
@@ -189,11 +189,11 @@ export const AiVisionScannerModal: React.FC<AiVisionScannerModalProps> = ({
 
                   {/* Dynamic Bounding Box for OCR (Step 2) or Panel Scan (Step 1) */}
                   {analyzingFrame && currentStep.id === 'frame_2_imei_ocr' && (
-                    <div className="mx-auto my-auto w-3/4 h-24 border-2 border-emerald-400 bg-emerald-400/10 rounded-xl flex flex-col items-center justify-center p-2 backdrop-blur-2xs shadow-lg animate-pulse">
-                      <span className="text-[10px] font-mono font-bold text-white bg-zinc-950/80 px-2 py-0.5 rounded">
+                    <div className="mx-auto my-auto w-3/4 h-24 border-2 border-[#0066FF] bg-[#0066FF]/20 rounded-xl flex flex-col items-center justify-center p-2 backdrop-blur-2xs shadow-lg animate-pulse">
+                      <span className="text-[10px] font-mono font-bold text-white bg-slate-900/90 px-2 py-0.5 rounded">
                         OCR INGESTION: {deal.serialNumber || 'F2LL99XMD6T'}
                       </span>
-                      <span className="text-[9px] font-mono text-emerald-300 mt-1">Confidence: 99.8% • Match Ledger Confirmed</span>
+                      <span className="text-[9px] font-mono text-blue-200 mt-1">Confidence: 99.8% • Match Ledger Confirmed</span>
                     </div>
                   )}
 
@@ -205,9 +205,9 @@ export const AiVisionScannerModal: React.FC<AiVisionScannerModalProps> = ({
 
                 {/* Loading overlay */}
                 {analyzingFrame && (
-                  <div className="absolute inset-0 bg-zinc-950/40 backdrop-blur-xs flex flex-col items-center justify-center gap-2 text-white">
-                    <div className="h-8 w-8 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin" />
-                    <span className="text-xs font-mono font-bold tracking-wider uppercase text-emerald-300">
+                  <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs flex flex-col items-center justify-center gap-2 text-white">
+                    <div className="h-8 w-8 rounded-full border-2 border-[#0066FF] border-t-transparent animate-spin" />
+                    <span className="text-xs font-mono font-bold tracking-wider uppercase text-blue-300">
                       Analyzing Sub-pixel RGB Matrices...
                     </span>
                   </div>
@@ -215,16 +215,16 @@ export const AiVisionScannerModal: React.FC<AiVisionScannerModalProps> = ({
               </div>
 
               {/* AI Guidance Box */}
-              <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/50 p-4 space-y-1.5">
+              <div className="rounded-2xl border border-blue-200/80 bg-blue-50/50 p-4 space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-emerald-700" />
-                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-900">
+                  <Sparkles className="w-3.5 h-3.5 text-[#0066FF]" />
+                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#0066FF]">
                     Gemini Multimodal Instruction (Step {currentStep.stepNumber} of 5)
                   </span>
                 </div>
-                <h4 className="text-sm font-bold text-zinc-950">{currentStep.title}</h4>
-                <p className="text-xs text-zinc-600 leading-relaxed">{currentStep.instructionPrompt}</p>
-                <div className="pt-1 text-[11px] font-mono text-emerald-800 flex items-center gap-1.5">
+                <h4 className="text-sm font-bold text-[#0F172A]">{currentStep.title}</h4>
+                <p className="text-xs text-[#475569] leading-relaxed">{currentStep.instructionPrompt}</p>
+                <div className="pt-1 text-[11px] font-mono text-[#0066FF] flex items-center gap-1.5">
                   <span className="font-bold">Target Metric:</span> {currentStep.targetCheck}
                 </div>
               </div>
@@ -234,7 +234,7 @@ export const AiVisionScannerModal: React.FC<AiVisionScannerModalProps> = ({
                 <button
                   type="button"
                   onClick={onSwitchToManual}
-                  className="w-1/3 py-3 rounded-2xl border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-700 font-semibold text-xs transition text-center cursor-pointer shadow-2xs"
+                  className="w-1/3 py-3 rounded-2xl border border-[#CBD5E1] bg-white hover:bg-slate-50 text-[#0F172A] font-semibold text-xs transition text-center cursor-pointer shadow-2xs"
                 >
                   Manual Mode
                 </button>
@@ -242,9 +242,9 @@ export const AiVisionScannerModal: React.FC<AiVisionScannerModalProps> = ({
                   type="button"
                   onClick={handleCaptureCurrentFrame}
                   disabled={analyzingFrame}
-                  className="w-2/3 py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50"
+                  className="w-2/3 py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/20 transition flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50"
                 >
-                  <Camera className="w-4 h-4 text-emerald-400" />
+                  <Camera className="w-4 h-4 text-white" />
                   <span>Capture & Analyze with Gemini Vision</span>
                 </button>
               </div>
@@ -252,59 +252,59 @@ export const AiVisionScannerModal: React.FC<AiVisionScannerModalProps> = ({
           ) : (
             /* Diagnostic Certificate & Dual-Approval View */
             <div className="space-y-5">
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 text-center space-y-2">
-                <div className="h-12 w-12 rounded-2xl bg-white border border-emerald-200 text-emerald-600 flex items-center justify-center mx-auto shadow-xs">
+              <div className="rounded-2xl border border-blue-200 bg-blue-50/60 p-5 text-center space-y-2">
+                <div className="h-12 w-12 rounded-2xl bg-white border border-blue-200 text-[#0066FF] flex items-center justify-center mx-auto shadow-xs">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
-                <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-800">
+                <div className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#0066FF]">
                   Multimodal Quality Assurance Complete
                 </div>
-                <h2 className="text-xl font-black text-zinc-950 tracking-tight">
+                <h2 className="text-xl font-black text-[#0F172A] tracking-tight">
                   SafeShip Vision™ Diagnostic Certificate Issued
                 </h2>
-                <p className="text-xs text-zinc-600 max-w-md mx-auto">
+                <p className="text-xs text-[#475569] max-w-md mx-auto">
                   All 5 hardware vector scans verified with zero discrepancies. Device matches listing declaration with 99.4% authenticity confidence.
                 </p>
               </div>
 
               {/* Forensic Metrics Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                <div className="p-3.5 rounded-2xl border border-zinc-200 bg-zinc-50 space-y-1">
-                  <div className="text-[10px] font-mono uppercase text-zinc-400 font-bold">Authenticity Score</div>
-                  <div className="text-lg font-black font-mono text-emerald-600">99.4%</div>
-                  <div className="text-[10px] text-zinc-500">Gemini 1.5 Pro Neural</div>
+                <div className="p-3.5 rounded-2xl border border-[#CBD5E1] bg-[#F8FAFC] space-y-1">
+                  <div className="text-[10px] font-mono uppercase text-[#64748B] font-bold">Authenticity Score</div>
+                  <div className="text-lg font-black font-mono text-[#0066FF]">99.4%</div>
+                  <div className="text-[10px] text-[#64748B]">Gemini 1.5 Pro Neural</div>
                 </div>
 
-                <div className="p-3.5 rounded-2xl border border-zinc-200 bg-zinc-50 space-y-1">
-                  <div className="text-[10px] font-mono uppercase text-zinc-400 font-bold">OLED Panel Health</div>
-                  <div className="text-lg font-black text-zinc-950">Optimal</div>
+                <div className="p-3.5 rounded-2xl border border-[#CBD5E1] bg-[#F8FAFC] space-y-1">
+                  <div className="text-[10px] font-mono uppercase text-[#64748B] font-bold">OLED Panel Health</div>
+                  <div className="text-lg font-black text-[#0F172A]">Optimal</div>
                   <div className="text-[10px] text-emerald-700 font-medium">0 Dead Pixels</div>
                 </div>
 
-                <div className="p-3.5 rounded-2xl border border-zinc-200 bg-zinc-50 space-y-1">
-                  <div className="text-[10px] font-mono uppercase text-zinc-400 font-bold">Serial / IMEI OCR</div>
-                  <div className="text-lg font-black text-emerald-600">Matched ✓</div>
-                  <div className="text-[10px] text-zinc-500 font-mono">Invoice Match</div>
+                <div className="p-3.5 rounded-2xl border border-[#CBD5E1] bg-[#F8FAFC] space-y-1">
+                  <div className="text-[10px] font-mono uppercase text-[#64748B] font-bold">Serial / IMEI OCR</div>
+                  <div className="text-lg font-black text-[#0066FF]">Matched ✓</div>
+                  <div className="text-[10px] text-[#64748B] font-mono">Invoice Match</div>
                 </div>
 
-                <div className="p-3.5 rounded-2xl border border-zinc-200 bg-zinc-50 space-y-1">
-                  <div className="text-[10px] font-mono uppercase text-zinc-400 font-bold">iCloud / FRP Lock</div>
-                  <div className="text-lg font-black text-emerald-600">Cleared ✓</div>
-                  <div className="text-[10px] text-zinc-500">Clean ESN Status</div>
+                <div className="p-3.5 rounded-2xl border border-[#CBD5E1] bg-[#F8FAFC] space-y-1">
+                  <div className="text-[10px] font-mono uppercase text-[#64748B] font-bold">iCloud / FRP Lock</div>
+                  <div className="text-lg font-black text-[#0066FF]">Cleared ✓</div>
+                  <div className="text-[10px] text-[#64748B]">Clean ESN Status</div>
                 </div>
               </div>
 
               {/* 5 Captured Frames Reel */}
               <div>
-                <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-zinc-400 mb-2">
+                <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#64748B] mb-2">
                   Ingested Forensic Verification Frames (5 of 5)
                 </div>
                 <div className="grid grid-cols-5 gap-2">
                   {GUIDED_INSPECTION_STEPS.map((step) => (
-                    <div key={step.id} className="relative rounded-xl overflow-hidden border border-zinc-200 aspect-square">
+                    <div key={step.id} className="relative rounded-xl overflow-hidden border border-[#CBD5E1] aspect-square">
                       <img src={step.simulatedSamplePhoto} alt={step.title} className="h-full w-full object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/80 via-transparent to-transparent flex items-end p-1.5">
-                        <span className="text-[9px] font-mono text-emerald-400 font-bold leading-tight truncate">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-1.5">
+                        <span className="text-[9px] font-mono text-white font-bold leading-tight truncate">
                           ✓ {step.shortLabel}
                         </span>
                       </div>
@@ -314,18 +314,18 @@ export const AiVisionScannerModal: React.FC<AiVisionScannerModalProps> = ({
               </div>
 
               {/* Dual Approval Box */}
-              <div className="rounded-2xl border border-zinc-200/90 bg-zinc-50 p-4 space-y-2 text-xs">
-                <div className="font-bold text-zinc-950 flex items-center justify-between">
+              <div className="rounded-2xl border border-[#CBD5E1] bg-[#F8FAFC] p-4 space-y-2 text-xs">
+                <div className="font-bold text-[#0F172A] flex items-center justify-between">
                   <span>Dual-Factor Joint Authorization Sign-Off</span>
-                  <span className="text-[10px] font-mono text-zinc-500">Certificate #SVR-GEMINI-894102</span>
+                  <span className="text-[10px] font-mono text-[#64748B]">Certificate #SVR-GEMINI-894102</span>
                 </div>
-                <div className="space-y-1.5 text-zinc-600 text-[11px]">
+                <div className="space-y-1.5 text-[#475569] text-[11px]">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
                     <span>Gemini Multimodal Neural Diagnostic Model: <strong>PASSED (99.4%)</strong></span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
                     <span>Bonded Custody Officer Suresh Gowda (Badge #KA-4012): <strong>CONFIRMED</strong></span>
                   </div>
                 </div>
@@ -336,7 +336,7 @@ export const AiVisionScannerModal: React.FC<AiVisionScannerModalProps> = ({
                 type="button"
                 onClick={handleFinalizeDualApproval}
                 disabled={isFinalizing}
-                className="w-full py-4 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-black text-xs tracking-wide shadow-md transition flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50"
+                className="w-full py-4 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-black text-xs tracking-wide shadow-md shadow-[#0066FF]/25 transition flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50"
               >
                 {isFinalizing ? (
                   <>
@@ -345,7 +345,7 @@ export const AiVisionScannerModal: React.FC<AiVisionScannerModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <Lock className="w-4 h-4 text-emerald-400" />
+                    <Lock className="w-4 h-4 text-white" />
                     <span>Authorize Dual-Factor Seal & Disburse {formatINR(milestone1)} Advance</span>
                   </>
                 )}

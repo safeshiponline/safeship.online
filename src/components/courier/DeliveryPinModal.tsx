@@ -61,35 +61,35 @@ export const DeliveryPinModal: React.FC<DeliveryPinModalProps> = ({
 
         {/* Header */}
         <div className="flex items-center gap-3.5 mb-5">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200/70 shadow-inner">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#EFF6FF] text-[#0066FF] border border-[#BFDBFE] shadow-inner">
             <Lock className="w-5 h-5" />
           </div>
           <div>
-            <div className="text-[10px] font-mono font-bold text-emerald-800 uppercase tracking-wider">
+            <div className="text-[10px] font-mono font-bold text-[#0066FF] uppercase tracking-wider">
               Cryptographic Handshake Protocol
             </div>
-            <h3 className="text-base font-black text-zinc-950 tracking-tight">
+            <h3 className="text-base font-black text-[#0F172A] tracking-tight">
               Authenticate Counterparty OTP
             </h3>
           </div>
         </div>
 
-        <div className="rounded-2xl border border-emerald-200/70 bg-emerald-50/50 p-3.5 text-xs text-emerald-950 mb-4 leading-relaxed">
+        <div className="rounded-2xl border border-blue-200/70 bg-blue-50/50 p-3.5 text-xs text-blue-950 mb-4 leading-relaxed">
           <strong className="font-bold">Custody Verification Rule: </strong>
           Buyer must inspect the intact holographic security seal and conduct a physical inspection prior to releasing their 6-digit OTP token.
         </div>
 
         {/* PIN helper for demo convenience */}
-        <div className="mb-4 rounded-2xl bg-zinc-50 border border-zinc-200/80 p-3 flex items-center justify-between text-xs">
-          <span className="text-zinc-500 font-medium">Verified Counterparty Handshake Token:</span>
-          <span className="font-mono font-bold text-zinc-950 bg-white px-2.5 py-1 rounded-lg border border-zinc-200 shadow-xs">
+        <div className="mb-4 rounded-2xl bg-[#F8FAFC] border border-[#CBD5E1] p-3 flex items-center justify-between text-xs">
+          <span className="text-[#64748B] font-medium">Verified Counterparty Handshake Token:</span>
+          <span className="font-mono font-bold text-[#0F172A] bg-white px-2.5 py-1 rounded-lg border border-[#CBD5E1] shadow-xs">
             {deal.buyerReleasePin}
           </span>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 text-xs">
           <div className="space-y-2">
-            <label className="font-bold text-zinc-700 block text-center uppercase tracking-wider text-[10px]">
+            <label className="font-bold text-[#475569] block text-center uppercase tracking-wider text-[10px]">
               Enter 6-Digit Delivery Authentication Token
             </label>
             <input
@@ -99,7 +99,7 @@ export const DeliveryPinModal: React.FC<DeliveryPinModalProps> = ({
               value={pin}
               onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
               placeholder="000000"
-              className="w-full text-center text-3xl font-mono tracking-widest py-3 rounded-2xl border border-zinc-200 bg-zinc-50 text-zinc-950 focus:border-zinc-950 focus:bg-white focus:outline-none transition shadow-inner"
+              className="w-full text-center text-3xl font-mono tracking-widest py-3 rounded-2xl border border-[#CBD5E1] bg-[#F8FAFC] text-[#0F172A] focus:border-[#0066FF] focus:bg-white focus:outline-none transition shadow-inner"
             />
           </div>
 
@@ -110,25 +110,25 @@ export const DeliveryPinModal: React.FC<DeliveryPinModalProps> = ({
             </div>
           )}
 
-          <div className="rounded-2xl bg-zinc-50 border border-zinc-200/80 p-3.5 space-y-1.5">
-            <div className="flex justify-between items-center text-zinc-600">
+          <div className="rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] p-3.5 space-y-1.5">
+            <div className="flex justify-between items-center text-[#475569]">
               <span className="font-medium">Final Stage 2 Escrow Release:</span>
-              <span className="text-zinc-950 font-black text-sm font-mono">{formatINR(finalAmount)}</span>
+              <span className="text-[#0F172A] font-black text-sm font-mono">{formatINR(finalAmount)}</span>
             </div>
-            <div className="flex justify-between items-center text-zinc-500 text-[11px]">
+            <div className="flex justify-between items-center text-[#64748B] text-[11px]">
               <span>Settlement Rail:</span>
-              <span className="text-zinc-800 font-mono font-semibold">UPI 2.0 / IMPS Instant Rail</span>
+              <span className="text-[#0F172A] font-mono font-semibold">UPI 2.0 / IMPS Instant Rail</span>
             </div>
-            <div className="flex justify-between items-center text-zinc-500 text-[11px]">
+            <div className="flex justify-between items-center text-[#64748B] text-[11px]">
               <span>Beneficiary VPA:</span>
-              <span className="text-zinc-800 font-mono">{deal.seller.upiId}</span>
+              <span className="text-[#0F172A] font-mono">{deal.seller.upiId}</span>
             </div>
           </div>
 
           <button
             type="submit"
             disabled={pin.length !== 6 || isSubmitting}
-            className="w-full py-3.5 rounded-2xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs shadow-xs transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-98"
+            className="w-full py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/20 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-98"
           >
             {isSubmitting ? (
               <>
@@ -137,7 +137,7 @@ export const DeliveryPinModal: React.FC<DeliveryPinModalProps> = ({
               </>
             ) : (
               <>
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <CheckCircle2 className="w-4 h-4 text-white" />
                 <span>Authorize Handshake & Disburse {formatINR(finalAmount)}</span>
               </>
             )}

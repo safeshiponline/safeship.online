@@ -228,19 +228,19 @@ function OpenBoxContent() {
       <main className="max-w-2xl mx-auto w-full p-4 sm:p-6 flex-1 space-y-5">
         
         {/* Banner with Courier & Big Countdown Timer */}
-        <div className="bg-[#0F172A] text-white rounded-3xl p-5 sm:p-7 shadow-lg relative overflow-hidden">
+        <div className="bg-white border border-[#CBD5E1] rounded-3xl p-5 sm:p-7 shadow-xs relative overflow-hidden text-[#0F172A]">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">
+                <span className="w-2 h-2 rounded-full bg-[#0066FF] animate-pulse" />
+                <span className="text-xs font-bold text-[#0066FF] uppercase tracking-wider">
                   Courier at Your Doorstep
                 </span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight mt-1">
+              <h2 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight mt-1">
                 {isExchange ? 'Ready for 2-Way Swap ⇄' : 'Your package has arrived! 📦'}
               </h2>
-              <p className="text-xs text-slate-300 mt-1 max-w-sm">
+              <p className="text-xs text-[#64748B] mt-1 max-w-sm">
                 {isExchange
                   ? 'Verify both items with the delivery officer side-by-side before completing the exchange.'
                   : 'Open the parcel with the delivery partner and verify all 4 checks before paying.'}
@@ -248,28 +248,28 @@ function OpenBoxContent() {
             </div>
 
             {/* Live Inspection Timer */}
-            <div className="bg-slate-800/90 border border-slate-700 rounded-2xl p-3 text-center min-w-[130px] shrink-0">
-              <div className="text-2xl sm:text-3xl font-black font-mono text-amber-400 tracking-wider">
+            <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl p-3 text-center min-w-[130px] shrink-0">
+              <div className="text-2xl sm:text-3xl font-black font-mono text-[#0066FF] tracking-wider">
                 {formatTimer(timeLeft)}
               </div>
-              <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
+              <span className="text-[10px] text-[#64748B] font-bold block mt-0.5 uppercase tracking-wider">
                 Inspection Window
               </span>
             </div>
           </div>
 
           {/* Courier Identity */}
-          <div className="mt-5 pt-4 border-t border-slate-800 flex items-center justify-between">
+          <div className="mt-5 pt-4 border-t border-[#E2E8F0] flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-sm ring-2 ring-blue-400">
+              <div className="w-10 h-10 rounded-full bg-[#0066FF] text-white font-bold flex items-center justify-center text-sm ring-2 ring-blue-100">
                 RK
               </div>
               <div>
-                <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                <div className="text-xs font-bold text-[#0F172A] flex items-center gap-1.5">
                   <span>Rahul K.</span>
-                  <span className="text-[10px] text-amber-300 font-semibold">★ 4.9 (1,480 deliveries)</span>
+                  <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.2 rounded font-bold border border-amber-200">★ 4.9 (1,480 deliveries)</span>
                 </div>
-                <div className="text-[11px] text-slate-400">
+                <div className="text-[11px] text-[#64748B]">
                   Bonded SafeShip Officer &bull; KA-4012
                 </div>
               </div>
@@ -278,9 +278,9 @@ function OpenBoxContent() {
             <button
               type="button"
               onClick={() => alert('Calling Courier Rahul K. at +91 98765 43210...')}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold border border-slate-700 transition cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0F172A] text-xs font-semibold border border-[#CBD5E1] transition cursor-pointer"
             >
-              <Phone className="w-3.5 h-3.5 text-emerald-400" />
+              <Phone className="w-3.5 h-3.5 text-[#0066FF]" />
               <span>Call Driver</span>
             </button>
           </div>
@@ -300,21 +300,29 @@ function OpenBoxContent() {
           </div>
 
           {/* Simulated Viewfinder */}
-          <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-16/9 flex items-center justify-center border border-slate-800">
+          <div className="relative rounded-2xl overflow-hidden bg-slate-900 aspect-16/9 flex items-center justify-center border border-[#CBD5E1] shadow-inner">
             <img
               src={isExchange ? '/images/exchange_hero_16x9.webp' : '/images/openbox_macro_4x3.webp'}
               alt="Inspected Device"
-              className="w-full h-full object-cover opacity-85"
+              className="w-full h-full object-cover opacity-90"
             />
             {/* Hologram Reticle Overlays */}
-            <div className="absolute inset-4 border border-blue-400/40 rounded-xl pointer-events-none flex flex-col justify-between p-2 bg-radial from-transparent to-black/30">
-              <div className="flex justify-between text-[10px] text-blue-300 font-mono font-semibold">
-                <span>[SCANNING IMEI / SERIAL]</span>
-                <span>MATCH: {isExchange ? 'IPH14P-99201' : '354892...'}</span>
+            <div className="absolute inset-3 sm:inset-4 border border-[#0066FF]/60 rounded-xl pointer-events-none flex flex-col justify-between p-2.5">
+              <div className="flex justify-between items-center text-[10px] font-mono font-bold">
+                <span className="bg-white/95 text-[#0066FF] px-2 py-0.5 rounded shadow-xs border border-white/40">
+                  SCANNING IMEI / HARDWARE
+                </span>
+                <span className="bg-[#0F172A]/90 text-white px-2 py-0.5 rounded shadow-xs">
+                  MATCH: {isExchange ? 'IPH14P-99201' : '354892...'}
+                </span>
               </div>
-              <div className="flex justify-between text-[10px] text-emerald-400 font-mono font-semibold">
-                <span>CHASSIS: GRADE A+ MINT</span>
-                <span>ICLOUD: CONFIRMED UNLOCKED</span>
+              <div className="flex justify-between items-center text-[10px] font-mono font-bold">
+                <span className="bg-white/95 text-[#0F172A] px-2 py-0.5 rounded shadow-xs border border-white/40">
+                  CHASSIS: GRADE A+ MINT
+                </span>
+                <span className="bg-emerald-600 text-white px-2 py-0.5 rounded shadow-xs">
+                  ICLOUD: UNLOCKED ✓
+                </span>
               </div>
             </div>
           </div>

@@ -23,7 +23,7 @@ body {
 /* Mobile viewport adjustments */
 html, body {
   overflow-x: hidden;
-  max-width: 100vw;
+  max-width: 100%;
   touch-action: manipulation;
 }
 

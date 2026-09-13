@@ -53,33 +53,33 @@ function CourierAppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50/60 text-zinc-900 flex flex-col antialiased selection:bg-zinc-950 selection:text-white">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col antialiased selection:bg-[#0066FF] selection:text-white">
       <RoleSwitcher currentRole="COURIER" activeDealId={selectedDealId} />
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         {/* Agent Profile Bar */}
-        <div className="rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-6 shadow-xs flex flex-wrap items-center justify-between gap-4">
+        <div className="rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-xs flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="relative">
               <img
                 src="/images/courier_rahul_avatar.webp"
                 alt="Courier Partner Rahul K."
-                className="h-14 w-14 rounded-2xl border border-zinc-200 object-cover shadow-xs"
+                className="h-14 w-14 rounded-2xl border border-[#CBD5E1] object-cover shadow-xs"
               />
-              <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white font-bold text-[10px] shadow-xs">
+              <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#0066FF] text-white font-bold text-[10px] shadow-xs">
                 ✓
               </span>
             </div>
 
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-black text-zinc-950 tracking-tight">Suresh Gowda</h1>
-                <span className="rounded-md bg-zinc-100 border border-zinc-200/80 px-2 py-0.5 text-[10px] font-mono font-bold text-zinc-800">
+                <h1 className="text-lg font-black text-[#0F172A] tracking-tight">Suresh Gowda</h1>
+                <span className="rounded-md bg-blue-50 border border-blue-200 px-2 py-0.5 text-[10px] font-mono font-bold text-[#0066FF]">
                   OFFICER #KA-4012
                 </span>
               </div>
-              <p className="text-xs text-zinc-500 mt-0.5">
+              <p className="text-xs text-[#64748B] mt-0.5">
                 SafeShip Certified Verification Officer • Bonded Physical Custody Network • 512 Zero-Dispute Deliveries
               </p>
             </div>
@@ -87,11 +87,11 @@ function CourierAppContent() {
 
           <div className="flex items-center gap-4">
             <div className="text-right">
-              <div className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider">Settled Logistics Remittance</div>
-              <div className="text-xl font-mono font-black text-zinc-950">₹1,450.00</div>
+              <div className="text-[10px] font-mono font-bold text-[#64748B] uppercase tracking-wider">Settled Logistics Remittance</div>
+              <div className="text-xl font-mono font-black text-[#0F172A]">₹1,450.00</div>
             </div>
-            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-[#0066FF] border border-blue-200 text-xs font-semibold">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#0066FF] animate-pulse" />
               Active Custody Rail
             </span>
           </div>
@@ -99,7 +99,7 @@ function CourierAppContent() {
 
         {/* Active Jobs Tabs */}
         <div className="space-y-2.5">
-          <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-zinc-400">
+          <div className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
             Assigned Custody & Diagnostic Dispatches ({deals.length})
           </div>
 
@@ -111,22 +111,22 @@ function CourierAppContent() {
                 onClick={() => setSelectedDealId(d.id)}
                 className={`p-4 rounded-2xl border text-left transition cursor-pointer ${
                   selectedDealId === d.id
-                    ? 'border-zinc-950 bg-zinc-950 text-white shadow-xs ring-1 ring-zinc-950'
-                    : 'border-zinc-200/80 bg-white text-zinc-600 hover:border-zinc-300'
+                    ? 'border-2 border-[#0066FF] bg-[#EFF6FF] text-[#0F172A] shadow-xs'
+                    : 'border border-[#E2E8F0] bg-white text-[#475569] hover:border-slate-300'
                 }`}
               >
                 <div className="flex items-center justify-between text-[11px] mb-1.5">
-                  <span className={`font-mono font-bold ${selectedDealId === d.id ? 'text-zinc-200' : 'text-zinc-800'}`}>{d.city}</span>
+                  <span className={`font-mono font-bold ${selectedDealId === d.id ? 'text-[#0066FF]' : 'text-[#0F172A]'}`}>{d.city}</span>
                   <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                    selectedDealId === d.id ? 'bg-zinc-800 text-zinc-300' : 'bg-zinc-100 text-zinc-700'
+                    selectedDealId === d.id ? 'bg-[#0066FF] text-white' : 'bg-slate-100 text-slate-700'
                   }`}>
                     {d.status.replace(/_/g, ' ')}
                   </span>
                 </div>
-                <div className={`text-xs font-bold line-clamp-1 ${selectedDealId === d.id ? 'text-white' : 'text-zinc-950'}`}>{d.title}</div>
-                <div className={`text-[11px] mt-1.5 flex justify-between ${selectedDealId === d.id ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                <div className={`text-xs font-black line-clamp-1 ${selectedDealId === d.id ? 'text-[#0F172A]' : 'text-[#0F172A]'}`}>{d.title}</div>
+                <div className="text-[11px] mt-1.5 flex justify-between text-[#64748B]">
                   <span>Lot: {formatINR(d.declaredValue)}</span>
-                  <span className={selectedDealId === d.id ? 'text-emerald-400 font-mono font-semibold' : 'text-emerald-600 font-mono font-semibold'}>
+                  <span className="text-[#0066FF] font-mono font-bold">
                     {formatINR(d.pricing.shippingInsuranceFee)} Payout
                   </span>
                 </div>
@@ -138,24 +138,24 @@ function CourierAppContent() {
         {/* Selected Job Command Center */}
         {currentDeal && (
           <div className="space-y-6">
-            <div className="rounded-3xl border border-zinc-200/90 bg-white p-6 sm:p-8 shadow-xs">
-              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-100 pb-5 mb-6">
+            <div className="rounded-3xl border border-[#CBD5E1] bg-white p-6 sm:p-8 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#E2E8F0] pb-5 mb-6">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-zinc-800 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200">
+                    <span className="font-mono text-xs font-bold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                       Custody Protocol: {currentDeal.id}
                     </span>
-                    <span className="text-xs text-zinc-500 font-mono">
+                    <span className="text-xs text-[#64748B] font-mono">
                       {currentDeal.city} ({currentDeal.pincode})
                     </span>
                   </div>
-                  <h2 className="text-xl font-black text-zinc-950 tracking-tight mt-1">{currentDeal.title}</h2>
+                  <h2 className="text-xl font-black text-[#0F172A] tracking-tight mt-1">{currentDeal.title}</h2>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <Link
                     href={`/deals/${currentDeal.id}`}
-                    className="px-3.5 py-2 rounded-xl bg-zinc-50 hover:bg-zinc-100 text-zinc-800 text-xs font-semibold flex items-center gap-1.5 transition border border-zinc-200 shadow-2xs"
+                    className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-[#0F172A] text-xs font-semibold flex items-center gap-1.5 transition border border-[#CBD5E1] shadow-2xs cursor-pointer"
                   >
                     <span>Inspect Deal Vault</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -164,13 +164,13 @@ function CourierAppContent() {
               </div>
 
               {/* Action Buttons based on current state */}
-              <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/70 p-5 mb-6">
+              <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-5 mb-6">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="space-y-1 text-center sm:text-left">
-                    <div className="text-sm font-bold text-zinc-950 flex items-center gap-2 justify-center sm:justify-start">
-                      <Truck className="w-4 h-4 text-zinc-700" />
+                    <div className="text-sm font-bold text-[#0F172A] flex items-center gap-2 justify-center sm:justify-start">
+                      <Truck className="w-4 h-4 text-[#0066FF]" />
                       Required Action:{' '}
-                      <span className="text-zinc-950 font-mono font-semibold">
+                      <span className="text-[#0F172A] font-mono font-semibold">
                         {currentDeal.status === 'COURIER_ASSIGNED' || currentDeal.status === 'PICKUP_INSPECTION'
                           ? 'Execute Doorstep Forensic Audit & Tamper Seal'
                           : currentDeal.status === 'IN_TRANSIT' || currentDeal.status === 'OUT_FOR_DELIVERY'
@@ -180,7 +180,7 @@ function CourierAppContent() {
                           : currentDeal.status}
                       </span>
                     </div>
-                    <p className="text-xs text-zinc-500 max-w-lg leading-relaxed">
+                    <p className="text-xs text-[#64748B] max-w-lg leading-relaxed">
                       {currentDeal.status === 'COURIER_ASSIGNED' || currentDeal.status === 'PICKUP_INSPECTION'
                         ? 'Inspect hardware boot state, cross-reference serial / IMEI against registry, capture diagnostic photos, and affix tamper-evident pouch seal.'
                         : currentDeal.status === 'IN_TRANSIT' || currentDeal.status === 'OUT_FOR_DELIVERY'
@@ -195,9 +195,9 @@ function CourierAppContent() {
                       <button
                         type="button"
                         onClick={() => setIsInspectionOpen(true)}
-                        className="px-6 py-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs shadow-xs transition flex items-center gap-2 cursor-pointer active:scale-98"
+                        className="px-6 py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/20 transition flex items-center gap-2 cursor-pointer active:scale-98"
                       >
-                        <Camera className="w-4 h-4 text-emerald-400" />
+                        <Camera className="w-4 h-4 text-white" />
                         <span>Conduct Diagnostic & Seal</span>
                       </button>
                     )}
@@ -207,9 +207,9 @@ function CourierAppContent() {
                       <button
                         type="button"
                         onClick={() => setIsDeliveryOpen(true)}
-                        className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-xs transition flex items-center gap-2 cursor-pointer active:scale-98"
+                        className="px-6 py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/20 transition flex items-center gap-2 cursor-pointer active:scale-98"
                       >
-                        <ShieldCheck className="w-4 h-4" />
+                        <ShieldCheck className="w-4 h-4 text-white" />
                         <span>Authenticate Handshake OTP</span>
                       </button>
                     )}
@@ -226,7 +226,7 @@ function CourierAppContent() {
 
               {/* Route & Live Telemetry Map */}
               <div className="space-y-2.5 mb-6">
-                <div className="text-[11px] font-mono font-bold uppercase tracking-wider text-zinc-400">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-[#64748B]">
                   Live GPS Transit Telemetry & Route Vector
                 </div>
                 <LiveTrackingMap
@@ -240,38 +240,38 @@ function CourierAppContent() {
               {/* Parties Details */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {/* Seller Pickup card */}
-                <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/70 p-4 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-zinc-500">
-                    <span className="font-bold uppercase tracking-wider text-zinc-900 text-[10px]">Custody Origin (Seller Premise)</span>
-                    <span className="font-mono text-zinc-700 bg-white px-2 py-0.5 rounded border border-zinc-200">Token: {currentDeal.sellerPickupCode}</span>
+                <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-[#64748B]">
+                    <span className="font-bold uppercase tracking-wider text-[#0F172A] text-[10px]">Custody Origin (Seller Premise)</span>
+                    <span className="font-mono text-[#0F172A] bg-white px-2 py-0.5 rounded border border-[#CBD5E1]">Token: {currentDeal.sellerPickupCode}</span>
                   </div>
-                  <div className="text-sm font-bold text-zinc-950">{currentDeal.seller.name}</div>
-                  <div className="text-xs text-zinc-600">{currentDeal.seller.pickupAddress}, {currentDeal.seller.city} ({currentDeal.seller.pincode})</div>
+                  <div className="text-sm font-bold text-[#0F172A]">{currentDeal.seller.name}</div>
+                  <div className="text-xs text-[#475569]">{currentDeal.seller.pickupAddress}, {currentDeal.seller.city} ({currentDeal.seller.pincode})</div>
                   <div className="pt-2 flex items-center gap-2">
                     <a
                       href={`tel:${currentDeal.seller.phone}`}
-                      className="px-3 py-1.5 rounded-lg bg-white hover:bg-zinc-100 text-zinc-700 text-xs font-semibold flex items-center gap-1.5 border border-zinc-200 shadow-2xs"
+                      className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-[#0F172A] text-xs font-semibold flex items-center gap-1.5 border border-[#CBD5E1] shadow-2xs"
                     >
-                      <Phone className="w-3.5 h-3.5 text-zinc-700" />
+                      <Phone className="w-3.5 h-3.5 text-[#0066FF]" />
                       <span>{currentDeal.seller.phone}</span>
                     </a>
                   </div>
                 </div>
 
                 {/* Buyer Delivery card */}
-                <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/70 p-4 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-zinc-500">
-                    <span className="font-bold uppercase tracking-wider text-emerald-800 text-[10px]">Settlement Destination (Buyer Premise)</span>
-                    <span className="text-xs text-emerald-700 font-semibold font-mono">100% Escrow Collateral Locked ✓</span>
+                <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC] p-4 space-y-2">
+                  <div className="flex items-center justify-between text-xs text-[#64748B]">
+                    <span className="font-bold uppercase tracking-wider text-[#0F172A] text-[10px]">Settlement Destination (Buyer Premise)</span>
+                    <span className="text-xs text-emerald-700 font-semibold font-mono bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">100% Escrow Collateral Locked ✓</span>
                   </div>
-                  <div className="text-sm font-bold text-zinc-950">{currentDeal.buyer.name}</div>
-                  <div className="text-xs text-zinc-600">{currentDeal.buyer.deliveryAddress}, {currentDeal.buyer.city} ({currentDeal.buyer.pincode})</div>
+                  <div className="text-sm font-bold text-[#0F172A]">{currentDeal.buyer.name}</div>
+                  <div className="text-xs text-[#475569]">{currentDeal.buyer.deliveryAddress}, {currentDeal.buyer.city} ({currentDeal.buyer.pincode})</div>
                   <div className="pt-2 flex items-center gap-2">
                     <a
                       href={`tel:${currentDeal.buyer.phone}`}
-                      className="px-3 py-1.5 rounded-lg bg-white hover:bg-zinc-100 text-zinc-700 text-xs font-semibold flex items-center gap-1.5 border border-zinc-200 shadow-2xs"
+                      className="px-3 py-1.5 rounded-lg bg-white hover:bg-slate-100 text-[#0F172A] text-xs font-semibold flex items-center gap-1.5 border border-[#CBD5E1] shadow-2xs"
                     >
-                      <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                      <Phone className="w-3.5 h-3.5 text-[#0066FF]" />
                       <span>{currentDeal.buyer.phone}</span>
                     </a>
                   </div>
