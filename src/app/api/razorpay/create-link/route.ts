@@ -37,7 +37,7 @@ export async function POST(request: Request) {
         },
         reminder_enable: true,
         notes: {
-          platform: 'safeship.in',
+          platform: 'safeship.online',
           dealId: dealId || 'unknown',
           service: 'escrow_doorstep_inspection',
         },
