@@ -26,7 +26,7 @@ export default function RazorpayCheckoutTestPage() {
   ]);
   const [verificationResult, setVerificationResult] = useState<any>(null);
 
-  const { openCheckout, loading, error, clearError } = useRazorpay();
+  const { openCheckout, loading, error, clearError, paymentModalNode } = useRazorpay();
 
   const addLog = (msg: string) => {
     setLogs((prev) => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev]);
@@ -267,6 +267,7 @@ export default function RazorpayCheckoutTestPage() {
         </div>
 
       </main>
+      {paymentModalNode}
     </div>
   );
 }

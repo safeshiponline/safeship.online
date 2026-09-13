@@ -53,7 +53,8 @@ function OpenBoxContent() {
     openCheckout,
     loading: payingWithRazorpay,
     error: razorpayError,
-    clearError: clearRazorpayError
+    clearError: clearRazorpayError,
+    paymentModalNode
   } = useRazorpay();
 
   useEffect(() => {
@@ -633,6 +634,7 @@ function OpenBoxContent() {
         </div>
       )}
 
+      {paymentModalNode}
     </div>
   );
 }

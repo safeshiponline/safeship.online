@@ -1,8 +1,8 @@
 'use client';
 
 import React from 'react';
-import { useRazorpay, CheckoutOptions } from '@/lib/useRazorpay';
-import { ShieldCheck, ArrowRight, Lock } from '@/components/common/Icons';
+import { useRazorpay } from '@/lib/useRazorpay';
+import { ArrowRight, Lock } from '@/components/common/Icons';
 
 interface RazorpayButtonProps {
   amountInRupees: number;
@@ -25,7 +25,7 @@ export function RazorpayButton({
   onFailure,
   onDismiss
 }: RazorpayButtonProps) {
-  const { openCheckout, loading, error, clearError } = useRazorpay();
+  const { openCheckout, loading, error, clearError, paymentModalNode } = useRazorpay();
 
   const handlePay = () => {
     clearError();
@@ -53,12 +53,12 @@ export function RazorpayButton({
         {loading ? (
           <>
             <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-            <span>Connecting to Razorpay...</span>
+            <span>Connecting to Payment Gateway...</span>
           </>
         ) : (
           <>
             <Lock className="w-4 h-4 text-white" />
-            <span>{label || `Pay ₹${amountInRupees.toLocaleString('en-IN')} via Razorpay`}</span>
+            <span>{label || `Pay ₹${amountInRupees.toLocaleString('en-IN')} via Escrow`}</span>
             <ArrowRight className="w-4 h-4" />
           </>
         )}
@@ -76,6 +76,8 @@ export function RazorpayButton({
           </button>
         </div>
       )}
+
+      {paymentModalNode}
     </div>
   );
 }
