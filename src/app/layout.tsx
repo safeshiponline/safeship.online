@@ -2,11 +2,13 @@ import type { Metadata, Viewport } from 'next';
 import React from 'react';
 import './globals.css';
 
+import { AISupportWidget } from '@/components/common/AISupportWidget';
+
 export const metadata: Metadata = {
-  title: 'SafeShip | Scam-Free Deals & Doorstep Courier for India',
-  description: 'Buy & sell safely on OLX, FB Marketplace, and Reddit. 50/50 fee split, UPI Escrow, and physical doorstep courier verification.',
+  title: 'SafeShip — Ship Smart. Trust More. | Open-Box Delivery & 2-Way Item Exchange',
+  description: 'India’s Open-Box Delivery and 2-Way Hardware Exchange infrastructure. Pay only delivery charges upfront. Inspect before paying at doorstep.',
   icons: {
-    icon: '/favicon.ico',
+    icon: '/icon.svg',
   },
 };
 
@@ -16,7 +18,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  themeColor: '#ffffff',
+  themeColor: '#0066FF',
 };
 
 export default function RootLayout({
@@ -25,9 +27,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full bg-white text-zinc-900 antialiased">
-      <body className="min-h-full flex flex-col bg-white text-zinc-900 selection:bg-zinc-900 selection:text-white">
+    <html lang="en" className="h-full bg-[#F8FAFC] text-[#0F172A] antialiased">
+      <body className="min-h-full flex flex-col bg-[#F8FAFC] text-[#0F172A] selection:bg-[#0066FF] selection:text-white">
         {children}
+        <AISupportWidget />
       </body>
     </html>
   );

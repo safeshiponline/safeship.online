@@ -69,6 +69,36 @@ function CreateShipmentContent() {
   const [deliveryDate, setDeliveryDate] = useState<string>('Today (1-2 days transit)');
   const [packageWeight, setPackageWeight] = useState<string>('~0.9 kg (small box 20 x 15 x 10 cm)');
   const [openBoxEnabled, setOpenBoxEnabled] = useState<boolean>(true);
+  const [calculatingDistance, setCalculatingDistance] = useState<boolean>(false);
+  const [routeNote, setRouteNote] = useState<string>('NH48 Express Corridor');
+
+  const recalculateDistanceWithGemini = async (from: string, to: string) => {
+    setCalculatingDistance(true);
+    try {
+      const res = await fetch('/api/gemini/distance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fromCity: from,
+          toCity: to,
+          fromPin: pickupPincode,
+          toPin: dropPincode
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setDistanceKm(data.data.distanceKm);
+        setDeliveryDate(data.data.transitDays);
+        if (data.data.recommendedHighway) {
+          setRouteNote(data.data.recommendedHighway);
+        }
+      }
+    } catch {
+      // fallback preserved
+    } finally {
+      setCalculatingDistance(false);
+    }
+  };
 
   // Upfront Pricing calculation:
   // 1-Way Delivery: ₹249 delivery fee + ₹29 insurance = ₹349 total
@@ -577,22 +607,38 @@ function CreateShipmentContent() {
                 </div>
               </div>
 
-              {/* Calculated Distance & Transit Time */}
+              {/* Calculated Distance & Transit Time (Gemini Telemetry) */}
               <div className="p-3.5 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <Truck className="w-5 h-5 text-[#0066FF]" />
+                  <Truck className="w-5 h-5 text-[#0066FF] shrink-0" />
                   <div>
-                    <span className="text-xs font-bold text-[#0F172A] block">
-                      Jaipur &harr; Delhi ({distanceKm} km {mode === 'exchange' ? 'round-trip corridor' : 'corridor'})
-                    </span>
-                    <span className="text-[11px] text-[#0066FF] font-semibold">
-                      Estimated Handoff: {deliveryDate}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-[#0F172A] block">
+                        {distanceKm} km ({mode === 'exchange' ? '2-Way Roundtrip' : 'Direct Transit'})
+                      </span>
+                      <span className="text-[9px] font-bold bg-[#0066FF] text-white px-1.5 py-0.2 rounded">
+                        Gemini Telemetry
+                      </span>
+                    </div>
+                    <span className="text-[11px] text-[#0066FF] font-semibold block">
+                      {routeNote} &bull; {deliveryDate}
                     </span>
                   </div>
                 </div>
-                <span className="text-xs font-black text-[#0F172A]">
-                  ₹{deliveryFee} base
-                </span>
+
+                <div className="text-right">
+                  <span className="text-xs font-black text-[#0F172A] block">
+                    ₹{deliveryFee} base
+                  </span>
+                  <button
+                    type="button"
+                    disabled={calculatingDistance}
+                    onClick={() => recalculateDistanceWithGemini(pickupLocation, dropLocation)}
+                    className="text-[10px] font-bold text-[#0066FF] hover:underline cursor-pointer"
+                  >
+                    {calculatingDistance ? 'Recalculating...' : 'Refresh Route ↻'}
+                  </button>
+                </div>
               </div>
 
               {/* Package Details */}
