@@ -1,522 +1,585 @@
 'use client';
 
 import React, { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { createNewDeal } from '@/lib/store';
-import { FeeSplitOption, ItemCategory } from '@/lib/types';
-import { Navbar } from '@/components/common/Navbar';
-import { RoleSwitcher } from '@/components/common/RoleSwitcher';
-import { FeeSplitCard } from '@/components/deal/FeeSplitCard';
-import { calculateEscrowBreakdown, formatINR } from '@/lib/escrowCalculator';
-import { lookupPincode, formatFullAddress, INDIAN_STATES } from '@/lib/indianAddresses';
-import { GpsLocator } from '@/components/common/GpsLocator';
-
-
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { SafeShipLogo } from '@/components/common/SafeShipLogo';
 import {
-  ShieldCheck,
-  Package,
-  Truck,
+  ArrowLeft,
   ArrowRight,
-  Copy,
   Check,
-  ArrowLeftRight
+  Package,
+  Camera,
+  MapPin,
+  ShieldCheck,
+  Eye,
+  Truck,
+  Upload,
+  X,
+  Search,
+  Monitor,
+  Shirt,
+  Sofa,
+  Car,
+  Layers,
+  Sparkles
 } from '@/components/common/Icons';
 
-function DealWizardContent() {
+export default function CreateShipmentPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs">Loading SafeShip Booking Engine...</div>}>
+      <CreateShipmentContent />
+    </Suspense>
+  );
+}
+
+function CreateShipmentContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const initialPrice = Number(searchParams.get('price')) || 45000;
-  const initialTier = (searchParams.get('tier') as any) || 'HYPERLOCAL_SAME_DAY';
-  const initialSplit = (searchParams.get('split') as FeeSplitOption) || 'SPLIT_50_50';
-
-  const [step, setStep] = useState<number>(1);
-  const [copied, setCopied] = useState(false);
-  const [createdDealId, setCreatedDealId] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState<number>(1);
 
   // Form State
-  const [title, setTitle] = useState('Apple iPhone 15 Pro 128GB (Natural Titanium, Indian Bill)');
-  const [category, setCategory] = useState<ItemCategory>('SMARTPHONES_TABLETS');
-  const [declaredValue, setDeclaredValue] = useState<number>(initialPrice);
-  const [condition, setCondition] = useState<any>('Mint / Like New');
-  const [serialNumber, setSerialNumber] = useState('F2LL99XMD6T');
-  const [description, setDescription] = useState('Purchased 6 months ago from Apple Store. 98% battery health, bill, box, and unused cable included.');
+  const [selectedCategory, setSelectedCategory] = useState<string>('Electronics');
+  const [itemName, setItemName] = useState<string>('iPhone 15 Pro, 256GB');
+  const [condition, setCondition] = useState<string>('Used - Excellent');
+  const [declaredValue, setDeclaredValue] = useState<number>(65000);
+  const [includedItems, setIncludedItems] = useState<string>('Phone, cable, original retail box');
+  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([
+    '/images/sell_box_feathered.webp',
+  ]);
 
-  const [sellerName, setSellerName] = useState('Rohit Sharma');
-  const [sellerEmail, setSellerEmail] = useState('rohit.sharma@gmail.com');
-  const [sellerPhone, setSellerPhone] = useState('9845012890');
-  
-  // Structured Indian Pickup Address
-  const [pickupFlatBuilding, setPickupFlatBuilding] = useState('Flat 301, Brigade Gateway');
-  const [pickupStreetArea, setPickupStreetArea] = useState('100ft Road, HAL 2nd Stage, Indiranagar');
-  const [pickupLandmark, setPickupLandmark] = useState('Near Toit Brewpub');
-  const [pincode, setPincode] = useState('560038');
-  const [city, setCity] = useState('Bangalore');
-  const [stateName, setStateName] = useState('Karnataka');
-  const [sellerUpiId, setSellerUpiId] = useState('rohit.sharma@okhdfcbank');
+  // Location & Distance State
+  const [pickupLocation, setPickupLocation] = useState<string>('Patrika Gate, Jaipur');
+  const [pickupPincode, setPickupPincode] = useState<string>('302017');
+  const [dropLocation, setDropLocation] = useState<string>('Connaught Place, Delhi');
+  const [dropPincode, setDropPincode] = useState<string>('110001');
+  const [distanceKm, setDistanceKm] = useState<number>(280);
+  const [deliveryDate, setDeliveryDate] = useState<string>('Today (1-2 days transit)');
+  const [packageWeight, setPackageWeight] = useState<string>('~0.9 kg (small box 20 x 15 x 10 cm)');
+  const [openBoxEnabled, setOpenBoxEnabled] = useState<boolean>(true);
 
-  const handlePincodeChange = (newPin: string) => {
-    const cleaned = newPin.replace(/\D/g, '').slice(0, 6);
-    setPincode(cleaned);
-    if (cleaned.length === 6) {
-      const match = lookupPincode(cleaned);
-      if (match) {
-        setCity(match.city);
-        setStateName(match.state);
-      }
+  // Upfront Pricing calculation
+  const deliveryFee = 249;
+  const openBoxFee = 0; // Included free!
+  const insuranceFee = 29;
+  const upfrontTotal = deliveryFee + openBoxFee + insuranceFee; // ₹349
+
+  const categories = [
+    { id: 'Electronics', label: 'Electronics', icon: Monitor },
+    { id: 'Fashion', label: 'Fashion', icon: Shirt },
+    { id: 'Home & Furniture', label: 'Home & Furniture', icon: Sofa },
+    { id: 'Vehicles', label: 'Vehicles', icon: Car },
+    { id: 'Books & Gaming', label: 'Books & Gaming', icon: Package },
+    { id: 'Sports', label: 'Sports', icon: Sparkles },
+    { id: 'Appliances', label: 'Appliances', icon: Layers },
+    { id: 'Others', label: 'Others', icon: Package },
+  ];
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setUploadedPhotos((prev) => [...prev, event.target!.result as string]);
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
-  const [deliveryTier, setDeliveryTier] = useState<any>(initialTier);
-  const [feeSplitOption, setFeeSplitOption] = useState<FeeSplitOption>(initialSplit);
-
-  const pricing = calculateEscrowBreakdown({
-    itemPrice: declaredValue,
-    deliveryTier,
-    feeSplitOption,
-    milestoneAdvancePercent: 30
-  });
-
-  const handleCreateDeal = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const fullPickupAddress = formatFullAddress({
-      flatBuilding: pickupFlatBuilding,
-      streetArea: pickupStreetArea,
-      landmark: pickupLandmark,
-      city,
-      state: stateName,
-      pincode
-    });
-
-    const deal = createNewDeal({
-      title,
-      description,
-      category,
-      declaredValue,
-      condition,
-      serialNumber,
-      itemPhotos: [
-        'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=1000&q=80'
-      ],
-      sellerName,
-      sellerEmail,
-      sellerPhone: `+91 ${sellerPhone}`,
-      pickupAddress: fullPickupAddress,
-      city,
-      pincode,
-      sellerUpiId,
-      feeSplitOption,
-      deliveryTier
-    });
-
-    setCreatedDealId(deal.id);
-    setStep(4);
-
+  const handleConfirmBooking = () => {
+    // Navigate to tracking with open-box verification demonstration
+    router.push('/open-box');
   };
-
-  const dealShareUrl = typeof window !== 'undefined' && createdDealId
-    ? `${window.location.origin}/deals/${createdDealId}`
-    : `https://safeship.online/deals/${createdDealId || 'deal_sample'}`;
-
-  const copyShareLink = () => {
-    navigator.clipboard.writeText(dealShareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  };
-
-  const whatsappMessage = encodeURIComponent(
-    `SafeShip Escrow: Review hardware specifications and lock escrow for ${title} under RBI Nodal protection: ${dealShareUrl}`
-  );
 
   return (
-    <div className="min-h-screen bg-zinc-50/60 text-zinc-900 flex flex-col antialiased selection:bg-zinc-950 selection:text-white">
-      <RoleSwitcher currentRole="SELLER" />
-      <Navbar />
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col justify-between">
+      
+      {/* Header */}
+      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-30 px-4 py-3">
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
+          <Link
+            href="/"
+            className="w-9 h-9 rounded-full bg-[#F1F5F9] hover:bg-[#E2E8F0] flex items-center justify-center text-[#0F172A] transition"
+          >
+            <ArrowLeft className="w-4.5 h-4.5" />
+          </Link>
 
-      <main className="flex-1 max-w-xl w-full mx-auto px-4 py-6 sm:py-10">
-        {/* Compact Stepper */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-2">
-            <span>
-              {step === 1 && '01 / Hardware Specifications'}
-              {step === 2 && '02 / Custody Origin & Payout'}
-              {step === 3 && '03 / Symmetric Escrow Economics'}
-              {step === 4 && '04 / Contract Initialized'}
+          <div className="text-center">
+            <span className="text-[11px] font-bold text-[#0066FF] uppercase tracking-wider">
+              Create Shipment &bull; Step {currentStep} of 4
             </span>
-            <span className="font-mono text-zinc-950 font-bold">{formatINR(declaredValue)}</span>
+            <h1 className="text-sm font-bold text-[#0F172A] mt-0.5">
+              {currentStep === 1 && 'What are you sending?'}
+              {currentStep === 2 && 'Item Details & Photos'}
+              {currentStep === 3 && 'Pickup & Delivery'}
+              {currentStep === 4 && 'Review & Upfront Pricing'}
+            </h1>
           </div>
-          <div className="h-1.5 w-full bg-zinc-200/80 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-zinc-950 transition-all duration-300 rounded-full"
-              style={{ width: `${(step / 4) * 100}%` }}
-            />
+
+          <div className="w-9 h-9 flex items-center justify-center">
+            <SafeShipLogo className="w-7 h-7" />
           </div>
         </div>
+      </header>
 
-        {/* STEP 1: ITEM DETAILS */}
-        {step === 1 && (
-          <div className="rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-7 shadow-xs space-y-5">
+      {/* Progress Dots */}
+      <div className="bg-white border-b border-[#E2E8F0] py-2">
+        <div className="max-w-md mx-auto flex items-center justify-between px-6">
+          {[1, 2, 3, 4].map((s) => (
+            <div key={s} className="flex items-center gap-2">
+              <div
+                className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${
+                  s === currentStep
+                    ? 'bg-[#0066FF] text-white shadow-sm ring-2 ring-blue-100'
+                    : s < currentStep
+                    ? 'bg-[#10B981] text-white'
+                    : 'bg-slate-100 text-slate-400'
+                }`}
+              >
+                {s < currentStep ? <Check className="w-3.5 h-3.5" /> : s}
+              </div>
+              <span className="text-[11px] font-medium hidden sm:inline text-[#64748B]">
+                {s === 1 && 'Category'}
+                {s === 2 && 'Details'}
+                {s === 3 && 'Locations'}
+                {s === 4 && 'Pricing'}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Main Wizard Form Body */}
+      <main className="max-w-xl mx-auto w-full p-4 sm:p-6 flex-1">
+        
+        {/* =================================================================== */}
+        {/* STEP 1: CATEGORY SELECTION                                          */}
+        {/* =================================================================== */}
+        {currentStep === 1 && (
+          <div className="space-y-4 animate-in fade-in">
             <div>
-              <div className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider">Lot Specification</div>
-              <h2 className="text-lg sm:text-xl font-black text-zinc-950 tracking-tight mt-0.5">What hardware are you selling?</h2>
-              <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Enter technical parameters to establish the certified doorstep verification checklist.</p>
+              <h2 className="text-xl font-bold text-[#0F172A]">
+                Choose Item Category
+              </h2>
+              <p className="text-xs text-[#64748B] mt-0.5">
+                SafeShip Open-Box Delivery is available for all high-value items.
+              </p>
             </div>
 
-            <div className="space-y-3.5 text-xs">
-              <div className="space-y-1.5">
-                <label className="font-bold text-zinc-800">Device Model & Specification</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+              {categories.map((cat) => {
+                const IconComp = cat.icon;
+                const isSelected = selectedCategory === cat.id;
+                return (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setSelectedCategory(cat.id)}
+                    className={`p-4 rounded-2xl border flex flex-col items-center text-center transition cursor-pointer shadow-2xs active:scale-95 ${
+                      isSelected
+                        ? 'bg-[#EFF6FF] border-[#0066FF] text-[#0066FF] shadow-xs ring-2 ring-blue-100 font-bold'
+                        : 'bg-white border-[#E2E8F0] text-[#334155] hover:border-[#BFDBFE]'
+                    }`}
+                  >
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${
+                      isSelected ? 'bg-[#0066FF] text-white' : 'bg-[#F1F5F9] text-[#64748B]'
+                    }`}>
+                      <IconComp className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs">{cat.label}</span>
+                  </button>
+                );
+              })}
+            </div>
 
+            <button
+              type="button"
+              onClick={() => setCurrentStep(2)}
+              className="mt-6 w-full py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2"
+            >
+              <span>Next: Item Details</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* =================================================================== */}
+        {/* STEP 2: ITEM DETAILS & PHOTO UPLOAD                                */}
+        {/* =================================================================== */}
+        {currentStep === 2 && (
+          <div className="space-y-4 animate-in fade-in">
+            <div>
+              <h2 className="text-xl font-bold text-[#0F172A]">
+                Item Details &amp; Evidence
+              </h2>
+              <p className="text-xs text-[#64748B] mt-0.5">
+                These photos and details will be verified by the courier and buyer upon open-box delivery.
+              </p>
+            </div>
+
+            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3.5">
+              <div>
+                <label className="text-xs font-bold text-[#334155] block mb-1">
+                  Item Name / Model:
+                </label>
                 <input
                   type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-zinc-900 text-sm focus:border-zinc-900 focus:bg-white focus:outline-none"
+                  value={itemName}
+                  onChange={(e) => setItemName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-sm text-[#0F172A] outline-hidden focus:border-[#0066FF]"
+                  placeholder="e.g. iPhone 15 Pro, 256GB"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-700">Category</label>
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value as any)}
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 text-zinc-900 text-xs focus:border-zinc-900 focus:bg-white focus:outline-none"
-                  >
-                    <option value="SMARTPHONES_TABLETS">Smartphones / Tablets</option>
-                    <option value="LAPTOPS_COMPUTERS">Laptops / MacBooks</option>
-                    <option value="GAMING_CONSOLES">PlayStation / Xbox</option>
-                    <option value="CAMERAS_LENSES">Cameras & Lenses</option>
-                    <option value="LUXURY_WATCHES">Watches</option>
-                    <option value="OTHER">Other Valuables</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-700">Agreed Price (₹)</label>
-                  <input
-                    type="number"
-                    min={500}
-                    step={500}
-                    required
-                    value={declaredValue}
-                    onChange={(e) => setDeclaredValue(Number(e.target.value))}
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 text-zinc-900 text-xs font-bold font-mono focus:border-zinc-900 focus:bg-white focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-700">Condition</label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-[#334155] block mb-1">
+                    Condition:
+                  </label>
                   <select
                     value={condition}
                     onChange={(e) => setCondition(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 text-zinc-900 text-xs focus:border-zinc-900 focus:bg-white focus:outline-none"
+                    className="w-full px-3 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] outline-hidden focus:border-[#0066FF]"
                   >
-                    <option value="Brand New / Sealed">Brand New / Sealed Box</option>
-                    <option value="Mint / Like New">Mint / Scratchless</option>
-                    <option value="Good Condition">Good (Normal Use)</option>
-                    <option value="Fair / Minor Wear">Fair (Visible Scratches)</option>
+                    <option>Used - Excellent</option>
+                    <option>Brand New Sealed</option>
+                    <option>Used - Good</option>
+                    <option>Used - Fair</option>
                   </select>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-700">Serial / IMEI (Optional)</label>
-                  <input
-                    type="text"
-                    value={serialNumber}
-                    onChange={(e) => setSerialNumber(e.target.value)}
-                    placeholder="e.g. F2LL99X..."
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 text-zinc-900 text-xs font-mono focus:border-zinc-900 focus:bg-white focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-semibold text-zinc-700">Description & Included Accessories</label>
-                <textarea
-                  rows={2}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 text-zinc-900 text-xs focus:border-zinc-900 focus:bg-white focus:outline-none"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setStep(2)}
-                className="w-full mt-3 py-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer shadow-xs"
-              >
-                <span>Proceed to Origin Coordinates & Settlement Rail</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 2: PICKUP DETAILS */}
-        {step === 2 && (
-          <div className="rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-7 shadow-xs space-y-5">
-            <div>
-              <div className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider">Custody Dispatch & Settlement</div>
-              <h2 className="text-lg sm:text-xl font-black text-zinc-950 tracking-tight mt-0.5">Custody Origin & Payout Destination</h2>
-              <p className="text-xs text-zinc-500 mt-1 leading-relaxed">Designate courier pickup coordinates and your UPI ID for the 30% advance milestone payout.</p>
-            </div>
-
-            <div className="space-y-3 text-xs">
-              <div className="space-y-1">
-                <label className="font-semibold text-zinc-700">Your Name (Seller)</label>
-                <input
-                  type="text"
-                  required
-                  value={sellerName}
-                  onChange={(e) => setSellerName(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2.5 text-zinc-900 text-xs focus:border-zinc-900 focus:bg-white focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-700">Mobile (For Courier)</label>
-                  <div className="relative flex items-center">
-                    <span className="absolute left-2.5 text-xs font-semibold text-zinc-500 select-none">+91</span>
-                    <input
-                      type="tel"
-                      required
-                      maxLength={10}
-                      value={sellerPhone}
-                      onChange={(e) => setSellerPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                      placeholder="98765 43210"
-                      className="w-full rounded-xl border border-zinc-200 bg-zinc-50 pl-10 pr-2.5 py-2 text-zinc-900 text-xs focus:border-zinc-900 focus:bg-white focus:outline-none"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-700">Your UPI ID (For Payout)</label>
-                  <input
-                    type="text"
-                    required
-                    value={sellerUpiId}
-                    onChange={(e) => setSellerUpiId(e.target.value)}
-                    placeholder="name@okhdfcbank"
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2 text-zinc-900 text-xs font-mono focus:border-zinc-900 focus:bg-white focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              {/* GPS Auto-Detect */}
-              <div className="pt-1">
-                <GpsLocator
-                  onLocationDetected={(loc) => {
-                    if (loc.flatBuilding) setPickupFlatBuilding(loc.flatBuilding);
-                    setPickupStreetArea(loc.streetArea);
-                    setCity(loc.city);
-                    setStateName(loc.state);
-                    setPincode(loc.pincode);
-                  }}
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-semibold text-zinc-700">Flat, House No., Building Name</label>
-                <input
-                  type="text"
-                  required
-                  value={pickupFlatBuilding}
-                  onChange={(e) => setPickupFlatBuilding(e.target.value)}
-                  placeholder="e.g. Flat 301, Brigade Gateway"
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2 text-zinc-900 text-xs focus:border-zinc-900 focus:bg-white focus:outline-none"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="font-semibold text-zinc-700">Street, Colony, Sector</label>
-                <input
-                  type="text"
-                  required
-                  value={pickupStreetArea}
-                  onChange={(e) => setPickupStreetArea(e.target.value)}
-                  placeholder="e.g. 100ft Road, HAL 2nd Stage, Indiranagar"
-                  className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2 text-zinc-900 text-xs focus:border-zinc-900 focus:bg-white focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-700">Landmark (Optional)</label>
-                  <input
-                    type="text"
-                    value={pickupLandmark}
-                    onChange={(e) => setPickupLandmark(e.target.value)}
-                    placeholder="e.g. Near Toit Brewpub"
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2 text-zinc-900 text-xs focus:border-zinc-900 focus:bg-white focus:outline-none"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-700 flex items-center justify-between">
-                    <span>PIN Code</span>
-                    {pincode.length === 6 && (
-                      <span className="text-[10px] text-emerald-600 font-normal">Auto-detected</span>
-                    )}
+                <div>
+                  <label className="text-xs font-bold text-[#334155] block mb-1">
+                    Agreed Item Value (₹):
                   </label>
                   <input
-                    type="text"
-                    required
-                    maxLength={6}
-                    value={pincode}
-                    onChange={(e) => handlePincodeChange(e.target.value)}
-                    placeholder="e.g. 560038"
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2 text-zinc-900 text-xs font-mono focus:border-zinc-900 focus:bg-white focus:outline-none"
+                    type="number"
+                    value={declaredValue}
+                    onChange={(e) => setDeclaredValue(Number(e.target.value))}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-sm font-bold text-[#0066FF] outline-hidden focus:border-[#0066FF]"
                   />
+                  <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5">
+                    * Paid by buyer on open box delivery
+                  </span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-700">City</label>
-                  <input
-                    type="text"
-                    required
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2 text-zinc-900 text-xs focus:border-zinc-900 focus:bg-white focus:outline-none"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-semibold text-zinc-700">State</label>
-                  <select
-                    value={stateName}
-                    onChange={(e) => setStateName(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 p-2 text-zinc-900 text-xs focus:border-zinc-900 focus:bg-white focus:outline-none"
-                  >
-                    {INDIAN_STATES.map((st) => (
-                      <option key={st} value={st}>
-                        {st}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+              <div>
+                <label className="text-xs font-bold text-[#334155] block mb-1">
+                  What&apos;s Included:
+                </label>
+                <input
+                  type="text"
+                  value={includedItems}
+                  onChange={(e) => setIncludedItems(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] outline-hidden focus:border-[#0066FF]"
+                  placeholder="e.g. Phone, cable, box, invoice"
+                />
               </div>
 
-              <div className="flex gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="w-1/3 py-2.5 rounded-xl border border-zinc-200 bg-white text-zinc-700 font-medium text-xs hover:bg-zinc-50 transition"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep(3)}
-                  className="w-2/3 py-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs transition flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer shadow-xs"
-                >
-                  <span>Review Settlement Terms</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
+              {/* Photo Upload Gallery */}
+              <div>
+                <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                  Item Photos (for AI &amp; Open-Box Comparison):
+                </label>
+                
+                <div className="grid grid-cols-3 gap-2.5">
+                  {uploadedPhotos.map((url, idx) => (
+                    <div key={idx} className="relative aspect-square rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center p-1">
+                      <img src={url} alt={`Upload ${idx}`} className="w-full h-full object-contain" />
+                      <span className="absolute bottom-1 right-1 px-1 rounded bg-black/60 text-white text-[9px] font-bold">
+                        #{idx + 1}
+                      </span>
+                    </div>
+                  ))}
+
+                  <label className="aspect-square rounded-xl border-2 border-dashed border-[#0066FF]/40 bg-[#EFF6FF]/30 hover:bg-[#EFF6FF] flex flex-col items-center justify-center cursor-pointer transition">
+                    <Camera className="w-5 h-5 text-[#0066FF]" />
+                    <span className="text-[10px] font-bold text-[#0066FF] mt-1">+ Add Photo</span>
+                    <input type="file" accept="image/*" onChange={handlePhotoUpload} className="hidden" />
+                  </label>
+                </div>
               </div>
             </div>
-          </div>
-        )}
-
-        {/* STEP 3: FEE SPLIT */}
-        {step === 3 && (
-          <div className="space-y-4">
-            <FeeSplitCard
-              pricing={pricing}
-              interactive={true}
-              selectedOption={feeSplitOption}
-              onOptionChange={(opt) => setFeeSplitOption(opt)}
-            />
 
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setStep(2)}
-                className="w-1/3 py-3 rounded-xl border border-zinc-200 bg-white text-zinc-700 font-medium text-xs shadow-xs hover:bg-zinc-50 transition"
+                onClick={() => setCurrentStep(1)}
+                className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition"
               >
                 Back
               </button>
               <button
                 type="button"
-                onClick={handleCreateDeal}
-                className="w-2/3 py-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs shadow-xs transition flex items-center justify-center gap-1.5 active:scale-98 cursor-pointer"
+                onClick={() => setCurrentStep(3)}
+                className="flex-1 py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2"
               >
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                <span>Initialize Escrow & Generate Vault</span>
+                <span>Next: Pickup &amp; Delivery</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
 
-        {/* STEP 4: DEAL READY & SHARE */}
-        {step === 4 && (
-          <div className="rounded-3xl border border-zinc-200/90 bg-white p-6 sm:p-9 shadow-xs text-center space-y-6">
-            <div className="h-14 w-14 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center mx-auto shadow-inner">
-              <ShieldCheck className="w-7 h-7" />
-            </div>
-
+        {/* =================================================================== */}
+        {/* STEP 3: PICKUP & DELIVERY LOCATION + ACCURATE DISTANCE              */}
+        {/* =================================================================== */}
+        {currentStep === 3 && (
+          <div className="space-y-4 animate-in fade-in">
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/60 text-[10px] font-mono font-bold text-emerald-800 uppercase tracking-wider mb-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Escrow Protocol Activated
-              </div>
-              <h2 className="text-xl sm:text-2xl font-black text-zinc-950 tracking-tight">
-                Transmit Vault to Counterparty
+              <h2 className="text-xl font-bold text-[#0F172A]">
+                Pickup &amp; Drop Locations
               </h2>
-              <p className="text-xs text-zinc-500 mt-2 max-w-md mx-auto leading-relaxed">
-                Your counterparty will review hardware specifications and lock collateral into the RBI-regulated nodal escrow vault. Bonded logistics dispatch triggers automatically upon UPI / IMPS lock.
+              <p className="text-xs text-[#64748B] mt-0.5">
+                SafeShip calculates accurate inter-city distance and assigns bonded couriers.
               </p>
             </div>
 
-            {/* Copy Link input */}
-            <div className="rounded-2xl bg-zinc-50 border border-zinc-200/80 p-2 sm:p-2.5 flex items-center justify-between gap-2 shadow-inner">
-              <span className="font-mono text-xs text-zinc-700 truncate pl-2 text-left">
-                {dealShareUrl}
-              </span>
-              <button
-                type="button"
-                onClick={copyShareLink}
-                className="px-3.5 py-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs flex items-center gap-1.5 shrink-0 active:scale-95 transition shadow-xs"
-              >
-                {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copied ? 'Copied' : 'Copy'}</span>
-              </button>
+            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-4">
+              {/* Pickup Address */}
+              <div>
+                <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-[#0066FF]" />
+                  <span>Pickup Location (Sender):</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={pickupLocation}
+                    onChange={(e) => setPickupLocation(e.target.value)}
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] outline-hidden focus:border-[#0066FF]"
+                    placeholder="Area, Street, City"
+                  />
+                  <input
+                    type="text"
+                    value={pickupPincode}
+                    onChange={(e) => setPickupPincode(e.target.value)}
+                    className="w-24 px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] text-center font-mono outline-hidden focus:border-[#0066FF]"
+                    placeholder="PIN Code"
+                  />
+                </div>
+              </div>
+
+              {/* Drop Address */}
+              <div>
+                <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5 mb-1">
+                  <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+                  <span>Drop Location (Buyer):</span>
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={dropLocation}
+                    onChange={(e) => setDropLocation(e.target.value)}
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] outline-hidden focus:border-[#0066FF]"
+                    placeholder="Area, Street, City"
+                  />
+                  <input
+                    type="text"
+                    value={dropPincode}
+                    onChange={(e) => setDropPincode(e.target.value)}
+                    className="w-24 px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] text-center font-mono outline-hidden focus:border-[#0066FF]"
+                    placeholder="PIN Code"
+                  />
+                </div>
+              </div>
+
+              {/* Calculated Distance & Transit Time */}
+              <div className="p-3.5 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <Truck className="w-5 h-5 text-[#0066FF]" />
+                  <div>
+                    <span className="text-xs font-bold text-[#0F172A] block">
+                      Jaipur &rarr; Delhi ({distanceKm} km)
+                    </span>
+                    <span className="text-[11px] text-[#0066FF] font-semibold">
+                      Estimated Delivery: {deliveryDate}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-xs font-black text-[#0F172A]">
+                  ₹{deliveryFee} base
+                </span>
+              </div>
+
+              {/* Package Details */}
+              <div>
+                <label className="text-xs font-bold text-[#334155] block mb-1">
+                  Package Weight &amp; Dimensions:
+                </label>
+                <input
+                  type="text"
+                  value={packageWeight}
+                  onChange={(e) => setPackageWeight(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] outline-hidden"
+                />
+              </div>
+
+              {/* OPEN-BOX DELIVERY TOGGLE (The Moat) */}
+              <div className="p-3.5 rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] flex items-center justify-between">
+                <div className="flex items-center gap-2.5 pr-2">
+                  <Eye className="w-5 h-5 text-[#7C3AED] shrink-0" />
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-[#0F172A]">
+                        Open-Box Delivery
+                      </span>
+                      <span className="text-[9px] font-black bg-[#7C3AED] text-white px-1.5 py-0.2 rounded">
+                        THE MOAT
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#64748B] mt-0.5">
+                      Let the buyer inspect the parcel before accepting &amp; paying.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setOpenBoxEnabled(!openBoxEnabled)}
+                  className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
+                    openBoxEnabled ? 'bg-[#7C3AED]' : 'bg-slate-300'
+                  }`}
+                >
+                  <span
+                    className={`w-5 h-5 rounded-full bg-white block shadow transform transition-transform absolute top-0.5 ${
+                      openBoxEnabled ? 'translate-x-6' : 'translate-x-0.5'
+                    }`}
+                  />
+                </button>
+              </div>
+
             </div>
 
-            {/* Direct WhatsApp Share button */}
-            <a
-              href={`https://api.whatsapp.com/send?text=${whatsappMessage}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition flex items-center justify-center gap-2 shadow-xs active:scale-98"
-            >
-              <span>Transmit Protocol Link via WhatsApp</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </a>
-
-            <div className="pt-2">
+            <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => router.push(`/deals/${createdDealId}`)}
-                className="text-xs font-semibold text-zinc-600 hover:text-zinc-950 underline underline-offset-4 transition"
+                onClick={() => setCurrentStep(2)}
+                className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition"
               >
-                Access Live Multi-Party Settlement Console &rarr;
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={() => setCurrentStep(4)}
+                className="flex-1 py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2"
+              >
+                <span>Next: Review &amp; Price</span>
+                <ArrowRight className="w-4 h-4" />
               </button>
             </div>
           </div>
         )}
-      </main>
-    </div>
-  );
-}
 
-export default function NewDealPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-white text-zinc-900 flex items-center justify-center text-xs font-semibold">Loading Wizard...</div>}>
-      <DealWizardContent />
-    </Suspense>
+        {/* =================================================================== */}
+        {/* STEP 4: REVIEW & UPFRONT DELIVERY CHARGES (₹349)                    */}
+        {/* =================================================================== */}
+        {currentStep === 4 && (
+          <div className="space-y-4 animate-in fade-in">
+            <div>
+              <h2 className="text-xl font-bold text-[#0F172A]">
+                Review &amp; Book Shipment
+              </h2>
+              <p className="text-xs text-[#64748B] mt-0.5">
+                You only pay delivery charges today. Buyer pays the item value upon open-box delivery.
+              </p>
+            </div>
+
+            {/* Shipment Summary Card */}
+            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3">
+              <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0]">
+                <div>
+                  <h3 className="text-sm font-bold text-[#0F172A]">{itemName}</h3>
+                  <span className="text-[11px] text-[#64748B]">{condition} &bull; {includedItems}</span>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs text-[#64748B] block">Item Declared Value:</span>
+                  <span className="text-sm font-bold text-[#0066FF]">₹{declaredValue.toLocaleString('en-IN')}</span>
+                </div>
+              </div>
+
+              <div className="text-xs space-y-1.5 text-[#475569]">
+                <div className="flex justify-between">
+                  <span>Route:</span>
+                  <span className="font-semibold text-[#0F172A]">{pickupLocation} &rarr; {dropLocation}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Distance &amp; ETA:</span>
+                  <span className="font-semibold text-[#0F172A]">{distanceKm} km &bull; 1-2 days</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Open-Box Inspection:</span>
+                  <span className="font-semibold text-purple-600">✓ Enabled (Doorstep inspection)</span>
+                </div>
+              </div>
+            </div>
+
+            {/* UPFRONT PRICE BREAKDOWN CARD */}
+            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs">
+              <h3 className="text-xs font-bold text-[#64748B] uppercase tracking-wider mb-3">
+                Price Breakdown
+              </h3>
+
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between text-[#475569]">
+                  <span>Delivery Charge ({distanceKm} km):</span>
+                  <span className="font-semibold text-[#0F172A]">₹{deliveryFee}</span>
+                </div>
+                <div className="flex justify-between text-[#475569]">
+                  <span>Open-Box Doorstep Verification:</span>
+                  <span className="font-bold text-emerald-600">Included (₹0)</span>
+                </div>
+                <div className="flex justify-between text-[#475569]">
+                  <span>In-Transit Cargo Insurance (optional):</span>
+                  <span className="font-semibold text-[#0F172A]">₹{insuranceFee}</span>
+                </div>
+
+                <div className="pt-3 border-t border-[#E2E8F0] flex justify-between items-baseline">
+                  <div>
+                    <span className="text-sm font-black text-[#0F172A] block">
+                      Total Upfront Booking Charge:
+                    </span>
+                    <span className="text-[10px] text-emerald-600 font-semibold">
+                      No hidden fees. Zero commissions.
+                    </span>
+                  </div>
+                  <span className="text-xl font-black text-[#0066FF]">
+                    ₹{upfrontTotal}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* The SafeShip Trust Notice */}
+            <div className="p-3.5 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] text-[#1E40AF] leading-relaxed">
+              <strong>Why SafeShip is different:</strong> You only pay <strong>₹{upfrontTotal}</strong> now for delivery. The buyer pays the full <strong>₹{declaredValue.toLocaleString('en-IN')}</strong> upon inspecting the item at their doorstep. If rejected, it is returned safely.
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setCurrentStep(3)}
+                className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition"
+              >
+                Back
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmBooking}
+                className="flex-1 py-4 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-black text-sm shadow-md shadow-[#0066FF]/30 transition active:scale-98 flex items-center justify-center gap-2"
+              >
+                <span>Confirm &amp; Book Pickup &bull; Pay ₹{upfrontTotal}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+      </main>
+
+    </div>
   );
 }
