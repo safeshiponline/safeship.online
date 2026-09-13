@@ -74,6 +74,113 @@ function CreateShipmentContent() {
   const [calculatingDistance, setCalculatingDistance] = useState<boolean>(false);
   const [routeNote, setRouteNote] = useState<string>('NH48 Express Corridor');
 
+  // Step-by-Step Field Validation State
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [stepErrorBanner, setStepErrorBanner] = useState<string>('');
+
+  const clearFieldError = (field: string) => {
+    if (errors[field] || stepErrorBanner) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+      setStepErrorBanner('');
+    }
+  };
+
+  const validateStep1 = (): boolean => {
+    const errs: Record<string, string> = {};
+    if (!selectedCategory || !selectedCategory.trim()) {
+      errs.category = 'Please select a product category to proceed.';
+    }
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      setStepErrorBanner('Please select a category to continue.');
+      return false;
+    }
+    setStepErrorBanner('');
+    return true;
+  };
+
+  const validateStep2 = (): boolean => {
+    const errs: Record<string, string> = {};
+
+    if (!itemName || itemName.trim().length < 3) {
+      errs.itemName = 'Please enter an item model or name (minimum 3 characters).';
+    }
+    if (!condition || !condition.trim()) {
+      errs.condition = 'Please select the physical condition.';
+    }
+    if (!declaredValue || isNaN(declaredValue) || declaredValue <= 0) {
+      errs.declaredValue = 'Please enter a valid declared item valuation in ₹ (greater than 0).';
+    }
+    if (!includedItems || includedItems.trim().length < 2) {
+      errs.includedItems = 'Please specify accessories/items included in the package.';
+    }
+
+    if (mode === 'exchange') {
+      if (!exchangeItemName || exchangeItemName.trim().length < 3) {
+        errs.exchangeItemName = 'Please enter the partner item model/spec (minimum 3 characters).';
+      }
+      if (!exchangeCondition || !exchangeCondition.trim()) {
+        errs.exchangeCondition = 'Please select the partner item condition.';
+      }
+      if (!exchangeValue || isNaN(exchangeValue) || exchangeValue <= 0) {
+        errs.exchangeValue = 'Please enter an estimated partner valuation in ₹ (greater than 0).';
+      }
+      if (!exchangeIncluded || exchangeIncluded.trim().length < 2) {
+        errs.exchangeIncluded = 'Please list items/accessories included with partner item.';
+      }
+    }
+
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      setStepErrorBanner('Please complete all required fields marked with an asterisk (*).');
+      return false;
+    }
+    setStepErrorBanner('');
+    return true;
+  };
+
+  const validateStep3 = (): boolean => {
+    const errs: Record<string, string> = {};
+
+    if (!pickupLocation || pickupLocation.trim().length < 3) {
+      errs.pickupLocation = 'Please enter a valid pickup address (minimum 3 characters).';
+    }
+    if (!pickupPincode || !/^\d{6}$/.test(pickupPincode.trim())) {
+      errs.pickupPincode = 'Please enter a valid 6-digit Indian PIN code.';
+    }
+    if (!dropLocation || dropLocation.trim().length < 3) {
+      errs.dropLocation = 'Please enter a valid delivery address (minimum 3 characters).';
+    }
+    if (!dropPincode || !/^\d{6}$/.test(dropPincode.trim())) {
+      errs.dropPincode = 'Please enter a valid 6-digit Indian PIN code.';
+    }
+
+    setErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      setStepErrorBanner('Please provide valid addresses and 6-digit PIN codes for both locations.');
+      return false;
+    }
+    setStepErrorBanner('');
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (currentStep === 1) {
+      if (validateStep1()) setCurrentStep(2);
+    } else if (currentStep === 2) {
+      if (validateStep2()) setCurrentStep(3);
+    } else if (currentStep === 3) {
+      if (validateStep3()) {
+        recalculateDistanceWithGemini(pickupLocation, dropLocation);
+        setCurrentStep(4);
+      }
+    }
+  };
+
   const recalculateDistanceWithGemini = async (from: string, to: string) => {
     setCalculatingDistance(true);
     try {
@@ -285,7 +392,10 @@ function CreateShipmentContent() {
                   <button
                     key={cat.id}
                     type="button"
-                    onClick={() => setSelectedCategory(cat.id)}
+                    onClick={() => {
+                      setSelectedCategory(cat.id);
+                      clearFieldError('category');
+                    }}
                     className={`p-4 rounded-2xl border flex flex-col items-center text-center transition cursor-pointer shadow-2xs active:scale-95 ${
                       isSelected
                         ? 'bg-[#EFF6FF] border-[#0066FF] text-[#0066FF] shadow-xs ring-2 ring-blue-100 font-bold'
@@ -303,9 +413,23 @@ function CreateShipmentContent() {
               })}
             </div>
 
+            {errors.category && (
+              <p className="text-xs text-rose-600 font-semibold mt-2 flex items-center gap-1.5">
+                <span>⚠️</span>
+                <span>{errors.category}</span>
+              </p>
+            )}
+
+            {stepErrorBanner && currentStep === 1 && (
+              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{stepErrorBanner}</span>
+              </div>
+            )}
+
             <button
               type="button"
-              onClick={() => setCurrentStep(2)}
+              onClick={handleNextStep}
               className="mt-6 w-full py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
             >
               <span>Next: {mode === 'exchange' ? 'Dual Item Details' : 'Item Details'}</span>
@@ -342,62 +466,95 @@ function CreateShipmentContent() {
 
               <div>
                 <label className="text-xs font-bold text-[#334155] block mb-1">
-                  Item Model &amp; Storage:
+                  Item Model &amp; Storage <span className="text-rose-500">*</span>:
                 </label>
                 <input
                   type="text"
                   value={itemName}
-                  onChange={(e) => setItemName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-sm text-[#0F172A] outline-hidden focus:border-[#0066FF]"
+                  onChange={(e) => {
+                    setItemName(e.target.value);
+                    clearFieldError('itemName');
+                  }}
+                  className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-sm text-[#0F172A] outline-hidden transition ${
+                    errors.itemName ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                  }`}
                   placeholder="e.g. iPhone 15 Pro, 256GB - Natural Titanium"
                 />
+                {errors.itemName && (
+                  <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.itemName}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-[#334155] block mb-1">
-                    Condition:
+                    Condition <span className="text-rose-500">*</span>:
                   </label>
                   <select
                     value={condition}
-                    onChange={(e) => setCondition(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] outline-hidden focus:border-[#0066FF]"
+                    onChange={(e) => {
+                      setCondition(e.target.value);
+                      clearFieldError('condition');
+                    }}
+                    className={`w-full px-3 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
+                      errors.condition ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                    }`}
                   >
-                    <option>Used - Mint</option>
-                    <option>Brand New Sealed</option>
-                    <option>Used - Excellent</option>
-                    <option>Used - Good</option>
-                    <option>Used - Fair</option>
+                    <option value="Used - Mint">Used - Mint</option>
+                    <option value="Brand New Sealed">Brand New Sealed</option>
+                    <option value="Used - Excellent">Used - Excellent</option>
+                    <option value="Used - Good">Used - Good</option>
+                    <option value="Used - Fair">Used - Fair</option>
                   </select>
+                  {errors.condition && (
+                    <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.condition}</p>
+                  )}
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-[#334155] block mb-1">
-                    Declared Valuation (₹):
+                    Declared Valuation (₹) <span className="text-rose-500">*</span>:
                   </label>
                   <input
                     type="number"
-                    value={declaredValue}
-                    onChange={(e) => setDeclaredValue(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-sm font-bold text-[#0066FF] outline-hidden focus:border-[#0066FF]"
+                    value={declaredValue || ''}
+                    onChange={(e) => {
+                      setDeclaredValue(e.target.value === '' ? 0 : Number(e.target.value));
+                      clearFieldError('declaredValue');
+                    }}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-sm font-bold text-[#0066FF] outline-hidden transition ${
+                      errors.declaredValue ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                    }`}
                   />
-                  <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5">
-                    {mode === 'exchange' ? '* Mutual valuation reference' : '* Paid by buyer on doorstep open-box approval'}
-                  </span>
+                  {errors.declaredValue ? (
+                    <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.declaredValue}</p>
+                  ) : (
+                    <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5">
+                      {mode === 'exchange' ? '* Mutual valuation reference' : '* Paid by buyer on doorstep open-box approval'}
+                    </span>
+                  )}
                 </div>
               </div>
 
               <div>
                 <label className="text-xs font-bold text-[#334155] block mb-1">
-                  What&apos;s Included:
+                  What&apos;s Included <span className="text-rose-500">*</span>:
                 </label>
                 <input
                   type="text"
                   value={includedItems}
-                  onChange={(e) => setIncludedItems(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] outline-hidden focus:border-[#0066FF]"
+                  onChange={(e) => {
+                    setIncludedItems(e.target.value);
+                    clearFieldError('includedItems');
+                  }}
+                  className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
+                    errors.includedItems ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                  }`}
                   placeholder="e.g. Original box, USB-C cable, invoice"
                 />
+                {errors.includedItems && (
+                  <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.includedItems}</p>
+                )}
               </div>
 
               {/* Photo Upload Gallery */}
@@ -440,58 +597,90 @@ function CreateShipmentContent() {
 
                 <div>
                   <label className="text-xs font-bold text-[#334155] block mb-1">
-                    Partner Item Model / Spec:
+                    Partner Item Model / Spec <span className="text-rose-500">*</span>:
                   </label>
                   <input
                     type="text"
                     value={exchangeItemName}
-                    onChange={(e) => setExchangeItemName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-sm text-[#0F172A] outline-hidden focus:border-amber-500"
+                    onChange={(e) => {
+                      setExchangeItemName(e.target.value);
+                      clearFieldError('exchangeItemName');
+                    }}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-sm text-[#0F172A] outline-hidden transition ${
+                      errors.exchangeItemName ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-amber-500'
+                    }`}
                     placeholder="e.g. MacBook Air M2, 8GB/256GB - Space Grey"
                   />
+                  {errors.exchangeItemName && (
+                    <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.exchangeItemName}</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs font-bold text-[#334155] block mb-1">
-                      Condition:
+                      Condition <span className="text-rose-500">*</span>:
                     </label>
                     <select
                       value={exchangeCondition}
-                      onChange={(e) => setExchangeCondition(e.target.value)}
-                      className="w-full px-3 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] outline-hidden focus:border-amber-500"
+                      onChange={(e) => {
+                        setExchangeCondition(e.target.value);
+                        clearFieldError('exchangeCondition');
+                      }}
+                      className={`w-full px-3 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
+                        errors.exchangeCondition ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-amber-500'
+                      }`}
                     >
-                      <option>Used - Excellent</option>
-                      <option>Brand New Sealed</option>
-                      <option>Used - Mint</option>
-                      <option>Used - Good</option>
+                      <option value="Used - Excellent">Used - Excellent</option>
+                      <option value="Brand New Sealed">Brand New Sealed</option>
+                      <option value="Used - Mint">Used - Mint</option>
+                      <option value="Used - Good">Used - Good</option>
                     </select>
+                    {errors.exchangeCondition && (
+                      <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.exchangeCondition}</p>
+                    )}
                   </div>
 
                   <div>
                     <label className="text-xs font-bold text-[#334155] block mb-1">
-                      Estimated Value (₹):
+                      Estimated Value (₹) <span className="text-rose-500">*</span>:
                     </label>
                     <input
                       type="number"
-                      value={exchangeValue}
-                      onChange={(e) => setExchangeValue(Number(e.target.value))}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-sm font-bold text-amber-700 outline-hidden focus:border-amber-500"
+                      value={exchangeValue || ''}
+                      onChange={(e) => {
+                        setExchangeValue(e.target.value === '' ? 0 : Number(e.target.value));
+                        clearFieldError('exchangeValue');
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-sm font-bold text-amber-700 outline-hidden transition ${
+                        errors.exchangeValue ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-amber-500'
+                      }`}
                     />
+                    {errors.exchangeValue && (
+                      <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.exchangeValue}</p>
+                    )}
                   </div>
                 </div>
 
                 <div>
                   <label className="text-xs font-bold text-[#334155] block mb-1">
-                    What&apos;s Included with Partner Item:
+                    What&apos;s Included with Partner Item <span className="text-rose-500">*</span>:
                   </label>
                   <input
                     type="text"
                     value={exchangeIncluded}
-                    onChange={(e) => setExchangeIncluded(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] outline-hidden focus:border-amber-500"
+                    onChange={(e) => {
+                      setExchangeIncluded(e.target.value);
+                      clearFieldError('exchangeIncluded');
+                    }}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
+                      errors.exchangeIncluded ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-amber-500'
+                    }`}
                     placeholder="e.g. Laptop, 30W adapter, box"
                   />
+                  {errors.exchangeIncluded && (
+                    <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.exchangeIncluded}</p>
+                  )}
                 </div>
 
                 {/* Cash Settlement / Balance Difference */}
@@ -547,17 +736,28 @@ function CreateShipmentContent() {
               </div>
             )}
 
+            {stepErrorBanner && currentStep === 2 && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{stepErrorBanner}</span>
+              </div>
+            )}
+
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setCurrentStep(1)}
+                onClick={() => {
+                  setStepErrorBanner('');
+                  setErrors({});
+                  setCurrentStep(1);
+                }}
                 className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50"
               >
                 Back
               </button>
               <button
                 type="button"
-                onClick={() => setCurrentStep(3)}
+                onClick={handleNextStep}
                 className="flex-1 py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Next: Pickup &amp; Delivery</span>
@@ -588,23 +788,44 @@ function CreateShipmentContent() {
               <div>
                 <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5 mb-1">
                   <span className="w-2 h-2 rounded-full bg-[#0066FF]" />
-                  <span>{mode === 'exchange' ? 'Your Address (Party A):' : 'Pickup Location (Sender):'}</span>
+                  <span>{mode === 'exchange' ? 'Your Address (Party A)' : 'Pickup Location (Sender)'} <span className="text-rose-500">*</span>:</span>
                 </label>
                 <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={pickupLocation}
-                    onChange={(e) => setPickupLocation(e.target.value)}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] outline-hidden focus:border-[#0066FF]"
-                    placeholder="Area, Street, City"
-                  />
-                  <input
-                    type="text"
-                    value={pickupPincode}
-                    onChange={(e) => setPickupPincode(e.target.value)}
-                    className="w-24 px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] text-center font-mono outline-hidden focus:border-[#0066FF]"
-                    placeholder="PIN Code"
-                  />
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={pickupLocation}
+                      onChange={(e) => {
+                        setPickupLocation(e.target.value);
+                        clearFieldError('pickupLocation');
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
+                        errors.pickupLocation ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                      }`}
+                      placeholder="Area, Street, City"
+                    />
+                    {errors.pickupLocation && (
+                      <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.pickupLocation}</p>
+                    )}
+                  </div>
+                  <div className="w-28">
+                    <input
+                      type="text"
+                      maxLength={6}
+                      value={pickupPincode}
+                      onChange={(e) => {
+                        setPickupPincode(e.target.value.replace(/\D/g, ''));
+                        clearFieldError('pickupPincode');
+                      }}
+                      className={`w-full px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] text-center font-mono outline-hidden transition ${
+                        errors.pickupPincode ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                      }`}
+                      placeholder="PIN Code"
+                    />
+                    {errors.pickupPincode && (
+                      <p className="text-[10px] text-rose-600 font-semibold mt-1">⚠️ {errors.pickupPincode}</p>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -612,23 +833,44 @@ function CreateShipmentContent() {
               <div>
                 <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5 mb-1">
                   <span className="w-2 h-2 rounded-full bg-[#10B981]" />
-                  <span>{mode === 'exchange' ? 'Partner Address (Party B):' : 'Drop Location (Buyer):'}</span>
+                  <span>{mode === 'exchange' ? 'Partner Address (Party B)' : 'Drop Location (Buyer)'} <span className="text-rose-500">*</span>:</span>
                 </label>
                 <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={dropLocation}
-                    onChange={(e) => setDropLocation(e.target.value)}
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] outline-hidden focus:border-[#0066FF]"
-                    placeholder="Area, Street, City"
-                  />
-                  <input
-                    type="text"
-                    value={dropPincode}
-                    onChange={(e) => setDropPincode(e.target.value)}
-                    className="w-24 px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] text-center font-mono outline-hidden focus:border-[#0066FF]"
-                    placeholder="PIN Code"
-                  />
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      value={dropLocation}
+                      onChange={(e) => {
+                        setDropLocation(e.target.value);
+                        clearFieldError('dropLocation');
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
+                        errors.dropLocation ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                      }`}
+                      placeholder="Area, Street, City"
+                    />
+                    {errors.dropLocation && (
+                      <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.dropLocation}</p>
+                    )}
+                  </div>
+                  <div className="w-28">
+                    <input
+                      type="text"
+                      maxLength={6}
+                      value={dropPincode}
+                      onChange={(e) => {
+                        setDropPincode(e.target.value.replace(/\D/g, ''));
+                        clearFieldError('dropPincode');
+                      }}
+                      className={`w-full px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] text-center font-mono outline-hidden transition ${
+                        errors.dropPincode ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                      }`}
+                      placeholder="PIN Code"
+                    />
+                    {errors.dropPincode && (
+                      <p className="text-[10px] text-rose-600 font-semibold mt-1">⚠️ {errors.dropPincode}</p>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -717,17 +959,28 @@ function CreateShipmentContent() {
 
             </div>
 
+            {stepErrorBanner && currentStep === 3 && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{stepErrorBanner}</span>
+              </div>
+            )}
+
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => setCurrentStep(2)}
+                onClick={() => {
+                  setStepErrorBanner('');
+                  setErrors({});
+                  setCurrentStep(2);
+                }}
                 className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50"
               >
                 Back
               </button>
               <button
                 type="button"
-                onClick={() => setCurrentStep(4)}
+                onClick={handleNextStep}
                 className="flex-1 py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Next: Review &amp; Price</span>

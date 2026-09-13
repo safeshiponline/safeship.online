@@ -30,46 +30,58 @@ export interface GeminiScanResult {
   recommendation: 'APPROVE_PAYMENT' | 'FLAG_FOR_DISPUTE' | 'RE_INSPECT';
 }
 
-const GEMINI_API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+const GEMINI_BASE_URL = process.env.GEMINI_BASE_URL || process.env.OPENAI_BASE_URL || 'http://localhost:8317/v1';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || 'cpa_sk_8f7b2c5d9a1e4c3a7f8b9d0e1f2a3b4c';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
 /**
- * Helper to invoke Gemini 1.5 Flash natively
+ * Helper to invoke OpenAI-compatible Gemini endpoint
  */
-async function callGeminiRaw(prompt: string, systemInstruction?: string): Promise<string | null> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return null;
+export async function callGeminiChat(
+  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+  temperature = 0.2
+): Promise<string | null> {
+  const baseUrl = process.env.GEMINI_BASE_URL || process.env.OPENAI_BASE_URL || 'http://localhost:8317/v1';
+  const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || 'cpa_sk_8f7b2c5d9a1e4c3a7f8b9d0e1f2a3b4c';
+  const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
   try {
-    const url = `${GEMINI_API_ENDPOINT}?key=${apiKey}`;
-    const payload: any = {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.2,
-        maxOutputTokens: 1024,
-      }
-    };
-
-    if (systemInstruction) {
-      payload.systemInstruction = { parts: [{ text: systemInstruction }] };
-    }
-
-    const res = await fetch(url, {
+    const res = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature
+      })
     });
 
     if (!res.ok) {
-      console.warn('Gemini API call failed with status:', res.status);
+      console.warn('Gemini proxy call failed with status:', res.status);
       return null;
     }
 
     const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+    return data.choices?.[0]?.message?.content || null;
   } catch (err) {
-    console.warn('Error connecting to Gemini API:', err);
+    console.warn('Error connecting to Gemini proxy:', err);
     return null;
   }
+}
+
+/**
+ * Raw prompt helper
+ */
+async function callGeminiRaw(prompt: string, systemInstruction?: string): Promise<string | null> {
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [];
+  if (systemInstruction) {
+    messages.push({ role: 'system', content: systemInstruction });
+  }
+  messages.push({ role: 'user', content: prompt });
+  return callGeminiChat(messages);
 }
 
 /**
@@ -98,21 +110,23 @@ Respond ONLY with valid JSON in this exact structure:
   const raw = await callGeminiRaw(prompt);
   if (raw) {
     try {
-      const cleanJson = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-      const parsed = JSON.parse(cleanJson);
-      return {
-        distanceKm: Number(parsed.distanceKm) || 280,
-        transitDays: parsed.transitDays || '1-2 days transit',
-        recommendedHighway: parsed.recommendedHighway || 'National Highway Corridor',
-        courierFeasibility: parsed.courierFeasibility || 'INTERCITY_STANDARD',
-        summary: parsed.summary || `${fromCity} to ${toCity} transit corridor`
-      };
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          distanceKm: Number(parsed.distanceKm) || 280,
+          transitDays: parsed.transitDays ? String(parsed.transitDays) : '1-2 days transit',
+          recommendedHighway: parsed.recommendedHighway || 'National Highway Corridor',
+          courierFeasibility: parsed.courierFeasibility || 'INTERCITY_STANDARD',
+          summary: parsed.summary || `${fromCity} to ${toCity} transit corridor`
+        };
+      }
     } catch {
       // fallback if json parse fails
     }
   }
 
-  // Graceful rule-based distance matrix if GEMINI_API_KEY is not configured
+  // Graceful rule-based distance matrix fallback
   const cityKey = `${fromCity.toLowerCase()}__${toCity.toLowerCase()}`;
   if (cityKey.includes('jaipur') && cityKey.includes('delhi')) {
     return {
@@ -152,50 +166,69 @@ Respond ONLY with valid JSON in this exact structure:
 }
 
 /**
- * 2. 24/7 AI Customer Support & Dispute Resolution Concierge
+ * 2. 24/7 Customer Support & Dispute Resolution Concierge
  */
 export async function getAICustomerSupportResponse(
   chatHistory: GeminiSupportMessage[],
   userQuestion: string,
   dealContext?: any
 ): Promise<string> {
-  const systemPrompt = `You are "SafeShip AI Concierge", the official high-trust customer support agent for SafeShip (safeship.online) in India.
-SafeShip's Core Rules & Value Proposition:
-1. "What you see is what you receive" — SafeShip is an Open-Box Delivery and 2-Way Item Exchange platform.
-2. Payment Model: SafeShip ONLY collects the minimal delivery fee upfront (₹349 for 1-way, ₹548 for 2-way exchange). ZERO product capital escrow is locked upfront.
-3. The Moat: When the courier arrives, the buyer/recipient has a 4-minute window (04:32 countdown) to physically open the box with the courier Rahul K. and inspect the device before paying.
-4. Doorstep Settle: The buyer pays the product price (e.g. ₹65,000) or cash difference (e.g. ₹3,000) via dynamic UPI QR ONLY after inspecting and accepting.
-5. Instant Safe Return: If the item is damaged, fake, or mismatched, the buyer rejects it with ₹0 product charges, and it is returned to the sender.
-6. 2-Way Item Exchange: Courier inspects both items simultaneously at the doorstep before handing them over. Delivery fee is ₹548 (₹499 roundtrip + ₹49 insurance).
-7. Keep answers concise, extremely helpful, professional, polite, and reassuring. Use Indian Rupees (₹) and Indian context.`;
+  const systemPrompt = `You are a Senior Customer Care Specialist at SafeShip India (safeship.online).
+SafeShip provides trusted Open-Box Delivery and 2-Way Item Exchanges across India.
+Core Operating Principles:
+1. "What you see is what you receive" — SafeShip protects both buyers and sellers through verified doorstep unboxing and hardware inspection.
+2. Zero Escrow Lock: SafeShip ONLY collects the minimal delivery charges upfront (₹349 for 1-Way Delivery, ₹548 for 2-Way Roundtrip Exchange). Product capital is NEVER locked upfront in escrow.
+3. Open-Box Inspection: When courier partner Rahul K. arrives, the recipient is granted a physical inspection window to unbox, inspect cosmetic condition, verify serial/IMEI, and test the item before making any payment.
+4. Doorstep Settlement: After approving the product, the recipient completes payment via dynamic UPI QR generated on the courier terminal.
+5. Zero-Risk Return: If the item is defective, counterfeit, or misrepresented, the recipient rejects it immediately. Product charge is ₹0, and the item is returned safely to the sender.
+6. 2-Way Item Swap: For peer-to-peer exchanges (e.g., trading a phone for a laptop), courier audits both items simultaneously at the doorstep before completing the exchange.
+Communication Style & Persona:
+- Professional, reassuring, clear, polite, and institutional (Stripe & Apple quality).
+- Always speak as SafeShip Support / Customer Care. NEVER refer to yourself as an AI, bot, or "SafeShip AI".
+- Use Indian Rupees (₹) and Indian geographic context concisely.`;
 
-  const conversationText = chatHistory
-    .map((m) => `${m.role.toUpperCase()}: ${m.content}`)
-    .join('\n');
+  const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
+    { role: 'system', content: systemPrompt }
+  ];
 
-  const fullPrompt = `${conversationText}\nUSER: ${userQuestion}\n${
-    dealContext ? `CURRENT DEAL CONTEXT: ${JSON.stringify(dealContext)}` : ''
-  }\nASSISTANT:`;
+  if (dealContext) {
+    messages.push({
+      role: 'system',
+      content: `CURRENT SHIPMENT CONTEXT: ${JSON.stringify(dealContext)}`
+    });
+  }
 
-  const rawResponse = await callGeminiRaw(fullPrompt, systemPrompt);
+  for (const m of chatHistory) {
+    messages.push({
+      role: m.role === 'assistant' ? 'assistant' : 'user',
+      content: m.content
+    });
+  }
+
+  messages.push({
+    role: 'user',
+    content: userQuestion
+  });
+
+  const rawResponse = await callGeminiChat(messages);
   if (rawResponse) return rawResponse.trim();
 
-  // Rule-based fallback if API key is not configured
+  // Rule-based fallback
   const q = userQuestion.toLowerCase();
   if (q.includes('open box') || q.includes('open-box') || q.includes('inspect')) {
-    return 'SafeShip Open-Box Delivery allows you to physically unbox and inspect the hardware with courier Rahul K. before paying a single rupee for the product! You check the screen, IMEI, and accessories. You pay only after you are 100% satisfied.';
+    return 'SafeShip Open-Box Delivery allows you to physically unbox and inspect the hardware with courier Rahul K. before paying a single rupee for the product! You verify the screen, IMEI, and accessories at your doorstep. You pay only after you are 100% satisfied.';
   }
   if (q.includes('fee') || q.includes('charge') || q.includes('price') || q.includes('cost')) {
     return 'SafeShip only charges delivery fees upfront: ₹349 for 1-Way Delivery (₹249 delivery + ₹29 insurance) and ₹548 for 2-Way Item Exchange (₹499 roundtrip + ₹49 insurance). The product cost is collected only at your doorstep upon accepted open-box inspection!';
   }
   if (q.includes('exchange') || q.includes('swap')) {
-    return 'With SafeShip 2-Way Exchange, courier partner Rahul K. audits both items simultaneously at the doorstep. Any agreed trade difference is paid via UPI on the spot. If either person is unsatisfied, both keep their original devices with ₹0 product fee charged.';
+    return 'With SafeShip 2-Way Exchange, courier partner Rahul K. audits both items simultaneously at the doorstep. Any agreed trade difference is paid via UPI on the spot. If either party is unsatisfied, both retain their original devices with ₹0 product charges.';
   }
   if (q.includes('fake') || q.includes('scam') || q.includes('reject') || q.includes('return')) {
-    return 'If the product does not match what was agreed or has defects, you can reject the parcel right in front of the courier. You will be charged ₹0 for the product, and courier Rahul K. will return it safely to the sender!';
+    return 'If the item does not match specifications or shows undisclosed defects, you can reject the parcel right in front of the courier. You are charged ₹0 for the item, and the courier returns it safely to the sender.';
   }
 
-  return 'Hello! I am your SafeShip AI Concierge. I can help you with Open-Box inspections, upfront delivery pricing (₹349 1-way, ₹548 2-way swap), live driver tracking, or doorstep UPI payments. How can I assist you today?';
+  return 'Hello! Welcome to SafeShip Support. We are here to assist with Open-Box inspections, upfront delivery pricing (₹349 1-way, ₹548 2-way swap), live driver tracking, or doorstep UPI payments. How can we help you today?';
 }
 
 /**
@@ -225,8 +258,10 @@ Respond ONLY in JSON:
   const raw = await callGeminiRaw(prompt);
   if (raw) {
     try {
-      const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-      return JSON.parse(clean);
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
     } catch {
       // fallback
     }

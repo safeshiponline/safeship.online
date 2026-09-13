@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, X, Send, Headphones, ShieldCheck, ArrowRight } from '@/components/common/Icons';
+import { Headphones, X, Send, ShieldCheck, ArrowRight } from '@/components/common/Icons';
 
 interface Message {
   id: string;
-  sender: 'user' | 'ai';
+  sender: 'user' | 'agent';
   text: string;
   time: string;
 }
@@ -17,8 +17,8 @@ export function AISupportWidget() {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
-      sender: 'ai',
-      text: 'Namaste! I am your SafeShip AI Concierge. Ask me anything about Open-Box deliveries, upfront fees (₹349 1-way / ₹548 2-way swap), or doorstep inspection.',
+      sender: 'agent',
+      text: 'Hello! Welcome to SafeShip Support. How can we assist you with Open-Box deliveries, upfront charges (₹349 1-way / ₹548 2-way swap), or doorstep inspection today?',
       time: 'Just now'
     }
   ]);
@@ -67,14 +67,14 @@ export function AISupportWidget() {
       });
 
       const data = await res.json();
-      const aiReply = data.reply || 'I am ready to assist with your SafeShip delivery and inspection.';
+      const supportReply = data.reply || 'Thank you for reaching out. We are here to assist with your SafeShip shipment and inspection.';
 
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
-          sender: 'ai',
-          text: aiReply,
+          sender: 'agent',
+          text: supportReply,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -83,8 +83,8 @@ export function AISupportWidget() {
         ...prev,
         {
           id: (Date.now() + 1).toString(),
-          sender: 'ai',
-          text: 'SafeShip Open-Box Delivery guarantees that you only pay ₹349 delivery fee upfront. You pay the full product price (₹65,000) only after opening the box and inspecting the item with courier Rahul K. at your doorstep!',
+          sender: 'agent',
+          text: 'SafeShip Open-Box Delivery guarantees that only the delivery fee is charged upfront (₹349 1-way / ₹548 2-way swap). You pay the product price via UPI only after you inspect and accept the device with courier Rahul K. at your doorstep!',
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -100,13 +100,13 @@ export function AISupportWidget() {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 px-3.5 py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white shadow-xl shadow-[#0066FF]/35 flex items-center gap-2 transition active:scale-95 group cursor-pointer border-2 border-white"
-          aria-label="Open SafeShip AI Support"
+          className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 px-4 py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white shadow-xl shadow-[#0066FF]/35 flex items-center gap-2.5 transition active:scale-95 group cursor-pointer border-2 border-white"
+          aria-label="Open SafeShip Customer Support"
         >
           <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-            <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
+            <Headphones className="w-3.5 h-3.5 text-white" />
           </div>
-          <span className="text-xs font-bold tracking-tight">SafeShip AI</span>
+          <span className="text-xs font-bold tracking-tight">Support Desk</span>
           <span className="w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-[#0066FF]" />
         </button>
       )}
@@ -119,15 +119,15 @@ export function AISupportWidget() {
           <div className="bg-[#0066FF] text-white p-3.5 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
-                <Sparkles className="w-4 h-4 text-white" />
+                <Headphones className="w-4 h-4 text-white" />
               </div>
               <div>
                 <h3 className="text-xs font-black tracking-tight flex items-center gap-1.5">
-                  <span>SafeShip AI Concierge</span>
-                  <span className="text-[9px] bg-white/25 px-1.5 py-0.2 rounded font-mono">Gemini 1.5</span>
+                  <span>SafeShip Customer Support</span>
+                  <span className="text-[9px] bg-white/25 px-1.5 py-0.2 rounded font-medium">Live CS</span>
                 </h3>
                 <p className="text-[10px] text-blue-100 font-medium">
-                  24/7 Instant Support &bull; Open-Box &bull; Swaps
+                  24/7 Priority Support &bull; Open-Box &bull; Swaps
                 </p>
               </div>
             </div>
@@ -163,8 +163,8 @@ export function AISupportWidget() {
 
             {loading && (
               <div className="flex items-center gap-1.5 text-[11px] text-[#0066FF] font-semibold p-2">
-                <Sparkles className="w-3.5 h-3.5 animate-spin" />
-                <span>SafeShip AI is thinking...</span>
+                <Headphones className="w-3.5 h-3.5 animate-pulse" />
+                <span>SafeShip Support is typing...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
