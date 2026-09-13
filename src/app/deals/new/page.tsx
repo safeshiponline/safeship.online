@@ -23,8 +23,10 @@ import {
   Sofa,
   Car,
   Layers,
-  Sparkles
+  Sparkles,
+  Lock
 } from '@/components/common/Icons';
+import { useRazorpay } from '@/lib/useRazorpay';
 
 export default function CreateShipmentPage() {
   return (
@@ -132,9 +134,32 @@ function CreateShipmentContent() {
     }
   };
 
+  const {
+    openCheckout,
+    loading: payingWithRazorpay,
+    error: razorpayError,
+    clearError: clearRazorpayError
+  } = useRazorpay();
+
   const handleConfirmBooking = () => {
-    // Navigate to tracking with open-box verification console
-    router.push(`/open-box?type=${mode}&deal=${mode === 'exchange' ? 'SS-EXCH-992' : 'SS48291'}`);
+    clearRazorpayError();
+    openCheckout({
+      amountInRupees: upfrontTotal,
+      name: 'SafeShip India',
+      description: mode === 'exchange' ? '2-Way Roundtrip Courier Fee (₹548)' : '1-Way Safe Delivery & Inspection Fee (₹349)',
+      notes: {
+        mode,
+        deal: mode === 'exchange' ? 'SS-EXCH-992' : 'SS48291',
+        origin: pickupLocation,
+        destination: dropLocation,
+      },
+      onSuccess: (verifyData) => {
+        router.push(`/open-box?type=${mode}&deal=${mode === 'exchange' ? 'SS-EXCH-992' : 'SS48291'}&paid=true&payment_id=${verifyData.payment_id}`);
+      },
+      onFailure: (err) => {
+        console.error('Razorpay payment failed or cancelled:', err);
+      }
+    });
   };
 
   return (
@@ -818,23 +843,61 @@ function CreateShipmentContent() {
               )}
             </div>
 
+            {/* Razorpay Error Alert */}
+            {razorpayError && (
+              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between animate-in fade-in">
+                <span>⚠️ {razorpayError}</span>
+                <button
+                  type="button"
+                  onClick={clearRazorpayError}
+                  className="text-[10px] font-bold underline hover:text-rose-900 cursor-pointer ml-2"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
             {/* Action Buttons */}
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setCurrentStep(3)}
-                className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50"
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmBooking}
-                className="flex-1 py-4 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-black text-sm shadow-md shadow-[#0066FF]/30 transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>{mode === 'exchange' ? `Confirm & Book 2-Way Exchange • Pay ₹${upfrontTotal}` : `Confirm & Book Pickup • Pay ₹${upfrontTotal}`}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(3)}
+                  className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  disabled={payingWithRazorpay}
+                  onClick={handleConfirmBooking}
+                  className="flex-1 py-4 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] disabled:opacity-50 text-white font-black text-sm shadow-md shadow-[#0066FF]/30 transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  {payingWithRazorpay ? (
+                    <>
+                      <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      <span>Opening Razorpay Gateway...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4 text-white" />
+                      <span>{mode === 'exchange' ? `Pay ₹${upfrontTotal} via Razorpay (2-Way)` : `Pay ₹${upfrontTotal} via Razorpay`}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Simulation Shortcut for Sandbox Demo */}
+              <div className="text-center pt-1">
+                <button
+                  type="button"
+                  onClick={() => router.push(`/open-box?type=${mode}&deal=${mode === 'exchange' ? 'SS-EXCH-992' : 'SS48291'}`)}
+                  className="text-[11px] text-[#64748B] hover:text-[#0066FF] underline cursor-pointer"
+                >
+                  Or test Open-Box Doorstep Console without payment &rarr;
+                </button>
+              </div>
             </div>
           </div>
         )}

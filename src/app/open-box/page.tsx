@@ -19,8 +19,10 @@ import {
   X,
   Sparkles,
   QrCode,
-  Truck
+  Truck,
+  Lock
 } from '@/components/common/Icons';
+import { useRazorpay } from '@/lib/useRazorpay';
 
 export default function OpenBoxPage() {
   return (
@@ -46,6 +48,13 @@ function OpenBoxContent() {
   const [selectedDisputeReason, setSelectedDisputeReason] = useState<string>('');
   const [isAccepted, setIsAccepted] = useState<boolean>(false);
   const [isReturned, setIsReturned] = useState<boolean>(false);
+
+  const {
+    openCheckout,
+    loading: payingWithRazorpay,
+    error: razorpayError,
+    clearError: clearRazorpayError
+  } = useRazorpay();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -497,16 +506,64 @@ function OpenBoxContent() {
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setShowPaymentModal(false);
-                setIsAccepted(true);
-              }}
-              className="w-full py-3.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition active:scale-95 cursor-pointer"
-            >
-              {isExchange ? 'Confirm Swap & Release Funds →' : 'Confirm Payment & Release to Seller →'}
-            </button>
+            {razorpayError && (
+              <div className="mb-3 p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between">
+                <span>⚠️ {razorpayError}</span>
+                <button
+                  type="button"
+                  onClick={clearRazorpayError}
+                  className="text-[10px] font-bold underline ml-1"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <button
+                type="button"
+                disabled={payingWithRazorpay}
+                onClick={() => {
+                  clearRazorpayError();
+                  openCheckout({
+                    amountInRupees: isExchange ? 3000 : 65000,
+                    name: 'SafeShip India',
+                    description: isExchange ? '2-Way Trade Balance Settlement' : 'Open-Box Accepted: iPhone 15 Pro Doorstep Settlement',
+                    onSuccess: () => {
+                      setShowPaymentModal(false);
+                      setIsAccepted(true);
+                    },
+                    onFailure: (err) => {
+                      console.error('Doorstep payment error:', err);
+                    }
+                  });
+                }}
+                className="w-full py-3.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] disabled:opacity-50 text-white font-black text-xs shadow-md transition active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                {payingWithRazorpay ? (
+                  <>
+                    <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    <span>Opening Razorpay Gateway...</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-3.5 h-3.5 text-white" />
+                    <span>Pay {isExchange ? '₹3,000' : '₹65,000'} via Razorpay Checkout</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPaymentModal(false);
+                  setIsAccepted(true);
+                }}
+                className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer"
+              >
+                {isExchange ? 'Confirm Swap & Settle Cash Offline' : 'Mark as Paid to Courier Partner Directly'}
+              </button>
+            </div>
           </div>
         </div>
       )}
