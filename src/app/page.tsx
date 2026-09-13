@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SafeShipLogo } from '@/components/common/SafeShipLogo';
+import { getUserOrders } from '@/lib/store';
+import { SafeDeal } from '@/lib/types';
 import {
   Bell,
   Search,
@@ -29,7 +31,23 @@ export default function HomePage() {
   const [showCityModal, setShowCityModal] = useState<boolean>(false);
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
   const [showTrackModal, setShowTrackModal] = useState<boolean>(false);
-  const [trackQuery, setTrackQuery] = useState<string>('SS48291');
+  const [trackQuery, setTrackQuery] = useState<string>('');
+  const [userOrders, setUserOrders] = useState<SafeDeal[]>([]);
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    setUserOrders(getUserOrders());
+
+    const handleUpdate = () => {
+      setUserOrders(getUserOrders());
+    };
+
+    window.addEventListener('safeship_user_orders_updated', handleUpdate);
+    return () => window.removeEventListener('safeship_user_orders_updated', handleUpdate);
+  }, []);
+
+  const activeShipment = userOrders.length > 0 ? userOrders[0] : null;
 
   const indianCities = [
     { name: 'Jaipur', state: 'Rajasthan', activeOrders: 1420 },
@@ -113,7 +131,9 @@ export default function HomePage() {
               aria-label="Notifications"
             >
               <Bell className="w-4.5 h-4.5" />
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#0066FF] ring-2 ring-white" />
+              {activeShipment && (
+                <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#0066FF] ring-2 ring-white" />
+              )}
             </button>
 
           </div>
@@ -183,29 +203,43 @@ export default function HomePage() {
             </button>
           </div>
           <div className="space-y-2.5 text-xs">
-            <Link
-              href="/track/SS48291"
-              onClick={() => setShowNotifications(false)}
-              className="block p-3 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] hover:bg-[#DBEAFE] transition"
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-[#0066FF]">iPhone 15 Pro &bull; In Transit</span>
-                <span className="text-[9px] bg-[#0066FF] text-white px-1.5 py-0.2 rounded font-bold">LIVE</span>
+            {activeShipment ? (
+              <>
+                <Link
+                  href={`/track/${activeShipment.id}`}
+                  onClick={() => setShowNotifications(false)}
+                  className="block p-3 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] hover:bg-[#DBEAFE] transition"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-[#0066FF]">{activeShipment.title} &bull; {activeShipment.status.replace(/_/g, ' ')}</span>
+                    <span className="text-[9px] bg-[#0066FF] text-white px-1.5 py-0.2 rounded font-bold">LIVE</span>
+                  </div>
+                  <p className="text-[#334155] text-[11px] mt-1">
+                    Order #{activeShipment.id} &bull; Assigned courier {activeShipment.assignedCourier?.name || 'Rahul K.'}.
+                  </p>
+                </Link>
+                <Link
+                  href={`/open-box?deal=${activeShipment.id}`}
+                  onClick={() => setShowNotifications(false)}
+                  className="block p-3 rounded-xl bg-slate-50 border border-[#E2E8F0] hover:bg-slate-100 transition"
+                >
+                  <span className="font-semibold text-[#0F172A]">Doorstep Open-Box Inspection Ready</span>
+                  <p className="text-[#64748B] text-[11px] mt-0.5">
+                    Inspect physical chassis, IMEI, and camera before releasing payment.
+                  </p>
+                </Link>
+              </>
+            ) : (
+              <div className="py-6 text-center text-xs text-[#64748B]">
+                <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-2 text-[#94A3B8]">
+                  <Bell className="w-4.5 h-4.5" />
+                </div>
+                <p className="font-bold text-[#0F172A]">No active alerts</p>
+                <p className="text-[11px] text-[#64748B] mt-0.5">
+                  You don&apos;t have any pending delivery alerts.
+                </p>
               </div>
-              <p className="text-[#334155] text-[11px] mt-1">
-                Driver Rahul K. is on the Jaipur &rarr; Delhi corridor. Estimated arrival today 2:40 &ndash; 4:10 PM.
-              </p>
-            </Link>
-            <Link
-              href="/open-box"
-              onClick={() => setShowNotifications(false)}
-              className="block p-3 rounded-xl bg-slate-50 border border-[#E2E8F0] hover:bg-slate-100 transition"
-            >
-              <span className="font-semibold text-[#0F172A]">Doorstep Open-Box Inspection Ready</span>
-              <p className="text-[#64748B] text-[11px] mt-0.5">
-                Inspect physical chassis, IMEI, and camera before releasing payment.
-              </p>
-            </Link>
+            )}
           </div>
         </div>
       )}
@@ -305,103 +339,152 @@ export default function HomePage() {
             <span className="text-xs font-bold uppercase tracking-wider text-[#64748B]">
               YOUR SHIPMENT
             </span>
-            <span className="text-[11px] font-semibold text-[#0066FF] flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
-              <span>Live Updates</span>
-            </span>
+            {activeShipment && (
+              <span className="text-[11px] font-semibold text-[#0066FF] flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
+                <span>Live Updates</span>
+              </span>
+            )}
           </div>
 
-          {/* Modern Clean Shipment HUD Card */}
-          <div className="bg-white rounded-3xl border border-[#CBD5E1] p-5 shadow-xs hover:border-[#94A3B8] transition space-y-4">
-            
-            {/* Top row: Status Badge & ETA */}
-            <div className="flex items-center justify-between">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>Arriving today</span>
-              </span>
-              <span className="text-xs font-bold text-[#0F172A]">
-                ETA 2:40–4:10 PM
-              </span>
-            </div>
-
-            {/* Item Title & Route */}
-            <div className="space-y-0.5">
+          {activeShipment ? (
+            /* Modern Clean Shipment HUD Card */
+            <div className="bg-white rounded-3xl border border-[#CBD5E1] p-5 shadow-xs hover:border-[#94A3B8] transition space-y-4">
+              
+              {/* Top row: Status Badge & ETA */}
               <div className="flex items-center justify-between">
-                <h3 className="text-base font-black text-[#0F172A] tracking-tight">
-                  iPhone 15 Pro, 256GB
-                </h3>
-                <span className="text-[11px] font-bold text-[#0066FF] bg-[#EFF6FF] px-2 py-0.5 rounded-md border border-[#BFDBFE]">
-                  ✓ Open-box verified
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>{activeShipment.status === 'COMPLETED' ? 'Delivered' : activeShipment.status === 'IN_TRANSIT' ? 'In Transit' : 'Active Delivery'}</span>
+                </span>
+                <span className="text-xs font-bold text-[#0F172A]">
+                  {activeShipment.status === 'COMPLETED' ? 'Handshake Completed' : 'ETA Today 2:40–4:10 PM'}
                 </span>
               </div>
-              <p className="text-xs text-[#64748B] flex items-center gap-1.5">
-                <span className="font-semibold text-[#334155]">Jaipur</span>
-                <span>&rarr;</span>
-                <span className="font-semibold text-[#334155]">Delhi</span>
-                <span className="text-[#94A3B8]">&bull;</span>
-                <span>~280 km</span>
-              </p>
-            </div>
 
-            {/* Clean Progress Line: Picked up ━ In transit ─ Out for delivery ─ Delivered */}
-            <div className="pt-2">
-              <div className="relative flex items-center justify-between text-[11px] font-semibold">
-                
-                {/* Connecting Line */}
-                <div className="absolute top-2.5 inset-x-3 h-0.5 bg-[#E2E8F0] -z-0" />
-                <div className="absolute top-2.5 left-3 w-1/3 h-0.5 bg-[#0066FF] -z-0" />
-
-                {/* Step 1: Picked Up (Done) */}
-                <div className="flex flex-col items-center gap-1 z-10 bg-white px-1">
-                  <div className="w-5 h-5 rounded-full bg-[#0066FF] text-white flex items-center justify-center text-[9px] font-bold shadow-xs">
-                    <Check className="w-3 h-3" />
-                  </div>
-                  <span className="text-[10px] text-[#0F172A] font-bold">Picked up</span>
+              {/* Item Title & Route */}
+              <div className="space-y-0.5">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-base font-black text-[#0F172A] tracking-tight">
+                    {activeShipment.title}
+                  </h3>
+                  <span className="text-[11px] font-bold text-[#0066FF] bg-[#EFF6FF] px-2 py-0.5 rounded-md border border-[#BFDBFE]">
+                    ✓ Open-box verified
+                  </span>
                 </div>
+                <p className="text-xs text-[#64748B] flex items-center gap-1.5">
+                  <span className="font-semibold text-[#334155]">{activeShipment.city || 'Origin'}</span>
+                  <span>&rarr;</span>
+                  <span className="font-semibold text-[#334155]">{activeShipment.buyer?.city || 'Delhi'}</span>
+                  <span className="text-[#94A3B8]">&bull;</span>
+                  <span>Order #{activeShipment.id}</span>
+                </p>
+              </div>
 
-                {/* Step 2: In Transit (Active Pulse) */}
-                <div className="flex flex-col items-center gap-1 z-10 bg-white px-1">
-                  <div className="w-5 h-5 rounded-full bg-[#0066FF] text-white flex items-center justify-center text-[9px] font-bold ring-2 ring-blue-300 animate-pulse">
-                    <Truck className="w-3 h-3" />
+              {/* Clean Progress Line: Picked up ━ In transit ─ Out for delivery ─ Delivered */}
+              <div className="pt-2">
+                <div className="relative flex items-center justify-between text-[11px] font-semibold">
+                  {/* Connecting Line */}
+                  <div className="absolute top-2.5 inset-x-3 h-0.5 bg-[#E2E8F0] -z-0" />
+                  <div className={`absolute top-2.5 left-3 h-0.5 bg-[#0066FF] -z-0 transition-all duration-300 ${
+                    activeShipment.status === 'COMPLETED' ? 'w-[calc(100%-24px)]' : 'w-1/2'
+                  }`} />
+
+                  {/* Step 1: Picked Up */}
+                  <div className="flex flex-col items-center gap-1 z-10 bg-white px-1">
+                    <div className="w-5 h-5 rounded-full bg-[#0066FF] text-white flex items-center justify-center text-[9px] font-bold shadow-xs">
+                      <Check className="w-3 h-3" />
+                    </div>
+                    <span className="text-[10px] text-[#0F172A] font-bold">Picked up</span>
                   </div>
-                  <span className="text-[10px] text-[#0066FF] font-black">In transit</span>
-                </div>
 
-                {/* Step 3: Out for Delivery */}
-                <div className="flex flex-col items-center gap-1 z-10 bg-white px-1">
-                  <div className="w-5 h-5 rounded-full bg-slate-100 text-[#94A3B8] flex items-center justify-center text-[9px] font-bold border border-[#E2E8F0]">
-                    3
+                  {/* Step 2: In Transit */}
+                  <div className="flex flex-col items-center gap-1 z-10 bg-white px-1">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold ${
+                      activeShipment.status === 'IN_TRANSIT'
+                        ? 'bg-[#0066FF] text-white ring-2 ring-blue-300 animate-pulse'
+                        : activeShipment.status === 'COMPLETED'
+                        ? 'bg-[#0066FF] text-white'
+                        : 'bg-slate-100 text-[#94A3B8] border border-[#E2E8F0]'
+                    }`}>
+                      <Truck className="w-3 h-3" />
+                    </div>
+                    <span className="text-[10px] text-[#0066FF] font-black">In transit</span>
                   </div>
-                  <span className="text-[10px] text-[#94A3B8]">Out for delivery</span>
-                </div>
 
-                {/* Step 4: Open-Box & Delivered */}
-                <div className="flex flex-col items-center gap-1 z-10 bg-white px-1">
-                  <div className="w-5 h-5 rounded-full bg-slate-100 text-[#94A3B8] flex items-center justify-center text-[9px] font-bold border border-[#E2E8F0]">
-                    <Eye className="w-3 h-3" />
+                  {/* Step 3: Out for Delivery */}
+                  <div className="flex flex-col items-center gap-1 z-10 bg-white px-1">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold border border-[#E2E8F0] ${
+                      activeShipment.status === 'COMPLETED' ? 'bg-[#0066FF] text-white' : 'bg-slate-100 text-[#94A3B8]'
+                    }`}>
+                      3
+                    </div>
+                    <span className="text-[10px] text-[#94A3B8]">Out for delivery</span>
                   </div>
-                  <span className="text-[10px] text-[#94A3B8]">Open-Box</span>
-                </div>
 
+                  {/* Step 4: Open-Box & Delivered */}
+                  <div className="flex flex-col items-center gap-1 z-10 bg-white px-1">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold border border-[#E2E8F0] ${
+                      activeShipment.status === 'COMPLETED' ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-[#94A3B8]'
+                    }`}>
+                      <Eye className="w-3 h-3" />
+                    </div>
+                    <span className="text-[10px] text-[#94A3B8]">Open-Box</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Action Row: View shipment link */}
+              <div className="pt-2 border-t border-[#F1F5F9] flex items-center justify-between">
+                <span className="text-[11px] text-[#64748B]">
+                  Order #{activeShipment.id} &bull; Courier {activeShipment.assignedCourier?.name || 'SafeShip Officer'}
+                </span>
+                <Link
+                  href={`/track/${activeShipment.id}`}
+                  className="inline-flex items-center gap-1 text-xs font-bold text-[#0066FF] hover:underline"
+                >
+                  <span>View shipment</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
             </div>
-
-            {/* Bottom Action Row: View shipment link */}
-            <div className="pt-2 border-t border-[#F1F5F9] flex items-center justify-between">
-              <span className="text-[11px] text-[#64748B]">
-                Order #SS48291 &bull; Courier Rahul K.
-              </span>
-              <Link
-                href="/track/SS48291"
-                className="inline-flex items-center gap-1 text-xs font-bold text-[#0066FF] hover:underline"
-              >
-                <span>View shipment</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+          ) : (
+            /* Clean Authentic Production Empty State */
+            <div className="bg-white rounded-3xl border border-[#CBD5E1] p-6 text-center shadow-xs">
+              <div className="w-12 h-12 rounded-2xl bg-[#EFF6FF] text-[#0066FF] flex items-center justify-center mx-auto mb-3 border border-[#BFDBFE]">
+                <Package className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-black text-[#0F172A]">No Active Shipments</h3>
+              <p className="text-xs text-[#64748B] max-w-sm mx-auto mt-1.5 leading-relaxed">
+                You don&apos;t have any packages in transit right now. Book a pickup with doorstep open-box verification or track an incoming parcel with your tracking ID.
+              </p>
+              <div className="mt-4 flex items-center justify-center gap-2.5">
+                <Link
+                  href="/deals/new?type=send"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-sm shadow-[#0066FF]/25 transition active:scale-95"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Book a Shipment</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setShowTrackModal(true)}
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-[#CBD5E1] text-[#0F172A] text-xs font-bold transition active:scale-95 cursor-pointer"
+                >
+                  <Search className="w-3.5 h-3.5 text-[#64748B]" />
+                  <span>Track with ID</span>
+                </button>
+              </div>
+              <div className="mt-4 pt-3 border-t border-[#F1F5F9] text-center">
+                <Link
+                  href="/track/SS48291"
+                  className="text-[11px] text-[#64748B] hover:text-[#0066FF] font-medium transition"
+                >
+                  Want to test tracking? <span className="text-[#0066FF] font-semibold underline">Preview Demo Delivery (SS48291) &rarr;</span>
+                </Link>
+              </div>
             </div>
-
-          </div>
+          )}
 
         </section>
 

@@ -9,7 +9,13 @@ export const metadata: Metadata = {
   title: 'SafeShip — Ship Smart. Trust More. | Open-Box Delivery & 2-Way Item Exchange',
   description: 'India’s Open-Box Delivery and 2-Way Hardware Exchange infrastructure. Pay only delivery charges upfront. Inspect before paying at doorstep.',
   icons: {
-    icon: '/icon.svg',
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
 };
 

@@ -27,21 +27,21 @@ export const TamperSealBadge: React.FC<TamperSealBadgeProps> = ({ seal, isDelive
   }
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 text-slate-900 shadow-sm">
-      {/* Holographic accent stripe */}
-      <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 via-teal-400 to-blue-500" />
+    <div className="relative overflow-hidden rounded-3xl border border-[#CBD5E1] bg-white p-5 text-[#0F172A] shadow-xs">
+      {/* Accent stripe */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-[#0066FF]" />
 
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#F1F5F9] pb-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#0066FF] border border-[#BFDBFE]">
             <ShieldCheck className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-bold tracking-wider text-slate-900">
+              <span className="text-xs font-mono font-bold tracking-wider text-[#0F172A]">
                 {seal.sealId}
               </span>
-              <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase tracking-wider border border-emerald-200">
+              <span className="rounded-full bg-[#EFF6FF] px-2 py-0.5 text-[10px] font-bold text-[#0066FF] uppercase tracking-wider border border-[#BFDBFE]">
                 {isDelivered ? 'Verified Intact' : 'Sealed & Active'}
               </span>
             </div>

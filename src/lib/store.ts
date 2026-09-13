@@ -5,6 +5,43 @@ import { INITIAL_DEALS } from './mockData';
 import { calculateEscrowBreakdown } from './escrowCalculator';
 
 const STORAGE_KEY = 'safeship_india_deals_v2';
+const USER_ORDERS_KEY = 'safeship_user_orders_v1';
+
+export function getUserOrders(): SafeDeal[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(USER_ORDERS_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (err) {
+    console.error('Failed to read user orders from localStorage:', err);
+    return [];
+  }
+}
+
+export function saveUserOrders(orders: SafeDeal[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(USER_ORDERS_KEY, JSON.stringify(orders));
+    window.dispatchEvent(new CustomEvent('safeship_user_orders_updated', { detail: orders }));
+  } catch (err) {
+    console.error('Failed to save user orders to localStorage:', err);
+  }
+}
+
+function syncDealToUserOrders(deal: SafeDeal) {
+  if (typeof window === 'undefined') return;
+  try {
+    const orders = getUserOrders();
+    const idx = orders.findIndex((o) => o.id === deal.id);
+    if (idx !== -1) {
+      orders[idx] = deal;
+      saveUserOrders([...orders]);
+    }
+  } catch (err) {
+    console.error('Failed to sync deal to user orders:', err);
+  }
+}
 
 export function getStoredDeals(): SafeDeal[] {
   if (typeof window === 'undefined') return INITIAL_DEALS;
@@ -32,13 +69,25 @@ export function saveStoredDeals(deals: SafeDeal[]): void {
 }
 
 export function getDealById(id: string): SafeDeal | undefined {
+  if (!id) return undefined;
+  const target = id.trim().toLowerCase();
+
+  // 1. Check user orders first
+  const userOrders = getUserOrders();
+  const userFound = userOrders.find((d) => d.id.toLowerCase() === target);
+  if (userFound) return userFound;
+
+  // 2. Check stored deals
   const deals = getStoredDeals();
-  const found = deals.find((d) => d.id === id);
+  const found = deals.find((d) => d.id.toLowerCase() === target);
   if (found) return found;
-  const initFound = INITIAL_DEALS.find((d) => d.id === id);
+
+  // 3. Check demo INITIAL_DEALS (e.g. SS48291)
+  const initFound = INITIAL_DEALS.find((d) => d.id.toLowerCase() === target);
   if (initFound) return initFound;
-  // Fallback for demo routes like /track/SS48291 or custom deal links
-  return INITIAL_DEALS[0];
+
+  // If not found anywhere, return undefined so a proper "Not Found" UI is shown.
+  return undefined;
 }
 
 export function createNewDeal(params: {
@@ -185,6 +234,8 @@ export function createNewDeal(params: {
 
   const updated = [newDeal, ...deals];
   saveStoredDeals(updated);
+  const currentOrders = getUserOrders();
+  saveUserOrders([newDeal, ...currentOrders]);
   return newDeal;
 }
 
@@ -252,6 +303,7 @@ export function fundDealEscrow(dealId: string, buyerData: { name: string; email:
 
   deals[index] = deal;
   saveStoredDeals(deals);
+  syncDealToUserOrders(deal);
   return deal;
 }
 
@@ -313,6 +365,7 @@ export function completeCourierPickup(
 
   deals[index] = deal;
   saveStoredDeals(deals);
+  syncDealToUserOrders(deal);
   return deal;
 }
 
@@ -353,6 +406,7 @@ export function completeDeliveryHandshake(dealId: string, inputPin: string): { s
 
   deals[index] = deal;
   saveStoredDeals(deals);
+  syncDealToUserOrders(deal);
   return { success: true, deal };
 }
 
@@ -383,6 +437,7 @@ export function raiseDisputeOnDeal(dealId: string, reason: string, photos: strin
 
   deals[index] = deal;
   saveStoredDeals(deals);
+  syncDealToUserOrders(deal);
   return deal;
 }
 
@@ -431,6 +486,7 @@ export function resolveDispute(dealId: string, decision: 'RESOLVED_REFUND_BUYER'
 
   deals[index] = deal;
   saveStoredDeals(deals);
+  syncDealToUserOrders(deal);
   return deal;
 }
 

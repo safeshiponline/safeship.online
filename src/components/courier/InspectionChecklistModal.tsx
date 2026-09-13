@@ -97,33 +97,33 @@ export const InspectionChecklistModal: React.FC<InspectionChecklistModalProps> =
         <button
           type="button"
           onClick={() => setMode('AI')}
-          className="mb-4 w-full py-2.5 px-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-xs flex items-center justify-between hover:bg-emerald-100 transition cursor-pointer shadow-2xs"
+          className="mb-4 w-full py-2.5 px-3.5 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-[#0066FF] font-bold text-xs flex items-center justify-between hover:bg-[#DBEAFE] transition cursor-pointer shadow-2xs"
         >
           <span className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-emerald-600 animate-pulse" />
+            <Sparkles className="w-4 h-4 text-[#0066FF] animate-pulse" />
             <span>Switch to SafeShip Vision™ AI Mode (Gemini 1.5 Multimodal)</span>
           </span>
-          <span className="text-[10px] font-mono uppercase font-bold text-emerald-700 bg-white px-2 py-0.5 rounded border border-emerald-200">
+          <span className="text-[10px] uppercase font-bold text-[#0066FF] bg-white px-2 py-0.5 rounded border border-[#BFDBFE]">
             Launch AI Scanner &rarr;
           </span>
         </button>
 
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-900 text-white shadow-xs">
-            <ShieldCheck className="w-6 h-6 text-emerald-400" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0066FF] text-white shadow-xs">
+            <ShieldCheck className="w-6 h-6 text-white" />
           </div>
           <div>
-            <div className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
+            <div className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider">
               Bonded Officer Field Portal
             </div>
-            <h3 className="text-base font-bold text-zinc-950">
+            <h3 className="text-base font-black text-[#0F172A]">
               Manual Hardware Verification Checklist
             </h3>
           </div>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-700 mb-4 leading-relaxed">
-          <strong className="font-semibold text-zinc-900">Rider Directive: </strong>
+        <div className="rounded-xl border border-[#CBD5E1] bg-[#F8FAFC] p-3 text-xs text-[#475569] mb-4 leading-relaxed">
+          <strong className="font-semibold text-[#0F172A]">Rider Directive: </strong>
           You are legally certifying this device before placing it in the holographic pouch. Sealing the bag automatically releases{' '}
           <strong className="text-emerald-700 font-bold font-mono">{formatINR(milestone1)} (30% Advance)</strong> directly to the seller&apos;s UPI ({deal.seller.upiId}).
         </div>
@@ -240,7 +240,7 @@ export const InspectionChecklistModal: React.FC<InspectionChecklistModalProps> =
           <button
             type="submit"
             disabled={!allPassed || isSubmitting}
-            className="w-full py-3.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/25 transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-98"
           >
             {isSubmitting ? (
               <>
@@ -249,7 +249,7 @@ export const InspectionChecklistModal: React.FC<InspectionChecklistModalProps> =
               </>
             ) : (
               <>
-                <Lock className="w-4 h-4 text-emerald-400" />
+                <Lock className="w-4 h-4 text-white" />
                 <span>Seal Tamper Bag & Disburse {formatINR(milestone1)} Advance</span>
               </>
             )}

@@ -2,6 +2,7 @@
 
 import React, { use, useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { getDealById } from '@/lib/store';
 import { SafeDeal } from '@/lib/types';
 import { formatINR } from '@/lib/escrowCalculator';
@@ -21,7 +22,8 @@ import {
   Check,
   Eye,
   Package,
-  MapPin
+  MapPin,
+  Search
 } from '@/components/common/Icons';
 
 export default function StandaloneTrackingPage({
@@ -29,30 +31,102 @@ export default function StandaloneTrackingPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const router = useRouter();
   const resolvedParams = use(params);
   const [deal, setDeal] = useState<SafeDeal | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchId, setSearchId] = useState('');
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    setIsLoading(true);
     const loaded = getDealById(resolvedParams.id);
     if (loaded) {
       setDeal(loaded);
+    } else {
+      setDeal(null);
     }
+    setIsLoading(false);
   }, [resolvedParams.id]);
 
   if (!deal) {
-    return (
-      <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col antialiased">
-        <Navbar />
-        <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-          <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-[#0066FF] mb-3">
-            <Truck className="w-6 h-6" />
+    if (isLoading) {
+      return (
+        <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col antialiased">
+          <Navbar />
+          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+            <div className="h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center text-[#0066FF] mb-3">
+              <Truck className="w-6 h-6 animate-pulse" />
+            </div>
+            <h2 className="text-base font-bold text-[#0F172A]">Locating Shipment Telemetry...</h2>
+            <p className="text-xs text-[#64748B] mt-1 max-w-xs">
+              Querying SafeShip fleet network for order #{resolvedParams.id}
+            </p>
           </div>
-          <h2 className="text-base font-bold text-[#0F172A]">Loading Telemetry Data...</h2>
-          <p className="text-xs text-[#64748B] mt-1 max-w-xs">
-            Connecting to SafeShip fleet telemetry network.
-          </p>
         </div>
+      );
+    }
+
+    return (
+      <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col antialiased selection:bg-[#0066FF] selection:text-white">
+        <Navbar />
+        <main className="flex-1 max-w-md w-full mx-auto px-4 py-16 flex flex-col items-center justify-center text-center">
+          <div className="w-16 h-16 rounded-3xl bg-[#EFF6FF] text-[#0066FF] border border-[#BFDBFE] flex items-center justify-center mb-4 shadow-xs">
+            <Package className="w-8 h-8" />
+          </div>
+
+          <span className="text-xs font-mono font-bold text-[#64748B] bg-[#F1F5F9] px-2.5 py-1 rounded-full border border-[#E2E8F0] mb-2">
+            ID: {resolvedParams.id}
+          </span>
+
+          <h1 className="text-xl font-black text-[#0F172A] tracking-tight">
+            Shipment Not Found
+          </h1>
+
+          <p className="text-xs text-[#64748B] mt-2 leading-relaxed max-w-sm">
+            We couldn&apos;t find any active delivery matching tracking ID <strong className="text-[#0F172A] font-bold">&quot;{resolvedParams.id}&quot;</strong>. Please verify the tracking number or search below.
+          </p>
+
+          {/* Quick Lookup Form */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (searchId.trim()) router.push(`/track/${searchId.trim()}`);
+            }}
+            className="mt-6 w-full space-y-2.5"
+          >
+            <div className="relative">
+              <input
+                type="text"
+                value={searchId}
+                onChange={(e) => setSearchId(e.target.value)}
+                placeholder="Enter Tracking ID (e.g. SS48291)"
+                className="w-full px-4 py-3 rounded-2xl bg-white border border-[#CBD5E1] text-xs font-mono text-[#0F172A] focus:border-[#0066FF] outline-hidden shadow-xs"
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full py-3 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/25 transition cursor-pointer active:scale-98"
+            >
+              Search Tracking &rarr;
+            </button>
+          </form>
+
+          <div className="mt-6 pt-5 border-t border-[#E2E8F0] w-full flex flex-col gap-2.5">
+            <Link
+              href="/deals/new?type=send"
+              className="w-full py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-[#CBD5E1] text-[#0F172A] text-xs font-bold transition shadow-2xs"
+            >
+              Book a New Shipment
+            </Link>
+            <Link
+              href="/track/SS48291"
+              className="text-[11px] text-[#0066FF] hover:underline font-semibold"
+            >
+              Want to see a live sample? View Demo Order SS48291 &rarr;
+            </Link>
+          </div>
+        </main>
       </div>
     );
   }
