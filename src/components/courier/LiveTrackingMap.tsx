@@ -34,15 +34,15 @@ export const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
   }, [status]);
 
   const driver = courier || {
-    id: 'rider_blr_884',
-    name: 'Vikram Singh',
-    rating: 4.94,
-    completedDeliveries: 1842,
-    phone: '+91 98451 44321',
-    vehicleModel: 'Honda Activa 6G',
-    plateNumber: 'KA 01 EK 9482',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&h=200&q=80',
-    fleetPartner: 'Porter Hyperlocal' as const,
+    id: 'cr_rahul_k',
+    name: 'Rahul K.',
+    rating: 4.96,
+    completedDeliveries: 2140,
+    phone: '+91 98765 43210',
+    vehicleModel: 'Bajaj Pulsar 150',
+    plateNumber: 'KA 03 HY 4012',
+    avatarUrl: '/images/courier_rahul_avatar.webp',
+    fleetPartner: 'SafeShip Direct Fleet' as const,
   };
 
   const isTransit = status === 'IN_TRANSIT' || status === 'OUT_FOR_DELIVERY';

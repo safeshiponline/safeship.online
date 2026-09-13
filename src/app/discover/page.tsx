@@ -92,8 +92,8 @@ export default function ExchangeHubPage() {
       <main className="max-w-4xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-10 flex-1 space-y-8">
         
         {/* Banner */}
-        <div className="bg-gradient-to-br from-[#FFF7ED] via-white to-[#EFF6FF] rounded-3xl border border-amber-200 p-6 sm:p-8 shadow-xs relative overflow-hidden">
-          <div className="max-w-2xl space-y-3">
+        <div className="bg-gradient-to-br from-[#FFF7ED] via-white to-[#EFF6FF] rounded-3xl border border-amber-200 p-6 sm:p-8 shadow-xs relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-6">
+          <div className="max-w-xl space-y-3">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold">
               <ArrowLeftRight className="w-3.5 h-3.5 text-amber-700" />
               <span>MUTUAL 2-WAY HARDWARE AUDIT</span>
@@ -131,6 +131,26 @@ export default function ExchangeHubPage() {
                 <span>Initiate 2-Way Exchange</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
+            </div>
+          </div>
+
+          {/* Real Life 2-Way Exchange Visual */}
+          <div className="w-full lg:w-[42%] shrink-0">
+            <div className="relative rounded-2xl overflow-hidden border border-amber-200/80 shadow-md aspect-16/9 sm:aspect-4/3 lg:aspect-16/10 bg-[#FFF7ED]">
+              <picture>
+                <source media="(min-width: 640px)" srcSet="/images/exchange_hero_16x9.webp" type="image/webp" />
+                <source media="(max-width: 639px)" srcSet="/images/exchange_hero_4x3.webp" type="image/webp" />
+                <img
+                  src="/images/exchange_hero_16x9.webp"
+                  alt="SafeShip 2-Way Hardware Exchange Handoff"
+                  className="w-full h-full object-cover"
+                  loading="eager"
+                />
+              </picture>
+              <div className="absolute bottom-2 left-2 px-2.5 py-1 rounded-lg bg-black/65 backdrop-blur-xs text-white text-[10px] font-bold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                <span>Simultaneous Doorstep Handover</span>
+              </div>
             </div>
           </div>
         </div>

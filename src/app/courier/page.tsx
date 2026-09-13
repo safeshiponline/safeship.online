@@ -63,8 +63,8 @@ function CourierAppContent() {
           <div className="flex items-center gap-4">
             <div className="relative">
               <img
-                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80"
-                alt="Officer Suresh"
+                src="/images/courier_rahul_avatar.webp"
+                alt="Courier Partner Rahul K."
                 className="h-14 w-14 rounded-2xl border border-zinc-200 object-cover shadow-xs"
               />
               <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-white font-bold text-[10px] shadow-xs">

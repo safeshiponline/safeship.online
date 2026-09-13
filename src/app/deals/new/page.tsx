@@ -51,7 +51,7 @@ function CreateShipmentContent() {
   const [declaredValue, setDeclaredValue] = useState<number>(65000);
   const [includedItems, setIncludedItems] = useState<string>('Phone, cable, original retail box');
   const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([
-    '/images/sell_box_feathered.webp',
+    '/images/openbox_macro_4x3.webp',
   ]);
 
   // Form State - Item 2 (Only for 2-Way Item Exchange: what you receive)

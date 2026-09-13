@@ -83,7 +83,7 @@ export function createNewDeal(params: {
     city: params.city,
     pincode: params.pincode,
     itemPhotos: params.itemPhotos.length > 0 ? params.itemPhotos : [
-      'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?auto=format&fit=crop&w=1000&q=80'
+      '/images/openbox_macro_4x3.webp'
     ],
     seller: {
       id: `usr_${Math.random().toString(36).substring(2, 8)}`,
@@ -174,7 +174,7 @@ export function fundDealEscrow(dealId: string, buyerData: { name: string; email:
     vehicleModel: 'Honda Activa 6G (Pearl White)',
     plateNumber: 'KA 05 MN 3821',
     fleetPartner: 'Porter Hyperlocal',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&h=200&q=80',
+    avatarUrl: '/images/courier_rahul_avatar.webp',
     currentLocation: {
       lat: 12.9716,
       lng: 77.6412,

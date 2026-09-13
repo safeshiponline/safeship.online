@@ -47,9 +47,9 @@ export const InspectionChecklistModal: React.FC<InspectionChecklistModalProps> =
 
   const handleAddPhoto = () => {
     const mockPhotos = [
-      'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=600&q=80',
-      'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=600&q=80'
+      '/images/openbox_macro_4x3.webp',
+      '/images/hero_openbox_4x3.webp',
+      '/images/hero_openbox_1x1.webp'
     ];
     setCapturedPhotos([...capturedPhotos, mockPhotos[capturedPhotos.length % mockPhotos.length]]);
   };

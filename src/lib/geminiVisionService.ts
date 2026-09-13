@@ -22,7 +22,7 @@ export const GUIDED_INSPECTION_STEPS: GuidedStepDefinition[] = [
     targetCheck: 'Zero burn-in, dead sub-pixels, or touch digitizer lines',
     instructionPrompt: 'Power on display on solid white background. Hold steady for panel uniformity scan.',
     geminiDirective: 'Analyzing RGB chromatic balance and sub-pixel luminosity. Zero burn-in detected (Delta E < 0.8).',
-    simulatedSamplePhoto: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80',
+    simulatedSamplePhoto: '/images/openbox_macro_4x3.webp',
     simulatedScore: 99.4,
   },
   {
@@ -33,7 +33,7 @@ export const GUIDED_INSPECTION_STEPS: GuidedStepDefinition[] = [
     targetCheck: 'Match on-screen serial directly against invoice and escrow contract',
     instructionPrompt: 'Navigate to Settings > General > About. Frame the Serial / IMEI section inside the reticle.',
     geminiDirective: 'OCR Neural Recognition engaged: Extracted identifier matched with 99.8% confidence against contract ledger.',
-    simulatedSamplePhoto: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=800&q=80',
+    simulatedSamplePhoto: '/images/hero_openbox_4x3.webp',
     simulatedOcr: 'F2LL99X8MD6M / 354892110482910',
     simulatedScore: 99.8,
   },
@@ -45,7 +45,7 @@ export const GUIDED_INSPECTION_STEPS: GuidedStepDefinition[] = [
     targetCheck: 'Catch micro-abrasions, frame dents, and corner impact marks under light',
     instructionPrompt: 'Tilt hardware 45° to catch directional light reflections along the titanium / aluminum perimeter.',
     geminiDirective: 'Specular reflectance gradient mapped. Surface roughness corresponds with Mint / Like-New baseline (0.02mm variance).',
-    simulatedSamplePhoto: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80',
+    simulatedSamplePhoto: '/images/hero_openbox_1x1.webp',
     simulatedScore: 98.6,
   },
   {
@@ -56,7 +56,7 @@ export const GUIDED_INSPECTION_STEPS: GuidedStepDefinition[] = [
     targetCheck: 'Verify zero internal sensor dust, lens fractures, or anti-reflective coating wear',
     instructionPrompt: 'Center camera barrels in macro focus. AI will inspect internal optical glass elements.',
     geminiDirective: 'Triple-camera module inspected. Anti-reflective fluorine coating intact; zero interior moisture or particles.',
-    simulatedSamplePhoto: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=800&q=80',
+    simulatedSamplePhoto: '/images/openbox_macro_1x1.webp',
     simulatedScore: 99.5,
   },
   {
@@ -67,7 +67,7 @@ export const GUIDED_INSPECTION_STEPS: GuidedStepDefinition[] = [
     targetCheck: 'Confirm zero active Apple ID, iCloud Find My lock, or Google FRP lock',
     instructionPrompt: 'Show the initial setup "Hello" / factory welcome screen to verify full account disengagement.',
     geminiDirective: 'Apple Setup Assistant state validated. Find My Activation Lock is CONFIRMED DISENGAGED (Clean ESN).',
-    simulatedSamplePhoto: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
+    simulatedSamplePhoto: '/images/ai_verified_box.webp',
     simulatedScore: 100.0,
   }
 ];

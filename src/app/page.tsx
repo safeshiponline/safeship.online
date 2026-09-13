@@ -389,13 +389,22 @@ export default function HomePage() {
             </div>
 
             {/* Right Lifestyle Graphic (Courier + Customer with Open Box) */}
-            <div className="w-[42%] sm:w-[40%] lg:w-[50%] flex items-center justify-end shrink-0">
-              <div className="relative w-full max-w-[240px] sm:max-w-[320px] lg:max-w-md rounded-2xl overflow-hidden shadow-xs border border-[#E2E8F0]">
-                <img
-                  src="/images/hero_mob_pristine.webp"
-                  alt="SafeShip Open Box Delivery Inspection"
-                  className="w-full h-auto object-cover"
-                />
+            <div className="w-[44%] sm:w-[42%] lg:w-[48%] flex items-center justify-end shrink-0">
+              <div className="relative w-full max-w-[260px] sm:max-w-[340px] lg:max-w-md rounded-2xl overflow-hidden shadow-xs border border-[#E2E8F0] aspect-4/3 sm:aspect-16/9 bg-[#F8FAFC]">
+                <picture>
+                  <source media="(min-width: 640px)" srcSet="/images/hero_openbox_16x9.webp" type="image/webp" />
+                  <source media="(max-width: 639px)" srcSet="/images/hero_openbox_4x3.webp" type="image/webp" />
+                  <img
+                    src="/images/hero_openbox_16x9.webp"
+                    alt="SafeShip Open Box Delivery Inspection at Doorstep"
+                    className="w-full h-full object-cover object-center"
+                    loading="eager"
+                  />
+                </picture>
+                <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-xs text-white text-[9px] font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Doorstep Open-Box Audit</span>
+                </div>
               </div>
             </div>
 
@@ -642,11 +651,16 @@ export default function HomePage() {
             {/* AI Verified Box Side Card (col-span-4) */}
             <div className="lg:col-span-4 bg-white rounded-2xl border border-[#E2E8F0] p-3.5 sm:p-4 flex flex-col justify-between shadow-2xs">
               <div className="relative rounded-xl overflow-hidden mb-2.5 aspect-16/9 flex items-center justify-center bg-[#F8FAFC]">
-                <img
-                  src="/images/ai_verified_box.webp"
-                  alt="SafeShip AI Verified Handoff"
-                  className="w-full h-full object-cover"
-                />
+                <picture className="w-full h-full">
+                  <source media="(min-width: 640px)" srcSet="/images/openbox_macro_16x9.webp" type="image/webp" />
+                  <source media="(max-width: 639px)" srcSet="/images/openbox_macro_4x3.webp" type="image/webp" />
+                  <img
+                    src="/images/openbox_macro_16x9.webp"
+                    alt="SafeShip AI Verified Ingestion Audit"
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                </picture>
                 <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-[#10B981] text-white text-[9px] font-bold flex items-center gap-1 shadow-sm">
                   <ShieldCheck className="w-2.5 h-2.5" />
                   <span>AI VERIFIED</span>

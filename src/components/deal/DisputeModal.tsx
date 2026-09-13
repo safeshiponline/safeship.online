@@ -29,7 +29,7 @@ export const DisputeModal: React.FC<DisputeModalProps> = ({
   const handleAddPhoto = () => {
     setEvidencePhotos([
       ...evidencePhotos,
-      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=600&q=80'
+      '/images/camera_gear_4x3.webp'
     ]);
   };
 

@@ -191,7 +191,7 @@ export default function AdminOpsPage() {
                   <img
                     src={selectedDisputeDeal.itemPhotos[0]}
                     alt="Seller listing declaration"
-                    className="h-36 w-full object-cover rounded-xl border border-zinc-200"
+                    className="h-36 w-full aspect-16/10 object-cover rounded-xl border border-zinc-200"
                   />
                   <div className="text-[10px] text-zinc-400 text-center mt-1">Listing Ingestion Evidence</div>
                 </div>
@@ -212,7 +212,7 @@ export default function AdminOpsPage() {
                 <div className="text-[11px] text-zinc-600 bg-white p-2 rounded-lg border border-zinc-200/80 space-y-0.5 font-mono">
                   <div className="flex justify-between">
                     <span>AI Model:</span>
-                    <span className="font-bold text-zinc-900">Gemini 1.5 Pro</span>
+                    <span className="font-bold text-zinc-900">Gemini 2.0 Flash</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Authenticity:</span>
@@ -227,7 +227,7 @@ export default function AdminOpsPage() {
                   <img
                     src={selectedDisputeDeal.tamperSeal?.inspectionPhotos?.[0] || selectedDisputeDeal.itemPhotos[0]}
                     alt="Doorstep pickup audit"
-                    className="h-32 w-full object-cover rounded-xl border border-zinc-200"
+                    className="h-32 w-full aspect-16/10 object-cover rounded-xl border border-zinc-200"
                   />
                   <div className="text-[10px] text-zinc-400 text-center mt-1">AI Verified Ingestion Frame</div>
                 </div>
@@ -248,7 +248,7 @@ export default function AdminOpsPage() {
                   <img
                     src={selectedDisputeDeal.dispute?.evidencePhotos?.[0] || selectedDisputeDeal.itemPhotos[0]}
                     alt="Buyer unboxing affidavit"
-                    className="h-36 w-full object-cover rounded-xl border border-rose-200/80"
+                    className="h-36 w-full aspect-16/10 object-cover rounded-xl border border-rose-200/80"
                   />
                   <div className="text-[10px] text-zinc-400 text-center mt-1">Doorstep Rejection Evidence</div>
                 </div>

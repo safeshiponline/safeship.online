@@ -13,8 +13,8 @@ export const INITIAL_DEALS: SafeDeal[] = [
     city: 'Jaipur',
     pincode: '302017',
     itemPhotos: [
-      '/images/sell_box_feathered.webp',
-      'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=1000&q=80'
+      '/images/hero_openbox_4x3.webp',
+      '/images/openbox_macro_4x3.webp'
     ],
     seller: {
       id: 'usr_seller_rohan',
@@ -58,7 +58,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
       vehicleModel: 'Bajaj Pulsar 150 (Silver)',
       plateNumber: 'KA 03 HY 4012',
       fleetPartner: 'SafeShip Direct Fleet',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80',
+      avatarUrl: '/images/courier_rahul_avatar.webp',
       currentLocation: {
         lat: 28.4595,
         lng: 77.0266,
@@ -80,7 +80,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
       appliedAt: '2026-09-13T09:30:00Z',
       inspectedBy: 'Rahul K. (Agent #KA-4012)',
       inspectionPhotos: [
-        '/images/sell_box_feathered.webp'
+        '/images/openbox_macro_4x3.webp'
       ]
     },
     escrowVault: {
@@ -134,11 +134,11 @@ export const INITIAL_DEALS: SafeDeal[] = [
       condition: 'Mint / Like New',
       declaredValue: 51000,
       cashDifference: 3000,
-      photos: ['/images/sell_box_feathered.webp']
+      photos: ['/images/exchange_hero_4x3.webp']
     },
     itemPhotos: [
-      '/images/sell_box_feathered.webp',
-      'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=1000&q=80'
+      '/images/exchange_hero_4x3.webp',
+      '/images/openbox_macro_4x3.webp'
     ],
     seller: {
       id: 'usr_seller_arjun',
@@ -182,7 +182,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
       vehicleModel: 'Bajaj Pulsar 150 (Silver)',
       plateNumber: 'KA 03 HY 4012',
       fleetPartner: 'SafeShip Direct Fleet',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80',
+      avatarUrl: '/images/courier_rahul_avatar.webp',
       currentLocation: {
         lat: 28.5245,
         lng: 77.1855,
@@ -229,8 +229,8 @@ export const INITIAL_DEALS: SafeDeal[] = [
     city: 'Bangalore',
     pincode: '560038',
     itemPhotos: [
-      'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=1000&q=80',
-      'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1000&q=80'
+      '/images/openbox_macro_4x3.webp',
+      '/images/hero_openbox_4x3.webp'
     ],
     seller: {
       id: 'usr_seller_rohit',
@@ -274,7 +274,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
       vehicleModel: 'TVS Jupiter 125 (Matte Grey)',
       plateNumber: 'KA 03 HY 8492',
       fleetPartner: 'SafeShip Direct Fleet',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80',
+      avatarUrl: '/images/courier_rahul_avatar.webp',
       currentLocation: {
         lat: 12.9716,
         lng: 77.6412,
@@ -296,7 +296,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
       appliedAt: '2026-09-12T10:45:00Z',
       inspectedBy: 'Suresh Gowda (Agent ID #KA-401)',
       inspectionPhotos: [
-        'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=600&q=80'
+        '/images/openbox_macro_4x3.webp'
       ]
     },
     escrowVault: {
@@ -352,7 +352,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
     city: 'Mumbai',
     pincode: '400050',
     itemPhotos: [
-      'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=1000&q=80'
+      '/images/gaming_ps5_4x3.webp'
     ],
     seller: {
       id: 'usr_seller_aditya',
@@ -396,7 +396,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
       vehicleModel: 'Bajaj Pulsar 150 (Black)',
       plateNumber: 'MH 02 CZ 4410',
       fleetPartner: 'Porter Hyperlocal',
-      avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&h=200&q=80',
+      avatarUrl: '/images/courier_rahul_avatar.webp',
       currentLocation: {
         lat: 19.0760,
         lng: 72.8777,
@@ -418,7 +418,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
       appliedAt: '2026-09-12T10:10:00Z',
       inspectedBy: 'Ganesh Patil (Porter Fleet Badge #MH-992)',
       inspectionPhotos: [
-        'https://images.unsplash.com/photo-1606813907291-d86efa9b94db?auto=format&fit=crop&w=600&q=80'
+        '/images/gaming_ps5_4x3.webp'
       ]
     },
     escrowVault: {
@@ -482,7 +482,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
     city: 'Delhi NCR',
     pincode: '122002',
     itemPhotos: [
-      'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=1000&q=80'
+      '/images/exchange_hero_16x9.webp'
     ],
     seller: {
       id: 'usr_seller_siddharth',
@@ -555,7 +555,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
     city: 'Pune',
     pincode: '411038',
     itemPhotos: [
-      'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=1000&q=80'
+      '/images/camera_gear_4x3.webp'
     ],
     seller: {
       id: 'usr_seller_nikhil',
@@ -595,7 +595,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
       openedBy: 'BUYER',
       reason: 'Visible dust speck on the CMOS sensor that shows up as dark spot on F/16 apertures, not disclosed by seller.',
       evidencePhotos: [
-        'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?auto=format&fit=crop&w=800&q=80'
+        '/images/camera_gear_4x3.webp'
       ],
       resolutionStatus: 'UNDER_REVIEW',
       resolutionNotes: 'SafeShip Pune Escrow Team verifying sensor cleaning quotation vs return authorization.'
@@ -646,7 +646,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
     city: 'Hyderabad',
     pincode: '500081',
     itemPhotos: [
-      'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=1000&q=80'
+      '/images/ai_verified_box.webp'
     ],
     seller: {
       id: 'usr_seller_karthik',
@@ -686,7 +686,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
       appliedAt: '2026-09-12T09:00:00Z',
       inspectedBy: 'SafeShip Agent Venkat',
       inspectionPhotos: [
-        'https://images.unsplash.com/photo-1587202372775-e229f172b9d7?auto=format&fit=crop&w=600&q=80'
+        '/images/openbox_macro_1x1.webp'
       ],
       intactVerifiedAtDelivery: true
     },

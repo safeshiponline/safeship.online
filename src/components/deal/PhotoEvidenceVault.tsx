@@ -25,25 +25,25 @@ export const PhotoEvidenceVault: React.FC<PhotoEvidenceVaultProps> = ({
 
   const defaultEvidence = [
     {
-      url: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&w=800&q=80',
+      url: '/images/openbox_macro_4x3.webp',
       title: '1. Power-On & OLED Panel Test',
       desc: 'Screen illuminated, zero dead pixels, Delta E < 0.8 panel uniformity confirmed by Gemini Vision.',
       ocr: 'PANEL: 100% HEALTH',
     },
     {
-      url: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=800&q=80',
+      url: '/images/openbox_macro_1x1.webp',
       title: '2. Settings IMEI / Serial OCR',
       desc: 'Serial number F2LL99XMD6T extracted via OCR. 99.8% match confidence against invoice.',
       ocr: 'IMEI: 354892110482910 [MATCH]',
     },
     {
-      url: 'https://images.unsplash.com/photo-1592750475338-74b7b21085ab?auto=format&fit=crop&w=800&q=80',
+      url: '/images/hero_openbox_1x1.webp',
       title: '3. 45° Chassis & Cosmetic Scan',
       desc: 'Specular reflectance gradient mapped. Titanium rails clean, zero structural deformities.',
       ocr: 'COSMETIC: GRADE A+ MINT',
     },
     {
-      url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80',
+      url: '/images/ai_verified_box.webp',
       title: '4. Holographic Tamper Bag Sealed',
       desc: `Applied serialized tamper pouch #${sealId}. Armed with tamper-evident void pattern.`,
       ocr: `SEAL: #${sealId}`,
@@ -76,7 +76,7 @@ export const PhotoEvidenceVault: React.FC<PhotoEvidenceVaultProps> = ({
                   SafeShip Vision™ AI Diagnostic Certificate
                 </span>
                 <span className="text-[9px] font-mono font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                  Gemini 1.5 Pro Neural
+                  Gemini 2.0 Flash Vision
                 </span>
               </div>
               <h4 className="text-sm font-black text-zinc-950 tracking-tight mt-0.5">

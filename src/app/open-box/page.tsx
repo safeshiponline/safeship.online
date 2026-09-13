@@ -300,21 +300,21 @@ function OpenBoxContent() {
           </div>
 
           {/* Simulated Viewfinder */}
-          <div className="relative rounded-2xl overflow-hidden bg-slate-900 aspect-16/9 flex items-center justify-center border border-slate-800">
+          <div className="relative rounded-2xl overflow-hidden bg-slate-950 aspect-16/9 flex items-center justify-center border border-slate-800">
             <img
-              src="/images/sell_box_feathered.webp"
+              src={isExchange ? '/images/exchange_hero_16x9.webp' : '/images/openbox_macro_4x3.webp'}
               alt="Inspected Device"
-              className="h-32 object-contain opacity-90"
+              className="w-full h-full object-cover opacity-85"
             />
             {/* Hologram Reticle Overlays */}
-            <div className="absolute inset-4 border border-blue-400/40 rounded-xl pointer-events-none flex flex-col justify-between p-2">
-              <div className="flex justify-between text-[10px] text-blue-300 font-mono">
+            <div className="absolute inset-4 border border-blue-400/40 rounded-xl pointer-events-none flex flex-col justify-between p-2 bg-radial from-transparent to-black/30">
+              <div className="flex justify-between text-[10px] text-blue-300 font-mono font-semibold">
                 <span>[SCANNING IMEI / SERIAL]</span>
                 <span>MATCH: {isExchange ? 'IPH14P-99201' : '354892...'}</span>
               </div>
-              <div className="flex justify-between text-[10px] text-emerald-400 font-mono">
-                <span>CHASSIS: GRADE A+</span>
-                <span>ICLOUD: UNLOCKED</span>
+              <div className="flex justify-between text-[10px] text-emerald-400 font-mono font-semibold">
+                <span>CHASSIS: GRADE A+ MINT</span>
+                <span>ICLOUD: CONFIRMED UNLOCKED</span>
               </div>
             </div>
           </div>
