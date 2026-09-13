@@ -1,6 +1,6 @@
 'use client';
 
-import { SafeDeal, DealStatus, InspectionChecklist, TamperSeal, FeeSplitOption, ItemCategory, AiDiagnosticReport } from './types';
+import { SafeDeal, DealStatus, InspectionChecklist, TamperSeal, FeeSplitOption, ItemCategory, AiDiagnosticReport, DeliveryServiceTier } from './types';
 import { INITIAL_DEALS } from './mockData';
 import { calculateEscrowBreakdown } from './escrowCalculator';
 
@@ -107,6 +107,15 @@ export function createNewDeal(params: {
   sellerUpiId?: string;
   feeSplitOption?: FeeSplitOption;
   deliveryTier?: SafeDeal['deliveryTier'];
+  serviceTier?: DeliveryServiceTier;
+  distanceKm?: number;
+  routeCorridor?: string;
+  isIntercity?: boolean;
+  upfrontPricing?: SafeDeal['upfrontPricing'];
+  middleMileCheckpoints?: SafeDeal['middleMileCheckpoints'];
+  insurancePolicyNumber?: string;
+  packageWeightKg?: number;
+  dimensionsCm?: string;
   buyerName?: string;
   buyerPhone?: string;
   deliveryAddress?: string;
@@ -168,6 +177,15 @@ export function createNewDeal(params: {
     },
     pricing,
     deliveryTier: params.deliveryTier || 'INTERCITY_INSURED',
+    serviceTier: params.serviceTier || 'PRIORITY_EXPRESS',
+    distanceKm: params.distanceKm,
+    routeCorridor: params.routeCorridor,
+    isIntercity: params.isIntercity,
+    upfrontPricing: params.upfrontPricing,
+    middleMileCheckpoints: params.middleMileCheckpoints,
+    insurancePolicyNumber: params.insurancePolicyNumber || `POL-ICICI-LOMBARD-2026-${newId}`,
+    packageWeightKg: params.packageWeightKg,
+    dimensionsCm: params.dimensionsCm,
     buyerReleasePin: buyerPin,
     sellerPickupCode: sellerCode,
     status: params.upfrontPaid ? 'IN_TRANSIT' : 'PENDING_ACCEPTANCE',

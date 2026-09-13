@@ -23,8 +23,11 @@ import {
   Eye,
   Package,
   MapPin,
-  Search
+  Search,
+  FileText
 } from '@/components/common/Icons';
+import { downloadConsignmentNotePDF } from '@/lib/pdfGenerator';
+import EnterpriseFooter from '@/components/common/EnterpriseFooter';
 
 export default function StandaloneTrackingPage({
   params,
@@ -37,6 +40,19 @@ export default function StandaloneTrackingPage({
   const [isLoading, setIsLoading] = useState(true);
   const [searchId, setSearchId] = useState('');
   const [copied, setCopied] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleDownloadAWB = () => {
+    if (!deal) return;
+    setDownloadingPdf(true);
+    try {
+      downloadConsignmentNotePDF(deal);
+    } catch (err) {
+      console.error('Failed to generate AWB PDF:', err);
+    } finally {
+      setTimeout(() => setDownloadingPdf(false), 800);
+    }
+  };
 
   useEffect(() => {
     setIsLoading(true);
@@ -182,6 +198,11 @@ export default function StandaloneTrackingPage({
                 <ShieldCheck className="w-3 h-3 text-[#10B981]" />
                 <span>Open-Box Doorstep Verification Active</span>
               </span>
+              {deal.serviceTier && (
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#0066FF] border border-blue-200">
+                  {deal.serviceTier === 'PRIORITY_EXPRESS' ? 'Priority Express Next-Day' : deal.serviceTier === 'SAME_DAY_DIRECT' ? 'Same-Day Direct' : 'Standard Ground'}
+                </span>
+              )}
               {isExchange && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1">
                   <ArrowLeftRight className="w-3 h-3 text-amber-600" />
@@ -193,11 +214,27 @@ export default function StandaloneTrackingPage({
               {deal.title}
             </h1>
             <p className="text-xs text-[#64748B]">
-              Valuation: <strong className="text-[#0F172A] font-bold">{formatINR(deal.declaredValue)}</strong> &bull; Upfront Delivery Fee: <strong className="text-emerald-600">₹{upfrontFee} (PAID)</strong> &bull; Balance collected upon open-box approval
+              Valuation: <strong className="text-[#0F172A] font-bold">{formatINR(deal.declaredValue)}</strong> &bull; Upfront Delivery Fee: <strong className="text-emerald-600">₹{deal.upfrontPaid || upfrontFee} (PAID)</strong> &bull; Balance collected upon open-box approval
             </p>
+            {deal.routeCorridor && (
+              <p className="text-[11px] text-[#0066FF] font-semibold">
+                Route Corridor: {deal.routeCorridor} {deal.distanceKm ? `(${deal.distanceKm} km)` : ''}
+              </p>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={handleDownloadAWB}
+              disabled={downloadingPdf}
+              className="px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-[#0F172A] flex items-center gap-1.5 transition cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
+              title="Download Official Air Waybill Consignment Note (A4 PDF)"
+            >
+              <FileText className="w-3.5 h-3.5 text-[#0066FF]" />
+              <span>{downloadingPdf ? 'Generating PDF...' : 'AWB Consignment Note (PDF)'}</span>
+            </button>
+
             <Link
               href={`/open-box?deal=${deal.id}${isExchange ? '&type=exchange' : ''}`}
               className="px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-xs font-bold text-white flex items-center gap-1.5 transition shadow-sm shadow-[#0066FF]/25 active:scale-95"
@@ -221,7 +258,7 @@ export default function StandaloneTrackingPage({
         <div className="rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-xs">
           <div className="grid grid-cols-5 gap-2 text-center">
             {[
-              { num: 1, title: 'Booking Confirmed', desc: `₹${upfrontFee} Fee Paid` },
+              { num: 1, title: 'Booking Confirmed', desc: `₹${deal.upfrontPaid || upfrontFee} Fee Paid` },
               { num: 2, title: 'Courier Dispatched', desc: 'Bonded Officer' },
               { num: 3, title: 'Pickup Verified', desc: 'Tamper Seal Applied' },
               { num: 4, title: 'In Transit', desc: 'GPS Telemetry Live' },
@@ -246,6 +283,9 @@ export default function StandaloneTrackingPage({
           pickupAddress={deal.seller.pickupAddress}
           deliveryAddress={deal.buyer.deliveryAddress}
           status={deal.status}
+          distanceKm={deal.distanceKm}
+          routeCorridor={deal.routeCorridor}
+          isIntercity={deal.isIntercity}
         />
 
         {/* Two-Column Details */}
@@ -293,6 +333,8 @@ export default function StandaloneTrackingPage({
           </div>
         </div>
       </main>
+
+      <EnterpriseFooter />
     </div>
   );
 }

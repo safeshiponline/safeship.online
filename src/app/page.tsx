@@ -24,6 +24,7 @@ import {
   Home,
   Plus
 } from '@/components/common/Icons';
+import EnterpriseFooter from '@/components/common/EnterpriseFooter';
 
 export default function HomePage() {
   const router = useRouter();
@@ -612,26 +613,9 @@ export default function HomePage() {
       </nav>
 
       {/* ========================================================================= */}
-      {/* 7. MINIMAL DESKTOP FOOTER                                                 */}
+      {/* 7. ENTERPRISE TRUST FOOTER & SERVICEABILITY ENGINE                        */}
       {/* ========================================================================= */}
-      <footer className="hidden md:block w-full bg-white border-t border-[#E2E8F0] mt-10 py-6">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between text-xs text-[#64748B] gap-3">
-          <div className="flex items-center gap-2">
-            <SafeShipLogo className="w-5 h-5" />
-            <span className="font-bold text-[#0F172A]">SafeShip Technologies</span>
-            <span>&bull;</span>
-            <span>The Open-Box &amp; Exchange Trust Infrastructure</span>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <Link href="/deals/new?type=send" className="hover:text-[#0066FF]">Send</Link>
-            <Link href="/deals/new?type=exchange" className="hover:text-[#0066FF]">Exchange</Link>
-            <Link href="/track/SS48291" className="hover:text-[#0066FF]">Tracking</Link>
-            <Link href="/open-box" className="hover:text-[#0066FF]">Open-Box</Link>
-            <Link href="/admin" className="hover:text-[#0066FF]">Admin</Link>
-          </div>
-        </div>
-      </footer>
+      <EnterpriseFooter />
 
     </div>
   );

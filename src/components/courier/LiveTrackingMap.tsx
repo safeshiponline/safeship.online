@@ -9,6 +9,9 @@ interface LiveTrackingMapProps {
   pickupAddress: string;
   deliveryAddress: string;
   status: DealStatus;
+  distanceKm?: number;
+  routeCorridor?: string;
+  isIntercity?: boolean;
   className?: string;
 }
 
@@ -17,6 +20,9 @@ export const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
   pickupAddress,
   deliveryAddress,
   status,
+  distanceKm = 280,
+  routeCorridor = 'NH48 Express Linehaul Transit',
+  isIntercity = true,
   className = '',
 }) => {
   const [progress, setProgress] = useState(55);
@@ -88,6 +94,24 @@ export const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
         </div>
       </div>
 
+      {/* Multi-Leg Corridor Alert for Intercity */}
+      {isIntercity && (
+        <div className="bg-[#EFF6FF] border-b border-[#BFDBFE] px-4 sm:px-6 py-2 flex flex-wrap items-center justify-between text-xs gap-2">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 rounded bg-[#0066FF] text-white font-mono font-bold text-[10px] uppercase">
+              Linehaul Corridor
+            </span>
+            <span className="font-bold text-[#0F172A]">{routeCorridor}</span>
+            <span className="text-[#64748B]">({distanceKm} km Intercity Multi-Leg Rail)</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-[11px] text-[#0066FF] font-semibold">
+            <span>Air-Suspension Container Rail</span>
+            <span>&bull;</span>
+            <span>GPS Tamper Monitored</span>
+          </div>
+        </div>
+      )}
+
       {/* Vector Map Canvas */}
       <div className="relative h-64 sm:h-72 w-full bg-[#F8FAFC] overflow-hidden">
         {/* Street grid pattern */}
@@ -124,9 +148,21 @@ export const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
             <MapPin className="w-4 h-4 text-white" />
           </div>
           <div className="mt-1.5 px-2.5 py-0.5 rounded-md bg-white border border-[#CBD5E1] text-[10px] font-bold text-[#0F172A] shadow-xs whitespace-nowrap">
-            Origin (Pickup)
+            {isIntercity ? '1. Origin City Hub' : 'Origin (Pickup)'}
           </div>
         </div>
+
+        {/* Mid-Way Linehaul Gateway Pin (If Intercity) */}
+        {isIntercity && (
+          <div className="absolute top-[125px] left-[52%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-900 text-white shadow-sm ring-2 ring-white">
+              <Truck className="w-3.5 h-3.5 text-white" />
+            </div>
+            <div className="mt-1 px-2 py-0.5 rounded-md bg-white border border-[#CBD5E1] text-[9px] font-bold text-[#0F172A] shadow-2xs whitespace-nowrap">
+              2. Linehaul Relay Hub
+            </div>
+          </div>
+        )}
 
         {/* Delivery Pin */}
         <div className="absolute top-[75px] right-[60px] translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
@@ -134,11 +170,11 @@ export const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
             <ShieldCheck className="w-4 h-4 text-white" />
           </div>
           <div className="mt-1.5 px-2.5 py-0.5 rounded-md bg-white border border-[#CBD5E1] text-[10px] font-bold text-[#0F172A] shadow-xs whitespace-nowrap">
-            Destination (Drop)
+            {isIntercity ? '3. Destination Hub & Doorstep' : 'Destination (Drop)'}
           </div>
         </div>
 
-        {/* Moving Courier Marker */}
+        {/* Moving Courier / Linehaul Marker */}
         <div
           className="absolute transition-all duration-1000 ease-out z-10"
           style={{
@@ -155,7 +191,7 @@ export const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
             </div>
             {/* Speed bubble */}
             <div className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md bg-[#0F172A] text-[10px] font-mono font-bold text-white whitespace-nowrap shadow-md">
-              {isTransit ? `${speed} km/h` : 'At Doorstep'}
+              {isTransit ? (isIntercity ? `Linehaul: 64 km/h` : `${speed} km/h`) : 'At Doorstep'}
             </div>
           </div>
         </div>

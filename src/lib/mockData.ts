@@ -46,6 +46,20 @@ export const INITIAL_DEALS: SafeDeal[] = [
       milestoneAdvancePercent: 30
     }),
     deliveryTier: 'INTERCITY_INSURED',
+    serviceTier: 'PRIORITY_EXPRESS',
+    distanceKm: 280,
+    routeCorridor: 'NH48 Delhi-Jaipur Trans-Expressway (Multi-Leg)',
+    isIntercity: true,
+    packageWeightKg: 0.9,
+    dimensionsCm: '20 x 15 x 10 cm',
+    insurancePolicyNumber: 'POL-ICICI-LOMBARD-2026-SS48291',
+    upfrontPricing: {
+      baseFee: 299,
+      distanceSurcharge: 150,
+      insuranceFee: 325,
+      verificationFee: 0,
+      totalUpfront: 774
+    },
     buyerReleasePin: '482910',
     sellerPickupCode: '8291',
     status: 'IN_TRANSIT',

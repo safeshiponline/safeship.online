@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SafeShipLogo } from '@/components/common/SafeShipLogo';
@@ -19,15 +19,22 @@ import {
   X,
   Search,
   Monitor,
+  Smartphone,
+  Watch,
+  Headphones,
+  FileText,
   Shirt,
-  Sofa,
-  Car,
   Layers,
   Sparkles,
-  Lock
+  Lock,
+  Clock,
+  Award
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
 import { createNewDeal } from '@/lib/store';
+import { ItemCategory, DeliveryServiceTier } from '@/lib/types';
+import { resolvePincode, calculateRoadDistance, calculateTierPricing } from '@/lib/pincodeService';
+import EnterpriseFooter from '@/components/common/EnterpriseFooter';
 
 export default function CreateShipmentPage() {
   return (
@@ -46,36 +53,51 @@ function CreateShipmentContent() {
   const [currentStep, setCurrentStep] = useState<number>(1);
 
   // Form State - Item 1 (What you are sending / swapping out)
-  const [selectedCategory, setSelectedCategory] = useState<string>('Electronics');
-  const [itemName, setItemName] = useState<string>('iPhone 15 Pro, 256GB');
+  // ZERO mock pre-filled data - all text starts empty with elegant placeholders
+  const [selectedCategory, setSelectedCategory] = useState<ItemCategory | ''>('');
+  const [itemName, setItemName] = useState<string>('');
   const [condition, setCondition] = useState<string>('Used - Mint');
-  const [declaredValue, setDeclaredValue] = useState<number>(65000);
-  const [includedItems, setIncludedItems] = useState<string>('Phone, cable, original retail box');
-  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([
-    '/images/openbox_macro_4x3.webp',
-  ]);
+  const [declaredValue, setDeclaredValue] = useState<number>(0);
+  const [includedItems, setIncludedItems] = useState<string>('');
+  const [uploadedPhotos, setUploadedPhotos] = useState<string[]>([]);
 
   // Form State - Item 2 (Only for 2-Way Item Exchange: what you receive)
-  const [exchangeItemName, setExchangeItemName] = useState<string>('MacBook Air M2, 8GB/256GB');
+  const [exchangeItemName, setExchangeItemName] = useState<string>('');
   const [exchangeCondition, setExchangeCondition] = useState<string>('Used - Excellent');
-  const [exchangeValue, setExchangeValue] = useState<number>(68000);
-  const [exchangeIncluded, setExchangeIncluded] = useState<string>('Laptop, MagSafe cable, 30W adapter, box');
-  const [cashDifference, setCashDifference] = useState<number>(3000); // Amount to balance the trade
-  const [cashPayer, setCashPayer] = useState<'YOU_PAY' | 'THEY_PAY' | 'EVEN_TRADE'>('THEY_PAY');
+  const [exchangeValue, setExchangeValue] = useState<number>(0);
+  const [exchangeIncluded, setExchangeIncluded] = useState<string>('');
+  const [cashDifference, setCashDifference] = useState<number>(0);
+  const [cashPayer, setCashPayer] = useState<'YOU_PAY' | 'THEY_PAY' | 'EVEN_TRADE'>('EVEN_TRADE');
+
+  // Counterparty Contacts
+  const [senderName, setSenderName] = useState<string>('');
+  const [senderPhone, setSenderPhone] = useState<string>('');
+  const [buyerName, setBuyerName] = useState<string>('');
+  const [buyerPhone, setBuyerPhone] = useState<string>('');
 
   // Location & Distance State
-  const [pickupLocation, setPickupLocation] = useState<string>('Patrika Gate, Jaipur');
-  const [pickupPincode, setPickupPincode] = useState<string>('302017');
-  const [dropLocation, setDropLocation] = useState<string>('Connaught Place, Delhi');
-  const [dropPincode, setDropPincode] = useState<string>('110001');
-  const [distanceKm, setDistanceKm] = useState<number>(280);
-  const [deliveryDate, setDeliveryDate] = useState<string>('Today (1-2 days transit)');
-  const [packageWeight, setPackageWeight] = useState<string>('~0.9 kg (small box 20 x 15 x 10 cm)');
-  const [openBoxEnabled, setOpenBoxEnabled] = useState<boolean>(true);
-  const [calculatingDistance, setCalculatingDistance] = useState<boolean>(false);
-  const [routeNote, setRouteNote] = useState<string>('NH48 Express Corridor');
+  const [pickupLocation, setPickupLocation] = useState<string>('');
+  const [pickupPincode, setPickupPincode] = useState<string>('');
+  const [pickupCity, setPickupCity] = useState<string>('');
+  const [pickupState, setPickupState] = useState<string>('');
+  const [pickupHub, setPickupHub] = useState<string>('');
 
-  // Step-by-Step Field Validation State
+  const [dropLocation, setDropLocation] = useState<string>('');
+  const [dropPincode, setDropPincode] = useState<string>('');
+  const [dropCity, setDropCity] = useState<string>('');
+  const [dropState, setDropState] = useState<string>('');
+  const [dropHub, setDropHub] = useState<string>('');
+
+  // Distance & Routing Telemetry
+  const [distanceKm, setDistanceKm] = useState<number>(0);
+  const [routeCorridor, setRouteCorridor] = useState<string>('Local Intra-City Transit');
+  const [isIntercity, setIsIntercity] = useState<boolean>(false);
+  const [selectedTier, setSelectedTier] = useState<DeliveryServiceTier>('PRIORITY_EXPRESS');
+
+  const [packageWeight, setPackageWeight] = useState<string>('');
+  const [openBoxEnabled, setOpenBoxEnabled] = useState<boolean>(true);
+
+  // Field Validation State
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [stepErrorBanner, setStepErrorBanner] = useState<string>('');
 
@@ -90,14 +112,96 @@ function CreateShipmentContent() {
     }
   };
 
+  // Pincode auto-resolution handler for Pickup
+  const handlePickupPincodeChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 6);
+    setPickupPincode(digits);
+    clearFieldError('pickupPincode');
+
+    if (digits.length === 6) {
+      const info = resolvePincode(digits);
+      setPickupCity(info.city);
+      setPickupState(info.state);
+      setPickupHub(info.hubName);
+
+      if (dropPincode.length === 6) {
+        const route = calculateRoadDistance(digits, dropPincode);
+        setDistanceKm(route.distanceKm);
+        setIsIntercity(route.isIntercity);
+        setRouteCorridor(route.corridorName);
+      }
+    } else {
+      setPickupCity('');
+      setPickupState('');
+      setPickupHub('');
+    }
+  };
+
+  // Pincode auto-resolution handler for Drop
+  const handleDropPincodeChange = (raw: string) => {
+    const digits = raw.replace(/\D/g, '').slice(0, 6);
+    setDropPincode(digits);
+    clearFieldError('dropPincode');
+
+    if (digits.length === 6) {
+      const info = resolvePincode(digits);
+      setDropCity(info.city);
+      setDropState(info.state);
+      setDropHub(info.hubName);
+
+      if (pickupPincode.length === 6) {
+        const route = calculateRoadDistance(pickupPincode, digits);
+        setDistanceKm(route.distanceKm);
+        setIsIntercity(route.isIntercity);
+        setRouteCorridor(route.corridorName);
+      }
+    } else {
+      setDropCity('');
+      setDropState('');
+      setDropHub('');
+    }
+  };
+
+  // One-tap preset corridor selector
+  const applyPresetCorridor = (preset: {
+    fromAddress: string;
+    fromPin: string;
+    toAddress: string;
+    toPin: string;
+  }) => {
+    setPickupLocation(preset.fromAddress);
+    handlePickupPincodeChange(preset.fromPin);
+    setDropLocation(preset.toAddress);
+    handleDropPincodeChange(preset.toPin);
+    const route = calculateRoadDistance(preset.fromPin, preset.toPin);
+    setDistanceKm(route.distanceKm);
+    setIsIntercity(route.isIntercity);
+    setRouteCorridor(route.corridorName);
+    setErrors({});
+    setStepErrorBanner('');
+  };
+
+  // 8 Realistic Categories (Vehicles removed!)
+  const categories: { id: ItemCategory; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: 'SMARTPHONES_TABLETS', label: 'Smartphones & Tablets', icon: Smartphone },
+    { id: 'LAPTOPS_COMPUTERS', label: 'Laptops & Computers', icon: Monitor },
+    { id: 'CAMERAS_OPTICS', label: 'Cameras & Optics', icon: Camera },
+    { id: 'LUXURY_WATCHES', label: 'Luxury & Watches', icon: Watch },
+    { id: 'GAMING_AUDIO', label: 'Gaming & Audio', icon: Headphones },
+    { id: 'DOCUMENTS_VALUABLES', label: 'Documents & Valuables', icon: FileText },
+    { id: 'FASHION_APPAREL', label: 'Fashion & Apparel', icon: Shirt },
+    { id: 'OTHER_ELECTRONICS', label: 'Other Electronics', icon: Layers },
+  ];
+
+  // Validation routines
   const validateStep1 = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!selectedCategory || !selectedCategory.trim()) {
-      errs.category = 'Please select a product category to proceed.';
+    if (!selectedCategory) {
+      errs.category = 'Please select an item category to proceed.';
     }
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
-      setStepErrorBanner('Please select a category to continue.');
+      setStepErrorBanner('Please select a shipment category to continue.');
       return false;
     }
     setStepErrorBanner('');
@@ -108,7 +212,7 @@ function CreateShipmentContent() {
     const errs: Record<string, string> = {};
 
     if (!itemName || itemName.trim().length < 3) {
-      errs.itemName = 'Please enter an item model or name (minimum 3 characters).';
+      errs.itemName = 'Please enter an item model or specification (minimum 3 characters).';
     }
     if (!condition || !condition.trim()) {
       errs.condition = 'Please select the physical condition.';
@@ -117,7 +221,7 @@ function CreateShipmentContent() {
       errs.declaredValue = 'Please enter a valid declared item valuation in ₹ (greater than 0).';
     }
     if (!includedItems || includedItems.trim().length < 2) {
-      errs.includedItems = 'Please specify accessories/items included in the package.';
+      errs.includedItems = 'Please specify accessories/items included in the parcel.';
     }
 
     if (mode === 'exchange') {
@@ -147,14 +251,27 @@ function CreateShipmentContent() {
   const validateStep3 = (): boolean => {
     const errs: Record<string, string> = {};
 
+    if (!senderName || senderName.trim().length < 2) {
+      errs.senderName = 'Please enter sender name (minimum 2 characters).';
+    }
+    if (!senderPhone || !/^[6-9]\d{9}$/.test(senderPhone.replace(/\D/g, ''))) {
+      errs.senderPhone = 'Please enter a valid 10-digit Indian mobile number (starts with 6-9).';
+    }
     if (!pickupLocation || pickupLocation.trim().length < 3) {
-      errs.pickupLocation = 'Please enter a valid pickup address (minimum 3 characters).';
+      errs.pickupLocation = 'Please enter a pickup address (minimum 3 characters).';
     }
     if (!pickupPincode || !/^\d{6}$/.test(pickupPincode.trim())) {
       errs.pickupPincode = 'Please enter a valid 6-digit Indian PIN code.';
     }
+
+    if (!buyerName || buyerName.trim().length < 2) {
+      errs.buyerName = 'Please enter receiver / buyer name.';
+    }
+    if (!buyerPhone || !/^[6-9]\d{9}$/.test(buyerPhone.replace(/\D/g, ''))) {
+      errs.buyerPhone = 'Please enter a valid 10-digit Indian mobile number for receiver.';
+    }
     if (!dropLocation || dropLocation.trim().length < 3) {
-      errs.dropLocation = 'Please enter a valid delivery address (minimum 3 characters).';
+      errs.dropLocation = 'Please enter a delivery address (minimum 3 characters).';
     }
     if (!dropPincode || !/^\d{6}$/.test(dropPincode.trim())) {
       errs.dropPincode = 'Please enter a valid 6-digit Indian PIN code.';
@@ -162,7 +279,7 @@ function CreateShipmentContent() {
 
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
-      setStepErrorBanner('Please provide valid addresses and 6-digit PIN codes for both locations.');
+      setStepErrorBanner('Please provide valid contact numbers, addresses and 6-digit PIN codes.');
       return false;
     }
     setStepErrorBanner('');
@@ -176,58 +293,29 @@ function CreateShipmentContent() {
       if (validateStep2()) setCurrentStep(3);
     } else if (currentStep === 3) {
       if (validateStep3()) {
-        recalculateDistanceWithGemini(pickupLocation, dropLocation);
+        // Ensure distance is resolved
+        if (pickupPincode && dropPincode && distanceKm === 0) {
+          const route = calculateRoadDistance(pickupPincode, dropPincode);
+          setDistanceKm(route.distanceKm);
+          setIsIntercity(route.isIntercity);
+          setRouteCorridor(route.corridorName);
+        }
         setCurrentStep(4);
       }
     }
   };
 
-  const recalculateDistanceWithGemini = async (from: string, to: string) => {
-    setCalculatingDistance(true);
-    try {
-      const res = await fetch('/api/gemini/distance', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          fromCity: from,
-          toCity: to,
-          fromPin: pickupPincode,
-          toPin: dropPincode
-        })
-      });
-      const data = await res.json();
-      if (data.success && data.data) {
-        setDistanceKm(data.data.distanceKm);
-        setDeliveryDate(data.data.transitDays);
-        if (data.data.recommendedHighway) {
-          setRouteNote(data.data.recommendedHighway);
-        }
-      }
-    } catch {
-      // fallback preserved
-    } finally {
-      setCalculatingDistance(false);
+  // Compute 3 Service Tiers using mathematical formula engine
+  const effectiveDistance = distanceKm > 0 ? distanceKm : 25;
+  const tierPricing = calculateTierPricing(effectiveDistance, declaredValue, mode);
+  const activeTierBreakdown = tierPricing[selectedTier] || tierPricing.PRIORITY_EXPRESS;
+
+  // Auto-adjust selected tier if Same-Day is disabled due to intercity distance
+  useEffect(() => {
+    if (selectedTier === 'SAME_DAY_DIRECT' && !tierPricing.SAME_DAY_DIRECT.isAvailable) {
+      setSelectedTier('PRIORITY_EXPRESS');
     }
-  };
-
-  // Upfront Pricing calculation:
-  // 1-Way Delivery: ₹249 delivery fee + ₹29 insurance = ₹349 total
-  // 2-Way Item Exchange: ₹499 roundtrip courier handoff + ₹49 dual-item insurance = ₹548 total
-  const deliveryFee = mode === 'exchange' ? 499 : 249;
-  const openBoxFee = 0; // Included free! The Moat
-  const insuranceFee = mode === 'exchange' ? 49 : 29;
-  const upfrontTotal = deliveryFee + openBoxFee + insuranceFee; // ₹349 for 1-way, ₹548 for 2-way
-
-  const categories = [
-    { id: 'Electronics', label: 'Electronics', icon: Monitor },
-    { id: 'Fashion', label: 'Fashion', icon: Shirt },
-    { id: 'Home & Furniture', label: 'Home & Furniture', icon: Sofa },
-    { id: 'Vehicles', label: 'Vehicles', icon: Car },
-    { id: 'Books & Gaming', label: 'Books & Gaming', icon: Package },
-    { id: 'Sports', label: 'Sports', icon: Sparkles },
-    { id: 'Appliances', label: 'Appliances', icon: Layers },
-    { id: 'Others', label: 'Others', icon: Package },
-  ];
+  }, [selectedTier, tierPricing.SAME_DAY_DIRECT.isAvailable]);
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -251,38 +339,40 @@ function CreateShipmentContent() {
 
   const handleConfirmBooking = () => {
     clearRazorpayError();
+    const upfrontAmount = activeTierBreakdown.totalUpfront;
+
     openCheckout({
-      amountInRupees: upfrontTotal,
-      name: 'SafeShip India',
-      description: mode === 'exchange' ? '2-Way Roundtrip Courier Fee (₹548)' : '1-Way Safe Delivery & Inspection Fee (₹349)',
+      amountInRupees: upfrontAmount,
+      name: 'SafeShip India Logistics',
+      description: `${activeTierBreakdown.tierLabel} (${distanceKm || effectiveDistance} km) - Doorstep Open-Box Assured`,
       notes: {
         mode,
-        origin: pickupLocation,
-        destination: dropLocation,
+        origin: `${pickupLocation} (${pickupPincode})`,
+        destination: `${dropLocation} (${dropPincode})`,
+        tier: selectedTier,
         itemName,
+        declaredValue: declaredValue.toString(),
       },
       onSuccess: (verifyData) => {
         try {
-          const categoryKey = selectedCategory === 'Gaming'
-            ? 'GAMING_CONSOLES'
-            : 'SMARTPHONES_TABLETS';
+          const insurancePolicyNumber = `POL-ICICI-LOMBARD-2026-${Date.now().toString(36).toUpperCase()}`;
 
           const created = createNewDeal({
             title: mode === 'exchange' ? `2-Way Swap: ${itemName} ⇄ ${exchangeItemName}` : itemName,
-            description: `${mode === 'exchange' ? '2-Way Hardware Exchange' : 'SafeShip Doorstep Delivery'} from ${pickupLocation} to ${dropLocation}. Verified via Open-Box audit.`,
-            category: categoryKey as any,
+            description: `${mode === 'exchange' ? '2-Way Hardware Exchange' : 'SafeShip Doorstep Delivery'} from ${pickupCity || 'Jaipur'} to ${dropCity || 'Delhi'}. Verified via Open-Box audit on ${routeCorridor}.`,
+            category: (selectedCategory || 'SMARTPHONES_TABLETS') as ItemCategory,
             declaredValue,
             condition: condition as any,
-            itemPhotos: uploadedPhotos,
-            sellerName: 'Rohan V.',
-            sellerEmail: 'rohan.v@safeship.online',
-            sellerPhone: '+91 98290 12890',
+            itemPhotos: uploadedPhotos.length > 0 ? uploadedPhotos : ['/images/openbox_macro_4x3.webp'],
+            sellerName: senderName.trim(),
+            sellerEmail: `${senderName.toLowerCase().replace(/\s+/g, '')}@safeship.online`,
+            sellerPhone: senderPhone.trim().startsWith('+91') ? senderPhone.trim() : `+91 ${senderPhone.trim()}`,
             pickupAddress: pickupLocation,
-            city: pickupLocation.includes(',') ? pickupLocation.split(',')[1].trim() : 'Jaipur',
+            city: pickupCity || 'Jaipur',
             pincode: pickupPincode,
+            buyerName: buyerName.trim(),
+            buyerPhone: buyerPhone.trim().startsWith('+91') ? buyerPhone.trim() : `+91 ${buyerPhone.trim()}`,
             deliveryAddress: dropLocation,
-            buyerName: 'Priya Sharma',
-            buyerPhone: '+91 98110 88912',
             isExchange: mode === 'exchange',
             exchangeItem: mode === 'exchange' ? {
               title: exchangeItemName,
@@ -291,7 +381,21 @@ function CreateShipmentContent() {
               cashDifference,
               photos: ['/images/exchange_hero_4x3.webp']
             } : undefined,
-            upfrontPaid: upfrontTotal,
+            serviceTier: selectedTier,
+            distanceKm: distanceKm || effectiveDistance,
+            routeCorridor,
+            isIntercity,
+            packageWeightKg: parseFloat(packageWeight) || 0.8,
+            dimensionsCm: '20 x 15 x 10 cm',
+            insurancePolicyNumber,
+            upfrontPricing: {
+              baseFee: activeTierBreakdown.baseFee,
+              distanceSurcharge: activeTierBreakdown.distanceSurcharge,
+              insuranceFee: activeTierBreakdown.insuranceFee,
+              verificationFee: activeTierBreakdown.verificationFee,
+              totalUpfront: activeTierBreakdown.totalUpfront
+            },
+            upfrontPaid: upfrontAmount,
             paymentId: verifyData.payment_id
           });
 
@@ -316,6 +420,7 @@ function CreateShipmentContent() {
           <Link
             href="/"
             className="w-9 h-9 rounded-full bg-[#F1F5F9] hover:bg-[#E2E8F0] flex items-center justify-center text-[#0F172A] transition active:scale-95"
+            title="Return to Home"
           >
             <ArrowLeft className="w-4.5 h-4.5" />
           </Link>
@@ -325,10 +430,10 @@ function CreateShipmentContent() {
               {mode === 'exchange' ? '2-Way Item Exchange' : '1-Way Safe Delivery'} &bull; Step {currentStep} of 4
             </span>
             <h1 className="text-sm font-bold text-[#0F172A] mt-0.5">
-              {currentStep === 1 && (mode === 'exchange' ? 'Choose Swap Category' : 'What are you sending?')}
-              {currentStep === 2 && (mode === 'exchange' ? 'Both Items to Exchange' : 'Item Details & Photos')}
-              {currentStep === 3 && 'Pickup & Delivery Route'}
-              {currentStep === 4 && (mode === 'exchange' ? 'Review Exchange & Pay ₹548 Fee' : 'Review & Upfront Pricing (₹349)')}
+              {currentStep === 1 && (mode === 'exchange' ? 'Choose Swap Category' : 'Select Item Category')}
+              {currentStep === 2 && (mode === 'exchange' ? 'Item Specifications & Photos' : 'Item Details & Declared Valuation')}
+              {currentStep === 3 && 'Origin, Destination & Bonded Route'}
+              {currentStep === 4 && 'Choose Logistics Tier & Settle Fee'}
             </h1>
           </div>
 
@@ -339,7 +444,7 @@ function CreateShipmentContent() {
       </header>
 
       {/* MODE SEGMENTED TOGGLE (1-Way Delivery vs 2-Way Item Exchange) */}
-      <div className="bg-white border-b border-[#E2E8F0] py-2 px-4">
+      <div className="bg-white border-b border-[#E2E8F0] py-2.5 px-4">
         <div className="max-w-md mx-auto flex items-center bg-[#F1F5F9] p-1 rounded-2xl border border-[#E2E8F0]">
           <button
             type="button"
@@ -351,7 +456,7 @@ function CreateShipmentContent() {
             }`}
           >
             <Package className="w-3.5 h-3.5" />
-            <span>1-Way Delivery (₹349)</span>
+            <span>1-Way Delivery</span>
           </button>
 
           <button
@@ -364,7 +469,7 @@ function CreateShipmentContent() {
             }`}
           >
             <ArrowLeftRight className="w-3.5 h-3.5 text-amber-600" />
-            <span>2-Way Exchange (₹548)</span>
+            <span>2-Way Item Swap</span>
           </button>
         </div>
       </div>
@@ -388,8 +493,8 @@ function CreateShipmentContent() {
               <span className="text-[11px] font-medium hidden sm:inline text-[#64748B]">
                 {s === 1 && 'Category'}
                 {s === 2 && (mode === 'exchange' ? 'Dual Items' : 'Details')}
-                {s === 3 && 'Locations'}
-                {s === 4 && 'Pricing'}
+                {s === 3 && 'Routing'}
+                {s === 4 && 'Tier & Pay'}
               </span>
             </div>
           ))}
@@ -400,14 +505,14 @@ function CreateShipmentContent() {
       <main className="max-w-xl mx-auto w-full p-4 sm:p-6 flex-1">
         
         {/* =================================================================== */}
-        {/* STEP 1: CATEGORY SELECTION                                          */}
+        {/* STEP 1: CATEGORY SELECTION (8 Realistic High-Value Categories)      */}
         {/* =================================================================== */}
         {currentStep === 1 && (
           <div className="space-y-4 animate-in fade-in">
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-bold text-[#0F172A]">
-                  {mode === 'exchange' ? 'Choose Exchange Category' : 'Choose Item Category'}
+                  {mode === 'exchange' ? 'Select Exchange Category' : 'Select Item Category'}
                 </h2>
                 {mode === 'exchange' && (
                   <span className="text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-full">
@@ -417,8 +522,8 @@ function CreateShipmentContent() {
               </div>
               <p className="text-xs text-[#64748B] mt-0.5">
                 {mode === 'exchange'
-                  ? 'SafeShip couriers inspect both items simultaneously at the doorstep before handing them over.'
-                  : 'SafeShip Open-Box Delivery is available for all electronics, gadgets, and high-value items.'}
+                  ? 'SafeShip bonded couriers inspect both merchandise parcels simultaneously at the doorstep before swap sign-off.'
+                  : 'Doorstep open-box inspection is guaranteed on all electronics, optics, and high-value certified consignments.'}
               </p>
             </div>
 
@@ -470,25 +575,25 @@ function CreateShipmentContent() {
               onClick={handleNextStep}
               className="mt-6 w-full py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>Next: {mode === 'exchange' ? 'Dual Item Details' : 'Item Details'}</span>
+              <span>Next: {mode === 'exchange' ? 'Dual Item Details' : 'Item Specifications'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         )}
 
         {/* =================================================================== */}
-        {/* STEP 2: ITEM DETAILS & PHOTO UPLOAD                                */}
+        {/* STEP 2: ITEM DETAILS & VALUATION (Starts Empty with Placeholders)  */}
         {/* =================================================================== */}
         {currentStep === 2 && (
           <div className="space-y-4 animate-in fade-in">
             <div>
               <h2 className="text-xl font-bold text-[#0F172A]">
-                {mode === 'exchange' ? 'Dual Items to Swap' : 'Item Details & Evidence'}
+                {mode === 'exchange' ? 'Dual Item Specifications' : 'Item Details & Declared Value'}
               </h2>
               <p className="text-xs text-[#64748B] mt-0.5">
                 {mode === 'exchange'
-                  ? 'Specify what you are sending out and what you are receiving in exchange.'
-                  : 'These photos and details will be verified by the courier and buyer upon open-box delivery.'}
+                  ? 'Enter details for both items. The bonded officer audits both devices against this declaration.'
+                  : 'Declared value determines transit insurance coverage and doorstep escrow settlement.'}
               </p>
             </div>
 
@@ -499,12 +604,14 @@ function CreateShipmentContent() {
                   <span className="w-2 h-2 rounded-full bg-[#0066FF]" />
                   <span>{mode === 'exchange' ? 'Item 1: What You Send (Swap Out)' : 'Item Information'}</span>
                 </span>
-                <span className="text-[11px] font-semibold text-[#64748B]">Category: {selectedCategory}</span>
+                <span className="text-[11px] font-semibold text-[#64748B]">
+                  {categories.find((c) => c.id === selectedCategory)?.label || 'Electronics'}
+                </span>
               </div>
 
               <div>
                 <label className="text-xs font-bold text-[#334155] block mb-1">
-                  Item Model &amp; Storage <span className="text-rose-500">*</span>:
+                  Item Model / Specification <span className="text-rose-500">*</span>:
                 </label>
                 <input
                   type="text"
@@ -516,7 +623,7 @@ function CreateShipmentContent() {
                   className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-sm text-[#0F172A] outline-hidden transition ${
                     errors.itemName ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
                   }`}
-                  placeholder="e.g. iPhone 15 Pro, 256GB - Natural Titanium"
+                  placeholder="e.g., MacBook Pro M3 16GB / 512GB Space Black"
                 />
                 {errors.itemName && (
                   <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.itemName}</p>
@@ -526,7 +633,7 @@ function CreateShipmentContent() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-bold text-[#334155] block mb-1">
-                    Condition <span className="text-rose-500">*</span>:
+                    Physical Condition <span className="text-rose-500">*</span>:
                   </label>
                   <select
                     value={condition}
@@ -538,11 +645,11 @@ function CreateShipmentContent() {
                       errors.condition ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
                     }`}
                   >
-                    <option value="Used - Mint">Used - Mint</option>
-                    <option value="Brand New Sealed">Brand New Sealed</option>
-                    <option value="Used - Excellent">Used - Excellent</option>
-                    <option value="Used - Good">Used - Good</option>
-                    <option value="Used - Fair">Used - Fair</option>
+                    <option value="Brand New Sealed">Brand New Sealed (Factory Pack)</option>
+                    <option value="Used - Mint">Used - Mint (Scratchless)</option>
+                    <option value="Used - Excellent">Used - Excellent (Minor Signs)</option>
+                    <option value="Used - Good">Used - Good (Normal Wear)</option>
+                    <option value="Used - Fair">Used - Fair (Visible Scuffs)</option>
                   </select>
                   {errors.condition && (
                     <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.condition}</p>
@@ -555,11 +662,12 @@ function CreateShipmentContent() {
                   </label>
                   <input
                     type="number"
-                    value={declaredValue || ''}
+                    value={declaredValue === 0 ? '' : declaredValue}
                     onChange={(e) => {
                       setDeclaredValue(e.target.value === '' ? 0 : Number(e.target.value));
                       clearFieldError('declaredValue');
                     }}
+                    placeholder="e.g., 65000"
                     className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-sm font-bold text-[#0066FF] outline-hidden transition ${
                       errors.declaredValue ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
                     }`}
@@ -568,7 +676,7 @@ function CreateShipmentContent() {
                     <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.declaredValue}</p>
                   ) : (
                     <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5">
-                      {mode === 'exchange' ? '* Mutual valuation reference' : '* Paid by buyer on doorstep open-box approval'}
+                      {mode === 'exchange' ? '* Mutual valuation reference' : '* Paid by buyer upon doorstep open-box approval'}
                     </span>
                   )}
                 </div>
@@ -576,7 +684,7 @@ function CreateShipmentContent() {
 
               <div>
                 <label className="text-xs font-bold text-[#334155] block mb-1">
-                  What&apos;s Included <span className="text-rose-500">*</span>:
+                  What&apos;s Included in the Box <span className="text-rose-500">*</span>:
                 </label>
                 <input
                   type="text"
@@ -588,7 +696,7 @@ function CreateShipmentContent() {
                   className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
                     errors.includedItems ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
                   }`}
-                  placeholder="e.g. Original box, USB-C cable, invoice"
+                  placeholder="e.g., Original retail box, 140W MagSafe charger, purchase invoice"
                 />
                 {errors.includedItems && (
                   <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.includedItems}</p>
@@ -598,16 +706,20 @@ function CreateShipmentContent() {
               {/* Photo Upload Gallery */}
               <div>
                 <label className="text-xs font-bold text-[#334155] block mb-1.5">
-                  Item Photos (for AI &amp; Open-Box Comparison):
+                  Item Photos (for Verification against Doorstep Open-Box):
                 </label>
                 
                 <div className="grid grid-cols-3 gap-2.5">
                   {uploadedPhotos.map((url, idx) => (
                     <div key={idx} className="relative aspect-square rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center p-1">
                       <img src={url} alt={`Upload ${idx}`} className="w-full h-full object-contain" />
-                      <span className="absolute bottom-1 right-1 px-1 rounded bg-black/60 text-white text-[9px] font-bold">
-                        #{idx + 1}
-                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setUploadedPhotos((prev) => prev.filter((_, i) => i !== idx))}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center text-[10px]"
+                      >
+                        &times;
+                      </button>
                     </div>
                   ))}
 
@@ -647,7 +759,7 @@ function CreateShipmentContent() {
                     className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-sm text-[#0F172A] outline-hidden transition ${
                       errors.exchangeItemName ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-amber-500'
                     }`}
-                    placeholder="e.g. MacBook Air M2, 8GB/256GB - Space Grey"
+                    placeholder="e.g., iPhone 15 Pro Max 256GB Natural Titanium"
                   />
                   {errors.exchangeItemName && (
                     <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.exchangeItemName}</p>
@@ -674,29 +786,24 @@ function CreateShipmentContent() {
                       <option value="Used - Mint">Used - Mint</option>
                       <option value="Used - Good">Used - Good</option>
                     </select>
-                    {errors.exchangeCondition && (
-                      <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.exchangeCondition}</p>
-                    )}
                   </div>
 
                   <div>
                     <label className="text-xs font-bold text-[#334155] block mb-1">
-                      Estimated Value (₹) <span className="text-rose-500">*</span>:
+                      Estimated Valuation (₹) <span className="text-rose-500">*</span>:
                     </label>
                     <input
                       type="number"
-                      value={exchangeValue || ''}
+                      value={exchangeValue === 0 ? '' : exchangeValue}
                       onChange={(e) => {
                         setExchangeValue(e.target.value === '' ? 0 : Number(e.target.value));
                         clearFieldError('exchangeValue');
                       }}
+                      placeholder="e.g., 68000"
                       className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-sm font-bold text-amber-700 outline-hidden transition ${
                         errors.exchangeValue ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-amber-500'
                       }`}
                     />
-                    {errors.exchangeValue && (
-                      <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.exchangeValue}</p>
-                    )}
                   </div>
                 </div>
 
@@ -714,11 +821,8 @@ function CreateShipmentContent() {
                     className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
                       errors.exchangeIncluded ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-amber-500'
                     }`}
-                    placeholder="e.g. Laptop, 30W adapter, box"
+                    placeholder="e.g., USB-C braided cable, case, original box"
                   />
-                  {errors.exchangeIncluded && (
-                    <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.exchangeIncluded}</p>
-                  )}
                 </div>
 
                 {/* Cash Settlement / Balance Difference */}
@@ -798,7 +902,7 @@ function CreateShipmentContent() {
                 onClick={handleNextStep}
                 className="flex-1 py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Next: Pickup &amp; Delivery</span>
+                <span>Next: Routing &amp; Addresses</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -806,176 +910,312 @@ function CreateShipmentContent() {
         )}
 
         {/* =================================================================== */}
-        {/* STEP 3: PICKUP & DELIVERY LOCATION + ACCURATE DISTANCE              */}
+        {/* STEP 3: PICKUP & DROP LOCATIONS + AUTO PINCODE RESOLUTION           */}
         {/* =================================================================== */}
         {currentStep === 3 && (
           <div className="space-y-4 animate-in fade-in">
             <div>
               <h2 className="text-xl font-bold text-[#0F172A]">
-                {mode === 'exchange' ? '2-Way Locations & Route' : 'Pickup & Drop Locations'}
+                {mode === 'exchange' ? '2-Way Addresses & Corridor' : 'Origin & Destination Addresses'}
               </h2>
               <p className="text-xs text-[#64748B] mt-0.5">
                 {mode === 'exchange'
-                  ? 'SafeShip manages both collection and handoff legs with bonded couriers.'
-                  : 'SafeShip calculates accurate inter-city distance and assigns bonded couriers.'}
+                  ? 'SafeShip schedules bonded pick-up and delivery officers across municipal hubs.'
+                  : 'Enter origin and destination. Indian PIN codes auto-resolve city, hub, and road routing.'}
               </p>
             </div>
 
+            {/* Rapid Preset Corridors */}
+            <div className="p-3.5 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] space-y-2">
+              <span className="text-[11px] font-bold text-[#1E40AF] block">
+                ⚡ Quick Demo Route Presets (One-Tap Setup):
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => applyPresetCorridor({
+                    fromAddress: 'Patrika Gate, Malviya Nagar, Jaipur',
+                    fromPin: '302017',
+                    toAddress: 'Connaught Place, Central Delhi',
+                    toPin: '110001'
+                  })}
+                  className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 border border-blue-200 text-[10px] font-semibold text-[#0066FF] transition cursor-pointer"
+                >
+                  Jaipur (302017) &rarr; Delhi (110001)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPresetCorridor({
+                    fromAddress: 'Koramangala 4th Block, Bengaluru',
+                    fromPin: '560034',
+                    toAddress: 'Mylapore / R.A. Puram, Chennai',
+                    toPin: '600028'
+                  })}
+                  className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 border border-blue-200 text-[10px] font-semibold text-[#0066FF] transition cursor-pointer"
+                >
+                  BLR (560034) &rarr; MAA (600028)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPresetCorridor({
+                    fromAddress: 'Bandra West, Mumbai',
+                    fromPin: '400050',
+                    toAddress: 'Viman Nagar, Pune',
+                    toPin: '411014'
+                  })}
+                  className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 border border-blue-200 text-[10px] font-semibold text-[#0066FF] transition cursor-pointer"
+                >
+                  Mumbai (400050) &rarr; Pune (411014)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPresetCorridor({
+                    fromAddress: 'MG Road, Central Bengaluru',
+                    fromPin: '560001',
+                    toAddress: 'Electronic City Phase 1, Bengaluru',
+                    toPin: '560100'
+                  })}
+                  className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 border border-blue-200 text-[10px] font-semibold text-[#0066FF] transition cursor-pointer"
+                >
+                  Intra-City BLR (Same-Day Eligible)
+                </button>
+              </div>
+            </div>
+
             <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-4">
-              {/* Pickup Address */}
-              <div>
-                <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5 mb-1">
+              
+              {/* SENDER DETAILS */}
+              <div className="space-y-3 pb-3 border-b border-[#F1F5F9]">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A]">
                   <span className="w-2 h-2 rounded-full bg-[#0066FF]" />
-                  <span>{mode === 'exchange' ? 'Your Address (Party A)' : 'Pickup Location (Sender)'} <span className="text-rose-500">*</span>:</span>
-                </label>
-                <div className="flex gap-2">
-                  <div className="flex-1">
+                  <span>Sender / Pickup Contact Details</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                      Sender Name <span className="text-rose-500">*</span>:
+                    </label>
                     <input
                       type="text"
-                      value={pickupLocation}
-                      onChange={(e) => {
-                        setPickupLocation(e.target.value);
-                        clearFieldError('pickupLocation');
-                      }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
-                        errors.pickupLocation ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                      value={senderName}
+                      onChange={(e) => { setSenderName(e.target.value); clearFieldError('senderName'); }}
+                      className={`w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
+                        errors.senderName ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
                       }`}
-                      placeholder="Area, Street, City"
+                      placeholder="e.g., Rohan Verma"
                     />
-                    {errors.pickupLocation && (
-                      <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.pickupLocation}</p>
-                    )}
+                    {errors.senderName && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.senderName}</p>}
                   </div>
-                  <div className="w-28">
+
+                  <div>
+                    <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                      Sender Mobile <span className="text-rose-500">*</span>:
+                    </label>
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      value={senderPhone}
+                      onChange={(e) => { setSenderPhone(e.target.value.replace(/\D/g, '')); clearFieldError('senderPhone'); }}
+                      className={`w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] font-mono outline-hidden ${
+                        errors.senderPhone ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                      }`}
+                      placeholder="e.g., 9829012890"
+                    />
+                    {errors.senderPhone && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.senderPhone}</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                    Pickup Street Address &amp; Landmarks <span className="text-rose-500">*</span>:
+                  </label>
+                  <input
+                    type="text"
+                    value={pickupLocation}
+                    onChange={(e) => { setPickupLocation(e.target.value); clearFieldError('pickupLocation'); }}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
+                      errors.pickupLocation ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                    }`}
+                    placeholder="e.g., Flat 402, Embassy Golf Links, Domlur"
+                  />
+                  {errors.pickupLocation && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.pickupLocation}</p>}
+                </div>
+
+                <div className="flex gap-2">
+                  <div className="w-36">
+                    <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                      PIN Code <span className="text-rose-500">*</span>:
+                    </label>
                     <input
                       type="text"
                       maxLength={6}
                       value={pickupPincode}
-                      onChange={(e) => {
-                        setPickupPincode(e.target.value.replace(/\D/g, ''));
-                        clearFieldError('pickupPincode');
-                      }}
-                      className={`w-full px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] text-center font-mono outline-hidden transition ${
-                        errors.pickupPincode ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                      onChange={(e) => handlePickupPincodeChange(e.target.value)}
+                      className={`w-full px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] text-center font-mono font-bold outline-hidden ${
+                        errors.pickupPincode ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
                       }`}
-                      placeholder="PIN Code"
+                      placeholder="e.g., 560071"
                     />
-                    {errors.pickupPincode && (
-                      <p className="text-[10px] text-rose-600 font-semibold mt-1">⚠️ {errors.pickupPincode}</p>
+                    {errors.pickupPincode && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.pickupPincode}</p>}
+                  </div>
+
+                  <div className="flex-1 flex flex-col justify-end">
+                    {pickupCity ? (
+                      <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center justify-between">
+                        <span className="font-bold">{pickupCity}, {pickupState}</span>
+                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">{pickupHub}</span>
+                      </div>
+                    ) : (
+                      <span className="text-[11px] text-[#94A3B8] italic pb-2">Enter 6-digit PIN code to auto-resolve city &amp; hub</span>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Drop Address */}
-              <div>
-                <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5 mb-1">
+              {/* RECEIVER / BUYER DETAILS */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A]">
                   <span className="w-2 h-2 rounded-full bg-[#10B981]" />
-                  <span>{mode === 'exchange' ? 'Partner Address (Party B)' : 'Drop Location (Buyer)'} <span className="text-rose-500">*</span>:</span>
-                </label>
-                <div className="flex gap-2">
-                  <div className="flex-1">
+                  <span>Receiver / Drop Contact Details</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                      Receiver Name <span className="text-rose-500">*</span>:
+                    </label>
                     <input
                       type="text"
-                      value={dropLocation}
-                      onChange={(e) => {
-                        setDropLocation(e.target.value);
-                        clearFieldError('dropLocation');
-                      }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
-                        errors.dropLocation ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                      value={buyerName}
+                      onChange={(e) => { setBuyerName(e.target.value); clearFieldError('buyerName'); }}
+                      className={`w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
+                        errors.buyerName ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
                       }`}
-                      placeholder="Area, Street, City"
+                      placeholder="e.g., Priya Sharma"
                     />
-                    {errors.dropLocation && (
-                      <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.dropLocation}</p>
-                    )}
+                    {errors.buyerName && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.buyerName}</p>}
                   </div>
-                  <div className="w-28">
+
+                  <div>
+                    <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                      Receiver Mobile <span className="text-rose-500">*</span>:
+                    </label>
+                    <input
+                      type="tel"
+                      maxLength={10}
+                      value={buyerPhone}
+                      onChange={(e) => { setBuyerPhone(e.target.value.replace(/\D/g, '')); clearFieldError('buyerPhone'); }}
+                      className={`w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] font-mono outline-hidden ${
+                        errors.buyerPhone ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                      }`}
+                      placeholder="e.g., 9811088912"
+                    />
+                    {errors.buyerPhone && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.buyerPhone}</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                    Delivery Street Address &amp; Unit <span className="text-rose-500">*</span>:
+                  </label>
+                  <input
+                    type="text"
+                    value={dropLocation}
+                    onChange={(e) => { setDropLocation(e.target.value); clearFieldError('dropLocation'); }}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
+                      errors.dropLocation ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                    }`}
+                    placeholder="e.g., Unit 12B, Building 4, Cyber City, DLF Phase 2"
+                  />
+                  {errors.dropLocation && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.dropLocation}</p>}
+                </div>
+
+                <div className="flex gap-2">
+                  <div className="w-36">
+                    <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                      PIN Code <span className="text-rose-500">*</span>:
+                    </label>
                     <input
                       type="text"
                       maxLength={6}
                       value={dropPincode}
-                      onChange={(e) => {
-                        setDropPincode(e.target.value.replace(/\D/g, ''));
-                        clearFieldError('dropPincode');
-                      }}
-                      className={`w-full px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] text-center font-mono outline-hidden transition ${
-                        errors.dropPincode ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                      onChange={(e) => handleDropPincodeChange(e.target.value)}
+                      className={`w-full px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] text-center font-mono font-bold outline-hidden ${
+                        errors.dropPincode ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
                       }`}
-                      placeholder="PIN Code"
+                      placeholder="e.g., 122002"
                     />
-                    {errors.dropPincode && (
-                      <p className="text-[10px] text-rose-600 font-semibold mt-1">⚠️ {errors.dropPincode}</p>
+                    {errors.dropPincode && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.dropPincode}</p>}
+                  </div>
+
+                  <div className="flex-1 flex flex-col justify-end">
+                    {dropCity ? (
+                      <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center justify-between">
+                        <span className="font-bold">{dropCity}, {dropState}</span>
+                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">{dropHub}</span>
+                      </div>
+                    ) : (
+                      <span className="text-[11px] text-[#94A3B8] italic pb-2">Enter 6-digit PIN code to auto-resolve city &amp; hub</span>
                     )}
                   </div>
                 </div>
               </div>
 
-              {/* Calculated Distance & Transit Time (Gemini Telemetry) */}
-              <div className="p-3.5 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <Truck className="w-5 h-5 text-[#0066FF] shrink-0" />
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold text-[#0F172A] block">
-                        {distanceKm} km ({mode === 'exchange' ? '2-Way Roundtrip' : 'Direct Transit'})
-                      </span>
-                      <span className="text-[9px] font-bold bg-[#0066FF] text-white px-1.5 py-0.2 rounded">
-                        Gemini Telemetry
+              {/* ROUTE TELEMETRY BAR */}
+              {distanceKm > 0 && (
+                <div className="p-3.5 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-between animate-in fade-in">
+                  <div className="flex items-center gap-2.5">
+                    <Truck className="w-5 h-5 text-[#0066FF] shrink-0" />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[#0F172A]">
+                          {distanceKm} km Road Distance
+                        </span>
+                        <span className="text-[10px] font-bold bg-[#0066FF] text-white px-1.5 py-0.2 rounded">
+                          {isIntercity ? 'Linehaul Intercity Corridor' : 'Direct Intra-City Fleet'}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-[#0066FF] font-semibold block">
+                        {routeCorridor}
                       </span>
                     </div>
-                    <span className="text-[11px] text-[#0066FF] font-semibold block">
-                      {routeNote} &bull; {deliveryDate}
-                    </span>
                   </div>
-                </div>
-
-                <div className="text-right">
-                  <span className="text-xs font-black text-[#0F172A] block">
-                    ₹{deliveryFee} base
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-lg">
+                    Serviceable ✓
                   </span>
-                  <button
-                    type="button"
-                    disabled={calculatingDistance}
-                    onClick={() => recalculateDistanceWithGemini(pickupLocation, dropLocation)}
-                    className="text-[10px] font-bold text-[#0066FF] hover:underline cursor-pointer"
-                  >
-                    {calculatingDistance ? 'Recalculating...' : 'Refresh Route ↻'}
-                  </button>
                 </div>
-              </div>
+              )}
 
-              {/* Package Details */}
+              {/* Package Weight & Dimensions */}
               <div>
                 <label className="text-xs font-bold text-[#334155] block mb-1">
-                  Package Weight &amp; Dimensions:
+                  Package Weight &amp; Box Size (Approximate):
                 </label>
                 <input
                   type="text"
                   value={packageWeight}
                   onChange={(e) => setPackageWeight(e.target.value)}
-                  className="w-full px-3.5 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] outline-hidden"
+                  placeholder="e.g., 0.9 kg (Small Box 20 x 15 x 10 cm)"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] outline-hidden"
                 />
               </div>
 
-              {/* OPEN-BOX DELIVERY TOGGLE (The Moat) */}
+              {/* Doorstep Open-Box Inspection Moat Toggle */}
               <div className="p-3.5 rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] flex items-center justify-between">
                 <div className="flex items-center gap-2.5 pr-2">
                   <Eye className="w-5 h-5 text-[#7C3AED] shrink-0" />
                   <div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-bold text-[#0F172A]">
-                        Open-Box Delivery Verification
+                        Guaranteed Doorstep Open-Box Inspection
                       </span>
                       <span className="text-[9px] font-black bg-[#7C3AED] text-white px-1.5 py-0.2 rounded">
-                        THE MOAT
+                        INCLUDED FREE
                       </span>
                     </div>
                     <p className="text-[11px] text-[#64748B] mt-0.5">
-                      {mode === 'exchange'
-                        ? 'Courier unboxes and inspects both items simultaneously before swap completion.'
-                        : 'Let the buyer inspect the parcel at doorstep before accepting & paying.'}
+                      Courier unpacks item for physical inspection before accepting OTP or releasing escrow.
                     </p>
                   </div>
                 </div>
@@ -1021,7 +1261,7 @@ function CreateShipmentContent() {
                 onClick={handleNextStep}
                 className="flex-1 py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>Next: Review &amp; Price</span>
+                <span>Next: Tier Selection &amp; Upfront Pricing</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>
@@ -1029,109 +1269,152 @@ function CreateShipmentContent() {
         )}
 
         {/* =================================================================== */}
-        {/* STEP 4: REVIEW & UPFRONT DELIVERY CHARGES (₹349 or ₹548)            */}
+        {/* STEP 4: SERVICE TIER SELECTION, PRICING & RAZORPAY SETTLEMENT       */}
         {/* =================================================================== */}
         {currentStep === 4 && (
           <div className="space-y-4 animate-in fade-in">
             <div>
               <h2 className="text-xl font-bold text-[#0F172A]">
-                {mode === 'exchange' ? 'Review & Book 2-Way Exchange' : 'Review & Book Shipment'}
+                {mode === 'exchange' ? 'Review & Book 2-Way Exchange' : 'Select Delivery Tier & Confirm'}
               </h2>
               <p className="text-xs text-[#64748B] mt-0.5">
-                {mode === 'exchange'
-                  ? 'You only pay ₹548 for 2-way roundtrip delivery today. Both items are audited at doorstep.'
-                  : 'You only pay ₹349 delivery charges today. Buyer pays the item value upon open-box delivery.'}
+                Upfront booking fee covers bonded routing and cargo insurance. Merchandise escrow (₹{declaredValue.toLocaleString('en-IN')}) is settled strictly at the doorstep.
               </p>
             </div>
 
-            {/* Shipment Summary Card */}
-            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3">
-              <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0]">
-                <div>
-                  <h3 className="text-sm font-bold text-[#0F172A]">{itemName}</h3>
-                  <span className="text-[11px] text-[#64748B]">{condition} &bull; {includedItems}</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-xs text-[#64748B] block">Item Valuation:</span>
-                  <span className="text-sm font-bold text-[#0066FF]">₹{declaredValue.toLocaleString('en-IN')}</span>
-                </div>
-              </div>
+            {/* 3 SERVICE TIERS SELECTION */}
+            <div className="space-y-2.5">
+              <span className="text-xs font-bold text-[#334155] uppercase tracking-wider block">
+                Choose SafeShip Logistics Service Tier:
+              </span>
 
-              {mode === 'exchange' && (
-                <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-between text-xs">
-                  <div>
-                    <span className="font-bold text-amber-900 block">Exchanged For: {exchangeItemName}</span>
-                    <span className="text-[11px] text-amber-700">{exchangeCondition} &bull; Valued at ₹{exchangeValue.toLocaleString('en-IN')}</span>
+              {(['PRIORITY_EXPRESS', 'STANDARD_GROUND', 'SAME_DAY_DIRECT'] as DeliveryServiceTier[]).map((tierKey) => {
+                const tier = tierPricing[tierKey];
+                const isSelected = selectedTier === tierKey;
+                const isDisabled = !tier.isAvailable;
+
+                return (
+                  <div
+                    key={tierKey}
+                    onClick={() => {
+                      if (!isDisabled) setSelectedTier(tierKey);
+                    }}
+                    className={`rounded-2xl p-4 border transition cursor-pointer relative ${
+                      isDisabled
+                        ? 'bg-slate-50/80 border-slate-200 opacity-60 cursor-not-allowed'
+                        : isSelected
+                        ? 'bg-blue-50/40 border-[#0066FF] ring-2 ring-blue-200 shadow-xs'
+                        : 'bg-white border-[#E2E8F0] hover:border-blue-300'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-1 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-sm font-bold ${isSelected ? 'text-[#0066FF]' : 'text-[#0F172A]'}`}>
+                            {tier.tierLabel}
+                          </span>
+                          {tier.highlight && (
+                            <span className="text-[10px] font-bold bg-[#0066FF] text-white px-2 py-0.2 rounded-full">
+                              RECOMMENDED
+                            </span>
+                          )}
+                          {tierKey === 'SAME_DAY_DIRECT' && !isDisabled && (
+                            <span className="text-[10px] font-bold bg-purple-600 text-white px-2 py-0.2 rounded-full">
+                              SUB-6 HOURS
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="text-[11px] text-[#64748B]">
+                          {tier.tagline} &bull; <strong className="text-[#0F172A]">{tier.transitTime}</strong>
+                        </p>
+
+                        {isDisabled && tier.disabledReason && (
+                          <p className="text-[10px] text-rose-600 font-semibold mt-1">
+                            ⚠️ {tier.disabledReason}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        {isDisabled ? (
+                          <span className="text-xs font-bold text-slate-400">N/A</span>
+                        ) : (
+                          <>
+                            <span className="text-lg font-black text-[#0F172A] block leading-none">
+                              ₹{tier.totalUpfront}
+                            </span>
+                            <span className="text-[10px] text-emerald-600 font-semibold">
+                              All-inclusive
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <span className="text-xs font-black text-amber-800 bg-white px-2 py-1 rounded-lg border border-amber-200">
-                    {cashPayer === 'EVEN_TRADE' ? 'Even Swap' : `Diff: ₹${cashDifference.toLocaleString('en-IN')}`}
-                  </span>
-                </div>
-              )}
-
-              <div className="text-xs space-y-1.5 text-[#475569]">
-                <div className="flex justify-between">
-                  <span>Route:</span>
-                  <span className="font-semibold text-[#0F172A]">{pickupLocation} &harr; {dropLocation}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Distance &amp; ETA:</span>
-                  <span className="font-semibold text-[#0F172A]">{distanceKm} km &bull; 1-2 days</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Open-Box Inspection:</span>
-                  <span className="font-semibold text-purple-600">✓ Enabled (Doorstep inspection)</span>
-                </div>
-              </div>
+                );
+              })}
             </div>
 
-            {/* UPFRONT PRICE BREAKDOWN CARD */}
-            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs">
-              <h3 className="text-xs font-bold text-[#64748B] uppercase tracking-wider mb-3">
-                {mode === 'exchange' ? '2-Way Upfront Price Breakdown' : '1-Way Upfront Price Breakdown'}
-              </h3>
+            {/* UPFRONT MATHEMATICAL PRICE BREAKDOWN */}
+            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3">
+              <div className="flex items-center justify-between pb-2.5 border-b border-[#F1F5F9]">
+                <h3 className="text-xs font-bold text-[#64748B] uppercase tracking-wider">
+                  Upfront Booking Breakdown ({activeTierBreakdown.tierLabel})
+                </h3>
+                <span className="text-[11px] font-bold text-[#0066FF]">
+                  {distanceKm || effectiveDistance} km Route
+                </span>
+              </div>
 
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between text-[#475569]">
-                  <span>{mode === 'exchange' ? '2-Way Roundtrip Courier Fee:' : `Delivery Charge (${distanceKm} km):`}</span>
-                  <span className="font-semibold text-[#0F172A]">₹{deliveryFee}</span>
+                  <span>Base Courier Fee:</span>
+                  <span className="font-semibold text-[#0F172A]">₹{activeTierBreakdown.baseFee}</span>
                 </div>
+
                 <div className="flex justify-between text-[#475569]">
-                  <span>Open-Box Doorstep Verification:</span>
-                  <span className="font-bold text-emerald-600">Included (₹0)</span>
+                  <span>Road Corridor Distance Surcharge:</span>
+                  <span className="font-semibold text-[#0F172A]">₹{activeTierBreakdown.distanceSurcharge}</span>
                 </div>
+
                 <div className="flex justify-between text-[#475569]">
-                  <span>{mode === 'exchange' ? 'Dual-Item Cargo Insurance:' : 'In-Transit Cargo Insurance:'}</span>
-                  <span className="font-semibold text-[#0F172A]">₹{insuranceFee}</span>
+                  <span>
+                    Cargo Insurance ({declaredValue > 5000 ? '0.5% cover for ₹' + declaredValue.toLocaleString('en-IN') : 'Standard ₹5,000 cover'}):
+                  </span>
+                  <span className="font-semibold text-[#0F172A]">₹{activeTierBreakdown.insuranceFee}</span>
+                </div>
+
+                <div className="flex justify-between text-[#475569]">
+                  <span>Doorstep Open-Box Inspection:</span>
+                  <span className="font-bold text-emerald-600">Free Promotion (₹0)</span>
                 </div>
 
                 <div className="pt-3 border-t border-[#E2E8F0] flex justify-between items-baseline">
                   <div>
                     <span className="text-sm font-black text-[#0F172A] block">
-                      Total Upfront Booking Charge:
+                      Total Upfront Courier Booking Fee:
                     </span>
                     <span className="text-[10px] text-emerald-600 font-semibold">
-                      {mode === 'exchange' ? 'Higher delivery fee covers 2-way roundtrip fleet inspection' : 'Zero escrow risk. Only delivery charged today.'}
+                      Paid now via Razorpay &bull; Escrow held until doorstep approval
                     </span>
                   </div>
                   <span className="text-2xl font-black text-[#0066FF]">
-                    ₹{upfrontTotal}
+                    ₹{activeTierBreakdown.totalUpfront}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* The SafeShip Trust Notice */}
-            <div className="p-3.5 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-[11px] text-[#1E40AF] leading-relaxed">
-              {mode === 'exchange' ? (
-                <>
-                  <strong>2-Way Exchange Moat:</strong> You pay <strong>₹{upfrontTotal}</strong> now for courier routing. Courier Rahul K. verifies both devices side-by-side at the doorstep. Any cash difference (₹{cashDifference.toLocaleString('en-IN')}) is settled via UPI upon mutual satisfaction. If either party rejects, items stay with their original owners.
-                </>
-              ) : (
-                <>
-                  <strong>Why SafeShip is different:</strong> You only pay <strong>₹{upfrontTotal}</strong> now for delivery. The buyer pays the full <strong>₹{declaredValue.toLocaleString('en-IN')}</strong> upon inspecting the item at their doorstep. If rejected, it is returned safely with ₹0 product charges.
-                </>
-              )}
+            {/* Escrow Settlement Clarity Notice */}
+            <div className="p-4 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-xs space-y-1.5 text-[#1E40AF]">
+              <div className="font-bold flex items-center gap-1.5 text-[#1E3A8A]">
+                <ShieldCheck className="w-4 h-4 text-[#0066FF]" />
+                <span>Zero Escrow Risk Protocol</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-[#1E40AF]">
+                You are paying only <strong>₹{activeTierBreakdown.totalUpfront}</strong> upfront today for bonded transit. The merchandise amount (<strong>₹{declaredValue.toLocaleString('en-IN')}</strong>) will be settled by the receiver upon inspecting the parcel at their doorstep. If rejected during open-box audit, the item is returned safely at ₹0 merchandise liability.
+              </p>
             </div>
 
             {/* Razorpay Error Alert */}
@@ -1149,7 +1432,7 @@ function CreateShipmentContent() {
             )}
 
             {/* Action Buttons */}
-            <div className="space-y-2">
+            <div className="space-y-2 pt-2">
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -1167,23 +1450,22 @@ function CreateShipmentContent() {
                   {payingWithRazorpay ? (
                     <>
                       <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                      <span>Opening Razorpay Gateway...</span>
+                      <span>Connecting Razorpay Gateway...</span>
                     </>
                   ) : (
                     <>
                       <Lock className="w-4 h-4 text-white" />
-                      <span>{mode === 'exchange' ? `Pay ₹${upfrontTotal} via Razorpay (2-Way)` : `Pay ₹${upfrontTotal} via Razorpay`}</span>
+                      <span>Pay ₹{activeTierBreakdown.totalUpfront} via Razorpay</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
                 </button>
               </div>
 
-              {/* Simulation Shortcut for Sandbox Demo */}
               <div className="text-center pt-1">
                 <button
                   type="button"
-                  onClick={() => router.push(`/open-box?type=${mode}&deal=${mode === 'exchange' ? 'SS-EXCH-992' : 'SS48291'}`)}
+                  onClick={() => router.push(`/open-box?type=${mode}&deal=SS48291`)}
                   className="text-[11px] text-[#64748B] hover:text-[#0066FF] underline cursor-pointer"
                 >
                   Or test Open-Box Doorstep Console without payment &rarr;
@@ -1194,6 +1476,10 @@ function CreateShipmentContent() {
         )}
 
       </main>
+
+      {/* Enterprise Footer */}
+      <EnterpriseFooter />
+
     </div>
   );
 }

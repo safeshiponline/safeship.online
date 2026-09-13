@@ -1050,5 +1050,40 @@ export const Upload = ({ className = 'w-5 h-5', size, ...props }: IconProps) => 
   </svg>
 );
 
+export const Smartphone = ({ className = 'w-5 h-5', size, ...props }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <rect width="14" height="20" x="5" y="2" rx="2" ry="2" />
+    <path d="M12 18h.01" />
+  </svg>
+);
 
-
+export const Watch = ({ className = 'w-5 h-5', size, ...props }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <circle cx="12" cy="12" r="7" />
+    <polyline points="12 9 12 12 13.5 13.5" />
+    <path d="M16.51 17.35l-.85 4.41a2 2 0 0 1-1.96 1.62H10.3a2 2 0 0 1-1.96-1.62l-.85-4.41" />
+    <path d="M7.49 6.65l.85-4.41A2 2 0 0 1 10.3.62h3.4a2 2 0 0 1 1.96 1.62l.85 4.41" />
+  </svg>
+);

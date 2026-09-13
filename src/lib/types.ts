@@ -18,12 +18,22 @@ export type FeeSplitOption = 'SPLIT_50_50' | 'BUYER_PAYS_ALL' | 'SELLER_PAYS_ALL
 export type ItemCategory =
   | 'SMARTPHONES_TABLETS'
   | 'LAPTOPS_COMPUTERS'
+  | 'CAMERAS_OPTICS'
+  | 'LUXURY_WATCHES'
+  | 'GAMING_AUDIO'
+  | 'DOCUMENTS_VALUABLES'
+  | 'FASHION_APPAREL'
+  | 'OTHER_ELECTRONICS'
   | 'GAMING_CONSOLES'
   | 'CAMERAS_LENSES'
-  | 'LUXURY_WATCHES'
   | 'BIKE_GEAR_AUTOMOTIVE'
   | 'AUDIO_INSTRUMENTS'
   | 'OTHER';
+
+export type DeliveryServiceTier =
+  | 'STANDARD_GROUND'
+  | 'PRIORITY_EXPRESS'
+  | 'SAME_DAY_DIRECT';
 
 export interface InspectionChecklist {
   powersOn: boolean;
@@ -167,6 +177,29 @@ export interface SafeDeal {
   // Pricing & Escrow
   pricing: EscrowBreakdown;
   deliveryTier: 'HYPERLOCAL_SAME_DAY' | 'METRO_NEXT_DAY' | 'INTERCITY_INSURED';
+  serviceTier?: DeliveryServiceTier;
+  distanceKm?: number;
+  routeCorridor?: string;
+  isIntercity?: boolean;
+  upfrontPricing?: {
+    baseFee: number;
+    distanceSurcharge: number;
+    insuranceFee: number;
+    verificationFee: number;
+    totalUpfront: number;
+  };
+  middleMileCheckpoints?: {
+    id: string;
+    name: string;
+    hub: string;
+    status: 'COMPLETED' | 'IN_TRANSIT' | 'PENDING';
+    timestamp?: string;
+  }[];
+  insurancePolicyNumber?: string;
+  packageWeightKg?: number;
+  dimensionsCm?: string;
+  upfrontPaid?: number;
+  paymentId?: string;
   
   // Security & Handshake
   buyerReleasePin: string; // 6-digit Indian delivery OTP
