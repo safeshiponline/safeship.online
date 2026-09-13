@@ -7,6 +7,7 @@ import { formatINR } from '@/lib/escrowCalculator';
 import { lookupPincode, formatFullAddress, INDIAN_STATES } from '@/lib/indianAddresses';
 import { GpsLocator } from '../common/GpsLocator';
 import { ShieldCheck, Lock, CreditCard, CheckCircle2, X, QrCode, ArrowRight } from '../common/Icons';
+import { useRazorpay } from '@/lib/useRazorpay';
 
 
 
@@ -65,6 +66,8 @@ export const EscrowPaymentModal: React.FC<EscrowPaymentModalProps> = ({
 
   const totalAmount = deal.pricing.buyerShare.totalToPay;
 
+  const { openCheckout, loading: rzpLoading, error: rzpError } = useRazorpay();
+
   const handleAuthorize = () => {
     setIsProcessing(true);
 
@@ -77,33 +80,44 @@ export const EscrowPaymentModal: React.FC<EscrowPaymentModalProps> = ({
       pincode
     });
 
-    let methodLabel = `UPI (${selectedUpiApp === 'GPAY' ? 'Google Pay' : selectedUpiApp === 'PHONEPE' ? 'PhonePe' : selectedUpiApp === 'PAYTM' ? 'Paytm' : 'CRED'})`;
-    if (tab === 'QR') methodLabel = 'Scan & Pay (BHIM UPI QR)';
-    if (tab === 'RZP_LINK') methodLabel = 'Razorpay Payment Link (rzp.io)';
-    if (tab === 'NETBANKING') methodLabel = 'NetBanking (HDFC Bank)';
-
-    setTimeout(() => {
-      const updated = fundDealEscrow(deal.id, {
+    openCheckout({
+      amountInRupees: totalAmount,
+      name: 'SafeShip India',
+      description: `Escrow Lock for Deal #${deal.id}`,
+      prefill: {
         name: buyerName,
         email: 'ananya.desai@gmail.com',
-        phone: `+91 ${phone}`,
-        address: fullAddress,
-        city,
-        pincode,
-        paymentMethod: methodLabel
-      });
+        contact: `+91 ${phone}`
+      },
+      onSuccess: (verifyData) => {
+        const updated = fundDealEscrow(deal.id, {
+          name: buyerName,
+          email: 'ananya.desai@gmail.com',
+          phone: `+91 ${phone}`,
+          address: fullAddress,
+          city,
+          pincode,
+          paymentMethod: `Razorpay (${verifyData.payment_id})`
+        });
 
+        setIsProcessing(false);
+        setStep('SUCCESS');
 
-      setIsProcessing(false);
-      setStep('SUCCESS');
-
-      setTimeout(() => {
-        if (updated) {
-          onSuccess(updated);
-          onClose();
-        }
-      }, 1500);
-    }, 1400);
+        setTimeout(() => {
+          if (updated) {
+            onSuccess(updated);
+            onClose();
+          }
+        }, 1500);
+      },
+      onFailure: (err) => {
+        setIsProcessing(false);
+        console.error('Escrow Razorpay payment failed:', err);
+      },
+      onDismiss: () => {
+        setIsProcessing(false);
+      }
+    });
   };
 
   const handleCreateRazorpayLink = async () => {

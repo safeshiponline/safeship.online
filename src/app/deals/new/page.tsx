@@ -27,6 +27,7 @@ import {
   Lock
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
+import { createNewDeal } from '@/lib/store';
 
 export default function CreateShipmentPage() {
   return (
@@ -256,12 +257,49 @@ function CreateShipmentContent() {
       description: mode === 'exchange' ? '2-Way Roundtrip Courier Fee (₹548)' : '1-Way Safe Delivery & Inspection Fee (₹349)',
       notes: {
         mode,
-        deal: mode === 'exchange' ? 'SS-EXCH-992' : 'SS48291',
         origin: pickupLocation,
         destination: dropLocation,
+        itemName,
       },
       onSuccess: (verifyData) => {
-        router.push(`/open-box?type=${mode}&deal=${mode === 'exchange' ? 'SS-EXCH-992' : 'SS48291'}&paid=true&payment_id=${verifyData.payment_id}`);
+        try {
+          const categoryKey = selectedCategory === 'Gaming'
+            ? 'GAMING_CONSOLES'
+            : 'SMARTPHONES_TABLETS';
+
+          const created = createNewDeal({
+            title: mode === 'exchange' ? `2-Way Swap: ${itemName} ⇄ ${exchangeItemName}` : itemName,
+            description: `${mode === 'exchange' ? '2-Way Hardware Exchange' : 'SafeShip Doorstep Delivery'} from ${pickupLocation} to ${dropLocation}. Verified via Open-Box audit.`,
+            category: categoryKey as any,
+            declaredValue,
+            condition: condition as any,
+            itemPhotos: uploadedPhotos,
+            sellerName: 'Rohan V.',
+            sellerEmail: 'rohan.v@safeship.online',
+            sellerPhone: '+91 98290 12890',
+            pickupAddress: pickupLocation,
+            city: pickupLocation.includes(',') ? pickupLocation.split(',')[1].trim() : 'Jaipur',
+            pincode: pickupPincode,
+            deliveryAddress: dropLocation,
+            buyerName: 'Priya Sharma',
+            buyerPhone: '+91 98110 88912',
+            isExchange: mode === 'exchange',
+            exchangeItem: mode === 'exchange' ? {
+              title: exchangeItemName,
+              condition: exchangeCondition,
+              declaredValue: exchangeValue,
+              cashDifference,
+              photos: ['/images/exchange_hero_4x3.webp']
+            } : undefined,
+            upfrontPaid: upfrontTotal,
+            paymentId: verifyData.payment_id
+          });
+
+          router.push(`/track/${created.id}?booked=true&payment_id=${verifyData.payment_id}`);
+        } catch (e) {
+          console.error('Error creating deal record in store:', e);
+          router.push(`/track/SS48291?booked=true&payment_id=${verifyData.payment_id}`);
+        }
       },
       onFailure: (err) => {
         console.error('Razorpay payment failed or cancelled:', err);

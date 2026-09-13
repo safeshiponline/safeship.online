@@ -100,14 +100,14 @@ export function AISupportWidget() {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-40 px-4 py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white shadow-xl shadow-[#0066FF]/35 flex items-center gap-2.5 transition active:scale-95 group cursor-pointer border-2 border-white"
+          className="fixed bottom-16 sm:bottom-20 md:bottom-6 right-4 sm:right-6 z-40 w-12 h-12 md:w-auto md:h-auto p-0 md:px-4 md:py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white shadow-xl shadow-[#0066FF]/35 flex items-center justify-center gap-2.5 transition active:scale-95 group cursor-pointer border-2 border-white"
           aria-label="Open SafeShip Customer Support"
         >
-          <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
-            <Headphones className="w-3.5 h-3.5 text-white" />
+          <div className="w-6 h-6 rounded-full md:bg-white/20 flex items-center justify-center">
+            <Headphones className="w-5 h-5 md:w-3.5 md:h-3.5 text-white" />
           </div>
-          <span className="text-xs font-bold tracking-tight">Support Desk</span>
-          <span className="w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-[#0066FF]" />
+          <span className="hidden md:inline text-xs font-bold tracking-tight">Support Desk</span>
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-[#0066FF] absolute top-1 right-1 md:static" />
         </button>
       )}
 

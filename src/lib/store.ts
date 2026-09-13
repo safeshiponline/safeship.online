@@ -55,17 +55,24 @@ export function createNewDeal(params: {
   pickupAddress: string;
   city: string;
   pincode: string;
-  sellerUpiId: string;
-  feeSplitOption: FeeSplitOption;
-  deliveryTier: SafeDeal['deliveryTier'];
+  sellerUpiId?: string;
+  feeSplitOption?: FeeSplitOption;
+  deliveryTier?: SafeDeal['deliveryTier'];
+  buyerName?: string;
+  buyerPhone?: string;
+  deliveryAddress?: string;
+  isExchange?: boolean;
+  exchangeItem?: SafeDeal['exchangeItem'];
+  upfrontPaid?: number;
+  paymentId?: string;
 }): SafeDeal {
   const deals = getStoredDeals();
-  const newId = `deal_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+  const newId = `SS${Math.floor(10000 + Math.random() * 90000)}`;
   
   const pricing = calculateEscrowBreakdown({
     itemPrice: params.declaredValue,
-    deliveryTier: params.deliveryTier,
-    feeSplitOption: params.feeSplitOption,
+    deliveryTier: params.deliveryTier || 'INTERCITY_INSURED',
+    feeSplitOption: params.feeSplitOption || 'BUYER_PAYS_ALL',
     milestoneAdvancePercent: 30
   });
 
@@ -82,6 +89,8 @@ export function createNewDeal(params: {
     serialNumber: params.serialNumber,
     city: params.city,
     pincode: params.pincode,
+    isExchange: params.isExchange || false,
+    exchangeItem: params.exchangeItem,
     itemPhotos: params.itemPhotos.length > 0 ? params.itemPhotos : [
       '/images/openbox_macro_4x3.webp'
     ],
@@ -98,34 +107,76 @@ export function createNewDeal(params: {
       dealsCompleted: 1
     },
     buyer: {
-      id: 'usr_buyer_pending',
-      name: 'Awaiting Buyer Link Access',
-      email: 'buyer@safeship.in',
-      phone: '+91 98000 00000',
-      deliveryAddress: 'To be confirmed by buyer on checkout',
+      id: 'usr_buyer_active',
+      name: params.buyerName || 'Buyer Partner',
+      email: 'buyer@safeship.online',
+      phone: params.buyerPhone || '+91 98110 88912',
+      deliveryAddress: params.deliveryAddress || `${params.city} Central Delivery Point`,
       city: params.city,
       pincode: params.pincode,
       rating: 5.0,
       dealsCompleted: 0
     },
     pricing,
-    deliveryTier: params.deliveryTier,
+    deliveryTier: params.deliveryTier || 'INTERCITY_INSURED',
     buyerReleasePin: buyerPin,
     sellerPickupCode: sellerCode,
-    status: 'PENDING_ACCEPTANCE',
+    status: params.upfrontPaid ? 'IN_TRANSIT' : 'PENDING_ACCEPTANCE',
+    assignedCourier: {
+      id: 'cr_rahul_k',
+      name: 'Rahul K.',
+      rating: 4.9,
+      completedDeliveries: 1480,
+      phone: '+91 98765 43210',
+      vehicleModel: 'Bajaj Pulsar 150 (Navy Blue)',
+      plateNumber: 'DL 01 AX 4829',
+      fleetPartner: 'SafeShip Direct Fleet',
+      avatarUrl: '/images/courier_rahul_avatar.webp',
+      currentLocation: {
+        lat: 28.6139,
+        lng: 77.2090,
+        heading: 90,
+        address: `${params.city} SafeShip Ingestion Hub`
+      }
+    },
+    tamperSeal: {
+      sealId: `SSP-${newId}-TAMPER-SAFE`,
+      barcode: `99${newId}4820`,
+      appliedAt: new Date().toISOString(),
+      inspectedBy: 'Rahul K. (SafeShip Partner #KA-4012)',
+      inspectionPhotos: params.itemPhotos.length > 0 ? params.itemPhotos : ['/images/openbox_macro_4x3.webp'],
+      intactVerifiedAtDelivery: true
+    },
     escrowVault: {
-      depositedAmount: 0,
+      depositedAmount: params.upfrontPaid || 0,
       isLocked: false,
-      milestone1Amount: pricing.milestones.stage1PickupPayout,
-      finalAmount: pricing.milestones.stage2FinalPayout
+      depositedAt: params.upfrontPaid ? new Date().toISOString() : undefined,
+      milestone1Amount: 0,
+      finalAmount: params.declaredValue,
+      paymentMethodUsed: params.upfrontPaid ? `Razorpay (${params.paymentId || 'rzp_paid'})` : 'Awaiting Payment',
+      utrNumber: `UTR-RZP-${Date.now().toString(36).toUpperCase()}`
     },
     auditTrail: [
       {
-        id: `aud_${Date.now()}`,
+        id: `aud_${Date.now()}_1`,
         timestamp: new Date().toISOString(),
         actor: 'SELLER',
-        title: 'Deal Created & UPI Escrow Link Generated',
-        description: `${params.sellerName} listed deal with ${params.feeSplitOption === 'SPLIT_50_50' ? '50/50 Fee Split' : params.feeSplitOption}.`
+        title: 'Shipment Created',
+        description: `${params.sellerName} booked ${params.isExchange ? '2-Way Hardware Exchange' : '1-Way Safe Delivery'}.`
+      },
+      ...(params.upfrontPaid ? [{
+        id: `aud_${Date.now()}_2`,
+        timestamp: new Date().toISOString(),
+        actor: 'BUYER' as const,
+        title: `Upfront Delivery Fee Paid (₹${params.upfrontPaid})`,
+        description: `Secured via Razorpay (${params.paymentId || 'Verified'}). Product amount payable upon doorstep open-box inspection.`
+      }] : []),
+      {
+        id: `aud_${Date.now()}_3`,
+        timestamp: new Date().toISOString(),
+        actor: 'COURIER',
+        title: 'Assigned to Courier Rahul K.',
+        description: `SafeShip bonded custody officer assigned for pickup and doorstep inspection.`
       }
     ],
     createdAt: new Date().toISOString(),

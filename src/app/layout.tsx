@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import React from 'react';
+import Script from 'next/script';
 import './globals.css';
 
 import { AISupportWidget } from '@/components/common/AISupportWidget';
@@ -29,6 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full bg-[#F8FAFC] text-[#0F172A] antialiased">
       <body className="min-h-full flex flex-col bg-[#F8FAFC] text-[#0F172A] selection:bg-[#0066FF] selection:text-white">
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
         {children}
         <AISupportWidget />
       </body>
