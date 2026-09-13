@@ -25,7 +25,7 @@ export function RazorpayButton({
   onFailure,
   onDismiss
 }: RazorpayButtonProps) {
-  const { openCheckout, loading, error, clearError, paymentModalNode } = useRazorpay();
+  const { openCheckout, loading, error, clearError } = useRazorpay();
 
   const handlePay = () => {
     clearError();
@@ -76,8 +76,6 @@ export function RazorpayButton({
           </button>
         </div>
       )}
-
-      {paymentModalNode}
     </div>
   );
 }

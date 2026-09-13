@@ -246,8 +246,7 @@ function CreateShipmentContent() {
     openCheckout,
     loading: payingWithRazorpay,
     error: razorpayError,
-    clearError: clearRazorpayError,
-    paymentModalNode
+    clearError: clearRazorpayError
   } = useRazorpay();
 
   const handleConfirmBooking = () => {
@@ -1195,8 +1194,6 @@ function CreateShipmentContent() {
         )}
 
       </main>
-
-      {paymentModalNode}
     </div>
   );
 }

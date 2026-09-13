@@ -23,8 +23,6 @@ export async function POST(request: Request) {
     }
 
     // Standard Razorpay amount is in paise (1 INR = 100 paise).
-    // If the caller sends rupees (e.g. 349 or 548) and indicates isRupees: true or amount is fractional,
-    // or if amount is passed directly in paise:
     let amountInPaise: number;
     if (body.isRupees === true) {
       amountInPaise = Math.round(numericAmount * 100);
@@ -44,32 +42,22 @@ export async function POST(request: Request) {
     const key_secret = process.env.RAZORPAY_KEY_SECRET;
 
     if (!key_id || !key_secret) {
-      return NextResponse.json({
-        success: true,
-        order_id: `sim_ord_${Date.now().toString(36)}`,
-        directCheckout: true,
-        amount: amountInPaise,
-        currency: currency || 'INR',
-        receipt: receipt || `rcpt_sim_${Date.now()}`,
-        status: 'sandbox_ready',
-        warning: 'Razorpay keys missing on server. Running in sandbox test mode.',
-      });
+      return NextResponse.json(
+        {
+          error: 'Razorpay keys (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET) are missing on the server. Please set them in your environment variables.',
+        },
+        { status: 500 }
+      );
     }
 
     let razorpay;
     try {
       razorpay = getRazorpayClient();
     } catch (authErr: any) {
-      return NextResponse.json({
-        success: true,
-        order_id: `sim_ord_${Date.now().toString(36)}`,
-        directCheckout: true,
-        amount: amountInPaise,
-        currency: currency || 'INR',
-        receipt: receipt || `rcpt_sim_${Date.now()}`,
-        status: 'sandbox_ready',
-        warning: 'Razorpay initialization failed. Running in sandbox test mode.',
-      });
+      return NextResponse.json(
+        { error: authErr.message || 'Razorpay initialization failed' },
+        { status: 500 }
+      );
     }
 
     const orderOptions = {
@@ -92,22 +80,21 @@ export async function POST(request: Request) {
         status: order.status,
       });
     } catch (apiErr: any) {
-      console.warn('Razorpay API orders.create note:', apiErr.message || apiErr);
+      console.error('Razorpay API orders.create failed:', apiErr);
 
-      // In Razorpay Standard Web Checkout, passing order_id is optional.
-      // If Razorpay API rejects test credentials (e.g. 401) or returns an error,
-      // we gracefully return directCheckout: true so the client can still open
-      // the official Razorpay Checkout modal without crashing.
-      return NextResponse.json({
-        success: true,
-        order_id: null,
-        directCheckout: true,
-        amount: amountInPaise,
-        currency: currency || 'INR',
-        receipt: receipt || `rcpt_direct_${Date.now()}`,
-        status: 'direct_ready',
-        warning: 'Razorpay Standard Direct Checkout mode active.',
-      });
+      const description =
+        apiErr?.error?.description ||
+        apiErr?.message ||
+        'Authentication failed with Razorpay API';
+      const statusCode = apiErr?.statusCode || 401;
+
+      return NextResponse.json(
+        {
+          error: `Razorpay API Error (${statusCode}): ${description}. Please verify your RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in the Razorpay Dashboard (Settings → API Keys).`,
+          code: apiErr?.error?.code || 'RAZORPAY_API_ERROR',
+        },
+        { status: statusCode }
+      );
     }
   } catch (err: any) {
     console.error('Unexpected server error in /api/create-order:', err);
