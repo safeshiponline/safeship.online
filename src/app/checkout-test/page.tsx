@@ -22,7 +22,7 @@ export default function RazorpayCheckoutTestPage() {
   const [customerPhone, setCustomerPhone] = useState<string>('+91 98765 43210');
   const [customerEmail, setCustomerEmail] = useState<string>('testbuyer@safeship.online');
   const [logs, setLogs] = useState<string[]>([
-    'Ready. Razorpay Key ID: rzp_test_TbWh2rcmgp4jxX loaded.'
+    `Ready. Razorpay Key ID: ${process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_TbXrOgkdfajAg0'} loaded.`
   ]);
   const [verificationResult, setVerificationResult] = useState<any>(null);
 
@@ -93,7 +93,7 @@ export default function RazorpayCheckoutTestPage() {
 
           <div className="pt-2 flex flex-wrap items-center gap-3 text-xs text-[#475569]">
             <div>
-              <strong>Key ID:</strong> <code className="bg-slate-100 px-2 py-0.5 rounded font-mono text-blue-700">rzp_test_TbWh2rcmgp4jxX</code>
+              <strong>Key ID:</strong> <code className="bg-slate-100 px-2 py-0.5 rounded font-mono text-blue-700">{process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_TbXrOgkdfajAg0'}</code>
             </div>
             <div>
               <strong>Environment:</strong> <span className="text-emerald-600 font-semibold">Active &amp; Configured</span>

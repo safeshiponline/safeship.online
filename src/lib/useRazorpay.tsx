@@ -91,7 +91,7 @@ export function useRazorpay() {
         throw new Error(orderData.error || 'Failed to create order on Razorpay');
       }
 
-      const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_TbWh2rcmgp4jxX';
+      const keyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_TbXrOgkdfajAg0';
       const amountPaise = orderData.amount || Math.round(opts.amountInRupees * 100);
 
       // 3. Configure Razorpay Standard Checkout options
