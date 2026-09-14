@@ -1,13 +1,76 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Headphones, X, Send, ShieldCheck, ArrowRight } from '@/components/common/Icons';
+import { Headphones, X, Send, ShieldCheck, Phone, Check } from '@/components/common/Icons';
 
 interface Message {
   id: string;
   sender: 'user' | 'agent';
   text: string;
   time: string;
+}
+
+/**
+ * Clean, lightweight Markdown parser for AI support responses
+ */
+function renderFormattedMessage(text: string, isUser: boolean) {
+  if (isUser) {
+    return <span className="whitespace-pre-wrap">{text}</span>;
+  }
+
+  const lines = text.split('\n');
+  return (
+    <div className="space-y-1.5 leading-relaxed text-[#0F172A]">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div key={idx} className="h-0.5" />;
+
+        if (trimmed === '---') {
+          return <hr key={idx} className="my-1.5 border-slate-200" />;
+        }
+
+        if (trimmed.startsWith('### ')) {
+          return (
+            <h4 key={idx} className="font-bold text-[11px] sm:text-xs text-[#0F172A] mt-2 mb-0.5 tracking-tight">
+              {trimmed.replace(/^###\s*/, '')}
+            </h4>
+          );
+        }
+
+        if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+          const content = trimmed.replace(/^[\*\-]\s*/, '');
+          return (
+            <div key={idx} className="flex items-start gap-1.5 pl-0.5 my-0.5">
+              <span className="text-[#0066FF] text-[10px] leading-tight select-none mt-0.5">&bull;</span>
+              <span className="flex-1 text-[11px] sm:text-xs text-slate-700">
+                {parseBold(content)}
+              </span>
+            </div>
+          );
+        }
+
+        return (
+          <p key={idx} className="text-[11px] sm:text-xs text-slate-700 leading-snug">
+            {parseBold(line)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function parseBold(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={i} className="font-bold text-[#0F172A]">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return part;
+  });
 }
 
 export function AISupportWidget() {
@@ -95,7 +158,7 @@ export function AISupportWidget() {
 
   return (
     <>
-      {/* Floating Trigger Button */}
+      {/* Floating Trigger Button (Mobile + Desktop) */}
       {!isOpen && (
         <button
           type="button"
@@ -110,32 +173,52 @@ export function AISupportWidget() {
 
       {/* Slide-over Support Drawer */}
       {isOpen && (
-        <div className="fixed bottom-20 md:bottom-6 right-3 sm:right-6 z-50 w-[92vw] sm:w-[380px] max-h-[540px] h-[520px] bg-white rounded-3xl border border-[#CBD5E1] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
+        <div className="fixed bottom-20 md:bottom-6 right-3 sm:right-6 z-50 w-[92vw] sm:w-[400px] max-h-[560px] h-[540px] bg-white rounded-3xl border border-[#CBD5E1] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
           
           {/* Drawer Header */}
           <div className="bg-[#0066FF] text-white p-3.5 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
                 <Headphones className="w-4 h-4 text-white" />
               </div>
               <div>
                 <h3 className="text-xs font-black tracking-tight flex items-center gap-1.5">
                   <span>SafeShip Customer Support</span>
-                  <span className="text-[9px] bg-white/25 px-1.5 py-0.2 rounded font-medium">Live CS</span>
+                  <span className="text-[9px] bg-white/25 px-1.5 py-0.2 rounded font-medium">Live AI &bull; 24/7</span>
                 </h3>
                 <p className="text-[10px] text-blue-100 font-medium">
-                  24/7 Priority Support &bull; Open-Box &bull; Swaps
+                  Open-Box Inspections &bull; Swaps &bull; Doorstep UPI
                 </p>
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition cursor-pointer"
-            >
-              <X className="w-4 h-4 text-white" />
-            </button>
+            {/* Direct Escalation Links & Close Button */}
+            <div className="flex items-center gap-1.5">
+              <a
+                href="tel:18008902829"
+                title="Call 1800 890 2829"
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center text-white transition"
+              >
+                <Phone className="w-3.5 h-3.5" />
+              </a>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center transition cursor-pointer"
+                aria-label="Close Support Desk"
+              >
+                <X className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          </div>
+
+          {/* Institutional Trust Banner */}
+          <div className="px-3.5 py-1.5 bg-[#EFF6FF] border-b border-[#BFDBFE] flex items-center justify-between text-[10px] text-[#0066FF] font-semibold">
+            <span className="flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Doorstep Verification &bull; ₹0 Product Fee Until Approved</span>
+            </span>
+            <span className="text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded text-[9px] font-bold">ACTIVE</span>
           </div>
 
           {/* Messages Body */}
@@ -146,13 +229,13 @@ export function AISupportWidget() {
                 className={`flex flex-col ${m.sender === 'user' ? 'items-end' : 'items-start'}`}
               >
                 <div
-                  className={`max-w-[85%] p-3 rounded-2xl text-xs leading-relaxed ${
+                  className={`max-w-[88%] p-3 rounded-2xl text-xs leading-relaxed ${
                     m.sender === 'user'
                       ? 'bg-[#0066FF] text-white rounded-br-xs shadow-xs'
                       : 'bg-white text-[#0F172A] border border-[#E2E8F0] rounded-bl-xs shadow-2xs'
                   }`}
                 >
-                  {m.text}
+                  {renderFormattedMessage(m.text, m.sender === 'user')}
                 </div>
                 <span className="text-[9px] text-[#94A3B8] px-1 mt-0.5">{m.time}</span>
               </div>
@@ -161,7 +244,7 @@ export function AISupportWidget() {
             {loading && (
               <div className="flex items-center gap-1.5 text-[11px] text-[#0066FF] font-semibold p-2">
                 <Headphones className="w-3.5 h-3.5 animate-pulse" />
-                <span>SafeShip Support is typing...</span>
+                <span>SafeShip Specialist is drafting response...</span>
               </div>
             )}
             <div ref={messagesEndRef} />
@@ -174,7 +257,7 @@ export function AISupportWidget() {
                 key={idx}
                 type="button"
                 onClick={() => handleSend(p)}
-                className="whitespace-nowrap px-2.5 py-1 rounded-full bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#0066FF] text-[10px] font-bold border border-[#BFDBFE] transition cursor-pointer shrink-0"
+                className="whitespace-nowrap px-2.5 py-1 rounded-full bg-[#EFF6FF] hover:bg-[#DBEAFE] text-[#0066FF] text-[10px] font-bold border border-[#BFDBFE] transition cursor-pointer shrink-0 active:scale-95"
               >
                 {p}
               </button>
@@ -199,7 +282,7 @@ export function AISupportWidget() {
             <button
               type="submit"
               disabled={!input.trim() || loading}
-              className="w-8 h-8 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] disabled:opacity-40 text-white flex items-center justify-center transition cursor-pointer shrink-0"
+              className="w-8 h-8 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] disabled:opacity-40 text-white flex items-center justify-center transition cursor-pointer shrink-0 active:scale-95"
             >
               <Send className="w-3.5 h-3.5" />
             </button>
