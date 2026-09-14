@@ -219,6 +219,56 @@ export interface SafeDeal {
   buyerReleasePin: string; // 6-digit Indian delivery OTP
   sellerPickupCode: string; // 4-digit verification code
   status: DealStatus;
+
+  // Hardware IMEI & Serial Number Telemetry
+  imeiNumber?: string;
+  imeiPhotoUrl?: string;
+  imeiAuditReport?: {
+    status: 'VALID' | 'BLURRY_RETRY' | 'NOT_FOUND';
+    imei?: string;
+    serial?: string;
+    brand?: string;
+    model?: string;
+    cleanImei?: boolean;
+    warrantyEligible?: boolean;
+    details: string;
+    verifiedAt?: string;
+  };
+
+  // Operational Pickup Attempt Telemetry (Realistic Seller Unreachable Call Logs)
+  pickupAttemptStatus?: {
+    isDelayed: boolean;
+    reason: string;
+    callAttempts?: {
+      attemptNumber?: number;
+      time?: string;
+      timestamp?: string;
+      caller?: string;
+      target?: string;
+      driverPhone?: string;
+      sellerPhone?: string;
+      outcome: string;
+      note?: string;
+    }[];
+    attempts?: {
+      attemptNumber?: number;
+      time?: string;
+      timestamp?: string;
+      caller?: string;
+      target?: string;
+      driverPhone?: string;
+      sellerPhone?: string;
+      outcome: string;
+      note?: string;
+    }[];
+    nextAttemptScheduled?: string;
+    nextAttemptTime?: string;
+    callbackRequested?: boolean;
+    sellerCallbackRequested?: boolean;
+    callbackRequestedAt?: string;
+    actionRequiredBuyer?: string;
+    escrowStatusNote?: string;
+  };
   
   // Courier & Inspection
   assignedCourier?: CourierAgent;

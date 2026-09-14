@@ -661,60 +661,103 @@ export default function HomePage() {
             </section>
 
             {/* ------------------------------------------------------------------- */}
-            {/* WANT TO SEE HOW IT WORKS? (HIGH-RES AI DEMO SHOWCASE CARD)           */}
+            {/* REAL DOORSTEP OPEN-BOX & AI HARDWARE INSPECTION (AUTHENTIC WORKFLOW) */}
             {/* ------------------------------------------------------------------- */}
             <section>
-              <div className="bg-gradient-to-br from-[#EFF6FF] via-[#EEF2FF] to-white rounded-3xl border border-[#DBEAFE] p-4 sm:p-5 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-[#BFDBFE] transition duration-200">
+              <div className="bg-gradient-to-br from-[#EFF6FF] via-[#EEF2FF] to-white rounded-3xl border border-[#DBEAFE] p-4 sm:p-6 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-[#BFDBFE] transition duration-200">
                 
                 {/* Header Row */}
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[9px] font-extrabold uppercase tracking-wider text-[#0066FF] bg-white border border-[#BFDBFE] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 shadow-2xs">
-                    <span>★</span>
-                    <span>LIVE AI DEMO</span>
-                  </span>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-md">
-                    VERIFIED 99.8%
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#0066FF] bg-white border border-[#BFDBFE] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 shadow-2xs">
+                      <span>★</span>
+                      <span>DOORSTEP OPEN-BOX AUDIT</span>
+                    </span>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <span>✓</span>
+                      <span>APPLE &amp; OEM DATABASE MATCHED</span>
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-mono text-slate-500 bg-white/80 px-2 py-0.5 rounded border border-slate-200">
+                    Serial: D4G7K3Y9L2
                   </span>
                 </div>
 
                 {/* Content Copy */}
-                <div className="space-y-1 mb-3">
-                  <h3 className="text-sm sm:text-base font-bold text-[#0F172A]">
-                    Want to see how it works?
+                <div className="space-y-1 mb-3.5">
+                  <h3 className="text-base sm:text-lg font-bold text-[#0F172A] tracking-tight">
+                    See SafeShip Open-Box AI Verification in Action
                   </h3>
-                  <p className="text-[11px] sm:text-xs text-[#64748B] leading-snug">
-                    Experience doorstep AI camera inspection &amp; instant escrow settlement.
+                  <p className="text-xs text-[#64748B] leading-relaxed">
+                    Watch our 5-step doorstep inspection protocol: the officer opens the package in front of you, Gemini Vision cross-checks IMEI and hardware serial against the OEM registry, and funds release only when you approve.
                   </p>
                 </div>
 
-                {/* High-Resolution AI Inspection Showcase Image */}
-                <div className="relative rounded-2xl overflow-hidden border border-[#CBD5E1] shadow-inner bg-slate-950 my-1 aspect-16/10 group-hover:shadow-md transition">
+                {/* High-Resolution Authentic Inspection Showcase Image */}
+                <div className="relative rounded-2xl overflow-hidden border border-[#CBD5E1] shadow-md bg-slate-950 my-1 aspect-16/10 sm:aspect-21/10 group-hover:shadow-lg transition">
                   <img
-                    src="/images/ai_demo_card.webp"
-                    alt="SafeShip AI Open-Box Inspection Camera Scan"
-                    className="w-full h-full object-cover select-none pointer-events-none transform group-hover:scale-103 transition duration-500 opacity-95"
+                    src="/images/hero_openbox_authentic.jpg"
+                    alt="SafeShip Real Doorstep Open-Box Inspection with Apple Serial D4G7K3Y9L2 and Gemini Vision Audit"
+                    className="w-full h-full object-cover object-center select-none pointer-events-none transform group-hover:scale-102 transition duration-500 opacity-98"
                   />
-                  {/* Subtle live HUD Reticle Badge */}
-                  <div className="absolute bottom-2 inset-x-2 flex items-center justify-between text-[9px] sm:text-[10px] font-mono font-bold">
-                    <span className="bg-[#0F172A]/85 text-white px-2 py-0.5 rounded backdrop-blur-xs border border-white/20">
-                      SCAN: IPHONE 15 PRO
+                  {/* Overlay telemetry HUD */}
+                  <div className="absolute top-3 left-3 bg-[#0F172A]/85 text-white px-2.5 py-1 rounded-lg backdrop-blur-md border border-white/20 text-[10px] sm:text-[11px] font-mono font-bold flex items-center gap-1.5 shadow-sm">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>DEVICE: IPHONE 15 PRO 256GB</span>
+                    <span className="text-slate-400">|</span>
+                    <span className="text-emerald-300">SERIAL: D4G7K3Y9L2</span>
+                  </div>
+
+                  <div className="absolute bottom-3 inset-x-3 flex items-center justify-between text-[10px] sm:text-[11px] font-mono font-bold flex-wrap gap-2">
+                    <span className="bg-[#0F172A]/85 text-white px-2.5 py-1 rounded-lg backdrop-blur-md border border-white/20">
+                      BATTERY: 100% &bull; SCREEN: OEM GENUINE &bull; FACE ID: OK
                     </span>
-                    <span className="bg-emerald-600 text-white px-2 py-0.5 rounded shadow-xs">
-                      PASSED ✓
+                    <span className="bg-emerald-600 text-white px-2.5 py-1 rounded-lg shadow-xs flex items-center gap-1">
+                      <span>✓</span>
+                      <span>INSPECTION PASSED</span>
                     </span>
                   </div>
                 </div>
 
+                {/* 5-Step Doorstep Delivery Workflow */}
+                <div className="mt-4 pt-4 border-t border-blue-100/80">
+                  <div className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
+                    <span>5-Step Delivery &amp; Inspection Workflow</span>
+                    <span className="text-[10px] text-[#0066FF] font-semibold lowercase">standard on every consignment</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
+                    {[
+                      { step: '1', title: 'Package Arrives', desc: 'Bonded officer at door' },
+                      { step: '2', title: 'Open & Inspect', desc: '10-min unboxing test' },
+                      { step: '3', title: 'AI Verifies', desc: 'IMEI & serial check' },
+                      { step: '4', title: 'Confirm & Pay', desc: 'Merchandise escrow' },
+                      { step: '5', title: 'Receive Safe', desc: '100% genuine or ₹0' }
+                    ].map((s) => (
+                      <div key={s.step} className="p-2 rounded-xl bg-white/80 border border-blue-100 space-y-0.5 shadow-2xs">
+                        <div className="w-5 h-5 mx-auto rounded-full bg-[#0066FF] text-white text-[10px] font-bold flex items-center justify-center">
+                          {s.step}
+                        </div>
+                        <div className="text-[11px] font-bold text-slate-900 leading-tight pt-0.5">
+                          {s.title}
+                        </div>
+                        <div className="text-[10px] text-slate-500 leading-tight">
+                          {s.desc}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 {/* Call to Action Link Button */}
-                <div className="pt-3 flex items-center justify-between">
-                  <span className="text-[11px] text-slate-500 font-medium hidden sm:inline">
-                    Simulated unboxing &amp; QR handshake
+                <div className="pt-4 mt-2 flex items-center justify-between border-t border-slate-100">
+                  <span className="text-xs text-slate-600 font-medium hidden sm:inline">
+                    Simulated camera unboxing, optical OCR &amp; escrow handshake
                   </span>
                   <Link
-                    href="/open-box"
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-xs hover:shadow-md transition active:scale-95 whitespace-nowrap ml-auto"
+                    href="/open-box?deal=SS48291"
+                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-xs hover:shadow-md transition active:scale-95 whitespace-nowrap ml-auto"
                   >
-                    <span>Try demo</span>
+                    <span>Launch Open-Box Simulator</span>
                     <span>&rarr;</span>
                   </Link>
                 </div>

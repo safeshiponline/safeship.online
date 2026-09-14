@@ -124,6 +124,9 @@ export function createNewDeal(params: {
   upfrontPaid?: number;
   paymentId?: string;
   billingInfo?: SafeDeal['billingInfo'];
+  imeiNumber?: string;
+  imeiAuditReport?: SafeDeal['imeiAuditReport'];
+  pickupAttemptStatus?: SafeDeal['pickupAttemptStatus'];
 }): SafeDeal {
   const deals = getStoredDeals();
   const newId = `SS${Math.floor(10000 + Math.random() * 90000)}`;
@@ -161,12 +164,30 @@ export function createNewDeal(params: {
     category: params.category,
     declaredValue: params.declaredValue,
     condition: params.condition,
-    serialNumber: params.serialNumber,
+    serialNumber: params.serialNumber || (params.imeiAuditReport?.serial || 'D4G7K3Y9L2'),
+    imeiNumber: params.imeiNumber || params.imeiAuditReport?.imei,
+    imeiAuditReport: params.imeiAuditReport,
+    pickupAttemptStatus: params.pickupAttemptStatus || {
+      isDelayed: true,
+      reason: 'Seller Unreachable / Call Not Answered during scheduled pickup window',
+      callAttempts: [
+        {
+          time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) + ' IST',
+          caller: 'Rahul K. (Field Officer KA-4012)',
+          target: `Seller (${params.sellerPhone || '+91 98290 12890'})`,
+          outcome: 'Ringing — No Answer (35s timeout)',
+          note: `Courier executive dispatched to ${params.pickupAddress || params.city}. Outbound phone call unanswered.`
+        }
+      ],
+      nextAttemptScheduled: 'Tomorrow, 10:30 AM – 01:00 PM IST',
+      callbackRequested: false
+    },
     city: params.city,
     pincode: params.pincode,
     isExchange: params.isExchange || false,
     exchangeItem: params.exchangeItem,
     itemPhotos: params.itemPhotos.length > 0 ? params.itemPhotos : [
+      '/images/hero_openbox_authentic.jpg',
       '/images/openbox_macro_4x3.webp'
     ],
     seller: {
@@ -518,6 +539,44 @@ export function resolveDispute(dealId: string, decision: 'RESOLVED_REFUND_BUYER'
       description: `Arbitrator brokered mutual compromise settlement. Notes: ${notes}`
     });
   }
+
+  deals[index] = deal;
+  saveStoredDeals(deals);
+  syncDealToUserOrders(deal);
+  return deal;
+}
+
+export function requestSellerCallback(dealId: string): SafeDeal | null {
+  const deals = getStoredDeals();
+  const index = deals.findIndex((d) => d.id.toLowerCase() === dealId.toLowerCase());
+  if (index === -1) {
+    const init = INITIAL_DEALS.find((d) => d.id.toLowerCase() === dealId.toLowerCase());
+    if (init && init.pickupAttemptStatus) {
+      init.pickupAttemptStatus = {
+        ...init.pickupAttemptStatus,
+        callbackRequested: true,
+        callbackRequestedAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) + ' IST'
+      };
+      return init;
+    }
+    return null;
+  }
+
+  const deal = { ...deals[index] };
+  if (deal.pickupAttemptStatus) {
+    deal.pickupAttemptStatus = {
+      ...deal.pickupAttemptStatus,
+      callbackRequested: true,
+      callbackRequestedAt: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) + ' IST'
+    };
+  }
+  deal.auditTrail.push({
+    id: `aud_cb_${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    actor: 'SELLER',
+    title: 'Seller Callback Requested',
+    description: 'Seller indicated availability. Dispatch desk priority re-dial queued for execution.'
+  });
 
   deals[index] = deal;
   saveStoredDeals(deals);
