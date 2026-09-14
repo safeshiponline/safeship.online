@@ -115,14 +115,21 @@ export const EnterpriseFooter: React.FC = () => {
             <p className="text-xs text-slate-400 leading-relaxed">
               India’s first high-trust P2P &amp; B2C courier delivery rail engineered with <strong>Guaranteed Doorstep Open-Box Inspection</strong> and institutional escrow settlement.
             </p>
-            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] space-y-1">
-              <div className="font-bold text-white flex items-center gap-1.5">
-                <Lock className="w-3.5 h-3.5 text-[#0066FF]" />
-                <span>RBI Section 10A Regulated</span>
+            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] space-y-1.5">
+              <div className="font-bold text-white flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-[#0066FF]" />
+                  <span>RBI Regulated Nodal Escrow</span>
+                </span>
+                <span className="text-[10px] text-emerald-400 font-bold">100% SECURE</span>
               </div>
-              <p className="text-slate-400 text-[10px]">
+              <p className="text-slate-400 text-[10px] leading-relaxed">
                 Escrow balances held in ICICI Bank Trustee Nodal accounts. Zero product charge until inspection approval.
               </p>
+              <div className="pt-1.5 border-t border-slate-800 text-[10px] space-y-0.5 text-slate-300">
+                <div>📞 24/7 Helpline: <a href="tel:18008902829" className="text-white font-bold hover:underline">1800 890 2829</a> (Toll-Free)</div>
+                <div>🏛️ GSTIN: <span className="font-mono text-slate-200">08AAECS2938Q1ZP</span> &bull; SAC: <span className="font-mono text-slate-200">996812</span></div>
+              </div>
             </div>
           </div>
 
@@ -212,8 +219,10 @@ export const EnterpriseFooter: React.FC = () => {
           <div>
             &copy; {new Date().getFullYear()} SafeShip Technologies India Pvt. Ltd. All rights reserved.
           </div>
-          <div className="flex items-center gap-4 text-[11px]">
-            <span>CIN: U63090KA2024PTC189201</span>
+          <div className="flex flex-wrap items-center gap-3 text-[11px]">
+            <span>CIN: U63090RJ2026PTC098234</span>
+            <span>&bull;</span>
+            <span>GSTIN: 08AAECS2938Q1ZP</span>
             <span>&bull;</span>
             <span className="text-emerald-400 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />

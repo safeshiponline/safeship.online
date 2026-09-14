@@ -123,6 +123,7 @@ export function createNewDeal(params: {
   exchangeItem?: SafeDeal['exchangeItem'];
   upfrontPaid?: number;
   paymentId?: string;
+  billingInfo?: SafeDeal['billingInfo'];
 }): SafeDeal {
   const deals = getStoredDeals();
   const newId = `SS${Math.floor(10000 + Math.random() * 90000)}`;
@@ -134,11 +135,27 @@ export function createNewDeal(params: {
     milestoneAdvancePercent: 30
   });
 
+  const upfrontAmt = params.upfrontPaid || params.upfrontPricing?.totalUpfront || pricing.shippingInsuranceFee;
+  const taxable = Math.round((upfrontAmt / 1.18) * 100) / 100;
+  const halfGst = Math.round(((upfrontAmt - taxable) / 2) * 100) / 100;
+  const defaultBilling: SafeDeal['billingInfo'] = params.billingInfo || {
+    invoiceNumber: `INV-2026-SS-${newId}`,
+    sacCode: '996812',
+    isB2B: false,
+    taxableAmount: taxable,
+    cgst: halfGst,
+    sgst: halfGst,
+    igst: 0,
+    totalAmount: upfrontAmt,
+    invoiceDate: new Date().toISOString()
+  };
+
   const buyerPin = Math.floor(100000 + Math.random() * 900000).toString();
   const sellerCode = Math.floor(1000 + Math.random() * 9000).toString();
 
   const newDeal: SafeDeal = {
     id: newId,
+    billingInfo: defaultBilling,
     title: params.title,
     description: params.description,
     category: params.category,

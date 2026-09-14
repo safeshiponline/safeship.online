@@ -106,6 +106,17 @@ export const INITIAL_DEALS: SafeDeal[] = [
       paymentMethodUsed: 'UPI (Delivery Fee Pre-paid ₹349)',
       utrNumber: 'UTR-HDFC-20260913-482910'
     },
+    billingInfo: {
+      invoiceNumber: 'INV-2026-SS-48291',
+      sacCode: '996812',
+      isB2B: false,
+      taxableAmount: 295.76,
+      cgst: 26.62,
+      sgst: 26.62,
+      igst: 0,
+      totalAmount: 349,
+      invoiceDate: '2026-09-13T08:00:00Z'
+    },
     auditTrail: [
       {
         id: 'aud_ss_1',

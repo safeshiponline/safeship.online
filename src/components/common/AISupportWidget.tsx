@@ -163,7 +163,7 @@ export function AISupportWidget() {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-20 md:bottom-6 right-4 sm:right-6 z-30 w-12 h-12 md:w-auto md:h-auto p-0 md:px-4 md:py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white shadow-xl shadow-[#0066FF]/35 flex items-center justify-center md:gap-2.5 transition active:scale-95 group cursor-pointer border-2 border-white"
+          className="fixed bottom-4 md:bottom-6 right-3.5 sm:right-6 z-30 w-11 h-11 md:w-auto md:h-auto p-0 md:px-4 md:py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white shadow-xl shadow-[#0066FF]/35 flex items-center justify-center md:gap-2.5 transition active:scale-95 group cursor-pointer border-2 border-white"
           aria-label="Open SafeShip Customer Support"
         >
           <Headphones className="w-5 h-5 text-white" />
@@ -173,7 +173,7 @@ export function AISupportWidget() {
 
       {/* Slide-over Support Drawer */}
       {isOpen && (
-        <div className="fixed bottom-20 md:bottom-6 right-3 sm:right-6 z-50 w-[92vw] sm:w-[400px] max-h-[560px] h-[540px] bg-white rounded-3xl border border-[#CBD5E1] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
+        <div className="fixed bottom-3 md:bottom-6 right-2 sm:right-6 z-50 w-[94vw] sm:w-[400px] max-h-[85vh] h-[540px] bg-white rounded-3xl border border-[#CBD5E1] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
           
           {/* Drawer Header */}
           <div className="bg-[#0066FF] text-white p-3.5 flex items-center justify-between">

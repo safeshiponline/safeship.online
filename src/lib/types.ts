@@ -201,6 +201,19 @@ export interface SafeDeal {
   dimensionsCm?: string;
   upfrontPaid?: number;
   paymentId?: string;
+  billingInfo?: {
+    businessName?: string;
+    gstin?: string;
+    invoiceNumber: string;
+    sacCode: string;
+    isB2B: boolean;
+    taxableAmount: number;
+    cgst: number;
+    sgst: number;
+    igst: number;
+    totalAmount: number;
+    invoiceDate: string;
+  };
   
   // Security & Handshake
   buyerReleasePin: string; // 6-digit Indian delivery OTP

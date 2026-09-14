@@ -269,10 +269,10 @@ function TrackingContent({
               onClick={handleDownloadAWB}
               disabled={downloadingPdf}
               className="px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-[#0F172A] flex items-center gap-1.5 transition cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
-              title="Download Official Air Waybill Consignment Note (A4 PDF)"
+              title="Download Official 2-Page Tax Invoice & Air Waybill Consignment Note (A4 PDF)"
             >
               <FileText className="w-3.5 h-3.5 text-[#0066FF]" />
-              <span>{downloadingPdf ? 'Generating...' : 'AWB Note (PDF)'}</span>
+              <span>{downloadingPdf ? 'Generating...' : 'Tax Invoice & AWB (PDF)'}</span>
             </button>
 
             <Link
@@ -463,9 +463,26 @@ function TrackingContent({
             </div>
 
             <div className="text-xs text-[#475569] space-y-3.5 leading-relaxed">
-              <p>
-                Your upfront booking charge of <strong>₹{deal.upfrontPaid || upfrontFee}</strong> has been secured. Here is the exact chain-of-custody process underway:
-              </p>
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Upfront Booking Secured:</span>
+                  <strong className="text-slate-900 font-mono text-sm">
+                    ₹{(deal.upfrontPaid || upfrontFee).toLocaleString('en-IN')}
+                  </strong>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-slate-500">Official Tax Invoice:</span>
+                  <span className="font-mono font-semibold text-[#0066FF]">
+                    {deal.billingInfo?.invoiceNumber || `INV-2026-SS-${deal.id.toUpperCase()}`}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-slate-500">Payment Reference ID:</span>
+                  <span className="font-mono text-slate-700">
+                    {paymentId || deal.paymentId || 'pay_live_verified'}
+                  </span>
+                </div>
+              </div>
 
               <div className="space-y-3">
                 <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-start gap-3">
@@ -514,10 +531,10 @@ function TrackingContent({
               <button
                 type="button"
                 onClick={handleDownloadAWB}
-                className="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-[#0F172A] flex items-center gap-1.5 transition cursor-pointer"
+                className="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-[#0F172A] flex items-center gap-1.5 transition cursor-pointer shadow-xs"
               >
                 <FileText className="w-3.5 h-3.5 text-[#0066FF]" />
-                <span>Download Consignment Note</span>
+                <span>{downloadingPdf ? 'Generating...' : 'Download Tax Invoice & AWB (PDF)'}</span>
               </button>
 
               <button

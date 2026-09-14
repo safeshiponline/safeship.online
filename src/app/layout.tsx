@@ -96,7 +96,7 @@ const jsonLdData = {
       description: 'Ultra-premium P2P & B2C courier delivery and escrow platform with guaranteed doorstep open-box inspection.',
       contactPoint: {
         '@type': 'ContactPoint',
-        telephone: '+91-1800-723-3744',
+        telephone: '+91-1800-890-2829',
         contactType: 'customer support',
         areaServed: 'IN',
         availableLanguage: ['en', 'hi']

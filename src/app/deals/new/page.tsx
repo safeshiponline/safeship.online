@@ -101,6 +101,11 @@ function CreateShipmentContent() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [stepErrorBanner, setStepErrorBanner] = useState<string>('');
 
+  // B2B Tax Invoice & GST State
+  const [isB2B, setIsB2B] = useState<boolean>(false);
+  const [businessName, setBusinessName] = useState<string>('');
+  const [gstin, setGstin] = useState<string>('');
+
   const clearFieldError = (field: string) => {
     if (errors[field] || stepErrorBanner) {
       setErrors((prev) => {
@@ -399,7 +404,20 @@ function CreateShipmentContent() {
               totalUpfront: activeTierBreakdown.totalUpfront
             },
             upfrontPaid: upfrontAmount,
-            paymentId: verifyData.payment_id
+            paymentId: verifyData.payment_id,
+            billingInfo: {
+              businessName: isB2B && businessName.trim() ? businessName.trim() : undefined,
+              gstin: isB2B && gstin.trim() ? gstin.trim().toUpperCase() : undefined,
+              invoiceNumber: `INV-2026-SS-${Date.now().toString(36).toUpperCase()}`,
+              sacCode: '996812',
+              isB2B,
+              taxableAmount: Math.round((upfrontAmount / 1.18) * 100) / 100,
+              cgst: Math.round(((upfrontAmount - upfrontAmount / 1.18) / 2) * 100) / 100,
+              sgst: Math.round(((upfrontAmount - upfrontAmount / 1.18) / 2) * 100) / 100,
+              igst: 0,
+              totalAmount: upfrontAmount,
+              invoiceDate: new Date().toISOString()
+            }
           });
 
           router.push(`/track/${created.id}?booked=true&payment_id=${verifyData.payment_id}`);
@@ -1211,7 +1229,7 @@ function CreateShipmentContent() {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-bold text-[#0F172A]">
-                          {distanceKm} km Road Distance
+                          {distanceKm.toLocaleString('en-IN')} km Road Distance
                         </span>
                         <span className="text-[10px] font-bold bg-[#0066FF] text-white px-1.5 py-0.2 rounded">
                           {isIntercity ? 'Linehaul Intercity Corridor' : 'Direct Intra-City Fleet'}
@@ -1397,8 +1415,8 @@ function CreateShipmentContent() {
                           <span className="text-xs font-bold text-slate-400">N/A</span>
                         ) : (
                           <>
-                            <span className="text-lg font-black text-[#0F172A] block leading-none">
-                              ₹{tier.totalUpfront}
+                            <span className="text-xl font-black text-[#0F172A] block leading-none font-mono">
+                              ₹{tier.totalUpfront.toLocaleString('en-IN')}
                             </span>
                             <span className="text-[10px] text-emerald-600 font-semibold">
                               All-inclusive
@@ -1413,8 +1431,9 @@ function CreateShipmentContent() {
             </div>
 
             {/* UPFRONT MATHEMATICAL PRICE BREAKDOWN */}
+            {/* UPFRONT MATHEMATICAL PRICE BREAKDOWN */}
             <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3">
-              <div className="flex items-center justify-between pb-2.5 border-b border-[#F1F5F9]">
+              <div className="flex items-center justify-between pb-2.5 border-b border-[#F1F5F9] gap-2">
                 <div>
                   <h3 className="text-xs font-bold text-[#64748B] uppercase tracking-wider">
                     Upfront Booking Breakdown ({activeTierBreakdown.tierLabel})
@@ -1425,44 +1444,51 @@ function CreateShipmentContent() {
                       : 'High-Value Security: Bonded flight cargo, white-glove doorstep inspection & transit insurance'}
                   </p>
                 </div>
-                <span className="text-[11px] font-bold text-[#0066FF] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
-                  {distanceKm || effectiveDistance} km Route
+                <span className="text-[11px] font-bold text-[#0066FF] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100 shrink-0">
+                  {(distanceKm || effectiveDistance).toLocaleString('en-IN')} km Route
                 </span>
               </div>
 
-              <div className="space-y-2 text-xs">
+              <div className="space-y-2.5 text-xs">
                 <div className="flex justify-between text-[#475569]">
                   <span>Base Linehaul Air/Freight Charge:</span>
-                  <span className="font-semibold text-[#0F172A]">₹{activeTierBreakdown.baseFee}</span>
+                  <span className="font-semibold text-[#0F172A] font-mono">₹{activeTierBreakdown.baseFee.toLocaleString('en-IN')}</span>
                 </div>
 
                 <div className="flex justify-between text-[#475569]">
                   <span>National Corridor Distance Surcharge:</span>
-                  <span className="font-semibold text-[#0F172A]">₹{activeTierBreakdown.distanceSurcharge}</span>
+                  <span className="font-semibold text-[#0F172A] font-mono">₹{activeTierBreakdown.distanceSurcharge.toLocaleString('en-IN')}</span>
                 </div>
 
-                <div className="flex justify-between text-[#475569]">
-                  <span>Doorstep Open-Box Inspection & Testing:</span>
-                  <span className="font-semibold text-emerald-700">
-                    {activeTierBreakdown.verificationFee === 0 ? (
-                      <>
-                        <span className="line-through text-slate-400 mr-1.5 font-normal">₹149</span>
-                        <span className="text-emerald-700 font-bold">FREE PROMO (₹0)</span>
-                        <span className="text-[10px] font-normal text-emerald-600 ml-1">(Orders ≤ ₹15k)</span>
-                      </>
-                    ) : (
-                      <>
-                        ₹{activeTierBreakdown.verificationFee}{' '}
-                        <span className="text-[10px] font-normal text-slate-400">(Bonded officer live unbox)</span>
-                      </>
+                {/* Clean Multi-line inspection row to prevent awkward wrapping */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-1.5 border-y border-slate-100/80 text-[#475569] gap-1">
+                  <div>
+                    <span className="font-medium text-[#0F172A]">Doorstep Open-Box Inspection &amp; Testing:</span>
+                    {activeTierBreakdown.verificationFee === 0 && (
+                      <span className="text-[10px] text-emerald-600 font-semibold block">
+                        Promotional waiver applied for orders ≤ ₹15,000
+                      </span>
                     )}
-                  </span>
+                  </div>
+                  <div className="text-left sm:text-right shrink-0 font-semibold text-emerald-700">
+                    {activeTierBreakdown.verificationFee === 0 ? (
+                      <span className="inline-flex items-center gap-1.5 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                        <span className="line-through text-slate-400 font-normal text-[11px]">₹149</span>
+                        <span className="text-emerald-700 font-bold text-xs">FREE PROMO (₹0)</span>
+                      </span>
+                    ) : (
+                      <span>
+                        ₹{activeTierBreakdown.verificationFee.toLocaleString('en-IN')}{' '}
+                        <span className="text-[10px] font-normal text-slate-400">(Bonded officer live unbox)</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {activeTierBreakdown.escrowCustodyFee ? (
                   <div className="flex justify-between text-[#475569]">
-                    <span>Tamper-Evident Security Seal & Escrow Lock:</span>
-                    <span className="font-semibold text-[#0F172A]">₹{activeTierBreakdown.escrowCustodyFee}</span>
+                    <span>Tamper-Evident Security Seal &amp; Escrow Lock:</span>
+                    <span className="font-semibold text-[#0F172A] font-mono">₹{activeTierBreakdown.escrowCustodyFee.toLocaleString('en-IN')}</span>
                   </div>
                 ) : null}
 
@@ -1470,7 +1496,7 @@ function CreateShipmentContent() {
                   <span>
                     Comprehensive Cargo Insurance ({declaredValue > 5000 ? '0.5% for ₹' + declaredValue.toLocaleString('en-IN') : 'Flat ₹5,000 cover'}):
                   </span>
-                  <span className="font-semibold text-[#0F172A]">₹{activeTierBreakdown.insuranceFee}</span>
+                  <span className="font-semibold text-[#0F172A] font-mono">₹{activeTierBreakdown.insuranceFee.toLocaleString('en-IN')}</span>
                 </div>
 
                 <div className="pt-3 border-t border-[#E2E8F0] flex justify-between items-baseline">
@@ -1482,9 +1508,107 @@ function CreateShipmentContent() {
                       Paid now via Razorpay &bull; Product price held in escrow until doorstep approval
                     </span>
                   </div>
-                  <span className="text-2xl font-black text-[#0066FF]">
-                    ₹{activeTierBreakdown.totalUpfront}
+                  <span className="text-2xl font-black text-[#0066FF] font-mono">
+                    ₹{activeTierBreakdown.totalUpfront.toLocaleString('en-IN')}
                   </span>
+                </div>
+              </div>
+            </div>
+
+            {/* GST TAX INVOICE & COMPLIANCE SECTION */}
+            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3">
+              <div className="flex items-center justify-between pb-2.5 border-b border-[#F1F5F9]">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#0066FF] flex items-center justify-center font-bold text-xs">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
+                      GST Tax Invoice &amp; Billable Compliance
+                    </h3>
+                    <p className="text-[10px] text-slate-500">
+                      SAC Code: <strong>996812</strong> (Courier &amp; Cargo) &bull; SafeShip GSTIN: <strong>08AAECS2938Q1ZP</strong>
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  18% GST Included
+                </span>
+              </div>
+
+              {/* B2B Input Tax Credit Toggle */}
+              <div className="space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={isB2B}
+                    onChange={(e) => setIsB2B(e.target.checked)}
+                    className="w-4 h-4 text-[#0066FF] rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
+                  />
+                  <span className="text-xs font-semibold text-[#334155]">
+                    Add Company Name &amp; GSTIN for Input Tax Credit (B2B Tax Invoice)
+                  </span>
+                </label>
+
+                {isB2B && (
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 animate-in fade-in">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                        Registered Business / Firm Name:
+                      </label>
+                      <input
+                        type="text"
+                        value={businessName}
+                        onChange={(e) => setBusinessName(e.target.value)}
+                        placeholder="e.g., Apex Tech Ventures LLP"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF]"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
+                        15-Digit GSTIN Number:
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={15}
+                        value={gstin}
+                        onChange={(e) => setGstin(e.target.value.toUpperCase())}
+                        placeholder="e.g., 08AAECS2938Q1ZP"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono text-slate-900 outline-hidden focus:border-[#0066FF]"
+                      />
+                      {gstin && gstin.length === 15 && (
+                        <p className="text-[10px] text-emerald-600 font-semibold mt-1">
+                          ✓ Valid GSTIN: Input Tax Credit of ₹{Math.round(activeTierBreakdown.totalUpfront - activeTierBreakdown.totalUpfront / 1.18).toLocaleString('en-IN')} will be credited on GSTR-2B.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Tax Invoice Breakdown Grid */}
+              <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200/80 text-[11px] space-y-1 text-slate-600 font-mono">
+                <div className="flex justify-between">
+                  <span>Taxable Freight Value:</span>
+                  <span className="font-semibold text-slate-900">
+                    ₹{(Math.round((activeTierBreakdown.totalUpfront / 1.18) * 100) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>CGST (9.0%):</span>
+                  <span className="font-semibold text-slate-900">
+                    ₹{(Math.round(((activeTierBreakdown.totalUpfront - activeTierBreakdown.totalUpfront / 1.18) / 2) * 100) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>SGST (9.0%):</span>
+                  <span className="font-semibold text-slate-900">
+                    ₹{(Math.round(((activeTierBreakdown.totalUpfront - activeTierBreakdown.totalUpfront / 1.18) / 2) * 100) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+                <div className="pt-1.5 border-t border-slate-200 flex justify-between font-bold text-slate-900 font-sans text-xs">
+                  <span>Total Tax Invoice (100% Tax Deductible):</span>
+                  <span className="text-[#0066FF]">₹{activeTierBreakdown.totalUpfront.toLocaleString('en-IN')}</span>
                 </div>
               </div>
             </div>
@@ -1496,8 +1620,29 @@ function CreateShipmentContent() {
                 <span>Zero Escrow Risk Protocol</span>
               </div>
               <p className="text-[11px] leading-relaxed text-[#1E40AF]">
-                You are paying only <strong>₹{activeTierBreakdown.totalUpfront}</strong> upfront today for bonded transit and white-glove open-box verification. The merchandise amount (<strong>₹{declaredValue.toLocaleString('en-IN')}</strong>) will be settled by the receiver upon inspecting the parcel at their doorstep. If rejected during open-box audit, the item is returned safely at ₹0 merchandise liability.
+                You are paying only <strong>₹{activeTierBreakdown.totalUpfront.toLocaleString('en-IN')}</strong> upfront today for bonded transit and white-glove open-box verification. The merchandise amount (<strong>₹{declaredValue.toLocaleString('en-IN')}</strong>) will be settled by the receiver upon inspecting the parcel at their doorstep. If rejected during open-box audit, the item is returned safely at ₹0 merchandise liability.
               </p>
+            </div>
+
+            {/* WHAT HAPPENS IMMEDIATELY AFTER PAYMENT */}
+            <div className="p-4 rounded-2xl bg-white border border-[#E2E8F0] shadow-xs space-y-2 text-xs">
+              <span className="text-[11px] font-bold text-[#334155] uppercase tracking-wider block">
+                What happens immediately after payment:
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px]">
+                <div className="p-2.5 rounded-xl bg-blue-50/60 border border-blue-100/80">
+                  <span className="font-bold text-[#0F172A] block">1. Officer Dispatched</span>
+                  <span className="text-slate-500 text-[10px]">Officer Rahul K. assigned with live GPS telemetry &amp; OTP</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-blue-50/60 border border-blue-100/80">
+                  <span className="font-bold text-[#0F172A] block">2. Doorstep Inspection</span>
+                  <span className="text-slate-500 text-[10px]">Receiver tests hardware before releasing ₹{declaredValue.toLocaleString('en-IN')} escrow</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-blue-50/60 border border-blue-100/80">
+                  <span className="font-bold text-[#0F172A] block">3. Billable Tax Invoice</span>
+                  <span className="text-slate-500 text-[10px]">Official 2-page GST Tax Invoice &amp; AWB slip generated instantly</span>
+                </div>
+              </div>
             </div>
 
             {/* Razorpay Error Alert */}
@@ -1538,7 +1683,7 @@ function CreateShipmentContent() {
                   ) : (
                     <>
                       <Lock className="w-4 h-4 text-white" />
-                      <span>Pay ₹{activeTierBreakdown.totalUpfront} via Razorpay</span>
+                      <span>Pay ₹{activeTierBreakdown.totalUpfront.toLocaleString('en-IN')} via Razorpay</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
