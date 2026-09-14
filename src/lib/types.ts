@@ -31,8 +31,9 @@ export type ItemCategory =
   | 'OTHER';
 
 export type DeliveryServiceTier =
-  | 'STANDARD_GROUND'
+  | 'FASTEST_AIR_RUSH'
   | 'PRIORITY_EXPRESS'
+  | 'STANDARD_GROUND'
   | 'SAME_DAY_DIRECT';
 
 export interface InspectionChecklist {

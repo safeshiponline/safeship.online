@@ -97,7 +97,14 @@ export function generateConsignmentNotePDF(deal: SafeDeal): jsPDF {
   doc.setFont('helvetica', 'bold');
   doc.text('SERVICE TIER:', metaX, y + 6);
   doc.setTextColor(royalBlue[0], royalBlue[1], royalBlue[2]);
-  const tierName = deal.serviceTier === 'PRIORITY_EXPRESS' ? 'SafeShip Priority Express (Next-Day Air)' : deal.serviceTier === 'SAME_DAY_DIRECT' ? 'Same-Day Direct Fleet' : 'Standard Ground Linehaul';
+  const tierName =
+    deal.serviceTier === 'FASTEST_AIR_RUSH'
+      ? 'SafeShip SuperFast Air (24-36h Next-Flight Air)'
+      : deal.serviceTier === 'PRIORITY_EXPRESS'
+      ? 'SafeShip Priority Express (Air Linehaul)'
+      : deal.serviceTier === 'SAME_DAY_DIRECT'
+      ? 'Same-Day Direct Fleet (Sub-6h)'
+      : 'Standard Ground Linehaul';
   doc.text(tierName, metaX + 32, y + 6);
 
   doc.setTextColor(navy[0], navy[1], navy[2]);

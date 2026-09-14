@@ -31,10 +31,13 @@ export interface TierPriceBreakdown {
   distanceSurcharge: number;
   insuranceFee: number;
   verificationFee: number;
+  escrowCustodyFee?: number;
   totalUpfront: number;
   isAvailable: boolean;
   disabledReason?: string;
   highlight?: boolean;
+  badge?: string;
+  speedBadge?: string;
 }
 
 // Master Directory of Major Indian Hubs and Postal Zones
@@ -216,10 +219,44 @@ export function calculateRoadDistance(originPin: string, destPin: string): RoadR
  * Calibrates realistic, distance-aware transit time estimation across India.
  * Never promises unrealistic next-day delivery across long intercity corridors.
  */
+/**
+ * Calibrates realistic, distance-aware transit time estimation across India.
+ * Metro-to-Metro corridors (e.g. South to Delhi) support guaranteed 24–36h Next-Flight Air.
+ */
 export function calculateEstimatedTransitTime(
   distanceKm: number,
   tier: DeliveryServiceTier
 ): { transitTime: string; estimatedDays: string } {
+  if (tier === 'FASTEST_AIR_RUSH') {
+    if (distanceKm <= 70) {
+      return {
+        transitTime: 'Within 3–4 Hours Today (Dedicated Express Runner)',
+        estimatedDays: 'Same-Day'
+      };
+    } else if (distanceKm <= 350) {
+      return {
+        transitTime: 'Within 18–24 Hours (Next-Morning 11:00 AM)',
+        estimatedDays: 'Next-Day'
+      };
+    } else if (distanceKm <= 800) {
+      return {
+        transitTime: 'Within 24 Hours (Next-Day Priority Air)',
+        estimatedDays: '1 Day'
+      };
+    } else if (distanceKm <= 1500) {
+      return {
+        transitTime: '24–36 Hours from Pickup (Direct Flight Corridor)',
+        estimatedDays: '1–2 Days'
+      };
+    } else {
+      // Long distance intercity e.g. South India to Delhi (2,200+ km)
+      return {
+        transitTime: '24–36 Hours from Pickup (Guaranteed Next-Flight Air Cargo)',
+        estimatedDays: '24–36 Hours'
+      };
+    }
+  }
+
   if (tier === 'SAME_DAY_DIRECT') {
     if (distanceKm <= 70) {
       return {
@@ -241,23 +278,23 @@ export function calculateEstimatedTransitTime(
       };
     } else if (distanceKm <= 350) {
       return {
-        transitTime: '1–2 Business Days from Pickup (Express Corridor)',
+        transitTime: '1–2 Business Days from Pickup (Express Linehaul)',
         estimatedDays: '1–2 Days'
       };
     } else if (distanceKm <= 800) {
       return {
-        transitTime: '2–3 Business Days from Pickup (Linehaul Express)',
-        estimatedDays: '2–3 Days'
+        transitTime: '2 Business Days from Pickup (Intercity Express)',
+        estimatedDays: '2 Days'
       };
     } else if (distanceKm <= 1500) {
       return {
-        transitTime: '3–4 Business Days from Pickup (Dedicated Air Express)',
-        estimatedDays: '3–4 Days'
+        transitTime: '2–3 Business Days from Pickup (Commercial Air Cargo)',
+        estimatedDays: '2–3 Days'
       };
     } else {
       return {
-        transitTime: '4–5 Business Days from Pickup (Air Cargo Linehaul)',
-        estimatedDays: '4–5 Days'
+        transitTime: '2–3 Business Days from Pickup (Commercial Air Linehaul)',
+        estimatedDays: '2–3 Days'
       };
     }
   }
@@ -280,21 +317,22 @@ export function calculateEstimatedTransitTime(
     };
   } else if (distanceKm <= 1500) {
     return {
-      transitTime: '4–6 Business Days from Pickup (Surface Freight)',
-      estimatedDays: '4–6 Days'
+      transitTime: '4–5 Business Days from Pickup (Surface Freight)',
+      estimatedDays: '4–5 Days'
     };
   } else {
     return {
-      transitTime: '6–8 Business Days from Pickup (National Linehaul)',
-      estimatedDays: '6–8 Days'
+      transitTime: '5–7 Business Days from Pickup (National Linehaul)',
+      estimatedDays: '5–7 Days'
     };
   }
 }
 
 /**
- * Computes Mathematical Tier Pricing for all 3 Service Levels
+ * Computes Mathematical Tier Pricing for all 4 Service Levels
  * 100% Consistent Breakdown:
- * Total Upfront = Base Shipping Fee + Distance Surcharge + Insurance (0.5% if > ₹5000) + Doorstep Verification (₹0 promo)
+ * Total Upfront = Base Linehaul Fee + Distance Surcharge + Doorstep Open-Box Inspection + Cargo Insurance + Escrow Custody
+ * High-value merchandise receives white-glove doorstep inspection, video verification, and escrow settlement.
  */
 export function calculateTierPricing(
   distanceKm: number,
@@ -304,75 +342,107 @@ export function calculateTierPricing(
   const isExchange = mode === 'exchange';
   const value = Math.max(0, Number(declaredValue) || 0);
 
-  // Cargo Insurance: 0.5% of value if value > ₹5,000, min flat ₹29
-  // (e.g. ₹65,000 iPhone = ₹325 insurance cover)
-  const insuranceFee = value > 5000 ? Math.round(value * 0.005) : 29;
-  const verificationFee = 0; // ₹0 Promotional SafeShip Moat Launch
+  // Cargo Insurance: 0.5% of value if value > ₹5,000, min flat ₹49
+  // (e.g. ₹65,000 iPhone = ₹325 insurance cover; ₹1,00,000 MacBook = ₹500)
+  const insuranceFee = value > 5000 ? Math.round(value * 0.005) : 49;
 
-  // 1. STANDARD GROUND
-  const groundBase = isExchange ? 249 : 149;
-  const groundSurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.35) : 0;
-  const groundTotal = groundBase + groundSurcharge + insuranceFee + verificationFee;
-  const groundSLA = calculateEstimatedTransitTime(distanceKm, 'STANDARD_GROUND');
+  // 1. FASTEST AIR RUSH (Next-Flight Priority Air Cargo + White-Glove Open-Box Inspection)
+  const fastestBase = isExchange ? 849 : 599;
+  const fastestSurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.78) : 0;
+  const fastestVerification = 249; // Bonded officer doorstep unboxing, 15-min inspection, IMEI test & video record
+  const fastestEscrowCustody = 99; // Tamper-evident vault seal & digital escrow handshake
+  const fastestTotal = fastestBase + fastestSurcharge + fastestVerification + fastestEscrowCustody + insuranceFee;
+  const fastestSLA = calculateEstimatedTransitTime(distanceKm, 'FASTEST_AIR_RUSH');
 
-  // 2. PRIORITY EXPRESS
-  const priorityBase = isExchange ? 449 : 299;
-  const prioritySurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.65) : 0;
-  const priorityTotal = priorityBase + prioritySurcharge + insuranceFee + verificationFee;
+  // 2. PRIORITY EXPRESS (Commercial Air & Expressway Corridor Linehaul)
+  const priorityBase = isExchange ? 549 : 349;
+  const prioritySurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.52) : 0;
+  const priorityVerification = 199; // Bonded officer doorstep open-box verification
+  const priorityTotal = priorityBase + prioritySurcharge + priorityVerification + insuranceFee;
   const prioritySLA = calculateEstimatedTransitTime(distanceKm, 'PRIORITY_EXPRESS');
 
-  // 3. SAME-DAY DIRECT (Intra-city only <= 70 km)
-  const sameDayBase = isExchange ? 399 : 199;
+  // 3. STANDARD GROUND (Surface Freight Linehaul Network)
+  const groundBase = isExchange ? 349 : 199;
+  const groundSurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.32) : 0;
+  const groundVerification = 149; // Standard doorstep verification
+  const groundTotal = groundBase + groundSurcharge + groundVerification + insuranceFee;
+  const groundSLA = calculateEstimatedTransitTime(distanceKm, 'STANDARD_GROUND');
+
+  // 4. SAME-DAY DIRECT (Intra-city only <= 70 km)
+  const sameDayBase = isExchange ? 449 : 249;
   const sameDayAvailable = distanceKm <= 70;
-  const sameDaySurcharge = sameDayAvailable && distanceKm > 10 ? Math.round((distanceKm - 10) * 3.5) : 0;
-  const sameDayTotal = sameDayAvailable ? sameDayBase + sameDaySurcharge + insuranceFee + verificationFee : 0;
+  const sameDaySurcharge = sameDayAvailable && distanceKm > 10 ? Math.round((distanceKm - 10) * 4.0) : 0;
+  const sameDayVerification = 149;
+  const sameDayTotal = sameDayAvailable
+    ? sameDayBase + sameDaySurcharge + sameDayVerification + insuranceFee
+    : 0;
   const sameDaySLA = calculateEstimatedTransitTime(distanceKm, 'SAME_DAY_DIRECT');
 
   return {
-    STANDARD_GROUND: {
-      tier: 'STANDARD_GROUND',
-      tierLabel: 'Standard Ground',
-      tagline: 'Economical Surface Linehaul Network',
-      transitTime: groundSLA.transitTime,
-      estimatedDays: groundSLA.estimatedDays,
-      baseFee: groundBase,
-      distanceSurcharge: groundSurcharge,
+    FASTEST_AIR_RUSH: {
+      tier: 'FASTEST_AIR_RUSH',
+      tierLabel: 'SafeShip SuperFast Air',
+      tagline: 'Guaranteed Next-Flight Air Linehaul & White-Glove Open-Box Escrow',
+      transitTime: fastestSLA.transitTime,
+      estimatedDays: fastestSLA.estimatedDays,
+      baseFee: fastestBase,
+      distanceSurcharge: fastestSurcharge,
       insuranceFee,
-      verificationFee,
-      totalUpfront: groundTotal,
+      verificationFee: fastestVerification,
+      escrowCustodyFee: fastestEscrowCustody,
+      totalUpfront: fastestTotal,
       isAvailable: true,
-      highlight: false
+      highlight: true,
+      badge: '⚡ FASTEST DELIVERY',
+      speedBadge: distanceKm > 1500 ? '24–36H NEXT-FLIGHT AIR' : 'WITHIN 24H'
     },
     PRIORITY_EXPRESS: {
       tier: 'PRIORITY_EXPRESS',
       tierLabel: 'SafeShip Priority Express',
-      tagline: 'Dedicated Air & Expressway Corridor',
+      tagline: 'Commercial Air & Expressway Corridor Linehaul',
       transitTime: prioritySLA.transitTime,
       estimatedDays: prioritySLA.estimatedDays,
       baseFee: priorityBase,
       distanceSurcharge: prioritySurcharge,
       insuranceFee,
-      verificationFee,
+      verificationFee: priorityVerification,
       totalUpfront: priorityTotal,
       isAvailable: true,
-      highlight: true
+      highlight: false,
+      badge: 'MOST POPULAR'
+    },
+    STANDARD_GROUND: {
+      tier: 'STANDARD_GROUND',
+      tierLabel: 'SafeShip Standard Ground',
+      tagline: 'Economical Surface Freight Linehaul Network',
+      transitTime: groundSLA.transitTime,
+      estimatedDays: groundSLA.estimatedDays,
+      baseFee: groundBase,
+      distanceSurcharge: groundSurcharge,
+      insuranceFee,
+      verificationFee: groundVerification,
+      totalUpfront: groundTotal,
+      isAvailable: true,
+      highlight: false,
+      badge: 'ECONOMICAL'
     },
     SAME_DAY_DIRECT: {
       tier: 'SAME_DAY_DIRECT',
       tierLabel: 'SafeShip Same-Day Direct',
-      tagline: 'Dedicated Point-to-Point Fleet Dispatch',
+      tagline: 'Dedicated Point-to-Point Intra-City Fleet Dispatch',
       transitTime: sameDaySLA.transitTime,
       estimatedDays: sameDaySLA.estimatedDays,
       baseFee: sameDayBase,
       distanceSurcharge: sameDaySurcharge,
       insuranceFee,
-      verificationFee,
+      verificationFee: sameDayVerification,
       totalUpfront: sameDayTotal,
       isAvailable: sameDayAvailable,
       disabledReason: !sameDayAvailable
-        ? `Intercity distance (${distanceKm} km) exceeds same-day fleet perimeter (max 70 km). Choose Priority Express.`
+        ? `Intercity distance (${distanceKm} km) exceeds same-day fleet perimeter (max 70 km). Choose SuperFast Air for 24–36h next-flight delivery.`
         : undefined,
-      highlight: false
+      highlight: false,
+      badge: 'LOCAL METRO'
     }
   };
 }

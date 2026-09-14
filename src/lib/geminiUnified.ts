@@ -177,11 +177,16 @@ export async function getAICustomerSupportResponse(
 SafeShip provides trusted Open-Box Delivery and 2-Way Item Exchanges across India.
 Core Operating Principles:
 1. "What you see is what you receive" — SafeShip protects both buyers and sellers through verified doorstep unboxing and hardware inspection.
-2. Zero Escrow Lock: SafeShip ONLY collects the minimal delivery charges upfront (₹349 for 1-Way Delivery, ₹548 for 2-Way Roundtrip Exchange). Product capital is NEVER locked upfront in escrow.
-3. Open-Box Inspection: When courier partner Rahul K. arrives, the recipient is granted a physical inspection window to unbox, inspect cosmetic condition, verify serial/IMEI, and test the item before making any payment.
-4. Doorstep Settlement: After approving the product, the recipient completes payment via dynamic UPI QR generated on the courier terminal.
-5. Zero-Risk Return: If the item is defective, counterfeit, or misrepresented, the recipient rejects it immediately. Product charge is ₹0, and the item is returned safely to the sender.
-6. 2-Way Item Swap: For peer-to-peer exchanges (e.g., trading a phone for a laptop), courier audits both items simultaneously at the doorstep before completing the exchange.
+2. Delivery Tiers & Fast Delivery:
+   - SafeShip SuperFast Air (⚡ Fastest Delivery): Guaranteed 24–36h transit via next-flight commercial cargo + white-glove doorstep open-box inspection. For long-haul corridors like South India (Bengaluru, Chennai, Hyderabad, Kochi) to Delhi NCR (~2,200 km), cost is ~₹2,500–₹2,990 all-inclusive (or ~₹1,450 each on a 50/50 fee split) covering flight cargo space, bonded delivery officer inspection, tamper-evident security packaging, and declared value transit insurance.
+   - SafeShip Priority Express: 2–3 business days via commercial air linehaul (~₹1,700–₹2,000 for South to Delhi).
+   - SafeShip Standard Ground: 5–7 business days surface freight (~₹1,200–₹1,370).
+   - Same-Day Direct: Sub-6 hours dedicated fleet (intra-city <= 70 km).
+3. Zero Escrow Lock: SafeShip ONLY collects the minimal delivery charges upfront. Product capital is NEVER locked upfront without verification.
+4. Open-Box Inspection: When courier partner Rahul K. arrives, the recipient is granted a 15-minute physical inspection window to unbox, inspect cosmetic condition, verify serial/IMEI, and test the item before making any payment.
+5. Doorstep Settlement: After approving the product, the recipient completes payment via dynamic UPI QR generated on the courier terminal.
+6. Zero-Risk Return: If the item is defective, counterfeit, or misrepresented, the recipient rejects it immediately. Product charge is ₹0, and the item is returned safely to the sender.
+7. 2-Way Item Swap: For peer-to-peer exchanges (e.g., trading a phone for a laptop), courier audits both items simultaneously at the doorstep before completing the exchange.
 Communication Style & Persona:
 - Professional, reassuring, clear, polite, and institutional (Stripe & Apple quality).
 - Always speak as SafeShip Support / Customer Care. NEVER refer to yourself as an AI, bot, or "SafeShip AI".
@@ -215,20 +220,23 @@ Communication Style & Persona:
 
   // Rule-based fallback
   const q = userQuestion.toLowerCase();
+  if (q.includes('delhi') || q.includes('south') || q.includes('fast delivery') || q.includes('fastest')) {
+    return 'For fast delivery from South India (e.g. Bengaluru, Chennai, Hyderabad) to Delhi NCR (~2,200 km), SafeShip offers "SuperFast Air Rush" with guaranteed 24–36 hour transit via next commercial flight. The total upfront cost is ~₹2,890–₹2,970 (or ~₹1,450 per person on our 50/50 fee split). Unlike standard closed-box couriers, this includes dedicated white-glove doorstep open-box inspection by a bonded officer, IMEI verification, tamper-evident security vault sealing, and 100% escrow protection!';
+  }
   if (q.includes('open box') || q.includes('open-box') || q.includes('inspect')) {
-    return 'SafeShip Open-Box Delivery allows you to physically unbox and inspect the hardware with courier Rahul K. before paying a single rupee for the product! You verify the screen, IMEI, and accessories at your doorstep. You pay only after you are 100% satisfied.';
+    return 'SafeShip Open-Box Delivery allows you to physically unbox and inspect the hardware with our bonded courier before paying a single rupee for the merchandise! You verify the screen, IMEI, and power state at your doorstep. Payment is collected via UPI only after you approve the item.';
   }
   if (q.includes('fee') || q.includes('charge') || q.includes('price') || q.includes('cost')) {
-    return 'SafeShip only charges delivery fees upfront: ₹349 for 1-Way Delivery (₹249 delivery + ₹29 insurance) and ₹548 for 2-Way Item Exchange (₹499 roundtrip + ₹49 insurance). The product cost is collected only at your doorstep upon accepted open-box inspection!';
+    return 'SafeShip provides transparent tier pricing based on distance: Same-Day Direct (₹349+ for local city), Standard Ground (₹599+), Priority Air (₹899+), and SuperFast Air (₹1,899+ for 24–36h next-flight cargo). All tiers include white-glove doorstep open-box verification and cargo insurance!';
   }
   if (q.includes('exchange') || q.includes('swap')) {
-    return 'With SafeShip 2-Way Exchange, courier partner Rahul K. audits both items simultaneously at the doorstep. Any agreed trade difference is paid via UPI on the spot. If either party is unsatisfied, both retain their original devices with ₹0 product charges.';
+    return 'With SafeShip 2-Way Exchange, our courier officer audits both items simultaneously at the doorstep. Any agreed trade difference is paid via UPI on the spot. If either party is unsatisfied, both retain their original devices with ₹0 product charges.';
   }
   if (q.includes('fake') || q.includes('scam') || q.includes('reject') || q.includes('return')) {
-    return 'If the item does not match specifications or shows undisclosed defects, you can reject the parcel right in front of the courier. You are charged ₹0 for the item, and the courier returns it safely to the sender.';
+    return 'If the item does not match specifications or shows undisclosed defects, you can reject the parcel right in front of the courier officer. You are charged ₹0 for the item, and the courier returns it safely to the sender in a tamper-evident vault bag.';
   }
 
-  return 'Hello! Welcome to SafeShip Support. We are here to assist with Open-Box inspections, upfront delivery pricing (₹349 1-way, ₹548 2-way swap), live driver tracking, or doorstep UPI payments. How can we help you today?';
+  return 'Hello! Welcome to SafeShip Support. We are here to assist with Open-Box inspections, SuperFast Air (24–36h) delivery, live courier tracking, or doorstep UPI payments. How can we help you today?';
 }
 
 /**

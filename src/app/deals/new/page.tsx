@@ -92,7 +92,7 @@ function CreateShipmentContent() {
   const [distanceKm, setDistanceKm] = useState<number>(0);
   const [routeCorridor, setRouteCorridor] = useState<string>('Local Intra-City Transit');
   const [isIntercity, setIsIntercity] = useState<boolean>(false);
-  const [selectedTier, setSelectedTier] = useState<DeliveryServiceTier>('PRIORITY_EXPRESS');
+  const [selectedTier, setSelectedTier] = useState<DeliveryServiceTier>('FASTEST_AIR_RUSH');
 
   const [packageWeight, setPackageWeight] = useState<string>('');
   const [openBoxEnabled, setOpenBoxEnabled] = useState<boolean>(true);
@@ -311,12 +311,12 @@ function CreateShipmentContent() {
   // Compute 3 Service Tiers using mathematical formula engine
   const effectiveDistance = distanceKm > 0 ? distanceKm : 25;
   const tierPricing = calculateTierPricing(effectiveDistance, declaredValue, mode);
-  const activeTierBreakdown = tierPricing[selectedTier] || tierPricing.PRIORITY_EXPRESS;
+  const activeTierBreakdown = tierPricing[selectedTier] || tierPricing.FASTEST_AIR_RUSH;
 
   // Auto-adjust selected tier if Same-Day is disabled due to intercity distance
   useEffect(() => {
     if (selectedTier === 'SAME_DAY_DIRECT' && !tierPricing.SAME_DAY_DIRECT.isAvailable) {
-      setSelectedTier('PRIORITY_EXPRESS');
+      setSelectedTier('FASTEST_AIR_RUSH');
     }
   }, [selectedTier, tierPricing.SAME_DAY_DIRECT.isAvailable]);
 
@@ -1323,13 +1323,18 @@ function CreateShipmentContent() {
               </p>
             </div>
 
-            {/* 3 SERVICE TIERS SELECTION */}
+            {/* 4 SERVICE TIERS SELECTION */}
             <div className="space-y-2.5">
-              <span className="text-xs font-bold text-[#334155] uppercase tracking-wider block">
-                Choose SafeShip Logistics Service Tier:
-              </span>
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-[#334155] uppercase tracking-wider block">
+                  Choose SafeShip Logistics Service Tier:
+                </span>
+                <span className="text-[11px] text-[#0066FF] font-semibold">
+                  Doorstep Open-Box Inspection Included
+                </span>
+              </div>
 
-              {(['PRIORITY_EXPRESS', 'STANDARD_GROUND', 'SAME_DAY_DIRECT'] as DeliveryServiceTier[]).map((tierKey) => {
+              {(['FASTEST_AIR_RUSH', 'PRIORITY_EXPRESS', 'STANDARD_GROUND', 'SAME_DAY_DIRECT'] as DeliveryServiceTier[]).map((tierKey) => {
                 const tier = tierPricing[tierKey];
                 const isSelected = selectedTier === tierKey;
                 const isDisabled = !tier.isAvailable;
@@ -1344,7 +1349,7 @@ function CreateShipmentContent() {
                       isDisabled
                         ? 'bg-slate-50/80 border-slate-200 opacity-60 cursor-not-allowed'
                         : isSelected
-                        ? 'bg-blue-50/40 border-[#0066FF] ring-2 ring-blue-200 shadow-xs'
+                        ? 'bg-blue-50/50 border-[#0066FF] ring-2 ring-blue-300 shadow-sm'
                         : 'bg-white border-[#E2E8F0] hover:border-blue-300'
                     }`}
                   >
@@ -1354,14 +1359,24 @@ function CreateShipmentContent() {
                           <span className={`text-sm font-bold ${isSelected ? 'text-[#0066FF]' : 'text-[#0F172A]'}`}>
                             {tier.tierLabel}
                           </span>
-                          {tier.highlight && (
-                            <span className="text-[10px] font-bold bg-[#0066FF] text-white px-2 py-0.2 rounded-full">
-                              RECOMMENDED
+                          {tier.badge && !isDisabled && (
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                tierKey === 'FASTEST_AIR_RUSH'
+                                  ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xs'
+                                  : tierKey === 'PRIORITY_EXPRESS'
+                                  ? 'bg-blue-600 text-white'
+                                  : tierKey === 'SAME_DAY_DIRECT'
+                                  ? 'bg-purple-600 text-white'
+                                  : 'bg-slate-100 text-slate-700 border border-slate-200'
+                              }`}
+                            >
+                              {tier.badge}
                             </span>
                           )}
-                          {tierKey === 'SAME_DAY_DIRECT' && !isDisabled && (
-                            <span className="text-[10px] font-bold bg-purple-600 text-white px-2 py-0.2 rounded-full">
-                              SUB-6 HOURS
+                          {tier.speedBadge && !isDisabled && (
+                            <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full border border-blue-200">
+                              {tier.speedBadge}
                             </span>
                           )}
                         </div>
@@ -1400,35 +1415,50 @@ function CreateShipmentContent() {
             {/* UPFRONT MATHEMATICAL PRICE BREAKDOWN */}
             <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3">
               <div className="flex items-center justify-between pb-2.5 border-b border-[#F1F5F9]">
-                <h3 className="text-xs font-bold text-[#64748B] uppercase tracking-wider">
-                  Upfront Booking Breakdown ({activeTierBreakdown.tierLabel})
-                </h3>
-                <span className="text-[11px] font-bold text-[#0066FF]">
+                <div>
+                  <h3 className="text-xs font-bold text-[#64748B] uppercase tracking-wider">
+                    Upfront Booking Breakdown ({activeTierBreakdown.tierLabel})
+                  </h3>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    Covers bonded flight cargo, white-glove doorstep inspection & transit insurance
+                  </p>
+                </div>
+                <span className="text-[11px] font-bold text-[#0066FF] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
                   {distanceKm || effectiveDistance} km Route
                 </span>
               </div>
 
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between text-[#475569]">
-                  <span>Base Courier Fee:</span>
+                  <span>Base Linehaul Air/Freight Charge:</span>
                   <span className="font-semibold text-[#0F172A]">₹{activeTierBreakdown.baseFee}</span>
                 </div>
 
                 <div className="flex justify-between text-[#475569]">
-                  <span>Road Corridor Distance Surcharge:</span>
+                  <span>National Corridor Distance Surcharge:</span>
                   <span className="font-semibold text-[#0F172A]">₹{activeTierBreakdown.distanceSurcharge}</span>
                 </div>
 
                 <div className="flex justify-between text-[#475569]">
-                  <span>
-                    Cargo Insurance ({declaredValue > 5000 ? '0.5% cover for ₹' + declaredValue.toLocaleString('en-IN') : 'Standard ₹5,000 cover'}):
+                  <span>Doorstep Open-Box Inspection & Testing:</span>
+                  <span className="font-semibold text-emerald-700">
+                    ₹{activeTierBreakdown.verificationFee}{' '}
+                    <span className="text-[10px] font-normal text-slate-400">(Bonded officer live unbox)</span>
                   </span>
-                  <span className="font-semibold text-[#0F172A]">₹{activeTierBreakdown.insuranceFee}</span>
                 </div>
 
+                {activeTierBreakdown.escrowCustodyFee ? (
+                  <div className="flex justify-between text-[#475569]">
+                    <span>Tamper-Evident Security Seal & Escrow Lock:</span>
+                    <span className="font-semibold text-[#0F172A]">₹{activeTierBreakdown.escrowCustodyFee}</span>
+                  </div>
+                ) : null}
+
                 <div className="flex justify-between text-[#475569]">
-                  <span>Doorstep Open-Box Inspection:</span>
-                  <span className="font-bold text-emerald-600">Free Promotion (₹0)</span>
+                  <span>
+                    Comprehensive Cargo Insurance ({declaredValue > 5000 ? '0.5% for ₹' + declaredValue.toLocaleString('en-IN') : 'Flat ₹5,000 cover'}):
+                  </span>
+                  <span className="font-semibold text-[#0F172A]">₹{activeTierBreakdown.insuranceFee}</span>
                 </div>
 
                 <div className="pt-3 border-t border-[#E2E8F0] flex justify-between items-baseline">
@@ -1437,7 +1467,7 @@ function CreateShipmentContent() {
                       Total Upfront Courier Booking Fee:
                     </span>
                     <span className="text-[10px] text-emerald-600 font-semibold">
-                      Paid now via Razorpay &bull; Escrow held until doorstep approval
+                      Paid now via Razorpay &bull; Product price held in escrow until doorstep approval
                     </span>
                   </div>
                   <span className="text-2xl font-black text-[#0066FF]">
@@ -1454,7 +1484,7 @@ function CreateShipmentContent() {
                 <span>Zero Escrow Risk Protocol</span>
               </div>
               <p className="text-[11px] leading-relaxed text-[#1E40AF]">
-                You are paying only <strong>₹{activeTierBreakdown.totalUpfront}</strong> upfront today for bonded transit. The merchandise amount (<strong>₹{declaredValue.toLocaleString('en-IN')}</strong>) will be settled by the receiver upon inspecting the parcel at their doorstep. If rejected during open-box audit, the item is returned safely at ₹0 merchandise liability.
+                You are paying only <strong>₹{activeTierBreakdown.totalUpfront}</strong> upfront today for bonded transit and white-glove open-box verification. The merchandise amount (<strong>₹{declaredValue.toLocaleString('en-IN')}</strong>) will be settled by the receiver upon inspecting the parcel at their doorstep. If rejected during open-box audit, the item is returned safely at ₹0 merchandise liability.
               </p>
             </div>
 

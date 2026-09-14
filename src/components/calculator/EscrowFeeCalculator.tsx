@@ -8,7 +8,7 @@ import { ShieldCheck, Truck, ArrowRight, ArrowLeftRight } from '../common/Icons'
 
 export const EscrowFeeCalculator: React.FC = () => {
   const [itemPrice, setItemPrice] = useState<number>(45000);
-  const [deliveryTier, setDeliveryTier] = useState<'HYPERLOCAL_SAME_DAY' | 'METRO_NEXT_DAY' | 'INTERCITY_INSURED'>('HYPERLOCAL_SAME_DAY');
+  const [deliveryTier, setDeliveryTier] = useState<'HYPERLOCAL_SAME_DAY' | 'FASTEST_AIR_RUSH' | 'METRO_NEXT_DAY' | 'INTERCITY_INSURED'>('FASTEST_AIR_RUSH');
   const [feeSplit, setFeeSplit] = useState<FeeSplitOption>('SPLIT_50_50');
 
   const breakdown = calculateEscrowBreakdown({
@@ -29,7 +29,7 @@ export const EscrowFeeCalculator: React.FC = () => {
           Calculate Your Deal & 50/50 Fee Split
         </h2>
         <p className="text-slate-600 text-xs sm:text-sm mt-1">
-          Designed for Indian deals on OLX, Facebook Marketplace, and Reddit. No hidden wire fees, zero scam risk.
+          Designed for high-value P2P deals across India. Guaranteed Doorstep Open-Box Inspection + Escrow Settlement.
         </p>
       </div>
 
@@ -61,22 +61,26 @@ export const EscrowFeeCalculator: React.FC = () => {
 
           {/* Delivery Tier */}
           <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
-              Insured Courier Delivery Tier
-            </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
+                Insured Delivery & Open-Box Inspection Tier
+              </label>
+              <span className="text-[10px] font-bold text-emerald-600">Doorstep Inspection Included</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 type="button"
-                onClick={() => setDeliveryTier('HYPERLOCAL_SAME_DAY')}
-                className={`p-3 rounded-xl border text-center transition ${
-                  deliveryTier === 'HYPERLOCAL_SAME_DAY'
-                    ? 'border-blue-600 bg-blue-50 text-blue-900 font-bold ring-1 ring-blue-600'
+                onClick={() => setDeliveryTier('FASTEST_AIR_RUSH')}
+                className={`p-3 rounded-xl border text-center transition relative ${
+                  deliveryTier === 'FASTEST_AIR_RUSH'
+                    ? 'border-blue-600 bg-blue-50 text-blue-900 font-bold ring-2 ring-blue-500 shadow-xs'
                     : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                <div className="text-xs font-bold">Hyperlocal 2-Wheeler</div>
-                <div className="text-[11px] text-blue-700 font-semibold mt-0.5">₹199</div>
-                <div className="text-[9px] text-slate-400">Within Metro City</div>
+                <div className="text-[10px] font-bold uppercase text-amber-600 mb-0.5">⚡ FASTEST</div>
+                <div className="text-xs font-bold">SuperFast Air</div>
+                <div className="text-[11px] text-blue-700 font-bold mt-0.5">₹1,899</div>
+                <div className="text-[9px] text-slate-500">24–36h Next-Flight</div>
               </button>
 
               <button
@@ -84,13 +88,29 @@ export const EscrowFeeCalculator: React.FC = () => {
                 onClick={() => setDeliveryTier('METRO_NEXT_DAY')}
                 className={`p-3 rounded-xl border text-center transition ${
                   deliveryTier === 'METRO_NEXT_DAY'
-                    ? 'border-blue-600 bg-blue-50 text-blue-900 font-bold ring-1 ring-blue-600'
+                    ? 'border-blue-600 bg-blue-50 text-blue-900 font-bold ring-2 ring-blue-500'
                     : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                <div className="text-xs font-bold">Metro Express</div>
-                <div className="text-[11px] text-blue-700 font-semibold mt-0.5">₹349</div>
-                <div className="text-[9px] text-slate-400">Same / Next Day</div>
+                <div className="text-[10px] font-bold uppercase text-blue-600 mb-0.5">AIR LINEHAUL</div>
+                <div className="text-xs font-bold">Priority Air</div>
+                <div className="text-[11px] text-blue-700 font-bold mt-0.5">₹899</div>
+                <div className="text-[9px] text-slate-500">2–3 Days Corridor</div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDeliveryTier('HYPERLOCAL_SAME_DAY')}
+                className={`p-3 rounded-xl border text-center transition ${
+                  deliveryTier === 'HYPERLOCAL_SAME_DAY'
+                    ? 'border-blue-600 bg-blue-50 text-blue-900 font-bold ring-2 ring-blue-500'
+                    : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                <div className="text-[10px] font-bold uppercase text-purple-600 mb-0.5">LOCAL FLEET</div>
+                <div className="text-xs font-bold">Same-Day Direct</div>
+                <div className="text-[11px] text-blue-700 font-bold mt-0.5">₹349</div>
+                <div className="text-[9px] text-slate-500">Sub-6h Intra-City</div>
               </button>
 
               <button
@@ -98,13 +118,14 @@ export const EscrowFeeCalculator: React.FC = () => {
                 onClick={() => setDeliveryTier('INTERCITY_INSURED')}
                 className={`p-3 rounded-xl border text-center transition ${
                   deliveryTier === 'INTERCITY_INSURED'
-                    ? 'border-blue-600 bg-blue-50 text-blue-900 font-bold ring-1 ring-blue-600'
+                    ? 'border-blue-600 bg-blue-50 text-blue-900 font-bold ring-2 ring-blue-500'
                     : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                <div className="text-xs font-bold">Intercity Secure</div>
-                <div className="text-[11px] text-blue-700 font-semibold mt-0.5">₹699</div>
-                <div className="text-[9px] text-slate-400">Across India</div>
+                <div className="text-[10px] font-bold uppercase text-slate-500 mb-0.5">SURFACE</div>
+                <div className="text-xs font-bold">Standard Ground</div>
+                <div className="text-[11px] text-blue-700 font-bold mt-0.5">₹599</div>
+                <div className="text-[9px] text-slate-500">5–7 Days Freight</div>
               </button>
             </div>
           </div>

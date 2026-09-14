@@ -2,7 +2,7 @@ import { EscrowBreakdown, FeeSplitOption } from './types';
 
 export interface CalculationInput {
   itemPrice: number; // In INR ₹
-  deliveryTier?: 'HYPERLOCAL_SAME_DAY' | 'METRO_NEXT_DAY' | 'INTERCITY_INSURED';
+  deliveryTier?: 'HYPERLOCAL_SAME_DAY' | 'FASTEST_AIR_RUSH' | 'METRO_NEXT_DAY' | 'INTERCITY_INSURED';
   feeSplitOption: FeeSplitOption;
   milestoneAdvancePercent?: number; // default 30%
 }
@@ -21,14 +21,16 @@ export function calculateEscrowBreakdown(input: CalculationInput): EscrowBreakdo
   const gstOnEscrowFee = Math.round(basePlatformFee * 0.18);
   const platformEscrowFee = basePlatformFee + gstOnEscrowFee;
 
-  // Courier delivery charge (includes ₹50,000 transit cover)
-  let shippingInsuranceFee = 199;
+  // Courier delivery charge (includes white-glove doorstep open-box inspection & transit insurance)
+  let shippingInsuranceFee = 899;
   if (input.deliveryTier === 'HYPERLOCAL_SAME_DAY') {
-    shippingInsuranceFee = 199;
-  } else if (input.deliveryTier === 'METRO_NEXT_DAY') {
     shippingInsuranceFee = 349;
+  } else if (input.deliveryTier === 'FASTEST_AIR_RUSH') {
+    shippingInsuranceFee = 1899; // Next-Flight Priority Air + White-Glove Open Box Inspection
+  } else if (input.deliveryTier === 'METRO_NEXT_DAY') {
+    shippingInsuranceFee = 899; // Priority Air Linehaul (2-3 Days)
   } else if (input.deliveryTier === 'INTERCITY_INSURED') {
-    shippingInsuranceFee = 699;
+    shippingInsuranceFee = 599; // Standard Ground Linehaul
   }
 
   const totalFee = platformEscrowFee + shippingInsuranceFee;

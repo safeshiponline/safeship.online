@@ -221,7 +221,13 @@ function TrackingContent({
               </span>
               {deal.serviceTier && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#0066FF] border border-blue-200">
-                  {deal.serviceTier === 'PRIORITY_EXPRESS' ? 'SafeShip Priority Express' : deal.serviceTier === 'SAME_DAY_DIRECT' ? 'SafeShip Same-Day Direct' : 'Standard Ground'}
+                  {deal.serviceTier === 'FASTEST_AIR_RUSH'
+                    ? '⚡ SafeShip SuperFast Air (Next-Flight)'
+                    : deal.serviceTier === 'PRIORITY_EXPRESS'
+                    ? 'SafeShip Priority Express'
+                    : deal.serviceTier === 'SAME_DAY_DIRECT'
+                    ? 'SafeShip Same-Day Direct'
+                    : 'Standard Ground'}
                 </span>
               )}
               {isExchange && (
