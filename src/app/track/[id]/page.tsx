@@ -1,8 +1,8 @@
 'use client';
 
-import React, { use, useState, useEffect } from 'react';
+import React, { use, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getDealById } from '@/lib/store';
 import { SafeDeal } from '@/lib/types';
 import { formatINR } from '@/lib/escrowCalculator';
@@ -24,7 +24,10 @@ import {
   Package,
   MapPin,
   Search,
-  FileText
+  FileText,
+  X,
+  Sparkles,
+  Clock
 } from '@/components/common/Icons';
 import { downloadConsignmentNotePDF } from '@/lib/pdfGenerator';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
@@ -34,13 +37,30 @@ export default function StandaloneTrackingPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center text-xs font-semibold text-[#64748B]">Loading SafeShip Telemetry...</div>}>
+      <TrackingContent params={params} />
+    </Suspense>
+  );
+}
+
+function TrackingContent({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isNewlyBooked = searchParams.get('booked') === 'true';
+  const paymentId = searchParams.get('payment_id');
+
   const resolvedParams = use(params);
   const [deal, setDeal] = useState<SafeDeal | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [searchId, setSearchId] = useState('');
   const [copied, setCopied] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [showPostPaymentModal, setShowPostPaymentModal] = useState(isNewlyBooked);
 
   const handleDownloadAWB = () => {
     if (!deal) return;
@@ -91,8 +111,8 @@ export default function StandaloneTrackingPage({
             <Package className="w-8 h-8" />
           </div>
 
-          <span className="text-xs font-mono font-bold text-[#64748B] bg-[#F1F5F9] px-2.5 py-1 rounded-full border border-[#E2E8F0] mb-2">
-            ID: {resolvedParams.id}
+          <span className="text-[11px] font-bold uppercase tracking-widest text-[#0066FF] mb-1">
+            Tracking Query
           </span>
 
           <h1 className="text-xl font-black text-[#0F172A] tracking-tight">
@@ -187,6 +207,7 @@ export default function StandaloneTrackingPage({
       <Navbar />
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-6 sm:py-9 space-y-6">
+        
         {/* Top Header Card */}
         <div className="rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-7 shadow-xs flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1.5 max-w-2xl">
@@ -200,22 +221,25 @@ export default function StandaloneTrackingPage({
               </span>
               {deal.serviceTier && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-[#0066FF] border border-blue-200">
-                  {deal.serviceTier === 'PRIORITY_EXPRESS' ? 'Priority Express Next-Day' : deal.serviceTier === 'SAME_DAY_DIRECT' ? 'Same-Day Direct' : 'Standard Ground'}
+                  {deal.serviceTier === 'PRIORITY_EXPRESS' ? 'SafeShip Priority Express' : deal.serviceTier === 'SAME_DAY_DIRECT' ? 'SafeShip Same-Day Direct' : 'Standard Ground'}
                 </span>
               )}
               {isExchange && (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300 flex items-center gap-1">
                   <ArrowLeftRight className="w-3 h-3 text-amber-600" />
-                  <span>2-Way Item Swap (₹548 pre-paid)</span>
+                  <span>2-Way Item Swap</span>
                 </span>
               )}
             </div>
+
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#0F172A]">
               {deal.title}
             </h1>
+
             <p className="text-xs text-[#64748B]">
-              Valuation: <strong className="text-[#0F172A] font-bold">{formatINR(deal.declaredValue)}</strong> &bull; Upfront Delivery Fee: <strong className="text-emerald-600">₹{deal.upfrontPaid || upfrontFee} (PAID)</strong> &bull; Balance collected upon open-box approval
+              Valuation: <strong className="text-[#0F172A] font-bold">{formatINR(deal.declaredValue)}</strong> &bull; Upfront Delivery Fee: <strong className="text-emerald-600">₹{deal.upfrontPaid || upfrontFee} (PAID)</strong> &bull; Escrow payable upon doorstep inspection
             </p>
+
             {deal.routeCorridor && (
               <p className="text-[11px] text-[#0066FF] font-semibold">
                 Route Corridor: {deal.routeCorridor} {deal.distanceKm ? `(${deal.distanceKm} km)` : ''}
@@ -226,13 +250,23 @@ export default function StandaloneTrackingPage({
           <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
+              onClick={() => setShowPostPaymentModal(true)}
+              className="px-3.5 py-2 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100/70 text-xs font-bold text-[#0066FF] flex items-center gap-1.5 transition cursor-pointer shadow-2xs active:scale-95"
+              title="View Post-Payment Chain of Custody & Settlement Lifecycle"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#0066FF]" />
+              <span>What Happens Next?</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handleDownloadAWB}
               disabled={downloadingPdf}
               className="px-3.5 py-2 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-[#0F172A] flex items-center gap-1.5 transition cursor-pointer shadow-2xs active:scale-95 disabled:opacity-50"
               title="Download Official Air Waybill Consignment Note (A4 PDF)"
             >
               <FileText className="w-3.5 h-3.5 text-[#0066FF]" />
-              <span>{downloadingPdf ? 'Generating PDF...' : 'AWB Consignment Note (PDF)'}</span>
+              <span>{downloadingPdf ? 'Generating...' : 'AWB Note (PDF)'}</span>
             </button>
 
             <Link
@@ -258,10 +292,10 @@ export default function StandaloneTrackingPage({
         <div className="rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-xs">
           <div className="grid grid-cols-5 gap-2 text-center">
             {[
-              { num: 1, title: 'Booking Confirmed', desc: `₹${deal.upfrontPaid || upfrontFee} Fee Paid` },
-              { num: 2, title: 'Courier Dispatched', desc: 'Bonded Officer' },
-              { num: 3, title: 'Pickup Verified', desc: 'Tamper Seal Applied' },
-              { num: 4, title: 'In Transit', desc: 'GPS Telemetry Live' },
+              { num: 1, title: 'Booking Confirmed', desc: `₹${deal.upfrontPaid || upfrontFee} Paid` },
+              { num: 2, title: 'Officer Dispatched', desc: 'Rahul K. Assigned' },
+              { num: 3, title: 'Pickup Verified', desc: 'Tamper Bag Sealed' },
+              { num: 4, title: 'Linehaul Transit', desc: 'Highway Telemetry' },
               { num: 5, title: 'Open-Box Inspection', desc: 'Verify & Settle' },
             ].map((st) => (
               <div key={st.num} className="space-y-1.5">
@@ -287,6 +321,67 @@ export default function StandaloneTrackingPage({
           routeCorridor={deal.routeCorridor}
           isIntercity={deal.isIntercity}
         />
+
+        {/* WHAT HAPPENS NEXT: Post-Payment Custody & Escrow Settlement Roadmap */}
+        <div className="rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <h2 className="text-sm font-bold text-[#0F172A]">
+                Post-Payment Chain of Custody &amp; Settlement Roadmap
+              </h2>
+            </div>
+            <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full">
+              Full Escrow Protection Active
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center justify-center">1</span>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">Completed</span>
+              </div>
+              <h3 className="text-xs font-bold text-[#0F172A]">Upfront Fee Paid</h3>
+              <p className="text-[11px] text-[#64748B] leading-relaxed">
+                Courier charge (₹{deal.upfrontPaid || upfrontFee}) confirmed via Razorpay ({paymentId || deal.escrowVault.paymentMethodUsed}). Bonded officer Rahul K. dispatched to pickup address.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 text-xs font-bold flex items-center justify-center">2</span>
+                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">In Progress</span>
+              </div>
+              <h3 className="text-xs font-bold text-[#0F172A]">Pickup &amp; Barcode Sealing</h3>
+              <p className="text-[11px] text-[#64748B] leading-relaxed">
+                Officer physically verifies model and serial number against declaration, photographs device, and seals it in heavy-gauge tamper bag <strong className="text-slate-800">SSP-TAMPER-SAFE</strong>.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-800 text-xs font-bold flex items-center justify-center">3</span>
+                <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">Monitored</span>
+              </div>
+              <h3 className="text-xs font-bold text-[#0F172A]">Linehaul Telemetry</h3>
+              <p className="text-[11px] text-[#64748B] leading-relaxed">
+                Tracked in real time via highway linehaul GPS corridor. Cargo insured under policy {deal.insurancePolicyNumber || 'POL-ICICI-LOMBARD'}.
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-800 text-xs font-bold flex items-center justify-center">4</span>
+                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Doorstep</span>
+              </div>
+              <h3 className="text-xs font-bold text-[#0F172A]">Open-Box &amp; Escrow Settlement</h3>
+              <p className="text-[11px] text-[#64748B] leading-relaxed">
+                Officer unboxes parcel. Buyer takes 10 mins to test. If approved, buyer pays ₹{deal.declaredValue.toLocaleString('en-IN')} / enters OTP. If rejected, returned with ₹0 product charge.
+              </p>
+            </div>
+          </div>
+        </div>
 
         {/* Two-Column Details */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -333,6 +428,103 @@ export default function StandaloneTrackingPage({
           </div>
         </div>
       </main>
+
+      {/* POST-PAYMENT HIGH-TRUST CUSTODY & HANDSHAKE MODAL */}
+      {showPostPaymentModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white text-[#0F172A] rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-sm">
+                  ✓
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-slate-900">
+                    Booking Confirmed &amp; Custody Assigned
+                  </h3>
+                  <span className="text-[11px] text-emerald-600 font-semibold">
+                    Payment Verified via Razorpay &bull; Order #{deal.id}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPostPaymentModal(false)}
+                className="text-slate-400 hover:text-slate-900 p-1 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="text-xs text-[#475569] space-y-3.5 leading-relaxed">
+              <p>
+                Your upfront booking charge of <strong>₹{deal.upfrontPaid || upfrontFee}</strong> has been secured. Here is the exact chain-of-custody process underway:
+              </p>
+
+              <div className="space-y-3">
+                <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-[#0066FF] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</div>
+                  <div>
+                    <h4 className="font-bold text-[#0F172A] text-xs">Bonded Officer Dispatched</h4>
+                    <p className="text-[11px] text-[#64748B] mt-0.5">
+                      SafeShip custody officer <strong>Rahul K.</strong> (KA 03 HY 4012) is en route to <em>{deal.seller.pickupAddress}</em>. Automated SMS tracking has been triggered.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-[#0066FF] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</div>
+                  <div>
+                    <h4 className="font-bold text-[#0F172A] text-xs">Pickup Audit &amp; Tamper Sealing</h4>
+                    <p className="text-[11px] text-[#64748B] mt-0.5">
+                      The officer verifies cosmetic condition, serial number, and accessories against the uploaded photo declaration before sealing the parcel in heavy-gauge security bag <strong>SSP-TAMPER-SAFE</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-[#0066FF] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</div>
+                  <div>
+                    <h4 className="font-bold text-[#0F172A] text-xs">Road Freight Linehaul Telemetry</h4>
+                    <p className="text-[11px] text-[#64748B] mt-0.5">
+                      Package travels through the <strong>{deal.routeCorridor || 'National Express Highway Corridor'}</strong> with GPS telemetry and ICICI Lombard cargo underwriting.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">4</div>
+                  <div>
+                    <h4 className="font-bold text-emerald-950 text-xs">Doorstep Open-Box Inspection &amp; Escrow Release</h4>
+                    <p className="text-[11px] text-emerald-800 mt-0.5">
+                      At delivery, the receiver is granted 10 minutes to unbox and test the item. Only when satisfied does the buyer share the 6-digit release OTP or pay the merchandise amount (<strong>₹{deal.declaredValue.toLocaleString('en-IN')}</strong>). If rejected, the item is returned safely at <strong>₹0 product liability</strong>.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleDownloadAWB}
+                className="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-[#0F172A] flex items-center gap-1.5 transition cursor-pointer"
+              >
+                <FileText className="w-3.5 h-3.5 text-[#0066FF]" />
+                <span>Download Consignment Note</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setShowPostPaymentModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs transition cursor-pointer shadow-md shadow-[#0066FF]/20"
+              >
+                Continue to Live Telemetry &rarr;
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <EnterpriseFooter />
     </div>

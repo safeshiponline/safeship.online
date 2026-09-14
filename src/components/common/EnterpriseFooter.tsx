@@ -190,12 +190,18 @@ export const EnterpriseFooter: React.FC = () => {
                 <div className="text-[10px] text-slate-400">Underwritten by ICICI Lombard &amp; New India</div>
               </button>
 
-              <div className="flex gap-2 pt-1 text-[11px] text-slate-400">
-                <button type="button" onClick={() => setActiveModal('TERMS')} className="hover:text-white underline cursor-pointer">Terms</button>
+              <div className="flex flex-wrap gap-2 pt-1 text-[11px] text-slate-400">
+                <Link href="/terms" className="hover:text-white underline">Terms</Link>
                 <span>&bull;</span>
-                <button type="button" onClick={() => setActiveModal('PRIVACY')} className="hover:text-white underline cursor-pointer">Privacy</button>
+                <Link href="/privacy" className="hover:text-white underline">Privacy</Link>
                 <span>&bull;</span>
-                <Link href="/admin" className="hover:text-white">Admin Tribunal</Link>
+                <Link href="/insurance" className="hover:text-white underline">Insurance</Link>
+                <span>&bull;</span>
+                <Link href="/nodal-escrow" className="hover:text-white underline">RBI Escrow</Link>
+                <span>&bull;</span>
+                <Link href="/faq" className="hover:text-white underline">FAQ</Link>
+                <span>&bull;</span>
+                <Link href="/admin" className="hover:text-white">Admin</Link>
               </div>
             </div>
           </div>

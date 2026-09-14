@@ -26,6 +26,7 @@ export interface TierPriceBreakdown {
   tierLabel: string;
   tagline: string;
   transitTime: string;
+  estimatedDays: string;
   baseFee: number;
   distanceSurcharge: number;
   insuranceFee: number;
@@ -212,6 +213,85 @@ export function calculateRoadDistance(originPin: string, destPin: string): RoadR
 }
 
 /**
+ * Calibrates realistic, distance-aware transit time estimation across India.
+ * Never promises unrealistic next-day delivery across long intercity corridors.
+ */
+export function calculateEstimatedTransitTime(
+  distanceKm: number,
+  tier: DeliveryServiceTier
+): { transitTime: string; estimatedDays: string } {
+  if (tier === 'SAME_DAY_DIRECT') {
+    if (distanceKm <= 70) {
+      return {
+        transitTime: 'Within 4–6 Hours Today from Pickup',
+        estimatedDays: 'Same-Day'
+      };
+    }
+    return {
+      transitTime: 'Exceeds same-day 70 km fleet perimeter',
+      estimatedDays: 'N/A'
+    };
+  }
+
+  if (tier === 'PRIORITY_EXPRESS') {
+    if (distanceKm <= 70) {
+      return {
+        transitTime: 'By Tomorrow 2:00 PM (Within 24h of Pickup)',
+        estimatedDays: '1 Day'
+      };
+    } else if (distanceKm <= 350) {
+      return {
+        transitTime: '1–2 Business Days from Pickup (Express Corridor)',
+        estimatedDays: '1–2 Days'
+      };
+    } else if (distanceKm <= 800) {
+      return {
+        transitTime: '2–3 Business Days from Pickup (Linehaul Express)',
+        estimatedDays: '2–3 Days'
+      };
+    } else if (distanceKm <= 1500) {
+      return {
+        transitTime: '3–4 Business Days from Pickup (Dedicated Air Express)',
+        estimatedDays: '3–4 Days'
+      };
+    } else {
+      return {
+        transitTime: '4–5 Business Days from Pickup (Air Cargo Linehaul)',
+        estimatedDays: '4–5 Days'
+      };
+    }
+  }
+
+  // STANDARD_GROUND
+  if (distanceKm <= 70) {
+    return {
+      transitTime: '1–2 Business Days from Pickup',
+      estimatedDays: '1–2 Days'
+    };
+  } else if (distanceKm <= 350) {
+    return {
+      transitTime: '2–3 Business Days from Pickup',
+      estimatedDays: '2–3 Days'
+    };
+  } else if (distanceKm <= 800) {
+    return {
+      transitTime: '3–4 Business Days from Pickup',
+      estimatedDays: '3–4 Days'
+    };
+  } else if (distanceKm <= 1500) {
+    return {
+      transitTime: '4–6 Business Days from Pickup (Surface Freight)',
+      estimatedDays: '4–6 Days'
+    };
+  } else {
+    return {
+      transitTime: '6–8 Business Days from Pickup (National Linehaul)',
+      estimatedDays: '6–8 Days'
+    };
+  }
+}
+
+/**
  * Computes Mathematical Tier Pricing for all 3 Service Levels
  * 100% Consistent Breakdown:
  * Total Upfront = Base Shipping Fee + Distance Surcharge + Insurance (0.5% if > ₹5000) + Doorstep Verification (₹0 promo)
@@ -229,31 +309,32 @@ export function calculateTierPricing(
   const insuranceFee = value > 5000 ? Math.round(value * 0.005) : 29;
   const verificationFee = 0; // ₹0 Promotional SafeShip Moat Launch
 
-  // 1. STANDARD GROUND (2-4 Days)
-  // Base: ₹149 (₹249 for exchange). Surcharge: ₹0.35/km over 50 km
+  // 1. STANDARD GROUND
   const groundBase = isExchange ? 249 : 149;
   const groundSurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.35) : 0;
   const groundTotal = groundBase + groundSurcharge + insuranceFee + verificationFee;
+  const groundSLA = calculateEstimatedTransitTime(distanceKm, 'STANDARD_GROUND');
 
-  // 2. PRIORITY EXPRESS (Next-Day Air / Corridor Express)
-  // Base: ₹299 (₹449 for exchange). Surcharge: ₹0.65/km over 50 km
+  // 2. PRIORITY EXPRESS
   const priorityBase = isExchange ? 449 : 299;
   const prioritySurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.65) : 0;
   const priorityTotal = priorityBase + prioritySurcharge + insuranceFee + verificationFee;
+  const prioritySLA = calculateEstimatedTransitTime(distanceKm, 'PRIORITY_EXPRESS');
 
-  // 3. SAME-DAY DIRECT (Sub-6 Hours) - Intra-city only (<= 70 km)
-  // Base: ₹199 (₹399 for exchange). Surcharge: ₹3.50/km over 10 km
+  // 3. SAME-DAY DIRECT (Intra-city only <= 70 km)
   const sameDayBase = isExchange ? 399 : 199;
   const sameDayAvailable = distanceKm <= 70;
   const sameDaySurcharge = sameDayAvailable && distanceKm > 10 ? Math.round((distanceKm - 10) * 3.5) : 0;
   const sameDayTotal = sameDayAvailable ? sameDayBase + sameDaySurcharge + insuranceFee + verificationFee : 0;
+  const sameDaySLA = calculateEstimatedTransitTime(distanceKm, 'SAME_DAY_DIRECT');
 
   return {
     STANDARD_GROUND: {
       tier: 'STANDARD_GROUND',
       tierLabel: 'Standard Ground',
       tagline: 'Economical Surface Linehaul Network',
-      transitTime: distanceKm > 500 ? '3-4 Business Days' : '2-3 Business Days',
+      transitTime: groundSLA.transitTime,
+      estimatedDays: groundSLA.estimatedDays,
       baseFee: groundBase,
       distanceSurcharge: groundSurcharge,
       insuranceFee,
@@ -265,8 +346,9 @@ export function calculateTierPricing(
     PRIORITY_EXPRESS: {
       tier: 'PRIORITY_EXPRESS',
       tierLabel: 'SafeShip Priority Express',
-      tagline: 'Next-Day Dedicated Air & Expressway Corridor',
-      transitTime: 'Guaranteed Next-Day by 2:00 PM',
+      tagline: 'Dedicated Air & Expressway Corridor',
+      transitTime: prioritySLA.transitTime,
+      estimatedDays: prioritySLA.estimatedDays,
       baseFee: priorityBase,
       distanceSurcharge: prioritySurcharge,
       insuranceFee,
@@ -279,7 +361,8 @@ export function calculateTierPricing(
       tier: 'SAME_DAY_DIRECT',
       tierLabel: 'SafeShip Same-Day Direct',
       tagline: 'Dedicated Point-to-Point Fleet Dispatch',
-      transitTime: 'Within 4-6 Hours Today',
+      transitTime: sameDaySLA.transitTime,
+      estimatedDays: sameDaySLA.estimatedDays,
       baseFee: sameDayBase,
       distanceSurcharge: sameDaySurcharge,
       insuranceFee,
