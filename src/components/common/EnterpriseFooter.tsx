@@ -50,7 +50,7 @@ export const EnterpriseFooter: React.FC = () => {
 
           {/* Search Form */}
           <div className="w-full max-w-md">
-            <form onSubmit={handlePincodeSearch} className="flex items-center gap-2">
+            <form onSubmit={handlePincodeSearch} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <div className="relative flex-1">
                 <input
                   type="text"
@@ -58,12 +58,12 @@ export const EnterpriseFooter: React.FC = () => {
                   value={pincodeInput}
                   onChange={(e) => setPincodeInput(e.target.value.replace(/\D/g, ''))}
                   placeholder="Enter 6-Digit PIN (e.g. 560001, 110001)"
-                  className="w-full px-4 py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-xs font-mono text-white placeholder:text-slate-500 focus:border-[#0066FF] focus:outline-hidden transition"
+                  className="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-xs font-mono text-white placeholder:text-slate-500 focus:border-[#0066FF] focus:outline-hidden transition"
                 />
               </div>
               <button
                 type="submit"
-                className="px-5 py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/30 transition active:scale-95 cursor-pointer whitespace-nowrap"
+                className="px-4 py-2.5 sm:py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/30 transition active:scale-95 cursor-pointer whitespace-nowrap text-center"
               >
                 Check SLA &rarr;
               </button>

@@ -7,57 +7,45 @@ interface SafeShipLogoProps {
 
 export const SafeShipLogo: React.FC<SafeShipLogoProps> = ({ className = 'w-9 h-9', size }) => (
   <svg
-    width={size}
-    height={size}
+    width={size || 40}
+    height={size || 40}
     viewBox="0 0 48 48"
     fill="none"
     xmlns="http://www.w3.org/2000/svg"
     className={className}
   >
-    {/* Outer Rounded Isometric Cube Container */}
-    <rect width="48" height="48" rx="14" fill="url(#blue_grad)" />
-    <defs>
-      <linearGradient id="blue_grad" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#0066FF" />
-        <stop offset="1" stopColor="#0047CC" />
-      </linearGradient>
-    </defs>
+    {/* Outer Rounded Squircle Container */}
+    <rect width="48" height="48" rx="13" fill="#0066FF" />
     
-    {/* Isometric Cube Faces with White Geometric Edges */}
-    <g transform="translate(4, 4) scale(0.83)">
-      {/* Top Face */}
-      <path
-        d="M24 6L39 15L24 24L9 15L24 6Z"
-        fill="white"
-        fillOpacity="0.95"
-        stroke="white"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      {/* Left Face */}
-      <path
-        d="M9 16.5L23 25V41L9 32.5V16.5Z"
-        fill="white"
-        fillOpacity="0.75"
-        stroke="white"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      {/* Right Face */}
-      <path
-        d="M25 25L39 16.5V32.5L25 41V25Z"
-        fill="white"
-        fillOpacity="0.85"
-        stroke="white"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      {/* Center Cube Core */}
-      <path
-        d="M24 16L31 20.5V29.5L24 34L17 29.5V20.5L24 16Z"
-        fill="#0052FF"
-        fillOpacity="0.9"
-      />
-    </g>
+    {/* Outer Hexagon */}
+    <path
+      d="M24 9L37.5 16.8V32.4L24 40.2L10.5 32.4V16.8L24 9Z"
+      fill="white"
+    />
+
+    {/* Subtle 3D Bevel Facets */}
+    <path
+      d="M24 9L37.5 16.8L30 21.2L24 17.7L18 21.2L10.5 16.8L24 9Z"
+      fill="#FFFFFF"
+    />
+    <path
+      d="M10.5 16.8L18 21.2V27.9L10.5 32.4V16.8Z"
+      fill="#E0E7FF"
+    />
+    <path
+      d="M37.5 16.8L30 21.2V27.9L37.5 32.4V16.8Z"
+      fill="#F1F5F9"
+    />
+    <path
+      d="M24 40.2L10.5 32.4L18 27.9L24 31.4L30 27.9L37.5 32.4L24 40.2Z"
+      fill="#CBD5E1"
+    />
+
+    {/* Center Hexagonal Aperture (matches background blue) */}
+    <path
+      d="M24 18L30 21.5V28.5L24 32L18 28.5V21.5L24 18Z"
+      fill="#0066FF"
+    />
   </svg>
 );
+

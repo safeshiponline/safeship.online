@@ -46,19 +46,23 @@ export function generateConsignmentNotePDF(deal: SafeDeal): jsPDF {
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
-  doc.text('SafeShip', margin + 6, margin + 10);
+  doc.text('SafeShip', margin + 6, margin + 9);
 
-  doc.setFontSize(8);
+  doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
-  doc.text('PREMIUM HIGH-TRUST LOGISTICS & ESCROW NODAL INFRASTRUCTURE', margin + 6, margin + 15);
+  doc.text('STANDARD DELIVERY CONSIGNMENT NOTE & TAX INVOICE', margin + 6, margin + 14);
+  doc.text('RBI COMPLIANT NODAL ESCROW • ICICI TRUSTEE VAULT • 100% OPEN-BOX VERIFIED', margin + 6, margin + 18);
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text('OFFICIAL AIR WAYBILL (AWB)', margin + contentWidth - 6, margin + 10, { align: 'right' });
+  doc.setFontSize(10.5);
+  doc.text('TAX INVOICE / AIR WAYBILL (AWB)', margin + contentWidth - 6, margin + 9, { align: 'right' });
 
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.text(`AWB DOCKET: #${deal.id.toUpperCase()}`, margin + contentWidth - 6, margin + 15, { align: 'right' });
+  doc.text(`AWB NO: #${deal.id.toUpperCase()} • INV-SS-${deal.id.toUpperCase()}`, margin + contentWidth - 6, margin + 14, { align: 'right' });
+  doc.setTextColor(180, 240, 200);
+  doc.setFont('helvetica', 'bold');
+  doc.text('STATUS: PAID & ESCROW SECURED', margin + contentWidth - 6, margin + 18, { align: 'right' });
 
   let y = margin + 27;
 
@@ -334,10 +338,21 @@ export function generateConsignmentNotePDF(deal: SafeDeal): jsPDF {
   return doc;
 }
 
-export function downloadConsignmentNotePDF(deal: SafeDeal) {
+export function downloadConsignmentNotePDF(deal: SafeDeal, customFilename?: string): boolean {
   try {
     const doc = generateConsignmentNotePDF(deal);
-    doc.save(`SafeShip_AWB_${deal.id.toUpperCase()}.pdf`);
+    const sanitize = (name?: string) =>
+      (name || '')
+        .trim()
+        .replace(/[^a-zA-Z0-9]/g, '_')
+        .replace(/_+/g, '_')
+        .slice(0, 20) || 'Party';
+
+    const sender = sanitize(deal.seller?.name || 'Sender');
+    const receiver = sanitize(deal.buyer?.name || 'Receiver');
+    const defaultFilename = `SafeShip_Receipt_${sender}_to_${receiver}_${deal.id.toUpperCase()}.pdf`;
+
+    doc.save(customFilename || defaultFilename);
     return true;
   } catch (err) {
     console.error('Failed to generate PDF:', err);

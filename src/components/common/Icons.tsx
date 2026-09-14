@@ -549,6 +549,23 @@ export const ChevronRight = ({ className = 'w-5 h-5', size, ...props }: IconProp
   </svg>
 );
 
+export const ChevronDown = ({ className = 'w-5 h-5', size, ...props }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+);
+
 export const Phone = ({ className = 'w-5 h-5', size, ...props }: IconProps) => (
   <svg
     width={size}
@@ -977,6 +994,25 @@ export const FileText = ({ className = 'w-5 h-5', size, ...props }: IconProps) =
   </svg>
 );
 
+export const Download = ({ className = 'w-5 h-5', size, ...props }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+    <polyline points="7 10 12 15 17 10" />
+    <line x1="12" x2="12" y1="15" y2="3" />
+  </svg>
+);
+
 export const ArrowLeft = ({ className = 'w-5 h-5', size, ...props }: IconProps) => (
   <svg
     width={size}
@@ -1087,3 +1123,48 @@ export const Watch = ({ className = 'w-5 h-5', size, ...props }: IconProps) => (
     <path d="M7.49 6.65l.85-4.41A2 2 0 0 1 10.3.62h3.4a2 2 0 0 1 1.96 1.62l.85 4.41" />
   </svg>
 );
+
+export const Building = ({ className = 'w-5 h-5', size, ...props }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <rect width="16" height="20" x="4" y="2" rx="2" ry="2" />
+    <path d="M9 22v-4h6v4" />
+    <path d="M8 6h.01" />
+    <path d="M16 6h.01" />
+    <path d="M12 6h.01" />
+    <path d="M12 10h.01" />
+    <path d="M12 14h.01" />
+    <path d="M16 10h.01" />
+    <path d="M16 14h.01" />
+    <path d="M8 10h.01" />
+    <path d="M8 14h.01" />
+  </svg>
+);
+
+export const Laptop = ({ className = 'w-5 h-5', size, ...props }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <path d="M20 16V7a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v9m16 0H4m16 0 1.28 2.55a1 1 0 0 1-.9 1.45H3.62a1 1 0 0 1-.9-1.45L4 16" />
+  </svg>
+);
+

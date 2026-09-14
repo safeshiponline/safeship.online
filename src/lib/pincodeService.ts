@@ -416,7 +416,7 @@ export function checkPincodeServiceability(pincode: string): {
     sameDayAvailable: isTier1or2,
     priorityExpressAvailable: true,
     slaNotes: isTier1or2
-      ? `Full 100% SafeShip Moat Active: Same-Day Direct (intra-city) & Priority Express Next-Day available from ${info.hubName}.`
+      ? `SafeShip Doorstep Verification Active: Same-Day Direct (intra-city) & Priority Express available from ${info.hubName}.`
       : `Regional Linehaul Active: Priority Express & Standard Ground available with doorstep verification via ${info.hubName}.`
   };
 }

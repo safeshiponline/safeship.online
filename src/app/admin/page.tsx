@@ -72,10 +72,10 @@ export default function AdminOpsPage() {
               <span className="p-2 rounded-xl bg-[#0066FF] text-white shadow-xs">
                 <Shield className="w-4 h-4" />
               </span>
-              <h1 className="text-xl font-black text-[#0F172A] tracking-tight">Institutional Custody & Escrow Arbitration Tribunal</h1>
+              <h1 className="text-xl font-black text-[#0F172A] tracking-tight">Custody &amp; Escrow Operations Console</h1>
             </div>
             <p className="text-xs text-[#64748B] mt-1">
-              RBI Section 10A Compliant Nodal Account • Razorpay Route Custody Settlement Ledger • Tier-1 P2P Judicial Arbitration
+              RBI Compliant Nodal Escrow Account &bull; ICICI Trustee Backed &bull; Multi-Corridor Settlement &amp; Dispute Desk
             </p>
           </div>
 
@@ -91,53 +91,53 @@ export default function AdminOpsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="rounded-3xl border border-[#CBD5E1] bg-white p-5 sm:p-6 shadow-xs">
             <div className="flex items-center justify-between text-xs text-[#64748B] mb-1.5">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#64748B]">RBI Nodal Vault Reserve</span>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#64748B]">Nodal Vault Reserve</span>
               <Lock className="w-4 h-4 text-[#0066FF]" />
             </div>
             <div className="text-2xl font-black font-mono text-[#0F172A] tracking-tight">
               {formatINR(totalVaultBalance)}
             </div>
-            <div className="text-[11px] text-zinc-500 mt-1">
+            <div className="text-[11px] text-[#64748B] mt-1">
               Held in segregated trustee escrow account
             </div>
           </div>
 
           <div className="rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-6 shadow-xs">
             <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">Gross Contract Volume</span>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">Total Consignment Value</span>
               <DollarSign className="w-4 h-4 text-zinc-700" />
             </div>
             <div className="text-2xl font-black font-mono text-zinc-950 tracking-tight">
               {formatINR(totalGrossVolume)}
             </div>
             <div className="text-[11px] text-zinc-500 mt-1">
-              Across national settlement corridors
+              Across national delivery corridors
             </div>
           </div>
 
           <div className="rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-6 shadow-xs">
             <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">Protocol Retained Fees</span>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">Platform Retained Fees</span>
               <ShieldCheck className="w-4 h-4 text-zinc-700" />
             </div>
             <div className="text-2xl font-black font-mono text-zinc-950 tracking-tight">
               {formatINR(totalPlatformRevenue)}
             </div>
             <div className="text-[11px] text-zinc-500 mt-1">
-              SafeShip 2% fee + 18% statutory GST
+              SafeShip fee + statutory GST
             </div>
           </div>
 
           <div className="rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-6 shadow-xs">
             <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">Tribunal Dockets</span>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">Active Disputes</span>
               <AlertTriangle className="w-4 h-4 text-rose-500" />
             </div>
             <div className="text-2xl font-black font-mono text-rose-600 tracking-tight">
               {disputedDeals.length}
             </div>
             <div className="text-[11px] text-zinc-500 mt-1">
-              Pending senior mediator arbitration
+              Pending review &amp; resolution
             </div>
           </div>
         </div>
@@ -159,10 +159,10 @@ export default function AdminOpsPage() {
                 </span>
                 <div>
                   <h2 className="text-base font-black text-zinc-950 tracking-tight">
-                    Active Arbitration Proceeding: {selectedDisputeDeal.title}
+                    Dispute Investigation: {selectedDisputeDeal.title}
                   </h2>
                   <div className="text-xs text-zinc-500 font-mono mt-0.5">
-                    Docket ID: {selectedDisputeDeal.dispute?.id} • Escrow Value: {formatINR(selectedDisputeDeal.declaredValue)} ({selectedDisputeDeal.city})
+                    Case ID: {selectedDisputeDeal.dispute?.id} &bull; Escrow Lot: {formatINR(selectedDisputeDeal.declaredValue)} ({selectedDisputeDeal.city})
                   </div>
                 </div>
               </div>
@@ -179,7 +179,7 @@ export default function AdminOpsPage() {
               {/* Box 1: Seller's Original Listing Claim */}
               <div className="rounded-2xl border border-zinc-200/80 bg-zinc-50/70 p-4 space-y-2">
                 <div className="text-[10px] font-mono font-bold text-zinc-400 uppercase tracking-wider">
-                  01 / Seller Technical Declaration
+                  01 / Seller Declaration
                 </div>
                 <div className="text-zinc-700 italic line-clamp-3">
                   &quot;{selectedDisputeDeal.description}&quot;
@@ -193,15 +193,15 @@ export default function AdminOpsPage() {
                     alt="Seller listing declaration"
                     className="h-36 w-full aspect-16/10 object-cover rounded-xl border border-zinc-200"
                   />
-                  <div className="text-[10px] text-zinc-400 text-center mt-1">Listing Ingestion Evidence</div>
+                  <div className="text-[10px] text-zinc-400 text-center mt-1">Listing Ingestion Record</div>
                 </div>
               </div>
 
-              {/* Box 2: Courier + AI Vision Audit */}
+              {/* Box 2: Courier + Diagnostic Audit */}
               <div className="rounded-2xl border border-[#CBD5E1] bg-[#F8FAFC] p-4 space-y-2">
                 <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[#64748B] uppercase tracking-wider">
-                  <span>02 / Dual-Factor Ingestion Audit</span>
-                  <span className="text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded border border-blue-200 font-bold">AI Verified</span>
+                  <span>02 / Courier Pickup Audit</span>
+                  <span className="text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded border border-blue-200 font-bold">Verified</span>
                 </div>
                 <div className="text-[#334155]">
                   Officer: <b className="text-[#0F172A]">{selectedDisputeDeal.tamperSeal?.inspectedBy || 'SafeShip Certified Officer'}</b>
@@ -211,12 +211,12 @@ export default function AdminOpsPage() {
                 </div>
                 <div className="text-[11px] text-[#475569] bg-white p-2 rounded-lg border border-[#E2E8F0] space-y-0.5 font-mono">
                   <div className="flex justify-between">
-                    <span>AI Model:</span>
-                    <span className="font-bold text-[#0F172A]">Gemini 2.0 Flash</span>
+                    <span>Diagnostic Test:</span>
+                    <span className="font-bold text-[#0F172A]">Hardware Boot Pass</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Authenticity:</span>
-                    <span className="font-bold text-[#0066FF]">99.4% Match</span>
+                    <span>Chassis Grade:</span>
+                    <span className="font-bold text-[#0066FF]">Grade A Mint</span>
                   </div>
                   <div className="flex justify-between">
                     <span>iCloud / FRP Lock:</span>
@@ -229,14 +229,14 @@ export default function AdminOpsPage() {
                     alt="Doorstep pickup audit"
                     className="h-32 w-full aspect-16/10 object-cover rounded-xl border border-[#CBD5E1]"
                   />
-                  <div className="text-[10px] text-[#64748B] text-center mt-1">AI Verified Ingestion Frame</div>
+                  <div className="text-[10px] text-[#64748B] text-center mt-1">Pickup Diagnostic Frame</div>
                 </div>
               </div>
 
               {/* Box 3: Buyer Dispute Claim */}
               <div className="rounded-2xl border border-rose-200/80 bg-rose-50/30 p-4 space-y-2">
                 <div className="text-[10px] font-mono font-bold text-rose-500 uppercase tracking-wider">
-                  03 / Counterparty Unboxing Affidavit
+                  03 / Buyer Doorstep Finding
                 </div>
                 <div className="text-rose-950 font-medium">
                   &quot;{selectedDisputeDeal.dispute?.reason}&quot;
@@ -258,7 +258,7 @@ export default function AdminOpsPage() {
             {/* Arbitrator Decision Box */}
             <div className="rounded-2xl border border-[#CBD5E1] bg-[#F8FAFC] p-5 space-y-3.5">
               <div className="text-[10px] font-mono font-bold text-[#64748B] uppercase tracking-wider">
-                Tribunal Judicial Findings & Adjudication Notes
+                Arbitration Findings &amp; Adjudication Notes
               </div>
 
               <textarea
@@ -274,7 +274,7 @@ export default function AdminOpsPage() {
                   onClick={() => handleResolve('RESOLVED_REFUND_BUYER')}
                   className="flex-1 min-w-[200px] py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-xs transition active:scale-98 cursor-pointer"
                 >
-                  Authorize Full Reversal to Counterparty ({formatINR(selectedDisputeDeal.escrowVault.depositedAmount)})
+                  Authorize Full Refund to Buyer ({formatINR(selectedDisputeDeal.escrowVault.depositedAmount)})
                 </button>
 
                 <button
@@ -282,7 +282,7 @@ export default function AdminOpsPage() {
                   onClick={() => handleResolve('RESOLVED_PAY_SELLER')}
                   className="flex-1 min-w-[200px] py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/20 transition active:scale-98 cursor-pointer"
                 >
-                  Disburse 100% Liquidity to Seller ({formatINR(selectedDisputeDeal.pricing.sellerShare.netPayout)})
+                  Disburse Escrow to Seller ({formatINR(selectedDisputeDeal.pricing.sellerShare.netPayout)})
                 </button>
 
                 <button
@@ -290,7 +290,7 @@ export default function AdminOpsPage() {
                   onClick={() => handleResolve('PARTIAL_SPLIT')}
                   className="flex-1 min-w-[200px] py-3 rounded-xl bg-white hover:bg-zinc-50 text-zinc-800 font-bold text-xs border border-zinc-200 shadow-xs transition active:scale-98 cursor-pointer"
                 >
-                  Arbitrate Symmetric 50/50 Settlement
+                  Approve 50/50 Mutual Settlement
                 </button>
               </div>
             </div>

@@ -20,9 +20,13 @@ import {
   Sparkles,
   QrCode,
   Truck,
-  Lock
+  Lock,
+  Download,
+  FileText
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
+import { downloadConsignmentNotePDF } from '@/lib/pdfGenerator';
+import { getDealById, getStoredDeals } from '@/lib/store';
 
 export default function OpenBoxPage() {
   return (
@@ -48,6 +52,22 @@ function OpenBoxContent() {
   const [selectedDisputeReason, setSelectedDisputeReason] = useState<string>('');
   const [isAccepted, setIsAccepted] = useState<boolean>(false);
   const [isReturned, setIsReturned] = useState<boolean>(false);
+  const [downloadingPdf, setDownloadingPdf] = useState<boolean>(false);
+
+  const handleDownloadReceipt = () => {
+    setDownloadingPdf(true);
+    try {
+      const dealId = isExchange ? 'SS-EXCH-992' : 'SS48291';
+      const stored = getDealById(dealId) || getStoredDeals()[0];
+      if (stored) {
+        downloadConsignmentNotePDF(stored);
+      }
+    } catch (err) {
+      console.error('Error generating receipt PDF:', err);
+    } finally {
+      setTimeout(() => setDownloadingPdf(false), 600);
+    }
+  };
 
   const {
     openCheckout,
@@ -133,18 +153,30 @@ function OpenBoxContent() {
             </div>
           </div>
 
-          <div className="mt-6 flex flex-col gap-2">
-            <Link
-              href="/"
-              className="w-full py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition text-center cursor-pointer"
+          <div className="mt-6 flex flex-col gap-2.5">
+            <button
+              type="button"
+              onClick={handleDownloadReceipt}
+              disabled={downloadingPdf}
+              className="w-full py-3.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md shadow-[#0066FF]/25 transition flex items-center justify-center gap-2 cursor-pointer active:scale-98"
             >
-              Back to Home
-            </Link>
+              <Download className="w-4 h-4" />
+              <span>{downloadingPdf ? 'Generating Delivery Receipt...' : 'Download Delivery Receipt & Tax Invoice (PDF)'}</span>
+            </button>
+
             <Link
               href="/track/SS48291"
-              className="w-full py-3 rounded-xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-sm hover:bg-[#F8FAFC] transition text-center cursor-pointer"
+              className="w-full py-3 rounded-xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs hover:bg-[#F8FAFC] transition text-center cursor-pointer flex items-center justify-center gap-1.5"
             >
-              View Delivery Receipt
+              <FileText className="w-3.5 h-3.5 text-[#0066FF]" />
+              <span>View Online Consignment Audit</span>
+            </Link>
+
+            <Link
+              href="/"
+              className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#475569] font-semibold text-xs transition text-center cursor-pointer"
+            >
+              Back to Home
             </Link>
           </div>
         </div>
@@ -210,8 +242,8 @@ function OpenBoxContent() {
           </Link>
 
           <div className="text-center">
-            <span className="text-xs font-bold text-purple-600 uppercase tracking-wider bg-purple-50 px-2.5 py-0.5 rounded-full border border-purple-200">
-              {isExchange ? '2-Way Swap Moat' : 'Open-Box Delivery (The Moat)'}
+            <span className="text-xs font-bold text-[#0066FF] uppercase tracking-wider bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+              {isExchange ? '2-Way Hardware Verification' : 'Open-Box Doorstep Verification'}
             </span>
             <h1 className="text-sm font-bold text-[#0F172A] mt-0.5">
               Order {isExchange ? '#SS-EXCH-992' : '#SS48291'}

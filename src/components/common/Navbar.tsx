@@ -25,7 +25,7 @@ export const Navbar: React.FC = () => {
         </Link>
 
         {/* Desktop Navigation Links */}
-        <nav className="hidden md:flex items-center gap-6 text-xs sm:text-sm font-semibold text-[#475569]">
+        <nav className="hidden md:flex items-center gap-5 text-xs sm:text-sm font-semibold text-[#475569]">
           <Link href="/" className="hover:text-[#0066FF] transition">
             Home
           </Link>
@@ -42,14 +42,15 @@ export const Navbar: React.FC = () => {
           <Link href="/track/SS48291" className="hover:text-[#0066FF] transition">
             Live Tracking
           </Link>
-          <Link href="/open-box" className="text-purple-600 hover:text-purple-700 font-bold transition flex items-center gap-1">
-            <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded uppercase font-black">Moat</span>
+          <Link href="/open-box" className="text-[#0066FF] hover:text-[#0052FF] font-bold transition flex items-center gap-1">
+            <ShieldCheck className="w-3.5 h-3.5" />
             <span>Open-Box Demo</span>
           </Link>
-          <Link href="/courier" className="hover:text-[#0066FF] transition">
-            Field Courier
+          <Link href="/profile" className="hover:text-[#0066FF] transition flex items-center gap-1">
+            <User className="w-3.5 h-3.5" />
+            <span>Profile</span>
           </Link>
-          <Link href="/admin" className="hover:text-[#0066FF] transition">
+          <Link href="/admin" className="text-[#64748B] hover:text-[#0F172A] transition text-xs">
             Admin
           </Link>
         </nav>
@@ -114,26 +115,34 @@ export const Navbar: React.FC = () => {
           <Link
             href="/open-box"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-purple-50/60 text-purple-900 text-xs font-bold"
+            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-blue-50/60 text-[#0066FF] text-xs font-bold"
           >
-            <ShieldCheck className="w-4 h-4 text-purple-600" />
-            <span>Open-Box Doorstep Inspection (The Moat)</span>
+            <ShieldCheck className="w-4 h-4 text-[#0066FF]" />
+            <span>Open-Box Doorstep Verification</span>
+          </Link>
+          <Link
+            href="/profile"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-slate-50 text-xs font-bold text-[#0F172A]"
+          >
+            <User className="w-4 h-4 text-[#0066FF]" />
+            <span>My Profile &amp; Consignments</span>
           </Link>
           <Link
             href="/courier"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-slate-50 text-xs font-bold text-[#0F172A]"
+            className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-slate-50 text-xs font-bold text-[#64748B]"
           >
             <Truck className="w-4 h-4 text-[#64748B]" />
-            <span>Field Courier App (Rahul K.)</span>
+            <span>Field Courier App</span>
           </Link>
           <Link
             href="/admin"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-slate-50 text-xs font-bold text-[#0F172A]"
+            className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-slate-50 text-xs font-bold text-[#64748B]"
           >
-            <User className="w-4 h-4 text-[#64748B]" />
-            <span>Escrow &amp; Dispute Ops Admin</span>
+            <ShieldCheck className="w-4 h-4 text-[#64748B]" />
+            <span>Arbitration &amp; Ops Admin</span>
           </Link>
         </div>
       )}
