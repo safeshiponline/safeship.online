@@ -341,38 +341,92 @@ export function calculateTierPricing(
 ): Record<DeliveryServiceTier, TierPriceBreakdown> {
   const isExchange = mode === 'exchange';
   const value = Math.max(0, Number(declaredValue) || 0);
+  const isUnder15k = value <= 15000;
 
-  // Cargo Insurance: 0.5% of value if value > ₹5,000, min flat ₹49
-  // (e.g. ₹65,000 iPhone = ₹325 insurance cover; ₹1,00,000 MacBook = ₹500)
-  const insuranceFee = value > 5000 ? Math.round(value * 0.005) : 49;
+  // Cargo Insurance:
+  // Under 15k: 0.5% of value if value > ₹5,000, min flat ₹29 (strictly preserved from previous model)
+  // Over 15k: 0.5% of value (e.g. ₹65,000 iPhone = ₹325; ₹1,00,000 MacBook = ₹500), min flat ₹49
+  const insuranceFee = isUnder15k
+    ? (value > 5000 ? Math.round(value * 0.005) : 29)
+    : (value > 5000 ? Math.round(value * 0.005) : 49);
 
-  // 1. FASTEST AIR RUSH (Next-Flight Priority Air Cargo + White-Glove Open-Box Inspection)
-  const fastestBase = isExchange ? 849 : 599;
-  const fastestSurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.78) : 0;
-  const fastestVerification = 249; // Bonded officer doorstep unboxing, 15-min inspection, IMEI test & video record
-  const fastestEscrowCustody = 99; // Tamper-evident vault seal & digital escrow handshake
+  // Rate parameters dynamically adjusted based on order value threshold (₹15,000)
+  let fastestBase: number;
+  let fastestSurcharge: number;
+  let fastestVerification: number;
+  let fastestEscrowCustody: number;
+
+  let priorityBase: number;
+  let prioritySurcharge: number;
+  let priorityVerification: number;
+
+  let groundBase: number;
+  let groundSurcharge: number;
+  let groundVerification: number;
+
+  let sameDayBase: number;
+  let sameDaySurcharge: number;
+  let sameDayVerification: number;
+  const sameDayAvailable = distanceKm <= 70;
+
+  if (isUnder15k) {
+    // =========================================================================
+    // ORDERS UNDER ₹15,000: EXACTLY LIKE BEFORE
+    // - Verification Fee: ₹0 (Promotional Doorstep Inspection Moat)
+    // - Escrow Custody: ₹0 (Included)
+    // - Standard Base Courier Rates: ₹149 Ground, ₹299 Priority, ₹199 Same-Day
+    // - Standard Distance Surcharges: ₹0.35/km Ground, ₹0.65/km Priority
+    // =========================================================================
+    fastestBase = isExchange ? 549 : 399;
+    fastestSurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.70) : 0;
+    fastestVerification = 0;
+    fastestEscrowCustody = 0;
+
+    priorityBase = isExchange ? 449 : 299;
+    prioritySurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.65) : 0;
+    priorityVerification = 0;
+
+    groundBase = isExchange ? 249 : 149;
+    groundSurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.35) : 0;
+    groundVerification = 0;
+
+    sameDayBase = isExchange ? 399 : 199;
+    sameDaySurcharge = sameDayAvailable && distanceKm > 10 ? Math.round((distanceKm - 10) * 3.5) : 0;
+    sameDayVerification = 0;
+  } else {
+    // =========================================================================
+    // ORDERS OVER ₹15,000: DYNAMICALLY ADJUSTED HIGH-VALUE WHITE-GLOVE SYSTEM
+    // - Dedicated Bonded Doorstep Verification Officer: ₹149 - ₹249
+    // - Tamper-Evident High-Security Vault Seal & Escrow Custody: ₹99
+    // - Calibrated Long-Corridor Air & Linehaul Freight
+    // =========================================================================
+    fastestBase = isExchange ? 849 : 599;
+    fastestSurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.78) : 0;
+    fastestVerification = 249; // Bonded officer doorstep unboxing, 15-min inspection, IMEI test & video record
+    fastestEscrowCustody = 99; // Tamper-evident vault seal & digital escrow handshake
+
+    priorityBase = isExchange ? 549 : 349;
+    prioritySurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.52) : 0;
+    priorityVerification = 199; // Bonded officer doorstep open-box verification
+
+    groundBase = isExchange ? 349 : 199;
+    groundSurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.32) : 0;
+    groundVerification = 149; // Standard doorstep verification
+
+    sameDayBase = isExchange ? 449 : 249;
+    sameDaySurcharge = sameDayAvailable && distanceKm > 10 ? Math.round((distanceKm - 10) * 4.0) : 0;
+    sameDayVerification = 149;
+  }
+
   const fastestTotal = fastestBase + fastestSurcharge + fastestVerification + fastestEscrowCustody + insuranceFee;
   const fastestSLA = calculateEstimatedTransitTime(distanceKm, 'FASTEST_AIR_RUSH');
 
-  // 2. PRIORITY EXPRESS (Commercial Air & Expressway Corridor Linehaul)
-  const priorityBase = isExchange ? 549 : 349;
-  const prioritySurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.52) : 0;
-  const priorityVerification = 199; // Bonded officer doorstep open-box verification
   const priorityTotal = priorityBase + prioritySurcharge + priorityVerification + insuranceFee;
   const prioritySLA = calculateEstimatedTransitTime(distanceKm, 'PRIORITY_EXPRESS');
 
-  // 3. STANDARD GROUND (Surface Freight Linehaul Network)
-  const groundBase = isExchange ? 349 : 199;
-  const groundSurcharge = distanceKm > 50 ? Math.round((distanceKm - 50) * 0.32) : 0;
-  const groundVerification = 149; // Standard doorstep verification
   const groundTotal = groundBase + groundSurcharge + groundVerification + insuranceFee;
   const groundSLA = calculateEstimatedTransitTime(distanceKm, 'STANDARD_GROUND');
 
-  // 4. SAME-DAY DIRECT (Intra-city only <= 70 km)
-  const sameDayBase = isExchange ? 449 : 249;
-  const sameDayAvailable = distanceKm <= 70;
-  const sameDaySurcharge = sameDayAvailable && distanceKm > 10 ? Math.round((distanceKm - 10) * 4.0) : 0;
-  const sameDayVerification = 149;
   const sameDayTotal = sameDayAvailable
     ? sameDayBase + sameDaySurcharge + sameDayVerification + insuranceFee
     : 0;

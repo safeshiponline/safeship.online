@@ -22,15 +22,18 @@ export function calculateEscrowBreakdown(input: CalculationInput): EscrowBreakdo
   const platformEscrowFee = basePlatformFee + gstOnEscrowFee;
 
   // Courier delivery charge (includes white-glove doorstep open-box inspection & transit insurance)
-  let shippingInsuranceFee = 899;
+  // For orders <= ₹15,000, rates remain lower/promotional as before (Free inspection, budget courier).
+  // For orders > ₹15,000, rates dynamically account for bonded flight cargo & white-glove unboxing.
+  const isUnder15k = itemPrice <= 15000;
+  let shippingInsuranceFee = isUnder15k ? 349 : 899;
   if (input.deliveryTier === 'HYPERLOCAL_SAME_DAY') {
-    shippingInsuranceFee = 349;
+    shippingInsuranceFee = isUnder15k ? 199 : 349;
   } else if (input.deliveryTier === 'FASTEST_AIR_RUSH') {
-    shippingInsuranceFee = 1899; // Next-Flight Priority Air + White-Glove Open Box Inspection
+    shippingInsuranceFee = isUnder15k ? 899 : 1899; // 24-36h Next-Flight Air Rush
   } else if (input.deliveryTier === 'METRO_NEXT_DAY') {
-    shippingInsuranceFee = 899; // Priority Air Linehaul (2-3 Days)
+    shippingInsuranceFee = isUnder15k ? 349 : 899; // Priority Air Linehaul (2-3 Days)
   } else if (input.deliveryTier === 'INTERCITY_INSURED') {
-    shippingInsuranceFee = 599; // Standard Ground Linehaul
+    shippingInsuranceFee = isUnder15k ? 499 : 599; // Standard Ground Linehaul
   }
 
   const totalFee = platformEscrowFee + shippingInsuranceFee;

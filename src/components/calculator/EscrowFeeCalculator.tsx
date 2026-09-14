@@ -65,7 +65,9 @@ export const EscrowFeeCalculator: React.FC = () => {
               <label className="text-xs font-bold uppercase tracking-wider text-slate-500 block">
                 Insured Delivery & Open-Box Inspection Tier
               </label>
-              <span className="text-[10px] font-bold text-emerald-600">Doorstep Inspection Included</span>
+              <span className="text-[10px] font-bold text-emerald-600">
+                {itemPrice <= 15000 ? '🎉 Free Inspection Promo (≤ ₹15k)' : 'Doorstep Inspection Included'}
+              </span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
@@ -79,7 +81,9 @@ export const EscrowFeeCalculator: React.FC = () => {
               >
                 <div className="text-[10px] font-bold uppercase text-amber-600 mb-0.5">⚡ FASTEST</div>
                 <div className="text-xs font-bold">SuperFast Air</div>
-                <div className="text-[11px] text-blue-700 font-bold mt-0.5">₹1,899</div>
+                <div className="text-[11px] text-blue-700 font-bold mt-0.5">
+                  ₹{itemPrice <= 15000 ? '899' : '1,899'}
+                </div>
                 <div className="text-[9px] text-slate-500">24–36h Next-Flight</div>
               </button>
 
@@ -94,7 +98,9 @@ export const EscrowFeeCalculator: React.FC = () => {
               >
                 <div className="text-[10px] font-bold uppercase text-blue-600 mb-0.5">AIR LINEHAUL</div>
                 <div className="text-xs font-bold">Priority Air</div>
-                <div className="text-[11px] text-blue-700 font-bold mt-0.5">₹899</div>
+                <div className="text-[11px] text-blue-700 font-bold mt-0.5">
+                  ₹{itemPrice <= 15000 ? '349' : '899'}
+                </div>
                 <div className="text-[9px] text-slate-500">2–3 Days Corridor</div>
               </button>
 
@@ -109,7 +115,9 @@ export const EscrowFeeCalculator: React.FC = () => {
               >
                 <div className="text-[10px] font-bold uppercase text-purple-600 mb-0.5">LOCAL FLEET</div>
                 <div className="text-xs font-bold">Same-Day Direct</div>
-                <div className="text-[11px] text-blue-700 font-bold mt-0.5">₹349</div>
+                <div className="text-[11px] text-blue-700 font-bold mt-0.5">
+                  ₹{itemPrice <= 15000 ? '199' : '349'}
+                </div>
                 <div className="text-[9px] text-slate-500">Sub-6h Intra-City</div>
               </button>
 
@@ -124,7 +132,9 @@ export const EscrowFeeCalculator: React.FC = () => {
               >
                 <div className="text-[10px] font-bold uppercase text-slate-500 mb-0.5">SURFACE</div>
                 <div className="text-xs font-bold">Standard Ground</div>
-                <div className="text-[11px] text-blue-700 font-bold mt-0.5">₹599</div>
+                <div className="text-[11px] text-blue-700 font-bold mt-0.5">
+                  ₹{itemPrice <= 15000 ? '499' : '599'}
+                </div>
                 <div className="text-[9px] text-slate-500">5–7 Days Freight</div>
               </button>
             </div>

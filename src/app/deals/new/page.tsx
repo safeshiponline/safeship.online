@@ -1420,7 +1420,9 @@ function CreateShipmentContent() {
                     Upfront Booking Breakdown ({activeTierBreakdown.tierLabel})
                   </h3>
                   <p className="text-[10px] text-slate-500 mt-0.5">
-                    Covers bonded flight cargo, white-glove doorstep inspection & transit insurance
+                    {declaredValue <= 15000
+                      ? 'Standard Tier Applied: Free Doorstep Inspection Promo for orders ≤ ₹15,000'
+                      : 'High-Value Security: Bonded flight cargo, white-glove doorstep inspection & transit insurance'}
                   </p>
                 </div>
                 <span className="text-[11px] font-bold text-[#0066FF] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
@@ -1442,8 +1444,18 @@ function CreateShipmentContent() {
                 <div className="flex justify-between text-[#475569]">
                   <span>Doorstep Open-Box Inspection & Testing:</span>
                   <span className="font-semibold text-emerald-700">
-                    ₹{activeTierBreakdown.verificationFee}{' '}
-                    <span className="text-[10px] font-normal text-slate-400">(Bonded officer live unbox)</span>
+                    {activeTierBreakdown.verificationFee === 0 ? (
+                      <>
+                        <span className="line-through text-slate-400 mr-1.5 font-normal">₹149</span>
+                        <span className="text-emerald-700 font-bold">FREE PROMO (₹0)</span>
+                        <span className="text-[10px] font-normal text-emerald-600 ml-1">(Orders ≤ ₹15k)</span>
+                      </>
+                    ) : (
+                      <>
+                        ₹{activeTierBreakdown.verificationFee}{' '}
+                        <span className="text-[10px] font-normal text-slate-400">(Bonded officer live unbox)</span>
+                      </>
+                    )}
                   </span>
                 </div>
 
