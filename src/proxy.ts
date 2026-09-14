@@ -13,7 +13,8 @@ export function proxy(request: NextRequest) {
     pathname === '/icon.svg' ||
     pathname === '/apple-icon.png' ||
     pathname === '/robots.txt' ||
-    pathname === '/sitemap.xml'
+    pathname === '/sitemap.xml' ||
+    pathname === '/llms.txt'
   ) {
     return NextResponse.next();
   }
@@ -24,7 +25,8 @@ export function proxy(request: NextRequest) {
     pathname.startsWith('/in/real_deal') ||
     pathname === '/in/favicon.ico' ||
     pathname === '/in/icon.svg' ||
-    pathname === '/in/apple-icon.png'
+    pathname === '/in/apple-icon.png' ||
+    pathname === '/in/llms.txt'
   ) {
     const assetPath = pathname.replace(/^\/in/, '');
     const url = request.nextUrl.clone();

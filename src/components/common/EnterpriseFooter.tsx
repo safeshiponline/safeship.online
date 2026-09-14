@@ -198,6 +198,8 @@ export const EnterpriseFooter: React.FC = () => {
               </button>
 
               <div className="flex flex-wrap gap-2 pt-1 text-[11px] text-slate-400">
+                <Link href="/in/safety" className="text-white font-semibold hover:text-[#0066FF] underline">Safety &amp; Trust</Link>
+                <span>&bull;</span>
                 <Link href="/in/terms" className="hover:text-white underline">Terms</Link>
                 <span>&bull;</span>
                 <Link href="/in/privacy" className="hover:text-white underline">Privacy</Link>

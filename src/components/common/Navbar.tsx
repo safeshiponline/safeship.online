@@ -46,6 +46,9 @@ export const Navbar: React.FC = () => {
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Open-Box Demo</span>
           </Link>
+          <Link href="/in/safety" className="hover:text-[#0066FF] transition font-semibold">
+            Safety &amp; Trust
+          </Link>
           <Link href="/in/profile" className="hover:text-[#0066FF] transition flex items-center gap-1">
             <User className="w-3.5 h-3.5" />
             <span>Profile</span>
@@ -119,6 +122,14 @@ export const Navbar: React.FC = () => {
           >
             <ShieldCheck className="w-4 h-4 text-[#0066FF]" />
             <span>Open-Box Doorstep Verification</span>
+          </Link>
+          <Link
+            href="/in/safety"
+            onClick={() => setMobileMenuOpen(false)}
+            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-emerald-50/60 text-emerald-800 text-xs font-bold"
+          >
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span>Safety &amp; Escrow Guarantee</span>
           </Link>
           <Link
             href="/in/profile"

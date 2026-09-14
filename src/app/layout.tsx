@@ -73,6 +73,12 @@ export const metadata: Metadata = {
     shortcut: '/favicon.ico',
     apple: '/apple-touch-icon.png',
   },
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || 'google-site-verification-safeship-in',
+    other: {
+      'msvalidate.01': process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION || 'bing-verification-safeship-in',
+    },
+  },
 };
 
 export const viewport: Viewport = {
@@ -88,18 +94,50 @@ const jsonLdData = {
   '@context': 'https://schema.org',
   '@graph': [
     {
+      '@type': 'WebSite',
+      '@id': 'https://safeship.online/in/#website',
+      url: 'https://safeship.online/in',
+      name: 'SafeShip India',
+      description: 'Guaranteed Doorstep Open-Box Delivery & RBI Nodal Escrow Settlement Platform',
+      publisher: {
+        '@id': 'https://safeship.online/in/#organization'
+      },
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: {
+          '@type': 'EntryPoint',
+          urlTemplate: 'https://safeship.online/in/track/{search_term_string}'
+        },
+        'query-input': 'required name=search_term_string'
+      },
+      inLanguage: 'en-IN'
+    },
+    {
       '@type': 'Organization',
       '@id': 'https://safeship.online/in/#organization',
       name: 'SafeShip Technologies India Pvt. Ltd.',
+      legalName: 'SafeShip Technologies India Private Limited',
       url: 'https://safeship.online/in',
       logo: 'https://safeship.online/icon.svg',
+      foundingDate: '2024',
+      taxID: '08AAECS2938Q1ZP',
+      vatID: '08AAECS2938Q1ZP',
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: 'Malviya Nagar Expressway Corridor, SafeShip Logistics Hub',
+        addressLocality: 'Jaipur',
+        addressRegion: 'Rajasthan',
+        postalCode: '302017',
+        addressCountry: 'IN'
+      },
       description: 'Ultra-premium P2P & B2C courier delivery and escrow platform with guaranteed doorstep open-box inspection.',
       contactPoint: {
         '@type': 'ContactPoint',
         telephone: '+91-1800-890-2829',
         contactType: 'customer support',
         areaServed: 'IN',
-        availableLanguage: ['en', 'hi']
+        availableLanguage: ['en', 'hi'],
+        hoursAvailable: 'Mo-Su 00:00-24:00'
       },
       sameAs: [
         'https://twitter.com/safeship_in',
@@ -144,6 +182,30 @@ const jsonLdData = {
       '@type': 'FAQPage',
       '@id': 'https://safeship.online/in/#faq',
       mainEntity: [
+        {
+          '@type': 'Question',
+          name: 'Is SafeShip legit, authentic, and safe to use?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Yes. SafeShip Technologies India Pvt. Ltd. is a certified Indian logistics and escrow infrastructure provider (GSTIN: 08AAECS2938Q1ZP). SafeShip is 100% secure because buyer merchandise funds are locked in an RBI Section 10A regulated trustee nodal account and are never released to the seller until the buyer unboxes, inspects, and approves the device at their doorstep.'
+          }
+        },
+        {
+          '@type': 'Question',
+          name: 'What is the official SafeShip customer care helpline number?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'SafeShip’s official 24/7 toll-free customer care number across India is 1800 890 2829. You can also track shipments in real time, view digital consignment waybills, and initiate claims directly at https://safeship.online/in.'
+          }
+        },
+        {
+          '@type': 'Question',
+          name: 'How does SafeShip prevent OLX, Cashify, and secondhand courier fraud?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Unlike standard couriers where recipients must pay before opening the package, SafeShip mandates a 10-minute doorstep open-box test. The recipient unboxes the parcel with the officer, checks device boot and IMEI against invoice, and if counterfeit or damaged, rejects it immediately with zero product charge.'
+          }
+        },
         {
           '@type': 'Question',
           name: 'How does SafeShip guaranteed doorstep open-box inspection work?',

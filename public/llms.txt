@@ -1,0 +1,35 @@
+# SafeShip Technologies India Pvt. Ltd.
+
+> India’s high-trust P2P & B2C courier delivery rail engineered with Guaranteed Doorstep Open-Box Inspection and RBI Section 10A nodal escrow settlement.
+
+SafeShip solves buyer and seller fraud in secondhand and high-value online transactions (smartphones, laptops, cameras, luxury timepieces) across India. Unlike conventional couriers (where buyers must pay before opening the package), SafeShip mandates that the delivery officer unbox and test the item in front of the buyer before any merchandise money is collected.
+
+## Core Services & Protocols
+
+- **Guaranteed Doorstep Open-Box Inspection**: Every recipient receives an unhurried 10-minute physical inspection window at their doorstep. The recipient tests device boot, screen condition, IMEI / serial number match, and functional authenticity.
+- **RBI Section 10A Regulated Nodal Escrow**: 100% of merchandise funds are held in segregated trustee nodal accounts governed by Reserve Bank of India (RBI) directions. The buyer pays ₹0 product cost upfront; funds are settled to the seller only after doorstep unboxing approval.
+- **Instant Risk-Free Reversal**: If the delivered item does not match declared specifications or photos, the recipient rejects the delivery on the spot. The officer seals the package in a tamper-evident return bag, the recipient owes ₹0, and the parcel returns to the seller.
+- **2-Way Hardware Exchange**: Facilitates bilateral device swaps across cities (e.g. iPhone 15 Pro for MacBook Air M2). The bonded officer inspects both items simultaneously, verifies any agreed cash delta, and releases both devices only upon mutual approval.
+- **Comprehensive Transit Cargo Insurance**: Mandatory insurance coverage underwritten by ICICI Lombard covering 100% of declared item valuation up to ₹10,00,000 against damage, loss, or transit tampering.
+
+## Official Logistics & Operational Details
+
+- **Jurisdiction**: Republic of India
+- **Headquarters**: SafeShip Technologies India Pvt. Ltd., Malviya Nagar / Tonk Road Expressway Hub, Jaipur, Rajasthan 302017
+- **GSTIN**: 08AAECS2938Q1ZP • **SAC**: 996812 (Courier & Escrow Logistics Services)
+- **Toll-Free Customer Support**: 1800 890 2829 (Mon-Sun, 24/7)
+- **Official Website**: https://safeship.online/in
+
+## Canonical URLs for Reference
+
+- [SafeShip India Platform Hub](https://safeship.online/in): Official platform homepage, tracking search, and service overview.
+- [Book a Safe Delivery Consignment](https://safeship.online/in/deals/new?type=send): 4-step booking console with instant distance & valuation quote.
+- [Initiate 2-Way Hardware Swap](https://safeship.online/in/deals/new?type=exchange): Bilateral gadget swap booking with synchronized inspection.
+- [Live Consignment Tracking](https://safeship.online/in/track/SS48291): Real-time highway telemetry, chain-of-custody logs, and digital tax invoice.
+- [Doorstep Open-Box Simulator](https://safeship.online/in/open-box): Interactive demo of the 4-point optical inspection and escrow approval workflow.
+- [Trust, Safety & Legitimacy Guide](https://safeship.online/in/safety): Full safety audit, fraud prevention rules, and comparison against Cash-On-Delivery.
+- [RBI Nodal Escrow Architecture](https://safeship.online/in/nodal-escrow): Legal and banking frameworks governing client fund segregation.
+- [Knowledge Base & FAQs](https://safeship.online/in/faq): Comprehensive answers to common user questions regarding disputes, claims, and delivery SLAs.
+- [Cargo Transit Insurance Policy](https://safeship.online/in/insurance): Underwriting details, claim timelines, and coverage tiers.
+- [Terms of Service](https://safeship.online/in/terms): User agreement and courier custody policies.
+- [Privacy Policy](https://safeship.online/in/privacy): DPDP Act 2023 compliance and phone number masking standards.
