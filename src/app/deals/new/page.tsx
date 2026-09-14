@@ -79,18 +79,21 @@ function CreateShipmentContent() {
   const [pickupLocation, setPickupLocation] = useState<string>('');
   const [pickupPincode, setPickupPincode] = useState<string>('');
   const [pickupCity, setPickupCity] = useState<string>('');
+  const [pickupDistrict, setPickupDistrict] = useState<string>('');
   const [pickupState, setPickupState] = useState<string>('');
   const [pickupHub, setPickupHub] = useState<string>('');
 
   const [dropLocation, setDropLocation] = useState<string>('');
   const [dropPincode, setDropPincode] = useState<string>('');
   const [dropCity, setDropCity] = useState<string>('');
+  const [dropDistrict, setDropDistrict] = useState<string>('');
   const [dropState, setDropState] = useState<string>('');
   const [dropHub, setDropHub] = useState<string>('');
 
   // Distance & Routing Telemetry
   const [distanceKm, setDistanceKm] = useState<number>(0);
   const [routeCorridor, setRouteCorridor] = useState<string>('Local Intra-City Transit');
+  const [routeTransitSummary, setRouteTransitSummary] = useState<string>('');
   const [isIntercity, setIsIntercity] = useState<boolean>(false);
   const [selectedTier, setSelectedTier] = useState<DeliveryServiceTier>('FASTEST_AIR_RUSH');
 
@@ -190,6 +193,7 @@ function CreateShipmentContent() {
     if (digits.length === 6) {
       const info = resolvePincode(digits);
       setPickupCity(info.city);
+      setPickupDistrict(info.district);
       setPickupState(info.state);
       setPickupHub(info.hubName);
 
@@ -198,9 +202,11 @@ function CreateShipmentContent() {
         setDistanceKm(route.distanceKm);
         setIsIntercity(route.isIntercity);
         setRouteCorridor(route.corridorName);
+        setRouteTransitSummary(route.transitSummary);
       }
     } else {
       setPickupCity('');
+      setPickupDistrict('');
       setPickupState('');
       setPickupHub('');
     }
@@ -215,6 +221,7 @@ function CreateShipmentContent() {
     if (digits.length === 6) {
       const info = resolvePincode(digits);
       setDropCity(info.city);
+      setDropDistrict(info.district);
       setDropState(info.state);
       setDropHub(info.hubName);
 
@@ -223,9 +230,11 @@ function CreateShipmentContent() {
         setDistanceKm(route.distanceKm);
         setIsIntercity(route.isIntercity);
         setRouteCorridor(route.corridorName);
+        setRouteTransitSummary(route.transitSummary);
       }
     } else {
       setDropCity('');
+      setDropDistrict('');
       setDropState('');
       setDropHub('');
     }
@@ -246,6 +255,7 @@ function CreateShipmentContent() {
     setDistanceKm(route.distanceKm);
     setIsIntercity(route.isIntercity);
     setRouteCorridor(route.corridorName);
+    setRouteTransitSummary(route.transitSummary);
     setErrors({});
     setStepErrorBanner('');
   };
@@ -253,11 +263,12 @@ function CreateShipmentContent() {
   useEffect(() => {
     const isDemo = searchParams.get('demo') === 'true';
     const reqStep = searchParams.get('step');
+    const reqVal = searchParams.get('val');
     if (isDemo) {
       setSelectedCategory('SMARTPHONES_TABLETS');
       setItemName('Apple iPhone 15 Pro (128GB)');
       setCondition('Used - Mint');
-      setDeclaredValue(10000);
+      setDeclaredValue(reqVal ? Number(reqVal) : 8000);
       setPackageWeight('0.85');
       setIncludedItems('Original box, 20W charger, Braided USB-C Cable');
       setUploadedPhotos(['/real_deal/product_front.png']);
@@ -281,6 +292,7 @@ function CreateShipmentContent() {
       setPickupPincode('302017');
       const pick = resolvePincode('302017');
       setPickupCity(pick.city);
+      setPickupDistrict(pick.district);
       setPickupState(pick.state);
       setPickupHub(pick.hubName);
 
@@ -290,6 +302,7 @@ function CreateShipmentContent() {
       setDropPincode('110001');
       const drop = resolvePincode('110001');
       setDropCity(drop.city);
+      setDropDistrict(drop.district);
       setDropState(drop.state);
       setDropHub(drop.hubName);
 
@@ -297,6 +310,7 @@ function CreateShipmentContent() {
       setDistanceKm(route.distanceKm);
       setIsIntercity(route.isIntercity);
       setRouteCorridor(route.corridorName);
+      setRouteTransitSummary(route.transitSummary);
 
       if (reqStep) {
         setCurrentStep(Number(reqStep));
@@ -431,6 +445,7 @@ function CreateShipmentContent() {
           setDistanceKm(route.distanceKm);
           setIsIntercity(route.isIntercity);
           setRouteCorridor(route.corridorName);
+          setRouteTransitSummary(route.transitSummary);
         }
         setCurrentStep(4);
       }
@@ -1414,8 +1429,10 @@ function CreateShipmentContent() {
                   <div className="flex-1 flex flex-col justify-end">
                     {pickupCity ? (
                       <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center justify-between">
-                        <span className="font-bold">{pickupCity}, {pickupState}</span>
-                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">{pickupHub}</span>
+                        <span className="font-bold">
+                          {pickupCity}{pickupDistrict && !pickupCity.includes(pickupDistrict) ? ` (${pickupDistrict})` : ''}, {pickupState}
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0 ml-2">{pickupHub}</span>
                       </div>
                     ) : (
                       <span className="text-[11px] text-[#94A3B8] italic pb-2">Enter 6-digit PIN code to auto-resolve city &amp; hub</span>
@@ -1503,8 +1520,10 @@ function CreateShipmentContent() {
                   <div className="flex-1 flex flex-col justify-end">
                     {dropCity ? (
                       <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center justify-between">
-                        <span className="font-bold">{dropCity}, {dropState}</span>
-                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">{dropHub}</span>
+                        <span className="font-bold">
+                          {dropCity}{dropDistrict && !dropCity.includes(dropDistrict) ? ` (${dropDistrict})` : ''}, {dropState}
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0 ml-2">{dropHub}</span>
                       </div>
                     ) : (
                       <span className="text-[11px] text-[#94A3B8] italic pb-2">Enter 6-digit PIN code to auto-resolve city &amp; hub</span>
@@ -1515,26 +1534,39 @@ function CreateShipmentContent() {
 
               {/* ROUTE TELEMETRY BAR */}
               {distanceKm > 0 && (
-                <div className="p-3.5 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] flex items-center justify-between animate-in fade-in">
-                  <div className="flex items-center gap-2.5">
-                    <Truck className="w-5 h-5 text-[#0066FF] shrink-0" />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-[#0F172A]">
-                          {distanceKm.toLocaleString('en-IN')} km Road Distance
-                        </span>
-                        <span className="text-[10px] font-bold bg-[#0066FF] text-white px-1.5 py-0.2 rounded">
-                          {isIntercity ? 'Linehaul Intercity Corridor' : 'Direct Intra-City Fleet'}
+                <div className="p-4 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] space-y-2.5 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <Truck className="w-5 h-5 text-[#0066FF] shrink-0" />
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-sm font-black text-[#0F172A] font-mono">
+                            {distanceKm.toLocaleString('en-IN')} km Road Distance
+                          </span>
+                          <span className="text-[10px] font-bold bg-[#0066FF] text-white px-2 py-0.5 rounded-full">
+                            {isIntercity ? 'National Linehaul Corridor' : 'Direct Intra-City Fleet'}
+                          </span>
+                        </div>
+                        <span className="text-xs text-[#0066FF] font-bold block mt-0.5">
+                          {routeCorridor}
                         </span>
                       </div>
-                      <span className="text-[11px] text-[#0066FF] font-semibold block">
-                        {routeCorridor}
-                      </span>
                     </div>
+                    <span className="text-xs font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-lg shrink-0">
+                      Serviceable ✓
+                    </span>
                   </div>
-                  <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-1 rounded-lg">
-                    Serviceable ✓
-                  </span>
+
+                  {/* Dynamic Realistic Delivery Transit SLA */}
+                  <div className="pt-2 border-t border-blue-200/70 flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-1.5 text-[#1E40AF] font-semibold">
+                      <Clock className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
+                      <span>Estimated Transit Window:</span>
+                    </div>
+                    <span className="font-bold text-[#0F172A] bg-white px-2.5 py-0.5 rounded-md border border-blue-200 shadow-2xs">
+                      {routeTransitSummary || (isIntercity ? '18–24 Hours (Express Linehaul)' : 'Today within 4–6 Hours')}
+                    </span>
+                  </div>
                 </div>
               )}
 
@@ -1730,9 +1762,7 @@ function CreateShipmentContent() {
                     Upfront Booking Breakdown ({activeTierBreakdown.tierLabel})
                   </h3>
                   <p className="text-[10px] text-slate-500 mt-0.5">
-                    {declaredValue <= 15000
-                      ? 'Standard Tier Applied: Free Doorstep Inspection Promo for orders ≤ ₹15,000'
-                      : 'High-Value Security: Bonded flight cargo, white-glove doorstep inspection & transit insurance'}
+                    Calibrated for {(distanceKm || effectiveDistance).toLocaleString('en-IN')} km route &amp; ₹{declaredValue.toLocaleString('en-IN')} item valuation (All-inclusive, ₹250 floor to ₹1,950 cap)
                   </p>
                 </div>
                 <span className="text-[11px] font-bold text-[#0066FF] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100 shrink-0 self-start sm:self-center">
@@ -1757,7 +1787,7 @@ function CreateShipmentContent() {
                     <span className="font-medium text-[#0F172A]">Doorstep Open-Box Inspection &amp; Testing:</span>
                     {activeTierBreakdown.verificationFee === 0 && (
                       <span className="text-[10px] text-emerald-600 font-semibold block">
-                        Promotional waiver applied for orders ≤ ₹15,000
+                        Promotional doorstep inspection waiver applied
                       </span>
                     )}
                   </div>

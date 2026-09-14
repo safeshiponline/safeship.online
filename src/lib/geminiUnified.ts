@@ -177,11 +177,14 @@ export async function getAICustomerSupportResponse(
 SafeShip provides trusted Open-Box Delivery and 2-Way Item Exchanges across India.
 Core Operating Principles:
 1. "What you see is what you receive" — SafeShip protects both buyers and sellers through verified doorstep unboxing and hardware inspection.
-2. Delivery Tiers & Fast Delivery:
-   - SafeShip SuperFast Air (⚡ Fastest Delivery): Guaranteed 24–36h transit via next-flight commercial cargo + white-glove doorstep open-box inspection. For long-haul corridors like South India (Bengaluru, Chennai, Hyderabad, Kochi) to Delhi NCR (~2,200 km), cost is ~₹2,500–₹2,990 all-inclusive (or ~₹1,450 each on a 50/50 fee split) covering flight cargo space, bonded delivery officer inspection, tamper-evident security packaging, and declared value transit insurance.
-   - SafeShip Priority Express: 2–3 business days via commercial air linehaul (~₹1,700–₹2,000 for South to Delhi).
-   - SafeShip Standard Ground: 5–7 business days surface freight (~₹1,200–₹1,370).
-   - Same-Day Direct: Sub-6 hours dedicated fleet (intra-city <= 70 km).
+2. Delivery Tiers & Calibrated Transparent Pricing:
+   - Minimum booking fee across India is strictly ₹250 (never lower). Maximum booking fee is strictly ₹1,950 (never higher).
+   - For a typical item valued around ₹8,000 on an intercity corridor (e.g. Jaipur to Delhi, ~270 km), Priority Express is calibrated to around ~₹600 all-inclusive (~₹590–₹610).
+   - SafeShip SuperFast Air (⚡ Fastest Delivery): Guaranteed 24–36h transit via next-flight commercial cargo + white-glove doorstep open-box inspection. For long-haul cross-country corridors like South India (Bengaluru, Chennai, Hyderabad, Kochi) to Delhi NCR (~2,200 km), cost is ~₹1,650–₹1,950 all-inclusive (or ~₹850–₹975 each on a 50/50 fee split) covering flight cargo space, bonded delivery officer inspection, tamper-evident security packaging, and declared value transit insurance.
+   - SafeShip Priority Express: 1–2 days for regional corridors (e.g. Jaipur to Delhi), 2–3 business days for cross-country commercial air linehaul (~₹1,200–₹1,350 for South to Delhi).
+   - SafeShip Standard Ground: 2–3 business days regional, 4–5 business days cross-country surface freight (~₹250–₹950).
+   - Same-Day Direct: Sub-4 hours dedicated fleet for local intra-city shipments (<= 50 km).
+   - Realistic SLAs: Never make generic or unrealistic claims like "12 hours" for cross-country routes; specify realistic transit windows based on distance and service level.
 3. Zero Escrow Lock: SafeShip ONLY collects the minimal delivery charges upfront. Product capital is NEVER locked upfront without verification.
 4. Open-Box Inspection: When courier partner Rahul K. arrives, the recipient is granted a 15-minute physical inspection window to unbox, inspect cosmetic condition, verify serial/IMEI, and test the item before making any payment.
 5. Doorstep Settlement: After approving the product, the recipient completes payment via dynamic UPI QR generated on the courier terminal.
@@ -221,13 +224,13 @@ Communication Style & Persona:
   // Rule-based fallback
   const q = userQuestion.toLowerCase();
   if (q.includes('delhi') || q.includes('south') || q.includes('fast delivery') || q.includes('fastest')) {
-    return 'For fast delivery from South India (e.g. Bengaluru, Chennai, Hyderabad) to Delhi NCR (~2,200 km), SafeShip offers "SuperFast Air Rush" with guaranteed 24–36 hour transit via next commercial flight. The total upfront cost is ~₹2,890–₹2,970 (or ~₹1,450 per person on our 50/50 fee split). Unlike standard closed-box couriers, this includes dedicated white-glove doorstep open-box inspection by a bonded officer, IMEI verification, tamper-evident security vault sealing, and 100% escrow protection!';
+    return 'For fast delivery from South India (e.g. Bengaluru, Chennai, Hyderabad) to Delhi NCR (~2,200 km), SafeShip offers "SuperFast Air Rush" with guaranteed 24–36 hour transit via next commercial cargo flight. The total upfront cost is ~₹1,650–₹1,950 (or ~₹850–₹975 per person on our 50/50 fee split). Unlike standard closed-box couriers, this includes dedicated white-glove doorstep open-box inspection by a bonded officer, IMEI verification, tamper-evident security vault sealing, and 100% escrow protection!';
   }
   if (q.includes('open box') || q.includes('open-box') || q.includes('inspect')) {
     return 'SafeShip Open-Box Delivery allows you to physically unbox and inspect the hardware with our bonded courier before paying a single rupee for the merchandise! You verify the screen, IMEI, and power state at your doorstep. Payment is collected via UPI only after you approve the item.';
   }
   if (q.includes('fee') || q.includes('charge') || q.includes('price') || q.includes('cost')) {
-    return 'SafeShip provides transparent tier pricing based on distance: Same-Day Direct (₹349+ for local city), Standard Ground (₹599+), Priority Air (₹899+), and SuperFast Air (₹1,899+ for 24–36h next-flight cargo). All tiers include white-glove doorstep open-box verification and cargo insurance!';
+    return 'SafeShip provides transparent tier pricing calibrated between ₹250 (minimum floor) and ₹1,950 (maximum ceiling). For an item valued around ₹8,000 on an intercity corridor (e.g. Jaipur to Delhi), Priority Express is ~₹600 all-inclusive. Lower-value items have smoothly reduced fees (down to ₹250), and all tiers include white-glove doorstep open-box verification and cargo insurance!';
   }
   if (q.includes('exchange') || q.includes('swap')) {
     return 'With SafeShip 2-Way Exchange, our courier officer audits both items simultaneously at the doorstep. Any agreed trade difference is paid via UPI on the spot. If either party is unsatisfied, both retain their original devices with ₹0 product charges.';
