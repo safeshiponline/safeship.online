@@ -64,9 +64,9 @@ export const RoleSwitcher: React.FC<RoleSwitcherProps> = ({
           </button>
 
           <Link
-            href={`/courier?deal=${activeDealId}`}
+            href={`/in/courier?deal=${activeDealId}`}
             className={`px-2.5 py-0.5 rounded-md font-bold text-[11px] transition ${
-              pathname.startsWith('/courier')
+              pathname.includes('/courier')
                 ? 'bg-[#0066FF] text-white shadow-xs'
                 : 'text-slate-600 hover:text-[#0F172A]'
             }`}
@@ -75,9 +75,9 @@ export const RoleSwitcher: React.FC<RoleSwitcherProps> = ({
           </Link>
 
           <Link
-            href="/admin"
+            href="/in/admin"
             className={`px-2.5 py-0.5 rounded-md font-bold text-[11px] transition ${
-              pathname.startsWith('/admin')
+              pathname.includes('/admin')
                 ? 'bg-[#0066FF] text-white shadow-xs'
                 : 'text-slate-600 hover:text-[#0F172A]'
             }`}

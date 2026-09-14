@@ -108,7 +108,7 @@ export const EnterpriseFooter: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Col 1: Brand & Escrow Trust */}
           <div className="space-y-4">
-            <Link href="/" className="flex items-center gap-2.5 group">
+            <Link href="/in" className="flex items-center gap-2.5 group">
               <SafeShipLogo className="w-8 h-8 shrink-0 group-hover:scale-105 transition" />
               <span className="text-xl font-black text-white tracking-tight">SafeShip</span>
             </Link>
@@ -139,12 +139,12 @@ export const EnterpriseFooter: React.FC = () => {
               Supported Shipments
             </h4>
             <ul className="space-y-2 text-slate-400">
-              <li><Link href="/deals/new?type=send" className="hover:text-white transition">Smartphones &amp; Tablets (iPhones, Galaxy)</Link></li>
-              <li><Link href="/deals/new?type=send" className="hover:text-white transition">Laptops &amp; MacBooks (M2/M3 Silicon)</Link></li>
-              <li><Link href="/deals/new?type=send" className="hover:text-white transition">Cameras &amp; Optics (Sony Alpha, Canon, Lenses)</Link></li>
-              <li><Link href="/deals/new?type=send" className="hover:text-white transition">Luxury Watches &amp; Timepieces</Link></li>
-              <li><Link href="/deals/new?type=send" className="hover:text-white transition">Gaming Consoles &amp; Audio Equipment</Link></li>
-              <li><Link href="/deals/new?type=exchange" className="text-amber-400 hover:text-amber-300 transition font-semibold">2-Way Hardware Exchange ⇄</Link></li>
+              <li><Link href="/in/deals/new?type=send" className="hover:text-white transition">Smartphones &amp; Tablets (iPhones, Galaxy)</Link></li>
+              <li><Link href="/in/deals/new?type=send" className="hover:text-white transition">Laptops &amp; MacBooks (M2/M3 Silicon)</Link></li>
+              <li><Link href="/in/deals/new?type=send" className="hover:text-white transition">Cameras &amp; Optics (Sony Alpha, Canon, Lenses)</Link></li>
+              <li><Link href="/in/deals/new?type=send" className="hover:text-white transition">Luxury Watches &amp; Timepieces</Link></li>
+              <li><Link href="/in/deals/new?type=send" className="hover:text-white transition">Gaming Consoles &amp; Audio Equipment</Link></li>
+              <li><Link href="/in/deals/new?type=exchange" className="text-amber-400 hover:text-amber-300 transition font-semibold">2-Way Hardware Exchange ⇄</Link></li>
             </ul>
           </div>
 
@@ -198,17 +198,17 @@ export const EnterpriseFooter: React.FC = () => {
               </button>
 
               <div className="flex flex-wrap gap-2 pt-1 text-[11px] text-slate-400">
-                <Link href="/terms" className="hover:text-white underline">Terms</Link>
+                <Link href="/in/terms" className="hover:text-white underline">Terms</Link>
                 <span>&bull;</span>
-                <Link href="/privacy" className="hover:text-white underline">Privacy</Link>
+                <Link href="/in/privacy" className="hover:text-white underline">Privacy</Link>
                 <span>&bull;</span>
-                <Link href="/insurance" className="hover:text-white underline">Insurance</Link>
+                <Link href="/in/insurance" className="hover:text-white underline">Insurance</Link>
                 <span>&bull;</span>
-                <Link href="/nodal-escrow" className="hover:text-white underline">RBI Escrow</Link>
+                <Link href="/in/nodal-escrow" className="hover:text-white underline">RBI Escrow</Link>
                 <span>&bull;</span>
-                <Link href="/faq" className="hover:text-white underline">FAQ</Link>
+                <Link href="/in/faq" className="hover:text-white underline">FAQ</Link>
                 <span>&bull;</span>
-                <Link href="/admin" className="hover:text-white">Admin</Link>
+                <Link href="/in/admin" className="hover:text-white">Admin</Link>
               </div>
             </div>
           </div>

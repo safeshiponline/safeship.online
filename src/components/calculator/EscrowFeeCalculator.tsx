@@ -239,7 +239,7 @@ export const EscrowFeeCalculator: React.FC = () => {
           </div>
 
           <Link
-            href={`/deals/new?price=${itemPrice}&tier=${deliveryTier}&split=${feeSplit}`}
+            href={`/in/deals/new?price=${itemPrice}&tier=${deliveryTier}&split=${feeSplit}`}
             className="w-full mt-2 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs sm:text-sm shadow-sm transition flex items-center justify-center gap-2"
           >
             <span>Lock In This Deal & Split (Create Deal)</span>

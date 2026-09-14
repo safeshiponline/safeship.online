@@ -56,7 +56,7 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
     return (
       <div className="min-h-screen bg-white text-zinc-900 flex flex-col items-center justify-center p-4">
         <div className="text-sm font-semibold text-zinc-600">Retrieving certified transaction ledger...</div>
-        <Link href="/deals/deal_iphone_15_blr" className="mt-2 text-xs font-bold text-zinc-900 underline">
+        <Link href="/in/deals/deal_iphone_15_blr" className="mt-2 text-xs font-bold text-zinc-900 underline">
           Open Demo Deal Room
         </Link>
       </div>

@@ -14,7 +14,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/', '/admin/'],
       }
     ],
-    sitemap: 'https://safeship.online/sitemap.xml',
-    host: 'https://safeship.online',
+    sitemap: 'https://safeship.online/in/sitemap.xml',
+    host: 'https://safeship.online/in',
   };
 }

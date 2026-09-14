@@ -154,7 +154,7 @@ function CourierAppContent() {
 
                 <div className="flex items-center gap-3">
                   <Link
-                    href={`/deals/${currentDeal.id}`}
+                    href={`/in/deals/${currentDeal.id}`}
                     className="px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 text-[#0F172A] text-xs font-semibold flex items-center gap-1.5 transition border border-[#CBD5E1] shadow-2xs cursor-pointer"
                   >
                     <span>Inspect Deal Vault</span>

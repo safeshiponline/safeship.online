@@ -100,7 +100,7 @@ export default function ExchangeHubPage() {
 
             <div className="pt-4">
               <Link
-                href="/deals/new?type=exchange"
+                href="/in/deals/new?type=exchange"
                 className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-sm shadow-md transition active:scale-95 cursor-pointer"
               >
                 <span>Initiate 2-Way Exchange</span>
@@ -220,7 +220,7 @@ export default function ExchangeHubPage() {
                     {ex.status}
                   </span>
                   <Link
-                    href="/open-box?type=exchange"
+                    href="/in/open-box?type=exchange"
                     className="text-xs font-bold text-[#0066FF] hover:underline"
                   >
                     View Audit Demo &rarr;
@@ -273,7 +273,7 @@ export default function ExchangeHubPage() {
 
           <div className="mt-4 pt-3 border-t border-[#F1F5F9] flex justify-end">
             <Link
-              href="/deals/new?type=exchange"
+              href="/in/deals/new?type=exchange"
               className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-sm transition active:scale-95 cursor-pointer"
             >
               Book 2-Way Exchange (₹548) &rarr;

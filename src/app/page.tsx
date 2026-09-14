@@ -61,7 +61,7 @@ export default function HomePage() {
   const handleTrackSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const clean = trackQuery.trim() || 'SS48291';
-    router.push(`/track/${clean}`);
+    router.push(`/in/track/${clean}`);
   };
 
   return (
@@ -74,7 +74,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 flex items-center justify-between">
           
           {/* Brand Logo with Subline */}
-          <Link href="/" className="flex items-center gap-2 sm:gap-2.5 group shrink-0">
+          <Link href="/in" className="flex items-center gap-2 sm:gap-2.5 group shrink-0">
             <SafeShipLogo className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 group-hover:scale-105 transition duration-200" />
             <div className="flex flex-col">
               <span className="text-base sm:text-xl font-black tracking-tight text-[#0F172A] leading-tight">
@@ -88,24 +88,24 @@ export default function HomePage() {
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-xs sm:text-sm font-semibold text-[#475569]">
-            <Link href="/" className="text-[#0066FF] font-bold relative py-1">
+            <Link href="/in" className="text-[#0066FF] font-bold relative py-1">
               Home
               <span className="hidden lg:block absolute -bottom-3.5 inset-x-0 h-0.5 bg-[#0066FF] rounded-full" />
             </Link>
-            <Link href="/deals/new?type=send" className="hover:text-[#0066FF] transition py-1">
+            <Link href="/in/deals/new?type=send" className="hover:text-[#0066FF] transition py-1">
               Send Package
             </Link>
-            <Link href="/track/SS48291" className="hover:text-[#0066FF] transition py-1">
+            <Link href="/in/track/SS48291" className="hover:text-[#0066FF] transition py-1">
               Track
             </Link>
-            <Link href="/deals/new?type=exchange" className="hover:text-[#0066FF] transition flex items-center gap-1 text-amber-700 py-1">
+            <Link href="/in/deals/new?type=exchange" className="hover:text-[#0066FF] transition flex items-center gap-1 text-amber-700 py-1">
               <ArrowLeftRight className="w-3.5 h-3.5 text-amber-600" />
               <span>Exchange</span>
             </Link>
-            <Link href="/open-box" className="hover:text-[#0066FF] transition py-1 text-[#0066FF] font-bold">
+            <Link href="/in/open-box" className="hover:text-[#0066FF] transition py-1 text-[#0066FF] font-bold">
               Open-Box Demo
             </Link>
-            <Link href="/profile" className="hover:text-[#0066FF] transition py-1">
+            <Link href="/in/profile" className="hover:text-[#0066FF] transition py-1">
               Profile
             </Link>
           </nav>
@@ -367,7 +367,7 @@ export default function HomePage() {
               {/* DUAL HERO CTAs */}
               <div className="pt-1 grid grid-cols-2 sm:flex sm:items-center gap-2 sm:gap-3.5">
                 <Link
-                  href="/deals/new?type=send"
+                  href="/in/deals/new?type=send"
                   className="inline-flex items-center justify-center gap-1.5 sm:gap-2 py-2.5 sm:py-3.5 px-3 sm:px-6 rounded-xl sm:rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs sm:text-sm shadow-md shadow-[#0066FF]/25 hover:shadow-lg hover:shadow-[#0066FF]/35 transition active:scale-98 cursor-pointer text-center whitespace-nowrap"
                 >
                   <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
@@ -488,7 +488,7 @@ export default function HomePage() {
                   Your Shipments
                 </h2>
                 <Link
-                  href="/profile"
+                  href="/in/profile"
                   className="text-xs font-semibold text-[#0066FF] hover:underline flex items-center gap-0.5"
                 >
                   <span>View all</span>
@@ -514,7 +514,7 @@ export default function HomePage() {
                       <p className="text-xs text-[#64748B] truncate mt-0.5">Order #{activeShipment.id} &bull; {activeShipment.city} &rarr; {activeShipment.buyer?.city || 'Jaipur'}</p>
                     </div>
                     <Link
-                      href={`/track/${activeShipment.id}`}
+                      href={`/in/track/${activeShipment.id}`}
                       className="px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-xs transition shrink-0"
                     >
                       Track Live &rarr;
@@ -538,7 +538,7 @@ export default function HomePage() {
                     </div>
                   </div>
                   <Link
-                    href="/deals/new?type=send"
+                    href="/in/deals/new?type=send"
                     className="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-2xs transition active:scale-95 shrink-0 whitespace-nowrap"
                   >
                     <Send className="w-3.5 h-3.5" />
@@ -559,7 +559,7 @@ export default function HomePage() {
               <div className="grid grid-cols-3 gap-2 sm:gap-3.5">
                 {/* Action 1: Ship a package */}
                 <Link
-                  href="/deals/new?type=send"
+                  href="/in/deals/new?type=send"
                   className="bg-white rounded-2xl border border-slate-200 p-2.5 sm:p-4 flex flex-col justify-between hover:border-[#0066FF] shadow-2xs hover:shadow-xs transition group cursor-pointer"
                 >
                   <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl bg-[#EFF6FF] text-[#0066FF] flex items-center justify-center mb-2 group-hover:scale-105 transition">
@@ -576,7 +576,7 @@ export default function HomePage() {
 
                 {/* Action 2: Verify a delivery */}
                 <Link
-                  href="/open-box"
+                  href="/in/open-box"
                   className="bg-white rounded-2xl border border-slate-200 p-2.5 sm:p-4 flex flex-col justify-between hover:border-emerald-500 shadow-2xs hover:shadow-xs transition group cursor-pointer"
                 >
                   <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl bg-[#ECFDF5] text-emerald-600 flex items-center justify-center mb-2 group-hover:scale-105 transition">
@@ -622,7 +622,7 @@ export default function HomePage() {
                   <p className="text-slate-600 text-[11px] mt-0.5">₹0 product charge upfront. Pay via UPI QR code only after unboxing &amp; approval.</p>
                 </div>
               </div>
-              <Link href="/insurance" className="text-xs font-bold text-[#0066FF] hover:underline whitespace-nowrap pl-2">
+              <Link href="/in/insurance" className="text-xs font-bold text-[#0066FF] hover:underline whitespace-nowrap pl-2">
                 Learn more &rarr;
               </Link>
             </div>
@@ -651,7 +651,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <Link
-                  href="/nodal-escrow"
+                  href="/in/nodal-escrow"
                   className="text-xs font-semibold text-[#0066FF] hover:underline flex items-center gap-0.5 shrink-0"
                 >
                   <span>Learn more</span>
@@ -754,7 +754,7 @@ export default function HomePage() {
                     Simulated camera unboxing, optical OCR &amp; escrow handshake
                   </span>
                   <Link
-                    href="/open-box?deal=SS48291"
+                    href="/in/open-box?deal=SS48291"
                     className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-xs hover:shadow-md transition active:scale-95 whitespace-nowrap ml-auto"
                   >
                     <span>Launch Open-Box Simulator</span>

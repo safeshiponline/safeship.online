@@ -176,7 +176,7 @@ function TrackingContent({
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (searchId.trim()) router.push(`/track/${searchId.trim()}`);
+              if (searchId.trim()) router.push(`/in/track/${searchId.trim()}`);
             }}
             className="mt-6 w-full space-y-2.5"
           >
@@ -199,13 +199,13 @@ function TrackingContent({
 
           <div className="mt-6 pt-5 border-t border-[#E2E8F0] w-full flex flex-col gap-2.5">
             <Link
-              href="/deals/new?type=send"
+              href="/in/deals/new?type=send"
               className="w-full py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-[#CBD5E1] text-[#0F172A] text-xs font-bold transition shadow-2xs"
             >
               Book a New Shipment
             </Link>
             <Link
-              href="/track/SS48291"
+              href="/in/track/SS48291"
               className="text-[11px] text-[#0066FF] hover:underline font-semibold"
             >
               Want to see a live sample? View Demo Order SS48291 &rarr;
@@ -216,7 +216,7 @@ function TrackingContent({
     );
   }
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : `https://safeship.online/track/${deal.id}`;
+  const shareUrl = typeof window !== 'undefined' ? window.location.href : `https://safeship.online/in/track/${deal.id}`;
 
   const copyTrackingLink = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -267,7 +267,7 @@ function TrackingContent({
                 return (
                   <Link
                     key={d.id}
-                    href={`/track/${d.id}`}
+                    href={`/in/track/${d.id}`}
                     className={`px-3 py-1 rounded-full font-mono text-[11px] font-bold transition whitespace-nowrap shrink-0 cursor-pointer ${
                       isActive
                         ? 'bg-[#0066FF] text-white shadow-xs'
@@ -280,7 +280,7 @@ function TrackingContent({
               })}
             </div>
             <Link
-              href="/deals/new"
+              href="/in/deals/new"
               className="text-[11px] font-bold text-[#0066FF] hover:underline whitespace-nowrap shrink-0 pl-2"
             >
               + Book New
@@ -356,7 +356,7 @@ function TrackingContent({
             </button>
 
             <Link
-              href={`/open-box?deal=${deal.id}${isExchange ? '&type=exchange' : ''}`}
+              href={`/in/open-box?deal=${deal.id}${isExchange ? '&type=exchange' : ''}`}
               className="px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-xs font-bold text-white flex items-center gap-1.5 transition shadow-sm shadow-[#0066FF]/25 active:scale-95"
             >
               <Eye className="w-3.5 h-3.5" />
@@ -698,7 +698,7 @@ function TrackingContent({
                 When courier Rahul K. arrives, inspect the package before approving delivery or paying. If there are issues, the item is returned safely at ₹0 product charge.
               </p>
               <Link
-                href={`/open-box?deal=${deal.id}${isExchange ? '&type=exchange' : ''}`}
+                href={`/in/open-box?deal=${deal.id}${isExchange ? '&type=exchange' : ''}`}
                 className="w-full py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-center block transition cursor-pointer shadow-sm active:scale-98"
               >
                 Launch Doorstep Console &rarr;

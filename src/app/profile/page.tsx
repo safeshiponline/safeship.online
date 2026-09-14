@@ -324,7 +324,7 @@ export default function ProfilePage() {
 
                     <div className="flex items-center gap-2 shrink-0">
                       <Link
-                        href={`/track/${order.id}`}
+                        href={`/in/track/${order.id}`}
                         className="px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer"
                       >
                         <span>Live Track</span>
@@ -363,7 +363,7 @@ export default function ProfilePage() {
 
               <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
                 <Link
-                  href="/deals/new?type=send"
+                  href="/in/deals/new?type=send"
                   className="px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-xs transition inline-flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>Book Package Delivery</span>
@@ -424,7 +424,7 @@ export default function ProfilePage() {
                   <div className="text-[11px] text-[#64748B]">Exercise your DPDP Act Section 12 rights to download audit logs or request profile data erasure.</div>
                 </div>
               </div>
-              <Link href="/privacy" className="text-xs font-bold text-[#0066FF] hover:underline">
+              <Link href="/in/privacy" className="text-xs font-bold text-[#0066FF] hover:underline">
                 View Policy &rarr;
               </Link>
             </div>
@@ -443,7 +443,7 @@ export default function ProfilePage() {
 
             <div className="flex items-center gap-2.5">
               <Link
-                href="/courier"
+                href="/in/courier"
                 className="px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-[#0F172A] text-xs font-semibold border border-[#CBD5E1] transition flex items-center gap-1.5 cursor-pointer"
               >
                 <Truck className="w-3.5 h-3.5 text-[#0066FF]" />
@@ -451,7 +451,7 @@ export default function ProfilePage() {
               </Link>
 
               <Link
-                href="/admin"
+                href="/in/admin"
                 className="px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 text-[#0F172A] text-xs font-semibold border border-[#CBD5E1] transition flex items-center gap-1.5 cursor-pointer"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-zinc-700" />

@@ -165,7 +165,7 @@ function OpenBoxContent() {
             </button>
 
             <Link
-              href="/track/SS48291"
+              href="/in/track/SS48291"
               className="w-full py-3 rounded-xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs hover:bg-[#F8FAFC] transition text-center cursor-pointer flex items-center justify-center gap-1.5"
             >
               <FileText className="w-3.5 h-3.5 text-[#0066FF]" />
@@ -173,7 +173,7 @@ function OpenBoxContent() {
             </Link>
 
             <Link
-              href="/"
+              href="/in"
               className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#475569] font-semibold text-xs transition text-center cursor-pointer"
             >
               Back to Home
@@ -218,7 +218,7 @@ function OpenBoxContent() {
           </div>
 
           <Link
-            href="/"
+            href="/in"
             className="mt-6 block w-full py-3 rounded-xl bg-[#0F172A] hover:bg-black text-white font-bold text-sm shadow-md transition text-center cursor-pointer"
           >
             Back to Home
@@ -235,7 +235,7 @@ function OpenBoxContent() {
       <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-30 px-4 py-3">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <Link
-            href="/"
+            href="/in"
             className="w-9 h-9 rounded-full bg-[#F1F5F9] hover:bg-[#E2E8F0] flex items-center justify-center text-[#0F172A] transition"
           >
             <ArrowLeft className="w-4.5 h-4.5" />
@@ -250,7 +250,7 @@ function OpenBoxContent() {
             </h1>
           </div>
 
-          <Link href="/" className="w-9 h-9 flex items-center justify-center">
+          <Link href="/in" className="w-9 h-9 flex items-center justify-center">
             <SafeShipLogo className="w-7 h-7" />
           </Link>
         </div>

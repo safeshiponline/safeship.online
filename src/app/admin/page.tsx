@@ -359,7 +359,7 @@ export default function AdminOpsPage() {
                     </td>
                     <td className="py-3.5 px-3 text-right">
                       <Link
-                        href={`/deals/${d.id}`}
+                        href={`/in/deals/${d.id}`}
                         className="px-3 py-1 rounded-xl bg-zinc-50 hover:bg-zinc-100 text-zinc-800 text-[11px] font-semibold transition inline-flex items-center gap-1 border border-zinc-200 shadow-2xs"
                       >
                         <span>Audit</span>

@@ -15,7 +15,7 @@ export default function PrivacyPage() {
         
         {/* Breadcrumb / Back */}
         <div className="flex items-center gap-2 text-xs font-semibold text-[#64748B]">
-          <Link href="/" className="hover:text-[#0066FF] flex items-center gap-1">
+          <Link href="/in" className="hover:text-[#0066FF] flex items-center gap-1">
             <ArrowLeft className="w-3.5 h-3.5" />
             <span>Home</span>
           </Link>
@@ -105,16 +105,16 @@ export default function PrivacyPage() {
         {/* Footer Navigation */}
         <div className="pt-6 border-t border-[#E2E8F0] flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex items-center gap-3">
-            <Link href="/terms" className="text-[#0066FF] hover:underline font-semibold">
+            <Link href="/in/terms" className="text-[#0066FF] hover:underline font-semibold">
               &larr; Terms of Service
             </Link>
-            <Link href="/nodal-escrow" className="text-[#0066FF] hover:underline font-semibold">
+            <Link href="/in/nodal-escrow" className="text-[#0066FF] hover:underline font-semibold">
               RBI Nodal Escrow Architecture &rarr;
             </Link>
           </div>
 
           <Link
-            href="/deals/new"
+            href="/in/deals/new"
             className="px-4 py-2 rounded-xl bg-[#0066FF] text-white font-bold hover:bg-[#0052FF] transition shadow-xs"
           >
             Create SafeShip Consignment

@@ -562,10 +562,10 @@ function CreateShipmentContent() {
             }
           });
 
-          router.push(`/track/${created.id}?booked=true&payment_id=${verifyData.payment_id}`);
+          router.push(`/in/track/${created.id}?booked=true&payment_id=${verifyData.payment_id}`);
         } catch (e) {
           console.error('Error creating deal record in store:', e);
-          router.push(`/track/SS48291?booked=true&payment_id=${verifyData.payment_id}`);
+          router.push(`/in/track/SS48291?booked=true&payment_id=${verifyData.payment_id}`);
         }
       },
       onFailure: (err) => {
@@ -581,7 +581,7 @@ function CreateShipmentContent() {
       <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-30 px-4 py-3">
         <div className="max-w-3xl mx-auto flex items-center justify-between">
           <Link
-            href="/"
+            href="/in"
             className="w-9 h-9 rounded-full bg-[#F1F5F9] hover:bg-[#E2E8F0] flex items-center justify-center text-[#0F172A] transition active:scale-95"
             title="Return to Home"
           >
@@ -600,7 +600,7 @@ function CreateShipmentContent() {
             </h1>
           </div>
 
-          <Link href="/" className="w-9 h-9 flex items-center justify-center">
+          <Link href="/in" className="w-9 h-9 flex items-center justify-center">
             <SafeShipLogo className="w-7 h-7" />
           </Link>
         </div>
@@ -2019,7 +2019,7 @@ function CreateShipmentContent() {
               <div className="text-center pt-1">
                 <button
                   type="button"
-                  onClick={() => router.push(`/open-box?type=${mode}&deal=SS48291`)}
+                  onClick={() => router.push(`/in/open-box?type=${mode}&deal=SS48291`)}
                   className="text-[11px] text-[#64748B] hover:text-[#0066FF] underline cursor-pointer"
                 >
                   Or test Open-Box Doorstep Console without payment &rarr;

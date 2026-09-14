@@ -6,7 +6,7 @@ import './globals.css';
 import { AISupportWidget } from '@/components/common/AISupportWidget';
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://safeship.online'),
+  metadataBase: new URL('https://safeship.online/in'),
   title: {
     default: 'SafeShip India | Guaranteed Doorstep Open-Box Delivery & Escrow Settlement',
     template: '%s | SafeShip India'
@@ -25,16 +25,16 @@ export const metadata: Metadata = {
     '2-way hardware exchange courier',
     'tamper proof courier india'
   ],
-  authors: [{ name: 'SafeShip Technologies India Pvt. Ltd.', url: 'https://safeship.online' }],
+  authors: [{ name: 'SafeShip Technologies India Pvt. Ltd.', url: 'https://safeship.online/in' }],
   creator: 'SafeShip Technologies',
   publisher: 'SafeShip Logistics Network',
   alternates: {
-    canonical: 'https://safeship.online',
+    canonical: 'https://safeship.online/in',
   },
   openGraph: {
     title: 'SafeShip India | Guaranteed Doorstep Open-Box Delivery & Escrow Settlement',
     description: 'Ship smartphones, laptops, cameras, and luxury goods with 100% trust. Pay only delivery upfront. Receiver inspects device for 10 minutes at doorstep before releasing escrow.',
-    url: 'https://safeship.online',
+    url: 'https://safeship.online/in',
     siteName: 'SafeShip India',
     images: [
       {
@@ -89,9 +89,9 @@ const jsonLdData = {
   '@graph': [
     {
       '@type': 'Organization',
-      '@id': 'https://safeship.online/#organization',
+      '@id': 'https://safeship.online/in/#organization',
       name: 'SafeShip Technologies India Pvt. Ltd.',
-      url: 'https://safeship.online',
+      url: 'https://safeship.online/in',
       logo: 'https://safeship.online/icon.svg',
       description: 'Ultra-premium P2P & B2C courier delivery and escrow platform with guaranteed doorstep open-box inspection.',
       contactPoint: {
@@ -108,10 +108,10 @@ const jsonLdData = {
     },
     {
       '@type': 'DeliveryService',
-      '@id': 'https://safeship.online/#service',
+      '@id': 'https://safeship.online/in/#service',
       name: 'SafeShip Doorstep Open-Box Inspection & Escrow Delivery',
       provider: {
-        '@id': 'https://safeship.online/#organization'
+        '@id': 'https://safeship.online/in/#organization'
       },
       serviceType: 'Insured Courier Delivery & Escrow Settlement',
       areaServed: {
@@ -142,7 +142,7 @@ const jsonLdData = {
     },
     {
       '@type': 'FAQPage',
-      '@id': 'https://safeship.online/#faq',
+      '@id': 'https://safeship.online/in/#faq',
       mainEntity: [
         {
           '@type': 'Question',
