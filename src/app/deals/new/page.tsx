@@ -186,6 +186,46 @@ function CreateShipmentContent() {
     setStepErrorBanner('');
   };
 
+  useEffect(() => {
+    const isDemo = searchParams.get('demo') === 'true';
+    const reqStep = searchParams.get('step');
+    if (isDemo) {
+      setSelectedCategory('SMARTPHONES_TABLETS');
+      setItemName('Apple iPhone 15 Pro (128GB)');
+      setCondition('Used - Mint');
+      setDeclaredValue(10000);
+      setPackageWeight('0.85');
+      setIncludedItems('Original box, 20W charger, Braided USB-C Cable');
+      setUploadedPhotos(['/real_deal/product_front.png']);
+      setSenderName('Rohan Verma');
+      setSenderPhone('9829012345');
+      setPickupLocation('Flat 402, Block B, Malviya Nagar');
+      setPickupPincode('302017');
+      const pick = resolvePincode('302017');
+      setPickupCity(pick.city);
+      setPickupState(pick.state);
+      setPickupHub(pick.hubName);
+
+      setBuyerName('Amit Sharma');
+      setBuyerPhone('9811088912');
+      setDropLocation('Unit 12B, Building 4, DLF Phase 2');
+      setDropPincode('110001');
+      const drop = resolvePincode('110001');
+      setDropCity(drop.city);
+      setDropState(drop.state);
+      setDropHub(drop.hubName);
+
+      const route = calculateRoadDistance('302017', '110001');
+      setDistanceKm(route.distanceKm);
+      setIsIntercity(route.isIntercity);
+      setRouteCorridor(route.corridorName);
+
+      if (reqStep) {
+        setCurrentStep(Number(reqStep));
+      }
+    }
+  }, [searchParams]);
+
   // 8 Realistic Categories (Vehicles removed!)
   const categories: { id: ItemCategory; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: 'SMARTPHONES_TABLETS', label: 'Smartphones & Tablets', icon: Smartphone },
@@ -465,43 +505,43 @@ function CreateShipmentContent() {
       </header>
 
       {/* MODE SEGMENTED TOGGLE (1-Way Delivery vs 2-Way Item Exchange) */}
-      <div className="bg-white border-b border-[#E2E8F0] py-2.5 px-4">
+      <div className="bg-white border-b border-[#E2E8F0] py-2 px-3 sm:px-4">
         <div className="max-w-md mx-auto flex items-center bg-[#F1F5F9] p-1 rounded-2xl border border-[#E2E8F0]">
           <button
             type="button"
             onClick={() => setMode('send')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 py-1.5 sm:py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
               mode === 'send'
                 ? 'bg-white text-[#0066FF] shadow-xs border border-blue-100'
                 : 'text-[#64748B] hover:text-[#0F172A]'
             }`}
           >
-            <Package className="w-3.5 h-3.5" />
-            <span>1-Way Delivery</span>
+            <Package className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">1-Way Delivery</span>
           </button>
 
           <button
             type="button"
             onClick={() => setMode('exchange')}
-            className={`flex-1 py-2 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            className={`flex-1 py-1.5 sm:py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
               mode === 'exchange'
                 ? 'bg-amber-50 text-amber-700 shadow-xs border border-amber-200'
                 : 'text-[#64748B] hover:text-[#0F172A]'
             }`}
           >
-            <ArrowLeftRight className="w-3.5 h-3.5 text-amber-600" />
-            <span>2-Way Item Swap</span>
+            <ArrowLeftRight className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span className="truncate">2-Way Swap</span>
           </button>
         </div>
       </div>
 
       {/* Progress Dots */}
       <div className="bg-white border-b border-[#E2E8F0] py-2">
-        <div className="max-w-md mx-auto flex items-center justify-between px-6">
+        <div className="max-w-md mx-auto flex items-center justify-around sm:justify-between px-3 sm:px-6">
           {[1, 2, 3, 4].map((s) => (
-            <div key={s} className="flex items-center gap-2">
+            <div key={s} className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <div
-                className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center ${
+                className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center shrink-0 ${
                   s === currentStep
                     ? 'bg-[#0066FF] text-white shadow-sm ring-2 ring-blue-100'
                     : s < currentStep
@@ -1343,12 +1383,12 @@ function CreateShipmentContent() {
 
             {/* 4 SERVICE TIERS SELECTION */}
             <div className="space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#334155] uppercase tracking-wider block">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                <span className="text-xs font-bold text-[#334155] uppercase tracking-wider">
                   Choose SafeShip Logistics Service Tier:
                 </span>
                 <span className="text-[11px] text-[#0066FF] font-semibold">
-                  Doorstep Open-Box Inspection Included
+                  Doorstep Open-Box Inspection Included ✓
                 </span>
               </div>
 
@@ -1363,7 +1403,7 @@ function CreateShipmentContent() {
                     onClick={() => {
                       if (!isDisabled) setSelectedTier(tierKey);
                     }}
-                    className={`rounded-2xl p-4 border transition cursor-pointer relative ${
+                    className={`rounded-2xl p-3.5 sm:p-4 border transition cursor-pointer relative ${
                       isDisabled
                         ? 'bg-slate-50/80 border-slate-200 opacity-60 cursor-not-allowed'
                         : isSelected
@@ -1371,15 +1411,15 @@ function CreateShipmentContent() {
                         : 'bg-white border-[#E2E8F0] hover:border-blue-300'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-start justify-between gap-2 sm:gap-3">
+                      <div className="space-y-1 flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className={`text-sm font-bold ${isSelected ? 'text-[#0066FF]' : 'text-[#0F172A]'}`}>
                             {tier.tierLabel}
                           </span>
                           {tier.badge && !isDisabled && (
                             <span
-                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                              className={`text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full ${
                                 tierKey === 'FASTEST_AIR_RUSH'
                                   ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xs'
                                   : tierKey === 'PRIORITY_EXPRESS'
@@ -1393,13 +1433,13 @@ function CreateShipmentContent() {
                             </span>
                           )}
                           {tier.speedBadge && !isDisabled && (
-                            <span className="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full border border-blue-200">
+                            <span className="text-[9px] sm:text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full border border-blue-200">
                               {tier.speedBadge}
                             </span>
                           )}
                         </div>
 
-                        <p className="text-[11px] text-[#64748B]">
+                        <p className="text-[11px] text-[#64748B] leading-tight">
                           {tier.tagline} &bull; <strong className="text-[#0F172A]">{tier.transitTime}</strong>
                         </p>
 
@@ -1410,15 +1450,15 @@ function CreateShipmentContent() {
                         )}
                       </div>
 
-                      <div className="text-right shrink-0">
+                      <div className="text-right shrink-0 pl-2">
                         {isDisabled ? (
                           <span className="text-xs font-bold text-slate-400">N/A</span>
                         ) : (
                           <>
-                            <span className="text-xl font-black text-[#0F172A] block leading-none font-mono">
+                            <span className="text-lg sm:text-xl font-black text-[#0F172A] block leading-none font-mono">
                               ₹{tier.totalUpfront.toLocaleString('en-IN')}
                             </span>
-                            <span className="text-[10px] text-emerald-600 font-semibold">
+                            <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5">
                               All-inclusive
                             </span>
                           </>
@@ -1431,10 +1471,9 @@ function CreateShipmentContent() {
             </div>
 
             {/* UPFRONT MATHEMATICAL PRICE BREAKDOWN */}
-            {/* UPFRONT MATHEMATICAL PRICE BREAKDOWN */}
-            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3">
-              <div className="flex items-center justify-between pb-2.5 border-b border-[#F1F5F9] gap-2">
-                <div>
+            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E2E8F0] shadow-xs space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2.5 border-b border-[#F1F5F9] gap-1.5">
+                <div className="min-w-0">
                   <h3 className="text-xs font-bold text-[#64748B] uppercase tracking-wider">
                     Upfront Booking Breakdown ({activeTierBreakdown.tierLabel})
                   </h3>
@@ -1444,25 +1483,25 @@ function CreateShipmentContent() {
                       : 'High-Value Security: Bonded flight cargo, white-glove doorstep inspection & transit insurance'}
                   </p>
                 </div>
-                <span className="text-[11px] font-bold text-[#0066FF] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100 shrink-0">
+                <span className="text-[11px] font-bold text-[#0066FF] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100 shrink-0 self-start sm:self-center">
                   {(distanceKm || effectiveDistance).toLocaleString('en-IN')} km Route
                 </span>
               </div>
 
               <div className="space-y-2.5 text-xs">
-                <div className="flex justify-between text-[#475569]">
-                  <span>Base Linehaul Air/Freight Charge:</span>
-                  <span className="font-semibold text-[#0F172A] font-mono">₹{activeTierBreakdown.baseFee.toLocaleString('en-IN')}</span>
+                <div className="flex justify-between items-center text-[#475569] gap-2">
+                  <span className="min-w-0">Base Linehaul Air/Freight Charge:</span>
+                  <span className="font-semibold text-[#0F172A] font-mono shrink-0">₹{activeTierBreakdown.baseFee.toLocaleString('en-IN')}</span>
                 </div>
 
-                <div className="flex justify-between text-[#475569]">
-                  <span>National Corridor Distance Surcharge:</span>
-                  <span className="font-semibold text-[#0F172A] font-mono">₹{activeTierBreakdown.distanceSurcharge.toLocaleString('en-IN')}</span>
+                <div className="flex justify-between items-center text-[#475569] gap-2">
+                  <span className="min-w-0">National Corridor Distance Surcharge:</span>
+                  <span className="font-semibold text-[#0F172A] font-mono shrink-0">₹{activeTierBreakdown.distanceSurcharge.toLocaleString('en-IN')}</span>
                 </div>
 
                 {/* Clean Multi-line inspection row to prevent awkward wrapping */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-1.5 border-y border-slate-100/80 text-[#475569] gap-1">
-                  <div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-1.5 border-y border-slate-100/80 text-[#475569] gap-1.5">
+                  <div className="min-w-0">
                     <span className="font-medium text-[#0F172A]">Doorstep Open-Box Inspection &amp; Testing:</span>
                     {activeTierBreakdown.verificationFee === 0 && (
                       <span className="text-[10px] text-emerald-600 font-semibold block">
@@ -1486,52 +1525,57 @@ function CreateShipmentContent() {
                 </div>
 
                 {activeTierBreakdown.escrowCustodyFee ? (
-                  <div className="flex justify-between text-[#475569]">
-                    <span>Tamper-Evident Security Seal &amp; Escrow Lock:</span>
-                    <span className="font-semibold text-[#0F172A] font-mono">₹{activeTierBreakdown.escrowCustodyFee.toLocaleString('en-IN')}</span>
+                  <div className="flex justify-between items-center text-[#475569] gap-2">
+                    <span className="min-w-0">Tamper-Evident Security Seal &amp; Escrow Lock:</span>
+                    <span className="font-semibold text-[#0F172A] font-mono shrink-0">₹{activeTierBreakdown.escrowCustodyFee.toLocaleString('en-IN')}</span>
                   </div>
                 ) : null}
 
-                <div className="flex justify-between text-[#475569]">
-                  <span>
+                <div className="flex justify-between items-center text-[#475569] gap-2">
+                  <span className="min-w-0">
                     Comprehensive Cargo Insurance ({declaredValue > 5000 ? '0.5% for ₹' + declaredValue.toLocaleString('en-IN') : 'Flat ₹5,000 cover'}):
                   </span>
-                  <span className="font-semibold text-[#0F172A] font-mono">₹{activeTierBreakdown.insuranceFee.toLocaleString('en-IN')}</span>
+                  <span className="font-semibold text-[#0F172A] font-mono shrink-0">₹{activeTierBreakdown.insuranceFee.toLocaleString('en-IN')}</span>
                 </div>
 
-                <div className="pt-3 border-t border-[#E2E8F0] flex justify-between items-baseline">
-                  <div>
+                <div className="pt-3 border-t border-[#E2E8F0] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                  <div className="min-w-0">
                     <span className="text-sm font-black text-[#0F172A] block">
                       Total Upfront Courier Booking Fee:
                     </span>
-                    <span className="text-[10px] text-emerald-600 font-semibold">
+                    <span className="text-[10px] text-emerald-600 font-semibold block">
                       Paid now via Razorpay &bull; Product price held in escrow until doorstep approval
                     </span>
                   </div>
-                  <span className="text-2xl font-black text-[#0066FF] font-mono">
-                    ₹{activeTierBreakdown.totalUpfront.toLocaleString('en-IN')}
-                  </span>
+                  <div className="text-left sm:text-right shrink-0">
+                    <span className="text-2xl font-black text-[#0066FF] font-mono tracking-tight block">
+                      ₹{activeTierBreakdown.totalUpfront.toLocaleString('en-IN')}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      Inc. all taxes &amp; insurance
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* GST TAX INVOICE & COMPLIANCE SECTION */}
-            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3">
-              <div className="flex items-center justify-between pb-2.5 border-b border-[#F1F5F9]">
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#0066FF] flex items-center justify-center font-bold text-xs">
+            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E2E8F0] shadow-xs space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2.5 border-b border-[#F1F5F9] gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#0066FF] flex items-center justify-center font-bold text-xs shrink-0">
                     <FileText className="w-4 h-4" />
                   </div>
-                  <div>
-                    <h3 className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
+                  <div className="min-w-0">
+                    <h3 className="text-xs font-bold text-[#0F172A] uppercase tracking-wider truncate">
                       GST Tax Invoice &amp; Billable Compliance
                     </h3>
-                    <p className="text-[10px] text-slate-500">
-                      SAC Code: <strong>996812</strong> (Courier &amp; Cargo) &bull; SafeShip GSTIN: <strong>08AAECS2938Q1ZP</strong>
+                    <p className="text-[10px] text-slate-500 truncate">
+                      SAC Code: <strong>996812</strong> &bull; SafeShip GSTIN: <strong>08AAECS2938Q1ZP</strong>
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 shrink-0 self-start sm:self-center">
                   18% GST Included
                 </span>
               </div>
