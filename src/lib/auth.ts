@@ -132,6 +132,14 @@ export async function loginWithCredentials(params: {
 }
 
 /**
+ * Direct Google OAuth Redirect: navigates straight to /api/auth/google/signin
+ */
+export function redirectToGoogleLogin(returnUrl: string = '/profile'): void {
+  if (typeof window === 'undefined') return;
+  window.location.href = `/api/auth/google/signin?returnUrl=${encodeURIComponent(returnUrl)}`;
+}
+
+/**
  * Real Google Authentication: POST /api/auth/google
  */
 export async function loginWithGoogle(

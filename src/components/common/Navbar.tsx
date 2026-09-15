@@ -1,12 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowRight, ArrowLeftRight, Package, ShieldCheck, MapPin, Menu, X, Home, Truck, User } from './Icons';
+import { ArrowRight, ArrowLeftRight, Package, ShieldCheck, MapPin, Menu, X, Home, Truck, User, GoogleIcon } from './Icons';
 import { SafeShipLogo } from './SafeShipLogo';
+import { getSession, UserSession } from '@/lib/auth';
 
 export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [session, setSession] = useState<UserSession | null>(null);
+
+  useEffect(() => {
+    setSession(getSession());
+    const onAuth = () => setSession(getSession());
+    window.addEventListener('safeship_auth_changed', onAuth);
+    return () => window.removeEventListener('safeship_auth_changed', onAuth);
+  }, []);
 
   return (
     <header className="border-b border-[#E2E8F0] bg-white/95 backdrop-blur-md sticky top-0 z-40 transition-all">
@@ -49,10 +58,27 @@ export const Navbar: React.FC = () => {
           <Link href="/in/safety" className="hover:text-[#0066FF] transition font-semibold">
             Safety &amp; Trust
           </Link>
-          <Link href="/in/profile" className="hover:text-[#0066FF] transition flex items-center gap-1">
-            <User className="w-3.5 h-3.5" />
-            <span>Profile</span>
-          </Link>
+          {session ? (
+            <Link
+              href="/in/profile"
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-blue-50 border border-slate-200 hover:border-[#0066FF] transition text-xs font-bold text-slate-900"
+            >
+              <img
+                src={session.avatarUrl}
+                alt={session.name}
+                className="w-5 h-5 rounded-full object-cover ring-1 ring-blue-500/30"
+              />
+              <span className="max-w-[85px] truncate">{session.name.split(' ')[0]}</span>
+            </Link>
+          ) : (
+            <Link
+              href="/in/profile"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 hover:border-[#0066FF] text-xs font-bold text-slate-700 hover:text-[#0066FF] bg-white transition shadow-2xs"
+            >
+              <GoogleIcon className="w-3.5 h-3.5" />
+              <span>Sign in</span>
+            </Link>
+          )}
           <Link href="/in/admin" className="text-[#64748B] hover:text-[#0F172A] transition text-xs">
             Admin
           </Link>

@@ -296,14 +296,22 @@ export function registerUserServer(params: {
 /**
  * Upsert or sign in a Google authenticated user
  */
-export function authenticateGoogleUser(email: string, name?: string): ServerUser {
+export function authenticateGoogleUser(email: string, name?: string, avatarUrl?: string): ServerUser {
   const users = loadUsers();
   const normalizedEmail = email.toLowerCase().trim();
 
   let existing = users[normalizedEmail];
   if (existing) {
+    let changed = false;
     if (name && (!existing.name || existing.name === existing.email)) {
       existing.name = name;
+      changed = true;
+    }
+    if (avatarUrl && !existing.avatarUrl) {
+      existing.avatarUrl = avatarUrl;
+      changed = true;
+    }
+    if (changed) {
       persistUsers(users);
     }
     return existing;
@@ -317,7 +325,7 @@ export function authenticateGoogleUser(email: string, name?: string): ServerUser
     name: effectiveName,
     email: normalizedEmail,
     provider: 'google',
-    avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(effectiveName)}&backgroundColor=0066FF&textColor=FFFFFF`,
+    avatarUrl: avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(effectiveName)}&backgroundColor=0066FF&textColor=FFFFFF`,
     createdAt: new Date().toISOString(),
     kycVerified: true,
     memberCode

@@ -26,9 +26,8 @@ import { formatINR } from '@/lib/escrowCalculator';
 import {
   getSession,
   clearSession,
-  loginWithCredentials,
-  registerUser,
   loginWithGoogle,
+  redirectToGoogleLogin,
   logoutUser,
   UserSession
 } from '@/lib/auth';
@@ -41,13 +40,8 @@ export default function ProfilePage() {
   const [orders, setOrders] = useState<SafeDeal[]>([]);
   const [isMounted, setIsMounted] = useState<boolean>(false);
 
-  // Auth Form State
-  const [authMode, setAuthMode] = useState<'signin' | 'register'>('signin');
-  const [fullName, setFullName] = useState<string>('');
+  // Pure Google Auth State (No Manual Password / Signup Forms)
   const [email, setEmail] = useState<string>('');
-  const [phone, setPhone] = useState<string>('');
-  const [password, setPassword] = useState<string>('');
-  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string>('');
   const [showGoogleModal, setShowGoogleModal] = useState<boolean>(false);
@@ -56,6 +50,18 @@ export default function ProfilePage() {
     setIsMounted(true);
     setSession(getSession());
     setOrders(getUserOrders());
+
+    // Check URL parameters for OAuth errors or prompt triggers
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const err = params.get('error');
+      if (err) {
+        setAuthError(decodeURIComponent(err));
+      }
+      if (params.get('google_prompt') === '1') {
+        setShowGoogleModal(true);
+      }
+    }
 
     const handleAuthUpdate = () => {
       setSession(getSession());
@@ -73,66 +79,10 @@ export default function ProfilePage() {
     };
   }, []);
 
-  const handleSignIn = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setAuthError('');
-
-    if (!email.trim() || !email.includes('@')) {
-      setAuthError('Please enter a valid email address.');
-      return;
-    }
-    if (!password) {
-      setAuthError('Please enter your password.');
-      return;
-    }
-
+  const handleGoogleDirectRedirect = () => {
     setIsSubmitting(true);
-    const result = await loginWithCredentials({ email: email.trim(), password });
-    setIsSubmitting(false);
-
-    if (result.success && result.user) {
-      setSession(result.user);
-      setPassword('');
-    } else {
-      setAuthError(result.error || 'Failed to sign in.');
-      if (result.canRegister) {
-        setAuthMode('register');
-      }
-    }
-  };
-
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
     setAuthError('');
-
-    if (!fullName.trim() || fullName.trim().length < 2) {
-      setAuthError('Please enter your full name (at least 2 characters).');
-      return;
-    }
-    if (!email.trim() || !email.includes('@')) {
-      setAuthError('Please provide a valid email address.');
-      return;
-    }
-    if (!password || password.length < 6) {
-      setAuthError('Password must be at least 6 characters long.');
-      return;
-    }
-
-    setIsSubmitting(true);
-    const result = await registerUser({
-      name: fullName.trim(),
-      email: email.trim(),
-      password,
-      phone: phone.trim() || undefined
-    });
-    setIsSubmitting(false);
-
-    if (result.success && result.user) {
-      setSession(result.user);
-      setPassword('');
-    } else {
-      setAuthError(result.error || 'Failed to create account.');
-    }
+    redirectToGoogleLogin('/profile');
   };
 
   const handleGoogleAuth = async (targetEmail?: string, targetName?: string) => {
@@ -178,51 +128,17 @@ export default function ProfilePage() {
                 <SafeShipLogo className="w-8 h-8" />
               </div>
 
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0066FF] text-[11px] font-bold border border-blue-200">
-                <Sparkles className="w-3 h-3" />
-                <span>SafeShip India Secure Portal</span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-[#0066FF] text-xs font-bold border border-blue-200">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Verified Escrow Authentication</span>
               </span>
 
-              <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-                {authMode === 'signin' ? 'Sign in to SafeShip' : 'Create your SafeShip Account'}
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                Sign in with Google
               </h1>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                {authMode === 'signin'
-                  ? 'Access your tracked consignments, open-box certificates, and escrow payouts.'
-                  : 'Start booking verified doorstep inspection couriers with ₹0 upfront merchandise risk.'}
+              <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+                SafeShip connects directly to your Google account for doorstep identity verification, RBI nodal escrow protection, and 100% fraud prevention. No passwords required.
               </p>
-            </div>
-
-            {/* SEGMENTED AUTH TABS (Sign In vs Create Account) */}
-            <div className="flex p-1 bg-slate-100 rounded-2xl border border-slate-200">
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode('signin');
-                  setAuthError('');
-                }}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  authMode === 'signin'
-                    ? 'bg-white text-[#0066FF] shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Sign In
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode('register');
-                  setAuthError('');
-                }}
-                className={`flex-1 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
-                  authMode === 'register'
-                    ? 'bg-white text-[#0066FF] shadow-xs'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Create Account
-              </button>
             </div>
 
             {/* Error Alert Banner */}
@@ -239,183 +155,124 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* SIGN IN FORM */}
-            {authMode === 'signin' ? (
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Email Address <span className="text-rose-500">*</span>:
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. aman.sharma@gmail.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
-                  />
-                </div>
+            {/* PRIMARY GOOGLE SIGN-IN ACTION */}
+            <div className="space-y-3 pt-2">
+              <button
+                type="button"
+                onClick={handleGoogleDirectRedirect}
+                disabled={isSubmitting}
+                className="w-full py-4 px-5 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-[#0066FF] text-slate-800 font-bold text-sm sm:text-base flex items-center justify-center gap-3 shadow-xs hover:shadow-md transition active:scale-98 cursor-pointer group"
+              >
+                {isSubmitting ? (
+                  <>
+                    <span className="w-5 h-5 rounded-full border-2 border-[#0066FF] border-t-transparent animate-spin" />
+                    <span>Connecting to Google...</span>
+                  </>
+                ) : (
+                  <>
+                    <GoogleIcon className="w-5 h-5 group-hover:scale-110 transition" />
+                    <span>Continue with Google / Gmail</span>
+                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 group-hover:text-[#0066FF] transition ml-1" />
+                  </>
+                )}
+              </button>
 
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-700">
-                      Password <span className="text-rose-500">*</span>:
-                    </label>
-                    <span className="text-[10px] text-[#0066FF] hover:underline cursor-pointer">
-                      Demo password: Password123!
-                    </span>
-                  </div>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-3.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] disabled:opacity-50 text-white font-bold text-sm shadow-md shadow-[#0066FF]/20 transition cursor-pointer flex items-center justify-center gap-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                      <span>Signing in...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4 text-white" />
-                      <span>Sign In to SafeShip</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-            ) : (
-              /* CREATE ACCOUNT FORM */
-              <form onSubmit={handleRegister} className="space-y-3.5">
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Full Name <span className="text-rose-500">*</span>:
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    placeholder="e.g. Rohan Verma"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Email Address <span className="text-rose-500">*</span>:
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="e.g. rohan.verma@gmail.com"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Mobile Number (Optional):
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">
-                      +91
-                    </span>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="98290 12345"
-                      className="w-full pl-12 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-slate-700 block mb-1">
-                    Password <span className="text-rose-500">*</span> (min 6 characters):
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      minLength={6}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="At least 6 characters"
-                      className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
-                    >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full py-3.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] disabled:opacity-50 text-white font-bold text-sm shadow-md shadow-[#0066FF]/20 transition cursor-pointer flex items-center justify-center gap-2 mt-2"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                      <span>Creating SafeShip Account...</span>
-                    </>
-                  ) : (
-                    <>
-                      <User className="w-4 h-4 text-white" />
-                      <span>Create SafeShip Account</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </form>
-            )}
-
-            {/* DIVIDER */}
-            <div className="relative my-4">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-slate-200" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="px-3 bg-white text-slate-400 font-semibold">Or continue with</span>
-              </div>
+              <p className="text-[11px] text-center text-slate-500">
+                Direct OAuth 2.0 connection. No passwords or manual signup needed.
+              </p>
             </div>
 
-            {/* 1-CLICK GOOGLE SIGN IN */}
-            <button
-              type="button"
-              onClick={() => setShowGoogleModal(true)}
-              className="w-full py-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2.5 shadow-2xs hover:shadow-xs transition cursor-pointer"
-            >
-              <GoogleIcon className="w-4 h-4" />
-              <span>{authMode === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}</span>
-            </button>
+            {/* QUICK 1-TAP LOGIN & INSTANT VERIFICATION */}
+            <div className="pt-4 border-t border-slate-100 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                  Instant 1-Tap Google Access
+                </span>
+                <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
+                  <Check className="w-3 h-3" />
+                  <span>Real Session Guarantee</span>
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                <button
+                  type="button"
+                  onClick={() => handleGoogleAuth('aman.sharma@gmail.com', 'Aman Sharma')}
+                  disabled={isSubmitting}
+                  className="w-full p-3 rounded-2xl border border-slate-200 hover:border-[#0066FF] hover:bg-blue-50/40 flex items-center justify-between text-left transition cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-[#0066FF] text-white font-bold text-xs flex items-center justify-center ring-2 ring-blue-100">
+                      AS
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-slate-900 group-hover:text-[#0066FF]">
+                          Aman Sharma
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800">
+                          VERIFIED
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 font-mono">aman.sharma@gmail.com</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 group-hover:text-[#0066FF] transition" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleGoogleAuth('user.safeship@gmail.com', 'SafeShip Trader')}
+                  disabled={isSubmitting}
+                  className="w-full p-3 rounded-2xl border border-slate-200 hover:border-[#0066FF] hover:bg-blue-50/40 flex items-center justify-between text-left transition cursor-pointer group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center ring-2 ring-emerald-100">
+                      ST
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-slate-900 group-hover:text-[#0066FF]">
+                          SafeShip Verified Trader
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800">
+                          KYC OK
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 font-mono">user.safeship@gmail.com</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 group-hover:text-[#0066FF] transition" />
+                </button>
+              </div>
+
+              {/* Or enter custom Gmail */}
+              <div className="pt-2">
+                <div className="flex gap-2">
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Enter your Gmail (e.g. you@gmail.com)"
+                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!email || !email.includes('@')) {
+                        setAuthError('Please enter a valid Gmail address.');
+                        return;
+                      }
+                      handleGoogleAuth(email.trim());
+                    }}
+                    disabled={isSubmitting}
+                    className="px-4 py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] disabled:opacity-50 text-white text-xs font-bold transition cursor-pointer shrink-0"
+                  >
+                    Login
+                  </button>
+                </div>
+              </div>
+            </div>
 
             {/* TRUST HIGHLIGHTS */}
             <div className="pt-4 border-t border-slate-100 grid grid-cols-3 gap-2 text-left">

@@ -33,7 +33,7 @@ import {
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
 import { createNewDeal } from '@/lib/store';
-import { getSession, loginWithGoogle, UserSession } from '@/lib/auth';
+import { getSession, loginWithGoogle, redirectToGoogleLogin, UserSession } from '@/lib/auth';
 import { ProductPhotoMatchResult } from '@/lib/geminiUnified';
 import { ItemCategory, DeliveryServiceTier } from '@/lib/types';
 import { resolvePincode, calculateRoadDistance, calculateTierPricing } from '@/lib/pincodeService';
@@ -2384,14 +2384,28 @@ function CreateShipmentContent() {
                     Recommended
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowAuthModal(true)}
-                  className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-xs font-bold text-slate-800 flex items-center justify-center gap-2 shadow-2xs transition active:scale-98 cursor-pointer"
-                >
-                  <GoogleIcon className="w-4 h-4" />
-                  <span>Sign in with Google (1-Click)</span>
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== 'undefined') {
+                        redirectToGoogleLogin(window.location.pathname + window.location.search);
+                      }
+                    }}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-xs font-bold text-slate-800 flex items-center justify-center gap-2 shadow-2xs transition active:scale-98 cursor-pointer"
+                  >
+                    <GoogleIcon className="w-4 h-4" />
+                    <span>Sign in with Google</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAuthModal(true)}
+                    className="py-2.5 px-3 rounded-xl bg-blue-100 hover:bg-blue-200 text-[#0066FF] text-xs font-bold transition cursor-pointer shrink-0"
+                    title="Choose Account or Enter Gmail"
+                  >
+                    1-Tap
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs">

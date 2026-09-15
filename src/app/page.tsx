@@ -1011,6 +1011,126 @@ export default function HomePage() {
               </div>
             </section>
 
+            {/* ------------------------------------------------------------------- */}
+            {/* ESCROW PROTECTION MATRIX & ACTIVE ELECTRONIC CORRIDORS              */}
+            {/* FILLS THE EMPTY DESKTOP VOID AND BALANCES WITH THE RIGHT COLUMN      */}
+            {/* ------------------------------------------------------------------- */}
+            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950 text-white rounded-3xl p-5 sm:p-6 shadow-md border border-slate-800 space-y-4">
+              <div className="flex items-center justify-between border-b border-white/10 pb-3 flex-wrap gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-400/30 text-blue-400 flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white tracking-tight">
+                      Doorstep Escrow Security Protocol
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Standard operating procedure on every high-value consignment
+                    </p>
+                  </div>
+                </div>
+                <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold tracking-tight">
+                  100% RBI TRUSTEE BACKED
+                </span>
+              </div>
+
+              {/* 3 Pillars Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 hover:border-blue-400/40 transition">
+                  <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center mb-2">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-bold text-white block">RBI Nodal Custody</span>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                    Buyer funds locked in segregated ICICI Bank trustee escrow until doorstep OTP release.
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 hover:border-emerald-400/40 transition">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-bold text-white block">10-Min Power-On Audit</span>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                    Officer unboxes the device. Test screen, camera, IMEI, and battery before paying.
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 hover:border-purple-400/40 transition">
+                  <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center mb-2">
+                    <Truck className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-bold text-white block">Zero-Risk Doorstep Return</span>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                    If fake or broken, officer reseals on the spot. 100% instant buyer refund.
+                  </p>
+                </div>
+              </div>
+
+              {/* Active High-Speed Corridors */}
+              <div className="pt-2 border-t border-white/10">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                    High-Frequency Verified Corridors
+                  </span>
+                  <span className="text-[10px] text-blue-400 font-semibold">
+                    Live SLA Monitoring
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                  <Link
+                    href="/in/deals/new?type=send"
+                    className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-blue-400/60 hover:bg-white/10 transition group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-[11px]">Mumbai ⇄ Bengaluru</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">
+                        24h Air
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5">
+                      <span>99.9% On-Time</span>
+                      <span className="text-blue-400 group-hover:translate-x-0.5 transition font-bold">Book &rarr;</span>
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/in/deals/new?type=send"
+                    className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-blue-400/60 hover:bg-white/10 transition group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-[11px]">Delhi ⇄ Hyderabad</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold">
+                        36h Express
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5">
+                      <span>OEM Serial Audit</span>
+                      <span className="text-blue-400 group-hover:translate-x-0.5 transition font-bold">Book &rarr;</span>
+                    </div>
+                  </Link>
+
+                  <Link
+                    href="/in/deals/new?type=send"
+                    className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-blue-400/60 hover:bg-white/10 transition group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-white text-[11px]">Pune ⇄ Chennai</span>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold">
+                        48h Direct
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5">
+                      <span>100% Escrow Guard</span>
+                      <span className="text-blue-400 group-hover:translate-x-0.5 transition font-bold">Book &rarr;</span>
+                    </div>
+                  </Link>
+                </div>
+              </div>
+            </section>
+
           </div>
 
           {/* RIGHT COLUMN (Protected By SafeShip + High-Res AI Demo) */}
