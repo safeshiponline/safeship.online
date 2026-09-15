@@ -1,0 +1,26 @@
+{
+  "aman.sharma@gmail.com": {
+    "id": "usr_founder_01",
+    "name": "Aman Sharma",
+    "email": "aman.sharma@gmail.com",
+    "phone": "+91 98290 12345",
+    "passwordHash": "fc65ac2c9a151bb593cea68d7a5fa13278d9d5ab91debcd88eac1a81e14f011f4f383250cda07e3ac52d46c6d89276efeeef683940c35b5b03b5cd0e8857402b",
+    "salt": "39a62f2d1f9d09093a50829996a36a79",
+    "provider": "credentials",
+    "createdAt": "2026-01-15T10:00:00.000Z",
+    "kycVerified": true,
+    "memberCode": "USR-8901"
+  },
+  "user.safeship@gmail.com": {
+    "id": "usr_trader_02",
+    "name": "SafeShip Trader",
+    "email": "user.safeship@gmail.com",
+    "phone": "+91 98290 55555",
+    "passwordHash": "3c7e23adcc48765c5d423df2b2780a1057703ec73fe0c6d2f495720395530cbb5b982936c7c966f192246df24865d59dd60dec8ae46a1e848c42d4f927950e50",
+    "salt": "25067068e9caddf5ac133ec8d14e94c9",
+    "provider": "credentials",
+    "createdAt": "2026-02-01T12:00:00.000Z",
+    "kycVerified": true,
+    "memberCode": "USR-2940"
+  }
+}

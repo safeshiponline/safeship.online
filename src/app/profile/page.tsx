@@ -3,36 +3,54 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/common/Navbar';
-import { SafeShipLogo } from '@/components/common/SafeShipLogo';
 import { RoleSwitcher } from '@/components/common/RoleSwitcher';
-import { getUserOrders, saveUserOrders, getStoredDeals } from '@/lib/store';
-import { getSession, saveSession, clearSession, loginWithGoogle, UserSession } from '@/lib/auth';
-import { SafeDeal } from '@/lib/types';
-import { formatINR } from '@/lib/escrowCalculator';
+import { MobileBottomNav } from '@/components/common/MobileBottomNav';
 import {
-  User,
   ShieldCheck,
   Package,
   ArrowRight,
-  Truck,
-  CheckCircle2,
+  Sparkles,
   Lock,
-  Eye,
-  Check,
   ChevronRight,
+  Eye,
+  EyeOff,
+  User,
+  Truck,
+  ExternalLink,
   GoogleIcon,
   LogOut,
-  Sparkles,
+  Check,
   X
 } from '@/components/common/Icons';
+import { formatINR } from '@/lib/escrowCalculator';
+import {
+  getSession,
+  clearSession,
+  loginWithCredentials,
+  registerUser,
+  loginWithGoogle,
+  logoutUser,
+  UserSession
+} from '@/lib/auth';
+import { getUserOrders } from '@/lib/store';
+import { SafeDeal } from '@/lib/types';
+import { SafeShipLogo } from '@/components/common/SafeShipLogo';
 
 export default function ProfilePage() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [orders, setOrders] = useState<SafeDeal[]>([]);
   const [isMounted, setIsMounted] = useState<boolean>(false);
-  const [showLoginModal, setShowLoginModal] = useState<boolean>(false);
-  const [emailInput, setEmailInput] = useState<string>('');
-  const [nameInput, setNameInput] = useState<string>('');
+
+  // Auth Form State
+  const [authMode, setAuthMode] = useState<'signin' | 'register'>('signin');
+  const [fullName, setFullName] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
+  const [phone, setPhone] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [authError, setAuthError] = useState<string>('');
+  const [showGoogleModal, setShowGoogleModal] = useState<boolean>(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -55,16 +73,85 @@ export default function ProfilePage() {
     };
   }, []);
 
-  const handleGoogleLogin = (emailToUse?: string, nameToUse?: string) => {
-    const targetEmail = emailToUse || emailInput.trim() || 'user.safeship@gmail.com';
-    const targetName = nameToUse || nameInput.trim();
-    loginWithGoogle(targetEmail, targetName);
-    setShowLoginModal(false);
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+
+    if (!email.trim() || !email.includes('@')) {
+      setAuthError('Please enter a valid email address.');
+      return;
+    }
+    if (!password) {
+      setAuthError('Please enter your password.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const result = await loginWithCredentials({ email: email.trim(), password });
+    setIsSubmitting(false);
+
+    if (result.success && result.user) {
+      setSession(result.user);
+      setPassword('');
+    } else {
+      setAuthError(result.error || 'Failed to sign in.');
+      if (result.canRegister) {
+        setAuthMode('register');
+      }
+    }
   };
 
-  const handleSignOut = () => {
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+
+    if (!fullName.trim() || fullName.trim().length < 2) {
+      setAuthError('Please enter your full name (at least 2 characters).');
+      return;
+    }
+    if (!email.trim() || !email.includes('@')) {
+      setAuthError('Please provide a valid email address.');
+      return;
+    }
+    if (!password || password.length < 6) {
+      setAuthError('Password must be at least 6 characters long.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const result = await registerUser({
+      name: fullName.trim(),
+      email: email.trim(),
+      password,
+      phone: phone.trim() || undefined
+    });
+    setIsSubmitting(false);
+
+    if (result.success && result.user) {
+      setSession(result.user);
+      setPassword('');
+    } else {
+      setAuthError(result.error || 'Failed to create account.');
+    }
+  };
+
+  const handleGoogleAuth = async (targetEmail?: string, targetName?: string) => {
+    setIsSubmitting(true);
+    setAuthError('');
+    const res = await loginWithGoogle(targetEmail, targetName);
+    setIsSubmitting(false);
+    setShowGoogleModal(false);
+    if (res.success && res.user) {
+      setSession(res.user);
+    } else if (res.error) {
+      setAuthError(res.error);
+    }
+  };
+
+  const handleSignOut = async () => {
     if (confirm('Are you sure you want to sign out of SafeShip?')) {
-      clearSession();
+      await logoutUser();
+      setSession(null);
     }
   };
 
@@ -83,68 +170,278 @@ export default function ProfilePage() {
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-28 md:pb-12 space-y-7">
 
-        {/* NOT LOGGED IN STATE - CLEAN GOOGLE SIGN-IN HERO (ZERO FAKE DATA) */}
+        {/* NOT LOGGED IN STATE - COMPLETE AUTHENTICATION PORTAL */}
         {!session ? (
-          <section className="bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 shadow-xs text-center space-y-6 max-w-xl mx-auto my-8 animate-in fade-in">
-            <div className="w-16 h-16 rounded-3xl bg-blue-50 text-[#0066FF] flex items-center justify-center mx-auto ring-8 ring-blue-50/50 shadow-xs">
-              <SafeShipLogo className="w-10 h-10" />
-            </div>
+          <section className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-xs max-w-lg mx-auto my-4 animate-in fade-in space-y-6">
+            <div className="text-center space-y-2">
+              <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#0066FF] flex items-center justify-center mx-auto ring-6 ring-blue-50/50 shadow-xs mb-3">
+                <SafeShipLogo className="w-8 h-8" />
+              </div>
 
-            <div className="space-y-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-[#0066FF] text-xs font-bold border border-blue-200">
-                <Sparkles className="w-3.5 h-3.5" />
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0066FF] text-[11px] font-bold border border-blue-200">
+                <Sparkles className="w-3 h-3" />
                 <span>SafeShip India Secure Portal</span>
               </span>
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Sign in to your Account
+
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+                {authMode === 'signin' ? 'Sign in to SafeShip' : 'Create your SafeShip Account'}
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500 max-w-md mx-auto leading-relaxed">
-                Log in to access your verified consignments, live GPS tracking, doorstep open-box inspection certificates, and RBI Nodal Escrow payouts.
+              <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                {authMode === 'signin'
+                  ? 'Access your tracked consignments, open-box certificates, and escrow payouts.'
+                  : 'Start booking verified doorstep inspection couriers with ₹0 upfront merchandise risk.'}
               </p>
             </div>
 
-            {/* Main Google Login Button */}
-            <div className="pt-2 space-y-3">
+            {/* SEGMENTED AUTH TABS (Sign In vs Create Account) */}
+            <div className="flex p-1 bg-slate-100 rounded-2xl border border-slate-200">
               <button
                 type="button"
-                onClick={() => setShowLoginModal(true)}
-                className="w-full py-3.5 px-6 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-slate-300 text-sm font-bold text-slate-800 flex items-center justify-center gap-3 shadow-xs hover:shadow-sm transition active:scale-98 cursor-pointer"
+                onClick={() => {
+                  setAuthMode('signin');
+                  setAuthError('');
+                }}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  authMode === 'signin'
+                    ? 'bg-white text-[#0066FF] shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
               >
-                <GoogleIcon className="w-5 h-5" />
-                <span>Sign in with Google</span>
+                Sign In
               </button>
-
-              <p className="text-[11px] text-slate-400">
-                One-click authentication &bull; No passwords &bull; Encrypted sessions
-              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('register');
+                  setAuthError('');
+                }}
+                className={`flex-1 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  authMode === 'register'
+                    ? 'bg-white text-[#0066FF] shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Create Account
+              </button>
             </div>
 
-            {/* Trust highlights */}
-            <div className="pt-6 border-t border-slate-100 grid grid-cols-3 gap-2 text-left">
+            {/* Error Alert Banner */}
+            {authError && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between animate-in fade-in">
+                <span>⚠️ {authError}</span>
+                <button
+                  type="button"
+                  onClick={() => setAuthError('')}
+                  className="text-rose-400 hover:text-rose-700 cursor-pointer ml-2 text-sm font-bold"
+                >
+                  &times;
+                </button>
+              </div>
+            )}
+
+            {/* SIGN IN FORM */}
+            {authMode === 'signin' ? (
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Email Address <span className="text-rose-500">*</span>:
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="e.g. aman.sharma@gmail.com"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-700">
+                      Password <span className="text-rose-500">*</span>:
+                    </label>
+                    <span className="text-[10px] text-[#0066FF] hover:underline cursor-pointer">
+                      Demo password: Password123!
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-3.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] disabled:opacity-50 text-white font-bold text-sm shadow-md shadow-[#0066FF]/20 transition cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      <span>Signing in...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4 text-white" />
+                      <span>Sign In to SafeShip</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+            ) : (
+              /* CREATE ACCOUNT FORM */
+              <form onSubmit={handleRegister} className="space-y-3.5">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Full Name <span className="text-rose-500">*</span>:
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="e.g. Rohan Verma"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Email Address <span className="text-rose-500">*</span>:
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="e.g. rohan.verma@gmail.com"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Mobile Number (Optional):
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">
+                      +91
+                    </span>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder="98290 12345"
+                      className="w-full pl-12 pr-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Password <span className="text-rose-500">*</span> (min 6 characters):
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      minLength={6}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="At least 6 characters"
+                      className="w-full px-3.5 py-2.5 pr-10 rounded-xl bg-slate-50 border border-slate-200 text-sm text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-3.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] disabled:opacity-50 text-white font-bold text-sm shadow-md shadow-[#0066FF]/20 transition cursor-pointer flex items-center justify-center gap-2 mt-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      <span>Creating SafeShip Account...</span>
+                    </>
+                  ) : (
+                    <>
+                      <User className="w-4 h-4 text-white" />
+                      <span>Create SafeShip Account</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* DIVIDER */}
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-200" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="px-3 bg-white text-slate-400 font-semibold">Or continue with</span>
+              </div>
+            </div>
+
+            {/* 1-CLICK GOOGLE SIGN IN */}
+            <button
+              type="button"
+              onClick={() => setShowGoogleModal(true)}
+              className="w-full py-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold text-slate-800 flex items-center justify-center gap-2.5 shadow-2xs hover:shadow-xs transition cursor-pointer"
+            >
+              <GoogleIcon className="w-4 h-4" />
+              <span>{authMode === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}</span>
+            </button>
+
+            {/* TRUST HIGHLIGHTS */}
+            <div className="pt-4 border-t border-slate-100 grid grid-cols-3 gap-2 text-left">
               <div className="p-2.5 rounded-xl bg-slate-50">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 mb-1" />
-                <span className="text-[10px] font-bold text-slate-800 block">₹0 Upfront Risk</span>
-                <span className="text-[9px] text-slate-500">Pay on doorstep inspection</span>
+                <span className="text-[10px] font-bold text-slate-800 block">₹0 Risk</span>
+                <span className="text-[9px] text-slate-500">Pay at unboxing</span>
               </div>
               <div className="p-2.5 rounded-xl bg-slate-50">
                 <Lock className="w-4 h-4 text-blue-600 mb-1" />
                 <span className="text-[10px] font-bold text-slate-800 block">RBI Escrow</span>
-                <span className="text-[9px] text-slate-500">ICICI Bank nodal settlement</span>
+                <span className="text-[9px] text-slate-500">ICICI Bank nodal</span>
               </div>
               <div className="p-2.5 rounded-xl bg-slate-50">
                 <Package className="w-4 h-4 text-purple-600 mb-1" />
                 <span className="text-[10px] font-bold text-slate-800 block">Live History</span>
-                <span className="text-[9px] text-slate-500">All bookings saved securely</span>
+                <span className="text-[9px] text-slate-500">Encrypted records</span>
               </div>
             </div>
           </section>
         ) : (
-          /* LOGGED IN STATE - REAL USER PROFILE (ZERO FAKE DATA) */
+          /* LOGGED IN STATE - REAL AUTHENTIC USER PROFILE */
           <>
             {/* Profile Identity Card */}
             <section className="bg-white rounded-3xl border border-[#E2E8F0] p-6 sm:p-8 shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
-                
                 <div className="flex items-start sm:items-center gap-4">
                   <div className="relative">
                     <img
@@ -153,7 +450,7 @@ export default function ProfilePage() {
                       className="w-16 h-16 rounded-2xl object-cover ring-4 ring-blue-50 shadow-md"
                     />
                     <span
-                      title="Google Authenticated"
+                      title="Verified Identity"
                       className="absolute -bottom-1.5 -right-1.5 w-6 h-6 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center text-white text-xs font-black shadow-2xs"
                     >
                       ✓
@@ -166,13 +463,30 @@ export default function ProfilePage() {
                         {session.name}
                       </h1>
                       <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0066FF] border border-blue-200 text-[10px] font-mono font-bold tracking-tight flex items-center gap-1">
-                        <GoogleIcon className="w-3 h-3" />
-                        <span>GOOGLE VERIFIED</span>
+                        {session.provider === 'google' ? (
+                          <>
+                            <GoogleIcon className="w-3 h-3" />
+                            <span>GOOGLE VERIFIED</span>
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-3 h-3 text-[#0066FF]" />
+                            <span>VERIFIED MEMBER</span>
+                          </>
+                        )}
                       </span>
                     </div>
-                    
+
                     <p className="text-xs text-[#64748B] mt-1 flex items-center gap-2 flex-wrap">
                       <span>{session.email}</span>
+                      {session.phone && (
+                        <>
+                          <span>&bull;</span>
+                          <span>{session.phone}</span>
+                        </>
+                      )}
+                      <span>&bull;</span>
+                      <span>ID: {session.memberCode || 'USR-2026'}</span>
                       <span>&bull;</span>
                       <span>Joined {new Date(session.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</span>
                     </p>
@@ -190,7 +504,6 @@ export default function ProfilePage() {
                     <span>Sign Out</span>
                   </button>
                 </div>
-
               </div>
 
               {/* Real Metrics Bar */}
@@ -224,50 +537,50 @@ export default function ProfilePage() {
 
                 <div className="p-3 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0]">
                   <span className="text-[10px] font-bold text-[#64748B] uppercase tracking-wider block">
-                    Account Status
+                    Escrow Account
                   </span>
-                  <span className="text-xs font-bold text-emerald-700 mt-1.5 flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    <span>Active &bull; Verified</span>
+                  <span className="text-xs font-bold text-emerald-600 mt-1 block flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                    <span>ICICI Trustee Active</span>
                   </span>
                 </div>
               </div>
             </section>
 
-            {/* REAL USER CONSIGNMENTS SECTION */}
-            <section className="space-y-3.5">
+            {/* Real User Orders Section */}
+            <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-base sm:text-lg font-bold text-[#0F172A]">
-                    Your Consignments
-                  </h2>
-                  <p className="text-xs text-[#64748B]">
-                    Real shipments created or received with your Google account.
+                  <h2 className="text-base font-bold text-[#0F172A]">Your Shipments &amp; Consignments</h2>
+                  <p className="text-xs text-[#64748B] mt-0.5">
+                    Real orders booked from your account. Settle merchandise value only upon 10-minute doorstep unboxing.
                   </p>
                 </div>
-
                 <Link
-                  href="/in/deals/new?type=send"
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-xs transition"
+                  href="/in/deals/new"
+                  className="px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold transition shadow-xs flex items-center gap-1.5 shrink-0"
                 >
-                  <span>+ New Consignment</span>
+                  <span>Book Consignment &rarr;</span>
                 </Link>
               </div>
 
               {orders.length === 0 ? (
-                <div className="p-8 rounded-3xl bg-white border border-slate-200 text-center space-y-3">
+                <div className="bg-white rounded-3xl border border-dashed border-slate-200 p-8 text-center space-y-3">
                   <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#0066FF] flex items-center justify-center mx-auto">
                     <Package className="w-6 h-6" />
                   </div>
-                  <h3 className="text-sm font-bold text-slate-800">No active shipments yet</h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                    When you book or receive a verified package through SafeShip, your tracking, OTP, and doorstep inspection logs will appear here.
-                  </p>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-800">No shipments found</h3>
+                    <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                      You have not booked any shipments yet. Create your first 1-Way Delivery or 2-Way Hardware Swap to track it live here.
+                    </p>
+                  </div>
                   <Link
-                    href="/in/deals/new?type=send"
-                    className="inline-block mt-2 px-4 py-2 rounded-xl bg-[#0066FF] text-white text-xs font-bold hover:bg-[#0052FF] transition"
+                    href="/in/deals/new"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#0066FF] text-white text-xs font-bold hover:bg-[#0052FF] transition shadow-xs"
                   >
-                    Send Your First Package &rarr;
+                    <span>Create New Consignment</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>
               ) : (
@@ -275,29 +588,37 @@ export default function ProfilePage() {
                   {orders.map((deal) => (
                     <div
                       key={deal.id}
-                      className="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-2xs hover:border-slate-300 transition space-y-3"
+                      className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-blue-300 transition"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-mono font-bold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
-                          Order #{deal.id}
-                        </span>
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          {deal.status.replace(/_/g, ' ')}
-                        </span>
+                      <div className="flex items-start gap-3.5">
+                        <div className="w-12 h-12 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#0066FF] shrink-0 font-mono text-xs font-bold">
+                          {deal.id.slice(-4)}
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-sm text-slate-900">{deal.title}</span>
+                            <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+                              {deal.status}
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {deal.seller?.city || deal.city || 'Origin'} &rarr; {deal.buyer?.city || 'Destination'}
+                          </p>
+                          <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-1.5 font-mono">
+                            <span>Valuation: {formatINR(deal.declaredValue)}</span>
+                            <span>&bull;</span>
+                            <span>Policy: {deal.insurancePolicyNumber || 'POL-ICICI-ACTIVE'}</span>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between gap-4">
-                        <div>
-                          <h4 className="text-sm font-bold text-slate-900">{deal.title}</h4>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {deal.city} &rarr; {deal.buyer?.city || 'Delhi NCR'} &bull; Valuation: {formatINR(deal.declaredValue)}
-                          </p>
-                        </div>
+                      <div className="flex items-center gap-2.5 self-end sm:self-center">
                         <Link
                           href={`/in/track/${deal.id}`}
-                          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-[#0066FF] text-white text-xs font-bold transition shrink-0"
+                          className="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-[#0066FF] text-white text-xs font-bold transition shrink-0 flex items-center gap-1.5"
                         >
-                          Track Live &rarr;
+                          <span>Track Live</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
                         </Link>
                       </div>
                     </div>
@@ -311,7 +632,7 @@ export default function ProfilePage() {
       </main>
 
       {/* GOOGLE SIGN-IN INTERACTIVE MODAL */}
-      {showLoginModal && (
+      {showGoogleModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in zoom-in-95">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
@@ -321,7 +642,7 @@ export default function ProfilePage() {
               </div>
               <button
                 type="button"
-                onClick={() => setShowLoginModal(false)}
+                onClick={() => setShowGoogleModal(false)}
                 className="text-slate-400 hover:text-slate-700 cursor-pointer"
               >
                 <X className="w-5 h-5" />
@@ -329,14 +650,13 @@ export default function ProfilePage() {
             </div>
 
             <p className="text-xs text-slate-500 leading-relaxed">
-              Choose your Google account or enter your Gmail address to securely sign in without passwords:
+              Select an account or enter your Gmail address to securely sign in without passwords:
             </p>
 
-            {/* One-click quick accounts */}
             <div className="space-y-2">
               <button
                 type="button"
-                onClick={() => handleGoogleLogin('aman.sharma@gmail.com', 'Aman Sharma')}
+                onClick={() => handleGoogleAuth('aman.sharma@gmail.com', 'Aman Sharma')}
                 className="w-full p-3 rounded-2xl border border-slate-200 hover:border-[#0066FF] hover:bg-blue-50/50 flex items-center justify-between text-left transition cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
@@ -355,7 +675,7 @@ export default function ProfilePage() {
 
               <button
                 type="button"
-                onClick={() => handleGoogleLogin('user.safeship@gmail.com', 'SafeShip Trader')}
+                onClick={() => handleGoogleAuth('user.safeship@gmail.com', 'SafeShip Trader')}
                 className="w-full p-3 rounded-2xl border border-slate-200 hover:border-[#0066FF] hover:bg-blue-50/50 flex items-center justify-between text-left transition cursor-pointer group"
               >
                 <div className="flex items-center gap-3">
@@ -373,7 +693,6 @@ export default function ProfilePage() {
               </button>
             </div>
 
-            {/* Custom Google Email Input */}
             <div className="pt-2 border-t border-slate-100 space-y-3">
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">
@@ -381,8 +700,8 @@ export default function ProfilePage() {
                 </label>
                 <input
                   type="email"
-                  value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="yourname@gmail.com"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF]"
                 />
@@ -390,7 +709,7 @@ export default function ProfilePage() {
 
               <button
                 type="button"
-                onClick={() => handleGoogleLogin()}
+                onClick={() => handleGoogleAuth(email)}
                 className="w-full py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-2"
               >
                 <GoogleIcon className="w-4 h-4 text-white" />
@@ -400,6 +719,8 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
+      <MobileBottomNav />
     </div>
   );
 }
