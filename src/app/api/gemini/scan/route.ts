@@ -1,10 +1,24 @@
 import { NextResponse } from 'next/server';
-import { analyzeInspectionScanWithGemini, verifyImeiWithGemini } from '@/lib/geminiUnified';
+import { analyzeInspectionScanWithGemini, verifyImeiWithGemini, verifyProductPhotoMatch } from '@/lib/geminiUnified';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { action, image, imeiPhoto, itemName, condition, notes } = body;
+    const { action, image, photo, imeiPhoto, itemName, category, condition, notes } = body;
+
+    // 0. Verify that product photo matches declared product name
+    if (action === 'verify_match') {
+      const matchResult = await verifyProductPhotoMatch(
+        photo || image || imeiPhoto || '',
+        itemName || 'Smartphone',
+        category
+      );
+      return NextResponse.json({
+        success: true,
+        result: matchResult,
+        verifiedBy: 'SafeShip Vision Multimodal Engine (Gemini 2.0 Flash)'
+      });
+    }
 
     // 1. Dedicated Hardware IMEI / Serial Number verification request
     if (action === 'verify_imei' || imeiPhoto || (image && !condition)) {
