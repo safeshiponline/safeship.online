@@ -682,7 +682,7 @@ export default function HomePage() {
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-[11px] font-bold text-slate-700">
-                          Product Photo (1 photo):
+                          Photo of {quickItemName ? `"${quickItemName}"` : 'Product'} (1 photo):
                         </label>
                         <span className="text-[9px] text-slate-500">
                           Audited at doorstep
@@ -691,9 +691,32 @@ export default function HomePage() {
 
                       {/* Photo Thumbnail + Presets */}
                       <div className="flex items-center gap-2">
-                        <div className="w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center p-0.5">
-                          <img src={quickPhoto} alt="Product" className="w-full h-full object-contain" />
-                        </div>
+                        <label
+                          className="relative w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center p-0.5 cursor-pointer group hover:border-[#0066FF] transition"
+                          title={`Upload custom photo of ${quickItemName || 'product'}`}
+                        >
+                          <img src={quickPhoto} alt={quickItemName || "Product"} className="w-full h-full object-contain" />
+                          <div className="absolute inset-0 bg-slate-900/60 text-white text-[8px] font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                            Upload
+                          </div>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  if (ev.target?.result) {
+                                    handleQuickVerify(ev.target.result as string, quickItemName);
+                                  }
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
                         <div className="flex-1 flex flex-wrap gap-1">
                           {[
                             { label: 'iPhone 15', url: '/images/hero_openbox_4x3.webp' },

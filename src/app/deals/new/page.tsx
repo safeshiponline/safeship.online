@@ -474,7 +474,7 @@ function CreateShipmentContent() {
       errs.includedItems = 'Please specify accessories/items included in the parcel.';
     }
     if (!productPhoto && uploadedPhotos.length === 0) {
-      errs.photos = 'Please attach 1 photo of the product for doorstep open-box verification.';
+      errs.photos = `Please attach 1 photo of ${itemName ? `"${itemName}"` : 'the product'} for doorstep open-box verification.`;
     }
 
     if (mode === 'exchange') {
@@ -549,7 +549,7 @@ function CreateShipmentContent() {
       setStep2Chunk(2);
     } else if (targetChunk === 3) {
       if (!productPhoto && uploadedPhotos.length === 0) {
-        setErrors((prev) => ({ ...prev, photos: 'Please attach 1 photo of the product for doorstep open-box verification.' }));
+        setErrors((prev) => ({ ...prev, photos: `Please attach 1 photo of ${itemName ? `"${itemName}"` : 'the product'} for doorstep open-box verification.` }));
         return;
       }
       clearFieldError('photos');
@@ -1049,10 +1049,12 @@ function CreateShipmentContent() {
 
             {/* CHUNK 2.2: Photo & Device Identity */}
             <div className={`bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3.5 ${step2Chunk === 2 ? 'block' : 'hidden md:block'}`}>
-              <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
+              <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9] flex-wrap gap-1">
                 <span className="text-xs font-bold text-[#0066FF] uppercase tracking-wider flex items-center gap-1.5">
                   <Camera className="w-4 h-4 text-[#0066FF]" />
-                  <span>Doorstep Open-Box Photo Verification</span>
+                  <span>
+                    Doorstep Open-Box Photo Verification {itemName ? <span className="text-slate-900 font-extrabold normal-case">({itemName})</span> : ''}
+                  </span>
                 </span>
                 <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                   AI Match Guaranteed
@@ -1061,9 +1063,11 @@ function CreateShipmentContent() {
 
               {/* Single Product Photo Upload */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5">
-                    <span>Product Photo (1 photo required for Doorstep Verification)</span>
+                <div className="flex items-center justify-between flex-wrap gap-1">
+                  <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5 flex-wrap">
+                    <span>
+                      Photo of {itemName ? <span className="text-[#0066FF] font-black underline decoration-blue-200 underline-offset-2">&quot;{itemName}&quot;</span> : 'Product'} (1 photo required for Doorstep Verification)
+                    </span>
                     <span className="text-rose-500">*</span>
                   </label>
                   <span className="text-[10px] text-[#64748B]">Audited at 10-min unboxing</span>
@@ -1073,8 +1077,12 @@ function CreateShipmentContent() {
                   <div className="space-y-2">
                     <label className="w-full py-4 px-4 rounded-2xl border-2 border-dashed border-[#0066FF]/30 hover:border-[#0066FF] bg-[#EFF6FF]/40 hover:bg-[#EFF6FF] flex flex-col items-center justify-center cursor-pointer transition active:scale-98">
                       <Camera className="w-6 h-6 text-[#0066FF] mb-1" />
-                      <span className="text-xs font-bold text-[#0066FF]">+ Upload Product Photo</span>
-                      <span className="text-[10px] text-slate-500 mt-0.5">Front display, chassis, or packaging</span>
+                      <span className="text-xs font-bold text-[#0066FF] text-center">
+                        + Upload Photo of {itemName ? `"${itemName}"` : 'Product'}
+                      </span>
+                      <span className="text-[10px] text-slate-500 mt-0.5 text-center">
+                        Front display, chassis, or packaging of {itemName ? `"${itemName}"` : 'your device'}
+                      </span>
                       <input
                         type="file"
                         accept="image/*"
@@ -1097,7 +1105,7 @@ function CreateShipmentContent() {
                     {/* Quick Authentic Device Presets */}
                     <div className="p-2.5 rounded-2xl bg-[#F1F5F9] border border-[#E2E8F0] space-y-1.5">
                       <span className="text-[10px] font-bold text-[#475569] block">
-                        ⚡ Or attach an authentic merchandise photo:
+                        ⚡ Or attach an authentic sample photo of {itemName ? `"${itemName}"` : 'merchandise'}:
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {[
@@ -1127,16 +1135,16 @@ function CreateShipmentContent() {
                         <div className="w-14 h-14 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center p-0.5">
                           <img
                             src={productPhoto || uploadedPhotos[0]}
-                            alt="Attached Product"
+                            alt={itemName ? `Photo of ${itemName}` : "Attached Product"}
                             className="w-full h-full object-contain"
                           />
                         </div>
                         <div className="min-w-0">
                           <span className="text-xs font-bold text-slate-900 block truncate">
-                            Attached Product Photo
+                            Attached Photo of {itemName ? `"${itemName}"` : 'Product'}
                           </span>
                           <span className="text-[10px] text-slate-500">
-                            Ready for doorstep open-box comparison
+                            Ready for doorstep open-box comparison against declared {itemName ? `"${itemName}"` : 'item'}
                           </span>
                         </div>
                       </div>
