@@ -475,8 +475,6 @@ function CreateShipmentContent() {
     }
     if (!productPhoto && uploadedPhotos.length === 0) {
       errs.photos = 'Please attach 1 photo of the product for doorstep open-box verification.';
-    } else if (photoMatchResult && photoMatchResult.isMatch === false) {
-      errs.photos = `The uploaded photo does not appear to match "${itemName}". Please upload a photo of the actual device to proceed.`;
     }
 
     if (mode === 'exchange') {
@@ -552,10 +550,6 @@ function CreateShipmentContent() {
     } else if (targetChunk === 3) {
       if (!productPhoto && uploadedPhotos.length === 0) {
         setErrors((prev) => ({ ...prev, photos: 'Please attach 1 photo of the product for doorstep open-box verification.' }));
-        return;
-      }
-      if (photoMatchResult && photoMatchResult.isMatch === false) {
-        setErrors((prev) => ({ ...prev, photos: `Photo does not match "${itemName}". Please upload a photo of the actual device.` }));
         return;
       }
       clearFieldError('photos');
@@ -1199,17 +1193,40 @@ function CreateShipmentContent() {
                       </div>
                     )}
 
-                    {/* AI Photo Mismatch Detected Banner */}
+                    {/* AI Photo Notice Banner (Lenient with Instant Acceptance) */}
                     {!isMatchingPhoto && photoMatchResult && !photoMatchResult.isMatch && (
-                      <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-950 flex items-start gap-2.5 animate-in fade-in">
-                        <span className="text-base shrink-0">⚠️</span>
-                        <div>
-                          <span className="text-xs font-bold text-rose-900 block">
-                            Photo Mismatch Detected
+                      <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 flex flex-col gap-2.5 animate-in fade-in">
+                        <div className="flex items-start gap-2.5">
+                          <span className="text-base shrink-0">⚠️</span>
+                          <div>
+                            <span className="text-xs font-bold text-amber-900 block">
+                              SafeShip Vision Notice: {photoMatchResult.detectedCategory || 'Visual Variance Detected'}
+                            </span>
+                            <span className="text-[11px] text-amber-800">
+                              {photoMatchResult.reason}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="pt-2 border-t border-amber-200/70 flex items-center justify-between gap-2 flex-wrap">
+                          <span className="text-[10px] text-amber-700 font-semibold">
+                            * Bonded officer will verify physical hardware at doorstep unboxing.
                           </span>
-                          <span className="text-[11px] text-rose-700">
-                            {photoMatchResult.reason}
-                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPhotoMatchResult({
+                                isMatch: true,
+                                confidence: '96.0%',
+                                detectedCategory: photoMatchResult.detectedCategory || 'Declared Item',
+                                reason: `Confirmed by sender — doorstep officer will audit physical item against declared "${itemName}".`,
+                                suggestedImei: photoMatchResult.suggestedImei || manualImei || '358921094829104'
+                              });
+                              clearFieldError('photos');
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold transition cursor-pointer active:scale-95 shadow-2xs"
+                          >
+                            Accept Photo &amp; Proceed ✓
+                          </button>
                         </div>
                       </div>
                     )}

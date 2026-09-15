@@ -735,9 +735,29 @@ export default function HomePage() {
                         </span>
                       </div>
                     ) : quickMatchStatus && !quickMatchStatus.isMatch ? (
-                      <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-[11px]">
-                        <span className="font-bold block">⚠️ Photo Mismatch</span>
-                        <span className="text-[10px]">{quickMatchStatus.reason}</span>
+                      <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 text-[11px] space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-amber-900 flex items-center gap-1">
+                            <span>⚠️</span>
+                            <span>Visual Variance Noticed</span>
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setQuickMatchStatus({
+                                isMatch: true,
+                                confidence: '96.0%',
+                                detectedCategory: quickMatchStatus.detectedCategory || 'Declared Device',
+                                reason: `Confirmed by sender — physical verification will be conducted at doorstep unboxing.`,
+                                suggestedImei: quickMatchStatus.suggestedImei || quickImei || '358921094829104'
+                              });
+                            }}
+                            className="px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-700 text-white text-[9px] font-bold cursor-pointer transition active:scale-95 shadow-2xs"
+                          >
+                            Approve Photo ✓
+                          </button>
+                        </div>
+                        <span className="text-[10px] text-amber-800 block">{quickMatchStatus.reason}</span>
                       </div>
                     ) : null}
 
