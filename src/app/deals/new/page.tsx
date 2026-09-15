@@ -34,7 +34,8 @@ import {
   CreditCard,
   Calendar,
   PackageCheck,
-  Shield
+  Shield,
+  Sliders
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
 import { createNewDeal } from '@/lib/store';
@@ -164,6 +165,7 @@ function CreateShipmentContent() {
   // Payment Preference & Settlement State (Prepaid = Free Delivery, COD = ₹500 fee, Finance = 0% EMI)
   const [paymentPreference, setPaymentPreference] = useState<PaymentPreference>('PREPAID');
   const [financeTenure, setFinanceTenure] = useState<number>(6);
+  const [downPayment, setDownPayment] = useState<number>(2499);
   const [showFinanceModal, setShowFinanceModal] = useState<boolean>(false);
 
   // Field Validation State
@@ -522,6 +524,12 @@ function CreateShipmentContent() {
     if (reqValGlobal && !isNaN(Number(reqValGlobal))) {
       setDeclaredValue(Number(reqValGlobal));
     }
+
+    const reqDownPayment = searchParams.get('downPayment');
+    if (reqDownPayment && !isNaN(Number(reqDownPayment))) {
+      const parsed = Math.max(499, Math.min(4999, Math.round(Number(reqDownPayment))));
+      setDownPayment(parsed);
+    }
   }, [searchParams]);
 
   // 8 Realistic Categories (Vehicles removed!)
@@ -711,13 +719,21 @@ function CreateShipmentContent() {
     }
   }, [selectedTier, tierPricing.SAME_DAY_DIRECT.isAvailable]);
 
-  // Dynamic Finance Plans based on declared product valuation
+  // Safe item valuation & Down Payment bounds (< ₹5,000 policy)
   const safeVal = Math.max(1000, declaredValue || 8000);
+  const maxAllowedDownPayment = Math.min(4999, Math.max(499, Math.floor(safeVal * 0.7)));
+  const minAllowedDownPayment = Math.min(999, Math.max(499, Math.floor(safeVal * 0.05)));
+  const effectiveDownPayment = Math.min(maxAllowedDownPayment, Math.max(minAllowedDownPayment, downPayment));
+  const financedPrincipal = Math.max(0, safeVal - effectiveDownPayment);
+
+  // Dynamic Finance Plans based on financed principal (safeVal - downPayment)
   const financePlans: FinancePlan[] = [
     {
       tenureMonths: 3,
-      monthlyEmi: Math.round(safeVal / 3),
-      totalPayable: safeVal,
+      monthlyEmi: Math.round(financedPrincipal / 3),
+      totalPayable: effectiveDownPayment + financedPrincipal,
+      downPayment: effectiveDownPayment,
+      financedAmount: financedPrincipal,
       isNoCost: true,
       interestRateAnnual: 0,
       processingFee: 0,
@@ -725,8 +741,10 @@ function CreateShipmentContent() {
     },
     {
       tenureMonths: 6,
-      monthlyEmi: Math.round(safeVal / 6),
-      totalPayable: safeVal,
+      monthlyEmi: Math.round(financedPrincipal / 6),
+      totalPayable: effectiveDownPayment + financedPrincipal,
+      downPayment: effectiveDownPayment,
+      financedAmount: financedPrincipal,
       isNoCost: true,
       interestRateAnnual: 0,
       processingFee: 0,
@@ -734,8 +752,10 @@ function CreateShipmentContent() {
     },
     {
       tenureMonths: 9,
-      monthlyEmi: Math.round((safeVal * 1.05) / 9),
-      totalPayable: Math.round(safeVal * 1.05),
+      monthlyEmi: Math.round((financedPrincipal * 1.05) / 9),
+      totalPayable: effectiveDownPayment + Math.round(financedPrincipal * 1.05),
+      downPayment: effectiveDownPayment,
+      financedAmount: financedPrincipal,
       isNoCost: false,
       interestRateAnnual: 6.6,
       processingFee: 99,
@@ -743,8 +763,10 @@ function CreateShipmentContent() {
     },
     {
       tenureMonths: 12,
-      monthlyEmi: Math.round((safeVal * 1.08) / 12),
-      totalPayable: Math.round(safeVal * 1.08),
+      monthlyEmi: Math.round((financedPrincipal * 1.08) / 12),
+      totalPayable: effectiveDownPayment + Math.round(financedPrincipal * 1.08),
+      downPayment: effectiveDownPayment,
+      financedAmount: financedPrincipal,
       isNoCost: false,
       interestRateAnnual: 8.0,
       processingFee: 149,
@@ -759,8 +781,8 @@ function CreateShipmentContent() {
   // Delivery Fee Discount:
   // - Prepaid Standard: 100% Free delivery (activeTierBreakdown.totalUpfront waived to ₹0)
   // - Prepaid Fast: Linehaul waived down to ₹149 express air upgrade
-  // - Finance Standard: 100% Free delivery (₹0 down payment)
-  // - Finance Fast: Discount applied, only ₹149 express upgrade
+  // - Finance Standard: 100% Free delivery (only down payment paid upfront)
+  // - Finance Fast: Discount applied, down payment + ₹149 express upgrade
   const freeDeliveryDiscount = (paymentPreference === 'PREPAID' || paymentPreference === 'FINANCE_EMI')
     ? (isFastTier ? Math.max(0, activeTierBreakdown.totalUpfront - fastDeliveryExtraFee) : activeTierBreakdown.totalUpfront)
     : 0;
@@ -773,13 +795,13 @@ function CreateShipmentContent() {
   // - Prepaid Fast: ₹149 (small extra fee for faster delivery)
   // - Pay on Delivery (COD) Standard: ₹500 (doorstep cash handling & slot reservation)
   // - Pay on Delivery (COD) Fast: ₹649 (₹500 COD + ₹149 Fast Air)
-  // - Finance Standard: ₹0 (Zero down payment)
-  // - Finance Fast: ₹149 (Express air upgrade)
+  // - Finance Standard: effectiveDownPayment (Good down payment below ₹5,000, 100% free delivery)
+  // - Finance Fast: effectiveDownPayment + ₹149 (Down payment + Fast air upgrade)
   const upfrontPayableAmount = paymentPreference === 'PREPAID'
     ? (isFastTier ? fastDeliveryExtraFee : 0)
     : paymentPreference === 'PAY_ON_DELIVERY'
     ? (isFastTier ? 500 + fastDeliveryExtraFee : 500)
-    : (isFastTier ? fastDeliveryExtraFee : 0);
+    : (isFastTier ? effectiveDownPayment + fastDeliveryExtraFee : effectiveDownPayment);
 
   // Dynamic Pickup and Delivery Dates
   const pickupDateObj = new Date();
@@ -874,6 +896,7 @@ function CreateShipmentContent() {
           codCharge,
           freeDeliveryDiscount,
           financePlan: paymentPreference === 'FINANCE_EMI' ? activeFinancePlan : undefined,
+          downPayment: paymentPreference === 'FINANCE_EMI' ? effectiveDownPayment : undefined,
           upfrontPricing: {
             baseFee: activeTierBreakdown.baseFee,
             distanceSurcharge: activeTierBreakdown.distanceSurcharge,
@@ -905,25 +928,25 @@ function CreateShipmentContent() {
       }
     };
 
-    // If Upfront fee is ₹0 (Prepaid Standard Free Delivery or Finance Standard): instant confirmed!
+    // If Upfront fee is ₹0 (Prepaid Standard Free Delivery): instant confirmed!
     if (upfrontPayableAmount === 0) {
       completeDealCreation(`${paymentPreference}_FREE_SHIP_${Date.now().toString(36).toUpperCase()}`, 0);
       return;
     }
 
-    // Otherwise (Prepaid Fast @ ₹149, COD Standard @ ₹500, COD Fast @ ₹649, or Finance Fast @ ₹149):
+    // Otherwise (Prepaid Fast @ ₹149, COD Standard @ ₹500, COD Fast @ ₹649, or Finance with Down Payment):
     openCheckout({
       amountInRupees: upfrontPayableAmount,
       name: paymentPreference === 'PREPAID'
         ? 'SafeShip Fast Delivery'
         : paymentPreference === 'PAY_ON_DELIVERY'
         ? 'SafeShip COD Booking'
-        : 'SafeShip Express Air Upgrade',
+        : 'SafeShip Finance Down Payment',
       description: paymentPreference === 'PREPAID'
         ? `₹${upfrontPayableAmount} Fast Delivery Air Upgrade Fee`
         : paymentPreference === 'PAY_ON_DELIVERY'
         ? `₹${upfrontPayableAmount} Doorstep COD Slot Lock (${activeTierBreakdown.tierLabel})`
-        : `₹${upfrontPayableAmount} Express Air Upgrade Fee`,
+        : `₹${effectiveDownPayment} Down Payment ${isFastTier ? '+ ₹149 Fast Air Upgrade' : '(Free Delivery)'} for ${itemName || 'Merchandise'} (${financeTenure}M EMI)`,
       notes: {
         mode,
         paymentPreference,
@@ -2624,68 +2647,201 @@ function CreateShipmentContent() {
                       </span>
                     </div>
                     <p className="text-[11px] text-[#64748B] leading-tight">
-                      Split into easy monthly EMIs via Bajaj Finserv &amp; Snapmint. Free standard delivery included.
+                      Split into easy monthly EMIs with flexible down payment below ₹5k. Free standard delivery included.
                     </p>
                   </div>
 
                   <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-medium">Starting at:</span>
+                    <span className="text-slate-500 font-medium">Down Payment:</span>
                     <span className="font-mono font-black text-purple-700">
-                      ₹{Math.round(safeVal / 6).toLocaleString('en-IN')}/mo
+                      ₹{effectiveDownPayment.toLocaleString('en-IN')} <span className="text-[10px] text-emerald-600 font-bold">(&lt; ₹5k)</span>
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* DYNAMIC EMI TENURE SELECTOR (Shown when Finance is selected) */}
+              {/* DYNAMIC DOWN PAYMENT ADJUSTER & EMI TENURE SELECTOR (Shown when Finance is selected) */}
               {paymentPreference === 'FINANCE_EMI' && (
-                <div className="p-4 rounded-2xl bg-purple-50/80 border border-purple-200 space-y-3 animate-in fade-in">
-                  <div className="flex items-center justify-between">
+                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-50/90 via-indigo-50/60 to-purple-50/90 border border-purple-200 space-y-4 animate-in fade-in">
+                  
+                  {/* DOWN PAYMENT ADJUSTMENT HEADER */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-purple-200/70">
                     <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-600" />
-                      <span className="text-xs font-bold text-purple-950">
-                        Select EMI Installment Plan for ₹{safeVal.toLocaleString('en-IN')}:
+                      <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                        <Sliders className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="text-xs font-black text-purple-950 uppercase tracking-wide">
+                            Adjust Down Payment
+                          </h4>
+                          <span className="text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.2 rounded">
+                            Strictly &lt; ₹5,000 Policy
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-purple-800/80">
+                          Higher down payment reduces monthly installments. Capped below ₹5,000 for zero-risk pre-approval.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-left sm:text-right shrink-0 bg-white px-3 py-1.5 rounded-xl border border-purple-200 shadow-2xs">
+                      <span className="text-[10px] text-slate-500 font-semibold block">Active Down Payment:</span>
+                      <span className="text-base font-black font-mono text-purple-700">
+                        ₹{effectiveDownPayment.toLocaleString('en-IN')}
                       </span>
                     </div>
-                    <span className="text-[10px] text-purple-700 font-bold bg-white px-2 py-0.5 rounded border border-purple-200">
-                      Instant Cardless Approval
-                    </span>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {financePlans.map((plan) => (
-                      <button
-                        key={plan.tenureMonths}
-                        type="button"
-                        onClick={() => setFinanceTenure(plan.tenureMonths)}
-                        className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
-                          financeTenure === plan.tenureMonths
-                            ? 'bg-purple-600 text-white border-purple-700 shadow-sm ring-2 ring-purple-300'
-                            : 'bg-white text-slate-800 border-purple-200 hover:border-purple-400'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={`text-[11px] font-bold ${financeTenure === plan.tenureMonths ? 'text-white' : 'text-slate-900'}`}>
-                            {plan.tenureMonths} Months
-                          </span>
-                          {plan.isNoCost && (
-                            <span className={`text-[8px] font-bold px-1 rounded ${
-                              financeTenure === plan.tenureMonths
-                                ? 'bg-purple-800 text-white'
-                                : 'bg-emerald-100 text-emerald-800'
-                            }`}>
-                              0% INT
+                  {/* INTERACTIVE RANGE SLIDER & QUICK PRESETS */}
+                  <div className="space-y-3 bg-white/80 p-3.5 rounded-xl border border-purple-200/80">
+                    <div className="flex items-center justify-between text-xs font-semibold text-purple-950">
+                      <span>Adjust with Slider:</span>
+                      <span className="text-[11px] font-mono text-purple-700 font-bold">
+                        ₹{effectiveDownPayment.toLocaleString('en-IN')} / ₹{maxAllowedDownPayment.toLocaleString('en-IN')} max
+                      </span>
+                    </div>
+
+                    <input
+                      type="range"
+                      min={minAllowedDownPayment}
+                      max={maxAllowedDownPayment}
+                      step={100}
+                      value={effectiveDownPayment}
+                      onChange={(e) => setDownPayment(Number(e.target.value))}
+                      className="w-full accent-purple-600 h-2.5 bg-purple-100 rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-400"
+                    />
+
+                    <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono">
+                      <span>Min: ₹{minAllowedDownPayment.toLocaleString('en-IN')}</span>
+                      <span className="text-purple-700 font-semibold">Slide to fine-tune</span>
+                      <span className="font-bold text-purple-900">Cap: ₹{maxAllowedDownPayment.toLocaleString('en-IN')} (&lt; ₹5k)</span>
+                    </div>
+
+                    {/* QUICK PRESET CHIPS */}
+                    <div className="pt-2 border-t border-purple-100 flex flex-wrap items-center gap-1.5">
+                      <span className="text-[10px] font-bold text-purple-900 mr-1">Quick Presets:</span>
+                      {[
+                        { label: '₹1,499 Lite', val: 1499 },
+                        { label: '₹2,499 Standard', val: 2499 },
+                        { label: '₹3,499 Popular', val: 3499 },
+                        { label: '₹4,999 Max (< 5k)', val: 4999 }
+                      ]
+                        .filter((preset) => preset.val <= maxAllowedDownPayment && preset.val >= minAllowedDownPayment)
+                        .map((preset) => (
+                          <button
+                            key={preset.val}
+                            type="button"
+                            onClick={() => setDownPayment(preset.val)}
+                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer border ${
+                              effectiveDownPayment === preset.val
+                                ? 'bg-purple-600 text-white border-purple-700 shadow-2xs ring-1 ring-purple-400'
+                                : 'bg-white text-purple-900 border-purple-200 hover:bg-purple-50 hover:border-purple-300'
+                            }`}
+                          >
+                            {preset.label}
+                          </button>
+                        ))}
+                    </div>
+
+                    {/* DIRECT STEPPER INPUT */}
+                    <div className="pt-2 border-t border-purple-100 flex items-center justify-between gap-2">
+                      <span className="text-[11px] font-medium text-slate-600">Manual Amount:</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setDownPayment((prev) => Math.max(minAllowedDownPayment, prev - 500))}
+                          className="w-7 h-7 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-900 font-bold text-xs flex items-center justify-center transition cursor-pointer"
+                          title="Decrease ₹500"
+                        >
+                          -500
+                        </button>
+                        <div className="relative">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">₹</span>
+                          <input
+                            type="number"
+                            min={minAllowedDownPayment}
+                            max={maxAllowedDownPayment}
+                            value={effectiveDownPayment}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              if (!isNaN(val)) {
+                                setDownPayment(Math.min(maxAllowedDownPayment, Math.max(minAllowedDownPayment, val)));
+                              }
+                            }}
+                            className="w-24 pl-5 pr-2 py-1 bg-white border border-purple-300 rounded-lg text-xs font-bold font-mono text-purple-950 focus:ring-2 focus:ring-purple-400 focus:outline-none"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDownPayment((prev) => Math.min(maxAllowedDownPayment, prev + 500))}
+                          className="w-7 h-7 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-900 font-bold text-xs flex items-center justify-center transition cursor-pointer"
+                          title="Increase ₹500"
+                        >
+                          +500
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* FINANCED PRINCIPAL RECALCULATION STRIP */}
+                  <div className="p-3 rounded-xl bg-purple-100/70 border border-purple-200/90 flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-purple-700 shrink-0" />
+                      <span className="text-purple-950">
+                        Item: <strong>₹{safeVal.toLocaleString('en-IN')}</strong> &minus; Down Payment: <strong>₹{effectiveDownPayment.toLocaleString('en-IN')}</strong> =
+                      </span>
+                    </div>
+                    <div className="font-mono text-purple-900 font-bold text-sm shrink-0">
+                      Financed Balance: <span className="text-purple-700 underline font-black">₹{financedPrincipal.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+
+                  {/* DYNAMIC EMI TENURE SELECTOR */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-purple-950">
+                        Select Repayment Tenure for ₹{financedPrincipal.toLocaleString('en-IN')}:
+                      </span>
+                      <span className="text-[10px] text-purple-700 font-bold bg-white px-2 py-0.5 rounded border border-purple-200">
+                        Instant Cardless Approval
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {financePlans.map((plan) => (
+                        <button
+                          key={plan.tenureMonths}
+                          type="button"
+                          onClick={() => setFinanceTenure(plan.tenureMonths)}
+                          className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                            financeTenure === plan.tenureMonths
+                              ? 'bg-purple-600 text-white border-purple-700 shadow-sm ring-2 ring-purple-300'
+                              : 'bg-white text-slate-800 border-purple-200 hover:border-purple-400'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className={`text-[11px] font-bold ${financeTenure === plan.tenureMonths ? 'text-white' : 'text-slate-900'}`}>
+                              {plan.tenureMonths} Months
                             </span>
-                          )}
-                        </div>
-                        <div className={`text-sm font-black font-mono ${financeTenure === plan.tenureMonths ? 'text-white' : 'text-purple-700'}`}>
-                          ₹{plan.monthlyEmi.toLocaleString('en-IN')}<span className="text-[9px] font-normal">/mo</span>
-                        </div>
-                        <div className={`text-[9px] mt-0.5 ${financeTenure === plan.tenureMonths ? 'text-purple-100' : 'text-slate-400'}`}>
-                          Total: ₹{plan.totalPayable.toLocaleString('en-IN')}
-                        </div>
-                      </button>
-                    ))}
+                            {plan.isNoCost && (
+                              <span className={`text-[8px] font-bold px-1 rounded ${
+                                financeTenure === plan.tenureMonths
+                                  ? 'bg-purple-800 text-white'
+                                  : 'bg-emerald-100 text-emerald-800'
+                              }`}>
+                                0% INT
+                              </span>
+                            )}
+                          </div>
+                          <div className={`text-sm font-black font-mono ${financeTenure === plan.tenureMonths ? 'text-white' : 'text-purple-700'}`}>
+                            ₹{plan.monthlyEmi.toLocaleString('en-IN')}<span className="text-[9px] font-normal">/mo</span>
+                          </div>
+                          <div className={`text-[9px] mt-0.5 ${financeTenure === plan.tenureMonths ? 'text-purple-100' : 'text-slate-400'}`}>
+                            Financed: ₹{plan.financedAmount?.toLocaleString('en-IN')}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-purple-900 pt-1 gap-1">
@@ -2758,13 +2914,28 @@ function CreateShipmentContent() {
                   <span className="font-mono line-through">₹{activeTierBreakdown.totalUpfront.toLocaleString('en-IN')}</span>
                 </div>
 
+                {/* FINANCE DOWN PAYMENT ROW */}
+                {paymentPreference === 'FINANCE_EMI' && (
+                  <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-between text-purple-900 animate-in fade-in">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-4 h-4 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-[9px] shrink-0">₹</span>
+                      <span className="font-bold text-xs truncate">
+                        Upfront Down Payment (<span className="text-purple-700 font-semibold">&lt; ₹5,000 policy</span>):
+                      </span>
+                    </div>
+                    <span className="font-mono font-black text-purple-800 text-xs shrink-0">
+                      +₹{effectiveDownPayment.toLocaleString('en-IN')}.00
+                    </span>
+                  </div>
+                )}
+
                 {/* PREPAID / FINANCE FREE DELIVERY DISCOUNT ROW */}
                 {(paymentPreference === 'PREPAID' || paymentPreference === 'FINANCE_EMI') && (
                   <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-emerald-900 animate-in fade-in">
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[9px] shrink-0">✓</span>
                       <span className="font-bold text-xs truncate">
-                        {!isFastTier ? 'Prepaid Free Delivery Waiver:' : 'Prepaid Express Air Savings:'}
+                        {!isFastTier ? `${paymentPreference === 'PREPAID' ? 'Prepaid' : 'Finance'} Free Delivery Waiver:` : `${paymentPreference === 'PREPAID' ? 'Prepaid' : 'Finance'} Express Air Savings:`}
                       </span>
                     </div>
                     <span className="font-mono font-black text-emerald-700 text-xs shrink-0">
@@ -2798,7 +2969,7 @@ function CreateShipmentContent() {
                         ? !isFastTier ? 'Total Upfront Courier Booking Fee:' : 'Total Upfront Fast Air Upgrade Fee:'
                         : paymentPreference === 'PAY_ON_DELIVERY'
                         ? 'Total Upfront COD Slot Reservation Fee:'
-                        : 'Total Upfront Down Payment:'}
+                        : !isFastTier ? 'Total Upfront Down Payment Today:' : 'Total Upfront Down Payment & Air Fee:'}
                     </span>
                     <span className="text-[10px] text-emerald-600 font-semibold block">
                       {paymentPreference === 'PREPAID'
@@ -2807,7 +2978,7 @@ function CreateShipmentContent() {
                           : '₹149 Fast Air express fee • Settle item price (₹' + declaredValue.toLocaleString('en-IN') + ') at doorstep'
                         : paymentPreference === 'PAY_ON_DELIVERY'
                         ? (!isFastTier ? '₹500 COD charge' : '₹649 COD & Fast Air charge') + ' paid now • Settle item price (₹' + declaredValue.toLocaleString('en-IN') + ') at doorstep'
-                        : '₹' + upfrontPayableAmount + ' today • ₹' + activeFinancePlan.monthlyEmi.toLocaleString('en-IN') + '/mo starts after unboxing'}
+                        : '₹' + effectiveDownPayment.toLocaleString('en-IN') + ' down payment paid today • Balance ₹' + financedPrincipal.toLocaleString('en-IN') + ' in ' + financeTenure + ' EMIs of ₹' + activeFinancePlan.monthlyEmi.toLocaleString('en-IN') + '/mo starting after unboxing'}
                     </span>
                   </div>
                   <div className="text-left sm:text-right shrink-0">
@@ -2815,7 +2986,13 @@ function CreateShipmentContent() {
                       ₹{upfrontPayableAmount.toLocaleString('en-IN')}
                     </span>
                     <span className="text-[10px] text-slate-400 font-medium">
-                      {paymentPreference === 'PREPAID' && !isFastTier ? 'Free Shipping Promo Applied' : paymentPreference === 'PREPAID' && isFastTier ? '₹149 Express Air Fee' : 'Includes Doorstep Verification'}
+                      {paymentPreference === 'PREPAID' && !isFastTier
+                        ? 'Free Shipping Promo Applied'
+                        : paymentPreference === 'PREPAID' && isFastTier
+                        ? '₹149 Express Air Fee'
+                        : paymentPreference === 'FINANCE_EMI'
+                        ? isFastTier ? `₹${effectiveDownPayment} Down + ₹149 Air` : 'Free Delivery Included'
+                        : 'Includes Doorstep Verification'}
                     </span>
                   </div>
                 </div>
@@ -3109,7 +3286,9 @@ function CreateShipmentContent() {
                     ? !isFastTier
                       ? `You pay ₹500 COD reservation charge today. Settle the gadget price (₹${declaredValue.toLocaleString('en-IN')}) at the doorstep via Cash or instant UPI QR upon inspection.`
                       : `You pay ₹649 today (₹500 COD fee + ₹149 Fast Air upgrade). Settle gadget price (₹${declaredValue.toLocaleString('en-IN')}) at doorstep after unboxing.`
-                    : `You pay ₹${upfrontPayableAmount} down payment today. Merchandise price (₹${declaredValue.toLocaleString('en-IN')}) is split into ₹${activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo starting 30 days after verified unboxing.`}
+                    : !isFastTier
+                    ? `You pay ₹${effectiveDownPayment.toLocaleString('en-IN')} down payment today (< ₹5,000 policy with Free Standard Delivery). The remaining ₹${financedPrincipal.toLocaleString('en-IN')} is split into ${financeTenure} monthly EMIs of ₹${activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo starting 30 days after verified unboxing.`
+                    : `You pay ₹${upfrontPayableAmount.toLocaleString('en-IN')} today (₹${effectiveDownPayment.toLocaleString('en-IN')} down payment + ₹149 Fast Air upgrade). The remaining ₹${financedPrincipal.toLocaleString('en-IN')} is split into ${financeTenure} monthly EMIs of ₹${activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo.`}
                   {' '}If rejected during the doorstep open-box audit, the item is returned safely to sender with ₹0 buyer liability.
                 </p>
               </div>
@@ -3238,8 +3417,8 @@ function CreateShipmentContent() {
                       <CreditCard className="w-4 h-4 text-white" />
                       <span>
                         {!isFastTier
-                          ? `Apply for 0% EMI (₹${activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo) • ₹0 Down`
-                          : `Pay ₹149 Air Fee & Apply for 0% EMI (₹${activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo)`}
+                          ? `Pay ₹${effectiveDownPayment.toLocaleString('en-IN')} Down Payment & Book (₹${activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo)`
+                          : `Pay ₹${upfrontPayableAmount.toLocaleString('en-IN')} (Down + Air) & Book (₹${activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo)`}
                       </span>
                       <ArrowRight className="w-4 h-4" />
                     </>
@@ -3365,7 +3544,7 @@ function CreateShipmentContent() {
                     SafeShip 0% No-Cost EMI
                   </h3>
                   <span className="text-[10px] text-purple-700 font-semibold">
-                    Instant 60s Approval &bull; Zero Down Payment
+                    Instant 60s Approval &bull; Down Payment &lt; ₹5,000
                   </span>
                 </div>
               </div>
@@ -3378,14 +3557,18 @@ function CreateShipmentContent() {
               </button>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 text-xs space-y-1">
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 text-xs space-y-1.5">
               <div className="flex justify-between font-bold text-purple-950">
                 <span>Selected Plan:</span>
                 <span className="font-mono">{financeTenure} Months @ ₹{activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo</span>
               </div>
               <div className="flex justify-between text-[11px] text-purple-700">
                 <span>Down Payment Today:</span>
-                <span className="font-mono font-bold text-emerald-600">₹0.00 (Zero Advance)</span>
+                <span className="font-mono font-bold text-purple-900">₹{effectiveDownPayment.toLocaleString('en-IN')} (&lt; ₹5,000)</span>
+              </div>
+              <div className="flex justify-between text-[11px] text-purple-700">
+                <span>Financed Principal:</span>
+                <span className="font-mono font-bold text-purple-900">₹{financedPrincipal.toLocaleString('en-IN')}</span>
               </div>
               <div className="flex justify-between text-[11px] text-purple-700">
                 <span>Annual Interest Rate:</span>

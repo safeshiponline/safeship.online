@@ -45,6 +45,8 @@ export type PaymentPreference = 'PREPAID' | 'PAY_ON_DELIVERY' | 'FINANCE_EMI';
 export interface FinancePlan {
   tenureMonths: number;
   monthlyEmi: number;
+  downPayment?: number;
+  financedAmount?: number;
   totalPayable: number;
   isNoCost: boolean;
   interestRateAnnual: number;
@@ -209,6 +211,7 @@ export interface SafeDeal {
   codCharge?: number;
   freeDeliveryDiscount?: number;
   financePlan?: FinancePlan;
+  downPayment?: number;
   pickupSlot?: PickupSlot;
   estimatedDeliveryDate?: string;
   middleMileCheckpoints?: {

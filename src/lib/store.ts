@@ -131,6 +131,7 @@ export function createNewDeal(params: {
   codCharge?: number;
   freeDeliveryDiscount?: number;
   financePlan?: SafeDeal['financePlan'];
+  downPayment?: number;
   pickupSlot?: SafeDeal['pickupSlot'];
   estimatedDeliveryDate?: string;
 }): SafeDeal {
@@ -230,6 +231,7 @@ export function createNewDeal(params: {
     codCharge: params.codCharge,
     freeDeliveryDiscount: params.freeDeliveryDiscount,
     financePlan: params.financePlan,
+    downPayment: params.downPayment,
     pickupSlot: params.pickupSlot || 'MORNING_10_1',
     estimatedDeliveryDate: params.estimatedDeliveryDate,
     middleMileCheckpoints: params.middleMileCheckpoints,

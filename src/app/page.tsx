@@ -147,6 +147,7 @@ export default function HomePage() {
   const [calcValue, setCalcValue] = useState<number>(10000);
   const [calcPaymentMode, setCalcPaymentMode] = useState<'PREPAID' | 'COD' | 'FINANCE'>('PREPAID');
   const [calcTier, setCalcTier] = useState<'STANDARD' | 'FAST'>('STANDARD');
+  const [calcDownPayment, setCalcDownPayment] = useState<number>(2499);
 
   // FAQ Accordion State
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -215,10 +216,16 @@ export default function HomePage() {
     return total;
   }, [calcRoute.distanceKm, calcCategory, calcValue]);
 
+  // Down payment bounds (< ₹5,000 policy)
+  const maxCalcDown = Math.min(4999, Math.max(999, Math.floor(calcValue * 0.5)));
+  const minCalcDown = Math.min(999, Math.max(499, Math.floor(calcValue * 0.05)));
+  const effectiveCalcDownPayment = Math.min(maxCalcDown, Math.max(minCalcDown, calcDownPayment));
+  const calcFinancedPrincipal = Math.max(0, calcValue - effectiveCalcDownPayment);
+
   // Pricing calculation:
   // - Prepaid: Standard is ₹0 (Free Delivery), Fast is ₹149 (nominal air fee)
   // - COD: Standard is ₹500, Fast is ₹649 (₹500 COD + ₹149 Air)
-  // - Finance: Standard is ₹0, Fast is ₹149
+  // - Finance: Standard is effectiveCalcDownPayment, Fast is effectiveCalcDownPayment + ₹149
   const estimatedFare = React.useMemo(() => {
     const isFast = calcTier === 'FAST';
     if (calcPaymentMode === 'PREPAID') {
@@ -227,12 +234,12 @@ export default function HomePage() {
     if (calcPaymentMode === 'COD') {
       return isFast ? 649 : 500;
     }
-    return isFast ? 149 : 0;
-  }, [calcPaymentMode, calcTier]);
+    return isFast ? effectiveCalcDownPayment + 149 : effectiveCalcDownPayment;
+  }, [calcPaymentMode, calcTier, effectiveCalcDownPayment]);
 
   const monthlyFinanceEmi = React.useMemo(() => {
-    return Math.round(calcValue / 6);
-  }, [calcValue]);
+    return Math.round(calcFinancedPrincipal / 6);
+  }, [calcFinancedPrincipal]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans antialiased selection:bg-[#0066FF] selection:text-white flex flex-col justify-between">
@@ -1715,9 +1722,56 @@ export default function HomePage() {
                     }`}
                   >
                     <span className="text-[11px] block">0% Finance EMI</span>
-                    <span className="text-[9px] text-purple-200 font-bold mt-0.5">₹{monthlyFinanceEmi.toLocaleString('en-IN')}/mo</span>
+                    <span className="text-[9px] text-purple-200 font-bold mt-0.5">
+                      ₹{monthlyFinanceEmi.toLocaleString('en-IN')}/mo • ₹{effectiveCalcDownPayment.toLocaleString('en-IN')} down
+                    </span>
                   </button>
                 </div>
+
+                {/* CALCULATOR DOWN PAYMENT ADJUSTER (< ₹5k) */}
+                {calcPaymentMode === 'FINANCE' && (
+                  <div className="p-3 bg-slate-800/90 rounded-2xl border border-purple-500/40 space-y-2 animate-in fade-in">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-purple-300 font-bold">
+                        Down Payment (<span className="text-emerald-400 font-black">&lt; ₹5,000 Policy</span>):
+                      </span>
+                      <span className="font-mono font-bold text-white bg-purple-900/60 px-2 py-0.5 rounded border border-purple-500/30">
+                        ₹{effectiveCalcDownPayment.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={minCalcDown}
+                      max={maxCalcDown}
+                      step={100}
+                      value={effectiveCalcDownPayment}
+                      onChange={(e) => setCalcDownPayment(Number(e.target.value))}
+                      className="w-full accent-purple-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer"
+                    />
+                    <div className="flex items-center justify-between text-[10px] text-slate-400">
+                      <span>Min: ₹{minCalcDown.toLocaleString('en-IN')}</span>
+                      <div className="flex gap-1.5">
+                        {[1499, 2499, 3499, 4999]
+                          .filter((v) => v <= maxCalcDown && v >= minCalcDown)
+                          .map((v) => (
+                            <button
+                              key={v}
+                              type="button"
+                              onClick={() => setCalcDownPayment(v)}
+                              className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition cursor-pointer ${
+                                effectiveCalcDownPayment === v
+                                  ? 'bg-purple-600 text-white'
+                                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                              }`}
+                            >
+                              ₹{v}
+                            </button>
+                          ))}
+                      </div>
+                      <span className="font-bold text-purple-300">Cap: ₹{maxCalcDown.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1751,7 +1805,7 @@ export default function HomePage() {
                   </span>
                   <span className="font-mono font-bold text-white">
                     {calcPaymentMode === 'FINANCE'
-                      ? `₹${monthlyFinanceEmi.toLocaleString('en-IN')}/mo (6M 0% EMI)`
+                      ? `₹${monthlyFinanceEmi.toLocaleString('en-IN')}/mo (6M 0% EMI on ₹${calcFinancedPrincipal.toLocaleString('en-IN')})`
                       : `₹${standardDeliveryCost.toLocaleString('en-IN')}`}
                   </span>
                 </div>
@@ -1764,7 +1818,7 @@ export default function HomePage() {
                       ? calcTier === 'STANDARD' ? 'Prepaid Delivery Fee:' : 'Fast Air Upgrade Fee:'
                       : calcPaymentMode === 'COD'
                       ? 'COD Doorstep Slot Lock:'
-                      : 'Down Payment Today:'}
+                      : calcTier === 'STANDARD' ? 'Down Payment Today (< ₹5k):' : 'Down Payment + Fast Air Today:'}
                   </div>
                   <div className="flex items-baseline gap-2">
                     <div className="text-2xl font-black font-mono">
@@ -1782,9 +1836,9 @@ export default function HomePage() {
                         )
                       ) : (
                         calcTier === 'STANDARD' ? (
-                          <span className="text-purple-400">₹0 (No Advance)</span>
+                          <span className="text-purple-400 font-mono">₹{effectiveCalcDownPayment.toLocaleString('en-IN')}</span>
                         ) : (
-                          <span className="text-purple-400">₹149</span>
+                          <span className="text-purple-400 font-mono">₹{(effectiveCalcDownPayment + 149).toLocaleString('en-IN')}</span>
                         )
                       )}
                     </div>
@@ -1796,7 +1850,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <Link
-                  href={`/in/deals/new?type=send&declaredValue=${calcValue}&payMode=${calcPaymentMode}&tier=${calcTier}`}
+                  href={`/in/deals/new?type=send&declaredValue=${calcValue}&payMode=${calcPaymentMode}&tier=${calcTier}&downPayment=${effectiveCalcDownPayment}`}
                   className="px-5 py-3 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-lg shadow-[#0066FF]/30 transition active:scale-95"
                 >
                   Book Consignment &rarr;
