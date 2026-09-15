@@ -30,13 +30,14 @@ import {
   Clock,
   Award,
   GoogleIcon,
-  Scan
+  Scan,
+  CreditCard
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
 import { createNewDeal } from '@/lib/store';
 import { getSession, loginWithGoogle, redirectToGoogleLogin, UserSession } from '@/lib/auth';
 import { ProductPhotoMatchResult } from '@/lib/geminiUnified';
-import { ItemCategory, DeliveryServiceTier } from '@/lib/types';
+import { ItemCategory, DeliveryServiceTier, PaymentPreference, FinancePlan } from '@/lib/types';
 import { resolvePincode, calculateRoadDistance, calculateTierPricing } from '@/lib/pincodeService';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
 
@@ -155,6 +156,11 @@ function CreateShipmentContent() {
 
   const [packageWeight, setPackageWeight] = useState<string>('');
   const [openBoxEnabled, setOpenBoxEnabled] = useState<boolean>(true);
+
+  // Payment Preference & Settlement State (Prepaid = Free Delivery, COD = ₹500 fee, Finance = 0% EMI)
+  const [paymentPreference, setPaymentPreference] = useState<PaymentPreference>('PREPAID');
+  const [financeTenure, setFinanceTenure] = useState<number>(6);
+  const [showFinanceModal, setShowFinanceModal] = useState<boolean>(false);
 
   // Field Validation State
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -472,6 +478,7 @@ function CreateShipmentContent() {
       const reqImei = searchParams.get('imei');
       const reqPhoto = searchParams.get('photo');
       const reqBackside = searchParams.get('backside');
+      const reqVal = searchParams.get('declaredValue') || searchParams.get('val');
 
       if (reqItem) {
         setItemName(reqItem);
@@ -486,6 +493,22 @@ function CreateShipmentContent() {
       if (reqBackside) {
         setBacksidePhoto(reqBackside);
       }
+      if (reqVal) {
+        setDeclaredValue(Number(reqVal));
+      }
+    }
+
+    const reqPayMode = searchParams.get('payMode');
+    if (reqPayMode === 'PREPAID' || reqPayMode === 'PAY_ON_DELIVERY' || reqPayMode === 'FINANCE_EMI') {
+      setPaymentPreference(reqPayMode as PaymentPreference);
+    } else if (reqPayMode === 'COD') {
+      setPaymentPreference('PAY_ON_DELIVERY');
+    } else if (reqPayMode === 'FINANCE') {
+      setPaymentPreference('FINANCE_EMI');
+    }
+    const reqValGlobal = searchParams.get('declaredValue') || searchParams.get('val');
+    if (reqValGlobal && !isNaN(Number(reqValGlobal))) {
+      setDeclaredValue(Number(reqValGlobal));
     }
   }, [searchParams]);
 
@@ -676,6 +699,66 @@ function CreateShipmentContent() {
     }
   }, [selectedTier, tierPricing.SAME_DAY_DIRECT.isAvailable]);
 
+  // Dynamic Finance Plans based on declared product valuation
+  const safeVal = Math.max(1000, declaredValue || 8000);
+  const financePlans: FinancePlan[] = [
+    {
+      tenureMonths: 3,
+      monthlyEmi: Math.round(safeVal / 3),
+      totalPayable: safeVal,
+      isNoCost: true,
+      interestRateAnnual: 0,
+      processingFee: 0,
+      provider: 'SafeShip 0% No-Cost EMI (Snapmint / Bajaj)'
+    },
+    {
+      tenureMonths: 6,
+      monthlyEmi: Math.round(safeVal / 6),
+      totalPayable: safeVal,
+      isNoCost: true,
+      interestRateAnnual: 0,
+      processingFee: 0,
+      provider: 'SafeShip 0% No-Cost EMI (ZestMoney / Cardless)'
+    },
+    {
+      tenureMonths: 9,
+      monthlyEmi: Math.round((safeVal * 1.05) / 9),
+      totalPayable: Math.round(safeVal * 1.05),
+      isNoCost: false,
+      interestRateAnnual: 6.6,
+      processingFee: 99,
+      provider: 'Low-Cost Bank EMI'
+    },
+    {
+      tenureMonths: 12,
+      monthlyEmi: Math.round((safeVal * 1.08) / 12),
+      totalPayable: Math.round(safeVal * 1.08),
+      isNoCost: false,
+      interestRateAnnual: 8.0,
+      processingFee: 149,
+      provider: 'Low-Cost Bank EMI'
+    }
+  ];
+  const activeFinancePlan = financePlans.find((p) => p.tenureMonths === financeTenure) || financePlans[1];
+
+  // Delivery Fee Discount: 100% Free delivery for Prepaid and Finance!
+  const freeDeliveryDiscount = (paymentPreference === 'PREPAID' || paymentPreference === 'FINANCE_EMI')
+    ? activeTierBreakdown.totalUpfront
+    : 0;
+
+  // COD Handling Charge: ₹500 for Pay on Delivery
+  const codCharge = paymentPreference === 'PAY_ON_DELIVERY' ? 500 : 0;
+
+  // Upfront Booking Payable Amount:
+  // - Prepaid: ₹0 (100% Free Delivery Waiver!)
+  // - Pay on Delivery (COD): ₹500 (covers doorstep cash handling & courier reservation)
+  // - Finance: ₹0 (Zero down payment)
+  const upfrontPayableAmount = paymentPreference === 'PREPAID'
+    ? 0
+    : paymentPreference === 'PAY_ON_DELIVERY'
+    ? 500
+    : 0;
+
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
@@ -698,14 +781,101 @@ function CreateShipmentContent() {
 
   const handleConfirmBooking = () => {
     clearRazorpayError();
-    const upfrontAmount = activeTierBreakdown.totalUpfront;
 
+    const completeDealCreation = (paymentId: string, upfrontAmountPaid: number) => {
+      try {
+        const insurancePolicyNumber = `POL-ICICI-LOMBARD-2026-${Date.now().toString(36).toUpperCase()}`;
+
+        const created = createNewDeal({
+          title: mode === 'exchange' ? `2-Way Swap: ${itemName} ⇄ ${exchangeItemName}` : itemName,
+          description: `${mode === 'exchange' ? '2-Way Hardware Exchange' : 'SafeShip Doorstep Delivery'} from ${pickupCity || 'Jaipur'} to ${dropCity || 'Delhi'}. Verified via Open-Box audit on ${routeCorridor}.`,
+          category: (selectedCategory || 'SMARTPHONES_TABLETS') as ItemCategory,
+          declaredValue,
+          condition: condition as any,
+          itemPhotos: uploadedPhotos.length > 0 ? uploadedPhotos : ['/images/openbox_macro_4x3.webp'],
+          sellerName: senderName.trim(),
+          sellerEmail: `${senderName.toLowerCase().replace(/\s+/g, '')}@safeship.online`,
+          sellerPhone: senderPhone.trim().startsWith('+91') ? senderPhone.trim() : `+91 ${senderPhone.trim()}`,
+          pickupAddress: pickupLocation,
+          city: pickupCity || 'Jaipur',
+          pincode: pickupPincode,
+          serialNumber: imeiAuditReport?.serial || 'D4G7K3Y9L2',
+          imeiNumber: imeiAuditReport?.imei || manualImei || '358921094829104',
+          imeiAuditReport: imeiAuditReport || undefined,
+          buyerName: buyerName.trim(),
+          buyerPhone: buyerPhone.trim().startsWith('+91') ? buyerPhone.trim() : `+91 ${buyerPhone.trim()}`,
+          deliveryAddress: dropLocation,
+          isExchange: mode === 'exchange',
+          exchangeItem: mode === 'exchange' ? {
+            title: exchangeItemName,
+            condition: exchangeCondition,
+            declaredValue: exchangeValue,
+            cashDifference,
+            photos: ['/images/exchange_hero_4x3.webp']
+          } : undefined,
+          serviceTier: selectedTier,
+          distanceKm: distanceKm || effectiveDistance,
+          routeCorridor,
+          isIntercity,
+          packageWeightKg: parseFloat(packageWeight) || 0.8,
+          dimensionsCm: '20 x 15 x 10 cm',
+          insurancePolicyNumber,
+          paymentPreference,
+          codCharge,
+          freeDeliveryDiscount,
+          financePlan: paymentPreference === 'FINANCE_EMI' ? activeFinancePlan : undefined,
+          upfrontPricing: {
+            baseFee: activeTierBreakdown.baseFee,
+            distanceSurcharge: activeTierBreakdown.distanceSurcharge,
+            insuranceFee: activeTierBreakdown.insuranceFee,
+            verificationFee: activeTierBreakdown.verificationFee,
+            totalUpfront: activeTierBreakdown.totalUpfront
+          },
+          upfrontPaid: upfrontAmountPaid,
+          paymentId,
+          billingInfo: {
+            businessName: isB2B && businessName.trim() ? businessName.trim() : undefined,
+            gstin: isB2B && gstin.trim() ? gstin.trim().toUpperCase() : undefined,
+            invoiceNumber: `INV-2026-SS-${Date.now().toString(36).toUpperCase()}`,
+            sacCode: '996812',
+            isB2B,
+            taxableAmount: Math.round((upfrontAmountPaid / 1.18) * 100) / 100,
+            cgst: Math.round(((upfrontAmountPaid - upfrontAmountPaid / 1.18) / 2) * 100) / 100,
+            sgst: Math.round(((upfrontAmountPaid - upfrontAmountPaid / 1.18) / 2) * 100) / 100,
+            igst: 0,
+            totalAmount: upfrontAmountPaid,
+            invoiceDate: new Date().toISOString()
+          }
+        });
+
+        router.push(`/in/track/${created.id}?booked=true&payment_id=${paymentId}&mode=${paymentPreference}`);
+      } catch (e) {
+        console.error('Error creating deal record in store:', e);
+        router.push(`/in/track/SS48291?booked=true&payment_id=${paymentId}&mode=${paymentPreference}`);
+      }
+    };
+
+    // If Prepaid (Free Delivery): ₹0 upfront fee! Instant confirmed with 100% Free Delivery!
+    if (paymentPreference === 'PREPAID') {
+      completeDealCreation(`PREPAID_FREE_SHIP_${Date.now().toString(36).toUpperCase()}`, 0);
+      return;
+    }
+
+    // If Finance: ₹0 down payment, instant pre-approval!
+    if (paymentPreference === 'FINANCE_EMI') {
+      completeDealCreation(`FINANCE_EMI_${activeFinancePlan.tenureMonths}M_${Date.now().toString(36).toUpperCase()}`, 0);
+      return;
+    }
+
+    // If Pay on Delivery (COD): ₹500 COD reservation charge via Razorpay
     openCheckout({
-      amountInRupees: upfrontAmount,
-      name: 'SafeShip India Logistics',
-      description: `${activeTierBreakdown.tierLabel} (${distanceKm || effectiveDistance} km) - Doorstep Open-Box Assured`,
+      amountInRupees: 500,
+      name: 'SafeShip COD Booking',
+      description: `₹500 Doorstep COD Charge & Slot Lock (${activeTierBreakdown.tierLabel})`,
       notes: {
         mode,
+        paymentPreference: 'PAY_ON_DELIVERY',
+        codCharge: '500',
         origin: `${pickupLocation} (${pickupPincode})`,
         destination: `${dropLocation} (${dropPincode})`,
         tier: selectedTier,
@@ -713,72 +883,7 @@ function CreateShipmentContent() {
         declaredValue: declaredValue.toString(),
       },
       onSuccess: (verifyData) => {
-        try {
-          const insurancePolicyNumber = `POL-ICICI-LOMBARD-2026-${Date.now().toString(36).toUpperCase()}`;
-
-          const created = createNewDeal({
-            title: mode === 'exchange' ? `2-Way Swap: ${itemName} ⇄ ${exchangeItemName}` : itemName,
-            description: `${mode === 'exchange' ? '2-Way Hardware Exchange' : 'SafeShip Doorstep Delivery'} from ${pickupCity || 'Jaipur'} to ${dropCity || 'Delhi'}. Verified via Open-Box audit on ${routeCorridor}.`,
-            category: (selectedCategory || 'SMARTPHONES_TABLETS') as ItemCategory,
-            declaredValue,
-            condition: condition as any,
-            itemPhotos: uploadedPhotos.length > 0 ? uploadedPhotos : ['/images/openbox_macro_4x3.webp'],
-            sellerName: senderName.trim(),
-            sellerEmail: `${senderName.toLowerCase().replace(/\s+/g, '')}@safeship.online`,
-            sellerPhone: senderPhone.trim().startsWith('+91') ? senderPhone.trim() : `+91 ${senderPhone.trim()}`,
-            pickupAddress: pickupLocation,
-            city: pickupCity || 'Jaipur',
-            pincode: pickupPincode,
-            serialNumber: imeiAuditReport?.serial || 'D4G7K3Y9L2',
-            imeiNumber: imeiAuditReport?.imei || manualImei || '358921094829104',
-            imeiAuditReport: imeiAuditReport || undefined,
-            buyerName: buyerName.trim(),
-            buyerPhone: buyerPhone.trim().startsWith('+91') ? buyerPhone.trim() : `+91 ${buyerPhone.trim()}`,
-            deliveryAddress: dropLocation,
-            isExchange: mode === 'exchange',
-            exchangeItem: mode === 'exchange' ? {
-              title: exchangeItemName,
-              condition: exchangeCondition,
-              declaredValue: exchangeValue,
-              cashDifference,
-              photos: ['/images/exchange_hero_4x3.webp']
-            } : undefined,
-            serviceTier: selectedTier,
-            distanceKm: distanceKm || effectiveDistance,
-            routeCorridor,
-            isIntercity,
-            packageWeightKg: parseFloat(packageWeight) || 0.8,
-            dimensionsCm: '20 x 15 x 10 cm',
-            insurancePolicyNumber,
-            upfrontPricing: {
-              baseFee: activeTierBreakdown.baseFee,
-              distanceSurcharge: activeTierBreakdown.distanceSurcharge,
-              insuranceFee: activeTierBreakdown.insuranceFee,
-              verificationFee: activeTierBreakdown.verificationFee,
-              totalUpfront: activeTierBreakdown.totalUpfront
-            },
-            upfrontPaid: upfrontAmount,
-            paymentId: verifyData.payment_id,
-            billingInfo: {
-              businessName: isB2B && businessName.trim() ? businessName.trim() : undefined,
-              gstin: isB2B && gstin.trim() ? gstin.trim().toUpperCase() : undefined,
-              invoiceNumber: `INV-2026-SS-${Date.now().toString(36).toUpperCase()}`,
-              sacCode: '996812',
-              isB2B,
-              taxableAmount: Math.round((upfrontAmount / 1.18) * 100) / 100,
-              cgst: Math.round(((upfrontAmount - upfrontAmount / 1.18) / 2) * 100) / 100,
-              sgst: Math.round(((upfrontAmount - upfrontAmount / 1.18) / 2) * 100) / 100,
-              igst: 0,
-              totalAmount: upfrontAmount,
-              invoiceDate: new Date().toISOString()
-            }
-          });
-
-          router.push(`/in/track/${created.id}?booked=true&payment_id=${verifyData.payment_id}`);
-        } catch (e) {
-          console.error('Error creating deal record in store:', e);
-          router.push(`/in/track/SS48291?booked=true&payment_id=${verifyData.payment_id}`);
-        }
+        completeDealCreation(verifyData.payment_id, 500);
       },
       onFailure: (err) => {
         console.error('Razorpay payment failed or cancelled:', err);
@@ -2348,6 +2453,173 @@ function CreateShipmentContent() {
               })}
             </div>
 
+            {/* =================================================================== */}
+            {/* PAYMENT MODE & SETTLEMENT PREFERENCE (Prepaid, COD, Finance EMI)    */}
+            {/* =================================================================== */}
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                <span className="text-xs font-bold text-[#334155] uppercase tracking-wider flex items-center gap-1.5">
+                  <CreditCard className="w-4 h-4 text-[#0066FF]" />
+                  <span>Choose Payment &amp; Settlement Preference:</span>
+                </span>
+                <span className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 self-start sm:self-auto">
+                  ⚡ Prepaid = 100% Free Delivery
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* 1. PREPAID ONLINE (100% FREE DELIVERY) */}
+                <div
+                  onClick={() => setPaymentPreference('PREPAID')}
+                  className={`p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between ${
+                    paymentPreference === 'PREPAID'
+                      ? 'bg-blue-50/70 border-[#0066FF] ring-2 ring-blue-300 shadow-sm'
+                      : 'bg-white border-[#E2E8F0] hover:border-blue-200'
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#0F172A]">Prepaid Online</span>
+                      <span className="text-[9px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
+                        FREE DELIVERY
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#64748B] leading-tight">
+                      Pay advance online. Courier linehaul is <strong>100% waived</strong> (₹0 shipping).
+                    </p>
+                  </div>
+
+                  <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium">Delivery:</span>
+                    <div className="flex items-center gap-1.5 font-mono">
+                      <span className="line-through text-slate-400 text-[11px]">₹{activeTierBreakdown.totalUpfront}</span>
+                      <span className="font-bold text-emerald-600">₹0 (FREE)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. PAY ON DELIVERY (₹500 COD CHARGE) */}
+                <div
+                  onClick={() => setPaymentPreference('PAY_ON_DELIVERY')}
+                  className={`p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between ${
+                    paymentPreference === 'PAY_ON_DELIVERY'
+                      ? 'bg-amber-50/70 border-amber-500 ring-2 ring-amber-300 shadow-sm'
+                      : 'bg-white border-[#E2E8F0] hover:border-amber-200'
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#0F172A]">Pay on Delivery</span>
+                      <span className="text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full">
+                        ₹500 COD Fee
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#64748B] leading-tight">
+                      Inspect 10 mins at doorstep. Pay remaining cash or UPI QR upon satisfaction.
+                    </p>
+                  </div>
+
+                  <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium">COD Charge:</span>
+                    <span className="font-mono font-bold text-amber-700">+₹500 COD</span>
+                  </div>
+                </div>
+
+                {/* 3. SAFESHIP FINANCE (0% NO-COST EMI) */}
+                <div
+                  onClick={() => setPaymentPreference('FINANCE_EMI')}
+                  className={`p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between ${
+                    paymentPreference === 'FINANCE_EMI'
+                      ? 'bg-purple-50/70 border-purple-600 ring-2 ring-purple-300 shadow-sm'
+                      : 'bg-white border-[#E2E8F0] hover:border-purple-200'
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#0F172A]">SafeShip Finance</span>
+                      <span className="text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-300 px-2 py-0.5 rounded-full">
+                        0% No-Cost EMI
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#64748B] leading-tight">
+                      Split into easy monthly EMIs via Bajaj Finserv &amp; Snapmint. Free delivery promo included.
+                    </p>
+                  </div>
+
+                  <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <span className="text-slate-500 font-medium">Starting at:</span>
+                    <span className="font-mono font-black text-purple-700">
+                      ₹{Math.round(safeVal / 6).toLocaleString('en-IN')}/mo
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* DYNAMIC EMI TENURE SELECTOR (Shown when Finance is selected) */}
+              {paymentPreference === 'FINANCE_EMI' && (
+                <div className="p-4 rounded-2xl bg-purple-50/80 border border-purple-200 space-y-3 animate-in fade-in">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-purple-600" />
+                      <span className="text-xs font-bold text-purple-950">
+                        Select EMI Installment Plan for ₹{safeVal.toLocaleString('en-IN')}:
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-purple-700 font-bold bg-white px-2 py-0.5 rounded border border-purple-200">
+                      Instant Cardless Approval
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {financePlans.map((plan) => (
+                      <button
+                        key={plan.tenureMonths}
+                        type="button"
+                        onClick={() => setFinanceTenure(plan.tenureMonths)}
+                        className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                          financeTenure === plan.tenureMonths
+                            ? 'bg-purple-600 text-white border-purple-700 shadow-sm ring-2 ring-purple-300'
+                            : 'bg-white text-slate-800 border-purple-200 hover:border-purple-400'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-[11px] font-bold ${financeTenure === plan.tenureMonths ? 'text-white' : 'text-slate-900'}`}>
+                            {plan.tenureMonths} Months
+                          </span>
+                          {plan.isNoCost && (
+                            <span className={`text-[8px] font-bold px-1 rounded ${
+                              financeTenure === plan.tenureMonths
+                                ? 'bg-purple-800 text-white'
+                                : 'bg-emerald-100 text-emerald-800'
+                            }`}>
+                              0% INT
+                            </span>
+                          )}
+                        </div>
+                        <div className={`text-sm font-black font-mono ${financeTenure === plan.tenureMonths ? 'text-white' : 'text-purple-700'}`}>
+                          ₹{plan.monthlyEmi.toLocaleString('en-IN')}<span className="text-[9px] font-normal">/mo</span>
+                        </div>
+                        <div className={`text-[9px] mt-0.5 ${financeTenure === plan.tenureMonths ? 'text-purple-100' : 'text-slate-400'}`}>
+                          Total: ₹{plan.totalPayable.toLocaleString('en-IN')}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-purple-900 pt-1 gap-1">
+                    <span>Partners: <strong>Bajaj Finserv &bull; Snapmint &bull; ZestMoney &bull; HDFC/ICICI EMI</strong></span>
+                    <button
+                      type="button"
+                      onClick={() => setShowFinanceModal(true)}
+                      className="text-purple-700 font-bold underline cursor-pointer self-start sm:self-auto"
+                    >
+                      View Pre-approval Criteria &rarr;
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* UPFRONT MATHEMATICAL PRICE BREAKDOWN */}
             <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E2E8F0] shadow-xs space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2.5 border-b border-[#F1F5F9] gap-1.5">
@@ -2356,7 +2628,7 @@ function CreateShipmentContent() {
                     Upfront Booking Breakdown ({activeTierBreakdown.tierLabel})
                   </h3>
                   <p className="text-[10px] text-slate-500 mt-0.5">
-                    Calibrated for {(distanceKm || effectiveDistance).toLocaleString('en-IN')} km route &amp; ₹{declaredValue.toLocaleString('en-IN')} item valuation (All-inclusive, ₹250 floor to ₹1,950 cap)
+                    Calibrated for {(distanceKm || effectiveDistance).toLocaleString('en-IN')} km route &amp; ₹{declaredValue.toLocaleString('en-IN')} item valuation
                   </p>
                 </div>
                 <span className="text-[11px] font-bold text-[#0066FF] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100 shrink-0 self-start sm:self-center">
@@ -2375,37 +2647,21 @@ function CreateShipmentContent() {
                   <span className="font-semibold text-[#0F172A] font-mono shrink-0">₹{activeTierBreakdown.distanceSurcharge.toLocaleString('en-IN')}</span>
                 </div>
 
-                {/* Clean Multi-line inspection row to prevent awkward wrapping */}
+                {/* Doorstep unboxing row */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-1.5 border-y border-slate-100/80 text-[#475569] gap-1.5">
                   <div className="min-w-0">
                     <span className="font-medium text-[#0F172A]">Doorstep Open-Box Inspection &amp; Testing:</span>
-                    {activeTierBreakdown.verificationFee === 0 && (
-                      <span className="text-[10px] text-emerald-600 font-semibold block">
-                        Promotional doorstep inspection waiver applied
-                      </span>
-                    )}
+                    <span className="text-[10px] text-emerald-600 font-semibold block">
+                      Promotional doorstep inspection waiver applied
+                    </span>
                   </div>
                   <div className="text-left sm:text-right shrink-0 font-semibold text-emerald-700">
-                    {activeTierBreakdown.verificationFee === 0 ? (
-                      <span className="inline-flex items-center gap-1.5 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                        <span className="line-through text-slate-400 font-normal text-[11px]">₹149</span>
-                        <span className="text-emerald-700 font-bold text-xs">FREE PROMO (₹0)</span>
-                      </span>
-                    ) : (
-                      <span>
-                        ₹{activeTierBreakdown.verificationFee.toLocaleString('en-IN')}{' '}
-                        <span className="text-[10px] font-normal text-slate-400">(Bonded officer live unbox)</span>
-                      </span>
-                    )}
+                    <span className="inline-flex items-center gap-1.5 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      <span className="line-through text-slate-400 font-normal text-[11px]">₹149</span>
+                      <span className="text-emerald-700 font-bold text-xs">FREE PROMO (₹0)</span>
+                    </span>
                   </div>
                 </div>
-
-                {activeTierBreakdown.escrowCustodyFee ? (
-                  <div className="flex justify-between items-center text-[#475569] gap-2">
-                    <span className="min-w-0">Tamper-Evident Security Seal &amp; Escrow Lock:</span>
-                    <span className="font-semibold text-[#0F172A] font-mono shrink-0">₹{activeTierBreakdown.escrowCustodyFee.toLocaleString('en-IN')}</span>
-                  </div>
-                ) : null}
 
                 <div className="flex justify-between items-center text-[#475569] gap-2">
                   <span className="min-w-0">
@@ -2414,21 +2670,66 @@ function CreateShipmentContent() {
                   <span className="font-semibold text-[#0F172A] font-mono shrink-0">₹{activeTierBreakdown.insuranceFee.toLocaleString('en-IN')}</span>
                 </div>
 
+                {/* Subtotal line */}
+                <div className="flex justify-between items-center text-slate-500 text-[11px] pt-1">
+                  <span>Standard Logistics Subtotal:</span>
+                  <span className="font-mono line-through">₹{activeTierBreakdown.totalUpfront.toLocaleString('en-IN')}</span>
+                </div>
+
+                {/* PREPAID / FINANCE FREE DELIVERY DISCOUNT ROW */}
+                {(paymentPreference === 'PREPAID' || paymentPreference === 'FINANCE_EMI') && (
+                  <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-emerald-900 animate-in fade-in">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[9px] shrink-0">✓</span>
+                      <span className="font-bold text-xs truncate">
+                        {paymentPreference === 'PREPAID' ? 'Prepaid Online Free Delivery Waiver:' : 'Finance Promo Free Delivery Waiver:'}
+                      </span>
+                    </div>
+                    <span className="font-mono font-black text-emerald-700 text-xs shrink-0">
+                      -₹{activeTierBreakdown.totalUpfront.toLocaleString('en-IN')} (100% FREE)
+                    </span>
+                  </div>
+                )}
+
+                {/* PAY ON DELIVERY (COD) CHARGE ROW */}
+                {paymentPreference === 'PAY_ON_DELIVERY' && (
+                  <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between text-amber-900 animate-in fade-in">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-4 h-4 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-[9px] shrink-0">!</span>
+                      <span className="font-bold text-xs truncate">
+                        Doorstep COD Cash Handling &amp; Verification Fee:
+                      </span>
+                    </div>
+                    <span className="font-mono font-black text-amber-800 text-xs shrink-0">
+                      +₹500.00 COD
+                    </span>
+                  </div>
+                )}
+
+                {/* FINAL UPFRONT SUMMARY */}
                 <div className="pt-3 border-t border-[#E2E8F0] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
                   <div className="min-w-0">
                     <span className="text-sm font-black text-[#0F172A] block">
-                      Total Upfront Courier Booking Fee:
+                      {paymentPreference === 'PREPAID'
+                        ? 'Total Upfront Courier Booking Fee:'
+                        : paymentPreference === 'PAY_ON_DELIVERY'
+                        ? 'Total Upfront COD Slot Reservation Fee:'
+                        : 'Total Upfront Down Payment:'}
                     </span>
                     <span className="text-[10px] text-emerald-600 font-semibold block">
-                      Paid now via Razorpay &bull; Product price held in escrow until doorstep approval
+                      {paymentPreference === 'PREPAID'
+                        ? '100% Free Delivery • Settle item price (₹' + declaredValue.toLocaleString('en-IN') + ') at doorstep'
+                        : paymentPreference === 'PAY_ON_DELIVERY'
+                        ? '₹500 COD charge paid now • Settle item price (₹' + declaredValue.toLocaleString('en-IN') + ') at doorstep'
+                        : '₹0 advance today • ₹' + activeFinancePlan.monthlyEmi.toLocaleString('en-IN') + '/mo starts after unboxing'}
                     </span>
                   </div>
                   <div className="text-left sm:text-right shrink-0">
                     <span className="text-2xl font-black text-[#0066FF] font-mono tracking-tight block">
-                      ₹{activeTierBreakdown.totalUpfront.toLocaleString('en-IN')}
+                      ₹{upfrontPayableAmount.toLocaleString('en-IN')}
                     </span>
                     <span className="text-[10px] text-slate-400 font-medium">
-                      Inc. all taxes &amp; insurance
+                      {paymentPreference === 'PREPAID' || paymentPreference === 'FINANCE_EMI' ? 'Free Shipping Promo Applied' : 'Includes ₹500 COD Handling'}
                     </span>
                   </div>
                 </div>
@@ -2540,7 +2841,12 @@ function CreateShipmentContent() {
                 <span>Zero Escrow Risk Protocol</span>
               </div>
               <p className="text-[11px] leading-relaxed text-[#1E40AF]">
-                You are paying only <strong>₹{activeTierBreakdown.totalUpfront.toLocaleString('en-IN')}</strong> upfront today for bonded transit and white-glove open-box verification. The merchandise amount (<strong>₹{declaredValue.toLocaleString('en-IN')}</strong>) will be settled by the receiver upon inspecting the parcel at their doorstep. If rejected during open-box audit, the item is returned safely at ₹0 merchandise liability.
+                {paymentPreference === 'PREPAID'
+                  ? `You are paying ₹0 upfront today with 100% Free Delivery. The merchandise amount (₹${declaredValue.toLocaleString('en-IN')}) will be settled upon inspecting the parcel at the doorstep.`
+                  : paymentPreference === 'PAY_ON_DELIVERY'
+                  ? `You are paying ₹500 COD reservation charge today. The merchandise amount (₹${declaredValue.toLocaleString('en-IN')}) is settled at the doorstep after a 10-minute open-box verification.`
+                  : `You are paying ₹0 down payment today. Merchandise amount (₹${declaredValue.toLocaleString('en-IN')}) is split into ₹${activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo for ${financeTenure} months.`}
+                {' '}If rejected during the doorstep open-box audit, the item is returned safely with ₹0 merchandise liability.
               </p>
             </div>
 
@@ -2650,17 +2956,35 @@ function CreateShipmentContent() {
                   type="button"
                   disabled={payingWithRazorpay}
                   onClick={handleConfirmBooking}
-                  className="flex-1 py-4 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] disabled:opacity-50 text-white font-black text-sm shadow-md shadow-[#0066FF]/30 transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+                  className={`flex-1 py-4 rounded-2xl text-white font-black text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer ${
+                    paymentPreference === 'PREPAID'
+                      ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'
+                      : paymentPreference === 'PAY_ON_DELIVERY'
+                      ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/30'
+                      : 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/30'
+                  }`}
                 >
                   {payingWithRazorpay ? (
                     <>
                       <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                       <span>Connecting Razorpay Gateway...</span>
                     </>
-                  ) : (
+                  ) : paymentPreference === 'PREPAID' ? (
+                    <>
+                      <Sparkles className="w-4 h-4 text-white" />
+                      <span>Confirm Booking &bull; 100% FREE Delivery (₹0)</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  ) : paymentPreference === 'PAY_ON_DELIVERY' ? (
                     <>
                       <Lock className="w-4 h-4 text-white" />
-                      <span>Pay ₹{activeTierBreakdown.totalUpfront.toLocaleString('en-IN')} via Razorpay</span>
+                      <span>Pay ₹500 COD Slot Charge &bull; Balance at Doorstep</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-4 h-4 text-white" />
+                      <span>Apply for 0% EMI (₹{activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo)</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
@@ -2767,6 +3091,92 @@ function CreateShipmentContent() {
                 <span>Continue with Google</span>
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* SAFESHIP 0% FINANCE & PRE-APPROVAL INTERACTIVE MODAL */}
+      {showFinanceModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-purple-200 space-y-4 animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-purple-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs">
+                  0%
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900">
+                    SafeShip 0% No-Cost EMI
+                  </h3>
+                  <span className="text-[10px] text-purple-700 font-semibold">
+                    Instant 60s Approval &bull; Zero Down Payment
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowFinanceModal(false)}
+                className="text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 text-xs space-y-1">
+              <div className="flex justify-between font-bold text-purple-950">
+                <span>Selected Plan:</span>
+                <span className="font-mono">{financeTenure} Months @ ₹{activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo</span>
+              </div>
+              <div className="flex justify-between text-[11px] text-purple-700">
+                <span>Down Payment Today:</span>
+                <span className="font-mono font-bold text-emerald-600">₹0.00 (Zero Advance)</span>
+              </div>
+              <div className="flex justify-between text-[11px] text-purple-700">
+                <span>Annual Interest Rate:</span>
+                <span className="font-mono font-bold">{activeFinancePlan.isNoCost ? '0% (No Cost)' : `${activeFinancePlan.interestRateAnnual}% p.a.`}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                Approved Partner NBFCs &amp; Banks:
+              </span>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="font-bold text-slate-900 block">Bajaj Finserv</span>
+                  <span className="text-[10px] text-emerald-600 font-semibold">Pre-Approved Limit</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="font-bold text-slate-900 block">Snapmint PayLater</span>
+                  <span className="text-[10px] text-purple-600 font-semibold">0% Cardless EMI</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="font-bold text-slate-900 block">ZestMoney Credit</span>
+                  <span className="text-[10px] text-blue-600 font-semibold">Digital KYC in 1 Min</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="font-bold text-slate-900 block">Debit / Credit Cards</span>
+                  <span className="text-[10px] text-slate-500 font-semibold">HDFC, ICICI, SBI, Axis</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0">✓</span>
+              <span><strong>Pre-approval Active:</strong> Pre-qualified for up to ₹1,50,000 credit limit.</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setShowFinanceModal(false);
+                setPaymentPreference('FINANCE_EMI');
+              }}
+              className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-2"
+            >
+              <span>Confirm &amp; Proceed with {financeTenure}M EMI Plan</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}

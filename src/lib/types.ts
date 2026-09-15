@@ -36,6 +36,18 @@ export type DeliveryServiceTier =
   | 'STANDARD_GROUND'
   | 'SAME_DAY_DIRECT';
 
+export type PaymentPreference = 'PREPAID' | 'PAY_ON_DELIVERY' | 'FINANCE_EMI';
+
+export interface FinancePlan {
+  tenureMonths: number;
+  monthlyEmi: number;
+  totalPayable: number;
+  isNoCost: boolean;
+  interestRateAnnual: number;
+  processingFee: number;
+  provider: string; // e.g. 'SafeShip 0% Cardless Finance' | 'Bajaj Finserv' | 'Snapmint' | 'ZestMoney'
+}
+
 export interface InspectionChecklist {
   powersOn: boolean;
   cosmeticMatchesDescription: boolean;
@@ -189,6 +201,10 @@ export interface SafeDeal {
     verificationFee: number;
     totalUpfront: number;
   };
+  paymentPreference?: PaymentPreference;
+  codCharge?: number;
+  freeDeliveryDiscount?: number;
+  financePlan?: FinancePlan;
   middleMileCheckpoints?: {
     id: string;
     name: string;

@@ -127,6 +127,10 @@ export function createNewDeal(params: {
   imeiNumber?: string;
   imeiAuditReport?: SafeDeal['imeiAuditReport'];
   pickupAttemptStatus?: SafeDeal['pickupAttemptStatus'];
+  paymentPreference?: SafeDeal['paymentPreference'];
+  codCharge?: number;
+  freeDeliveryDiscount?: number;
+  financePlan?: SafeDeal['financePlan'];
 }): SafeDeal {
   const deals = getStoredDeals();
   const newId = `SS${Math.floor(10000 + Math.random() * 90000)}`;
@@ -220,6 +224,10 @@ export function createNewDeal(params: {
     routeCorridor: params.routeCorridor,
     isIntercity: params.isIntercity,
     upfrontPricing: params.upfrontPricing,
+    paymentPreference: params.paymentPreference || 'PREPAID',
+    codCharge: params.codCharge,
+    freeDeliveryDiscount: params.freeDeliveryDiscount,
+    financePlan: params.financePlan,
     middleMileCheckpoints: params.middleMileCheckpoints,
     insurancePolicyNumber: params.insurancePolicyNumber || `POL-ICICI-LOMBARD-2026-${newId}`,
     packageWeightKg: params.packageWeightKg,

@@ -145,6 +145,7 @@ export default function HomePage() {
   const [calcDest, setCalcDest] = useState<string>('110001'); // New Delhi
   const [calcCategory, setCalcCategory] = useState<'PHONE' | 'LAPTOP' | 'CAMERA' | 'WATCH'>('LAPTOP');
   const [calcValue, setCalcValue] = useState<number>(10000);
+  const [calcPaymentMode, setCalcPaymentMode] = useState<'PREPAID' | 'COD' | 'FINANCE'>('PREPAID');
 
   // FAQ Accordion State
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -196,8 +197,8 @@ export default function HomePage() {
     }
   }, [calcOrigin, calcDest]);
 
-  // Pricing calculation (Floor ₹250, distance calibrated, nominal under 15k)
-  const estimatedFare = React.useMemo(() => {
+  // Standard linehaul delivery cost
+  const standardDeliveryCost = React.useMemo(() => {
     const km = calcRoute.distanceKm;
     let base = 280;
     if (calcCategory === 'LAPTOP') base = 340;
@@ -212,6 +213,17 @@ export default function HomePage() {
     const total = Math.max(250, Math.min(1950, base + distFactor + ins));
     return total;
   }, [calcRoute.distanceKm, calcCategory, calcValue]);
+
+  // Pricing calculation (Prepaid = Free Delivery (₹0), COD = +₹500, Finance = ₹0 upfront)
+  const estimatedFare = React.useMemo(() => {
+    if (calcPaymentMode === 'PREPAID') return 0;
+    if (calcPaymentMode === 'COD') return 500;
+    return 0;
+  }, [calcPaymentMode]);
+
+  const monthlyFinanceEmi = React.useMemo(() => {
+    return Math.round(calcValue / 6);
+  }, [calcValue]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans antialiased selection:bg-[#0066FF] selection:text-white flex flex-col justify-between">
@@ -1599,6 +1611,58 @@ export default function HomePage() {
                   </div>
                 </div>
               </div>
+
+              {/* Payment Mode Preference Selector in Fare Calculator */}
+              <div className="pt-2 border-t border-slate-700/80 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-300">
+                    Payment &amp; Settlement Preference:
+                  </label>
+                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30">
+                    Prepaid = 100% Free Shipping
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setCalcPaymentMode('PREPAID')}
+                    className={`p-2.5 rounded-xl border text-left font-bold transition cursor-pointer flex flex-col justify-between ${
+                      calcPaymentMode === 'PREPAID'
+                        ? 'bg-[#0066FF] text-white border-[#0066FF] shadow-xs ring-2 ring-blue-400/40'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                    }`}
+                  >
+                    <span className="text-[11px] block">Prepaid Online</span>
+                    <span className="text-[9px] text-emerald-300 font-bold mt-0.5">FREE DELIVERY (₹0)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCalcPaymentMode('COD')}
+                    className={`p-2.5 rounded-xl border text-left font-bold transition cursor-pointer flex flex-col justify-between ${
+                      calcPaymentMode === 'COD'
+                        ? 'bg-amber-600 text-white border-amber-600 shadow-xs ring-2 ring-amber-400/40'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                    }`}
+                  >
+                    <span className="text-[11px] block">Pay on Delivery</span>
+                    <span className="text-[9px] text-amber-200 font-bold mt-0.5">+₹500 COD Fee</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCalcPaymentMode('FINANCE')}
+                    className={`p-2.5 rounded-xl border text-left font-bold transition cursor-pointer flex flex-col justify-between ${
+                      calcPaymentMode === 'FINANCE'
+                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs ring-2 ring-purple-400/40'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                    }`}
+                  >
+                    <span className="text-[11px] block">0% Finance EMI</span>
+                    <span className="text-[9px] text-purple-200 font-bold mt-0.5">₹{monthlyFinanceEmi.toLocaleString('en-IN')}/mo</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Right Summary Card */}
@@ -1624,24 +1688,48 @@ export default function HomePage() {
                   <span className="font-bold text-emerald-400">10-Minute Unboxing Window</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Product Payment Right Now:</span>
-                  <span className="font-mono font-black text-emerald-400 text-sm">₹0.00 (Zero Advance)</span>
+                  <span className="text-slate-400">
+                    {calcPaymentMode === 'FINANCE' ? 'Finance Installment:' : 'Standard Delivery:'}
+                  </span>
+                  <span className="font-mono font-bold text-white">
+                    {calcPaymentMode === 'FINANCE'
+                      ? `₹${monthlyFinanceEmi.toLocaleString('en-IN')}/mo (6M 0% EMI)`
+                      : `₹${standardDeliveryCost.toLocaleString('en-IN')}`}
+                  </span>
                 </div>
               </div>
 
               <div className="pt-3 border-t border-slate-700 flex items-baseline justify-between">
                 <div>
-                  <div className="text-[10px] uppercase font-bold text-slate-400">Upfront Booking Linehaul:</div>
-                  <div className="text-2xl font-black text-white font-mono">
-                    ₹{estimatedFare}
-                    <span className="text-xs text-slate-400 font-normal"> / all-inclusive</span>
+                  <div className="text-[10px] uppercase font-bold text-slate-400">
+                    {calcPaymentMode === 'PREPAID'
+                      ? 'Prepaid Delivery Fee:'
+                      : calcPaymentMode === 'COD'
+                      ? 'COD Doorstep Slot Lock:'
+                      : 'Down Payment Today:'}
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <div className="text-2xl font-black font-mono">
+                      {calcPaymentMode === 'PREPAID' ? (
+                        <span className="text-emerald-400">₹0 (FREE)</span>
+                      ) : calcPaymentMode === 'COD' ? (
+                        <span className="text-amber-400">₹500</span>
+                      ) : (
+                        <span className="text-purple-400">₹0 (No Advance)</span>
+                      )}
+                    </div>
+                    {calcPaymentMode === 'PREPAID' && (
+                      <span className="text-[11px] text-slate-400 line-through">
+                        ₹{standardDeliveryCost}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <Link
-                  href={`/in/deals/new?type=send&declaredValue=${calcValue}`}
+                  href={`/in/deals/new?type=send&declaredValue=${calcValue}&payMode=${calcPaymentMode}`}
                   className="px-5 py-3 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-lg shadow-[#0066FF]/30 transition active:scale-95"
                 >
-                  Book This Delivery &rarr;
+                  Book Consignment &rarr;
                 </Link>
               </div>
             </div>
