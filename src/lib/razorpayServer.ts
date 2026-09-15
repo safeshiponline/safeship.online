@@ -7,9 +7,12 @@ import crypto from 'crypto';
  * KEY_SECRET is NEVER exposed to client-side bundles.
  */
 
+export const DEFAULT_RAZORPAY_KEY_ID = 'rzp_live_TbXrOgkdfajAg0';
+export const DEFAULT_RAZORPAY_KEY_SECRET = 'm4tTNZXH03lCQ6mioRylMNO4';
+
 export function getRazorpayClient(): Razorpay {
-  const key_id = process.env.RAZORPAY_KEY_ID;
-  const key_secret = process.env.RAZORPAY_KEY_SECRET;
+  const key_id = process.env.RAZORPAY_KEY_ID || DEFAULT_RAZORPAY_KEY_ID;
+  const key_secret = process.env.RAZORPAY_KEY_SECRET || DEFAULT_RAZORPAY_KEY_SECRET;
 
   if (!key_id || !key_secret) {
     throw new Error('Razorpay credentials missing in environment variables (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)');
@@ -30,7 +33,7 @@ export function verifyRazorpaySignature(
   paymentId: string,
   razorpaySignature: string
 ): boolean {
-  const key_secret = process.env.RAZORPAY_KEY_SECRET;
+  const key_secret = process.env.RAZORPAY_KEY_SECRET || DEFAULT_RAZORPAY_KEY_SECRET;
   if (!key_secret) {
     throw new Error('RAZORPAY_KEY_SECRET missing for signature verification');
   }

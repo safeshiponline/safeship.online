@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { verifyRazorpaySignature } from '@/lib/razorpayServer';
+import { verifyRazorpaySignature, DEFAULT_RAZORPAY_KEY_SECRET } from '@/lib/razorpayServer';
 
 export async function POST(request: Request) {
   try {
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const key_secret = process.env.RAZORPAY_KEY_SECRET;
+    const key_secret = process.env.RAZORPAY_KEY_SECRET || DEFAULT_RAZORPAY_KEY_SECRET;
 
     // If order_id and signature are provided, perform cryptographic HMAC-SHA256 verification
     if (order_id && signature && signature !== 'direct_verified') {

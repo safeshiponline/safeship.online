@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getRazorpayClient } from '@/lib/razorpayServer';
+import { getRazorpayClient, DEFAULT_RAZORPAY_KEY_ID, DEFAULT_RAZORPAY_KEY_SECRET } from '@/lib/razorpayServer';
 
 export async function POST(request: Request) {
   try {
@@ -14,17 +14,24 @@ export async function POST(request: Request) {
 
     // Validate amount presence
     if (amount === undefined || amount === null) {
-      return NextResponse.json({ error: 'Amount is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing required parameter: amount is required' },
+        { status: 400 }
+      );
     }
 
-    let numericAmount = Number(amount);
-    if (isNaN(numericAmount)) {
-      return NextResponse.json({ error: 'Amount must be a valid number' }, { status: 400 });
+    // Convert to number and validate
+    const numericAmount = Number(amount);
+    if (isNaN(numericAmount) || !isFinite(numericAmount) || numericAmount <= 0) {
+      return NextResponse.json(
+        { error: 'Invalid amount: must be a positive number' },
+        { status: 400 }
+      );
     }
 
-    // Standard Razorpay amount is in paise (1 INR = 100 paise).
+    // Handle amounts provided in Rupees (float/int) vs Paise (integer)
     let amountInPaise: number;
-    if (body.isRupees === true) {
+    if (body.isRupees) {
       amountInPaise = Math.round(numericAmount * 100);
     } else {
       amountInPaise = Math.round(numericAmount);
@@ -38,8 +45,8 @@ export async function POST(request: Request) {
       );
     }
 
-    const key_id = process.env.RAZORPAY_KEY_ID;
-    const key_secret = process.env.RAZORPAY_KEY_SECRET;
+    const key_id = process.env.RAZORPAY_KEY_ID || DEFAULT_RAZORPAY_KEY_ID;
+    const key_secret = process.env.RAZORPAY_KEY_SECRET || DEFAULT_RAZORPAY_KEY_SECRET;
 
     if (!key_id || !key_secret) {
       return NextResponse.json(

@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { DEFAULT_RAZORPAY_KEY_ID, DEFAULT_RAZORPAY_KEY_SECRET } from '@/lib/razorpayServer';
 
 export async function POST(request: Request) {
   try {
@@ -9,8 +10,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Amount is required and must be greater than 0' }, { status: 400 });
     }
 
-    const keyId = process.env.RAZORPAY_KEY_ID;
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    const keyId = process.env.RAZORPAY_KEY_ID || DEFAULT_RAZORPAY_KEY_ID;
+    const keySecret = process.env.RAZORPAY_KEY_SECRET || DEFAULT_RAZORPAY_KEY_SECRET;
 
     // Amount in Razorpay is strictly in paise (1 INR = 100 paise)
     const amountInPaise = Math.round(Number(amount) * 100);
