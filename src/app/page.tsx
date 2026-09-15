@@ -146,6 +146,7 @@ export default function HomePage() {
   const [calcCategory, setCalcCategory] = useState<'PHONE' | 'LAPTOP' | 'CAMERA' | 'WATCH'>('LAPTOP');
   const [calcValue, setCalcValue] = useState<number>(10000);
   const [calcPaymentMode, setCalcPaymentMode] = useState<'PREPAID' | 'COD' | 'FINANCE'>('PREPAID');
+  const [calcTier, setCalcTier] = useState<'STANDARD' | 'FAST'>('STANDARD');
 
   // FAQ Accordion State
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -214,12 +215,20 @@ export default function HomePage() {
     return total;
   }, [calcRoute.distanceKm, calcCategory, calcValue]);
 
-  // Pricing calculation (Prepaid = Free Delivery (₹0), COD = +₹500, Finance = ₹0 upfront)
+  // Pricing calculation:
+  // - Prepaid: Standard is ₹0 (Free Delivery), Fast is ₹149 (nominal air fee)
+  // - COD: Standard is ₹500, Fast is ₹649 (₹500 COD + ₹149 Air)
+  // - Finance: Standard is ₹0, Fast is ₹149
   const estimatedFare = React.useMemo(() => {
-    if (calcPaymentMode === 'PREPAID') return 0;
-    if (calcPaymentMode === 'COD') return 500;
-    return 0;
-  }, [calcPaymentMode]);
+    const isFast = calcTier === 'FAST';
+    if (calcPaymentMode === 'PREPAID') {
+      return isFast ? 149 : 0;
+    }
+    if (calcPaymentMode === 'COD') {
+      return isFast ? 649 : 500;
+    }
+    return isFast ? 149 : 0;
+  }, [calcPaymentMode, calcTier]);
 
   const monthlyFinanceEmi = React.useMemo(() => {
     return Math.round(calcValue / 6);
@@ -1612,6 +1621,49 @@ export default function HomePage() {
                 </div>
               </div>
 
+              {/* Delivery Speed Options (Standard vs Fast) */}
+              <div className="pt-2 border-t border-slate-700/80 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-300">
+                    Delivery Speed (2 Options):
+                  </label>
+                  <span className="text-[10px] text-blue-400 font-bold bg-blue-500/20 px-2 py-0.5 rounded border border-blue-500/30">
+                    {calcTier === 'STANDARD' ? '2–3 Days Ground' : '⚡ 24–36h Express Air'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setCalcTier('STANDARD')}
+                    className={`p-2.5 rounded-xl border text-left font-bold transition cursor-pointer flex flex-col justify-between ${
+                      calcTier === 'STANDARD'
+                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-400/40'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                    }`}
+                  >
+                    <span className="text-[11px] block">Standard Delivery</span>
+                    <span className="text-[9px] text-emerald-200 font-bold mt-0.5">
+                      {calcPaymentMode === 'PREPAID' ? '100% FREE (₹0)' : calcPaymentMode === 'COD' ? '₹500 COD' : '₹0 DOWN'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setCalcTier('FAST')}
+                    className={`p-2.5 rounded-xl border text-left font-bold transition cursor-pointer flex flex-col justify-between ${
+                      calcTier === 'FAST'
+                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs ring-2 ring-blue-400/40'
+                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                    }`}
+                  >
+                    <span className="text-[11px] block">Fast Delivery (Air)</span>
+                    <span className="text-[9px] text-blue-200 font-bold mt-0.5">
+                      {calcPaymentMode === 'PREPAID' ? '+₹149 EXPRESS' : calcPaymentMode === 'COD' ? '₹649 COD (Air)' : '+₹149 AIR'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
               {/* Payment Mode Preference Selector in Fare Calculator */}
               <div className="pt-2 border-t border-slate-700/80 space-y-1.5">
                 <div className="flex items-center justify-between">
@@ -1619,7 +1671,7 @@ export default function HomePage() {
                     Payment &amp; Settlement Preference:
                   </label>
                   <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30">
-                    Prepaid = 100% Free Shipping
+                    {calcTier === 'STANDARD' ? 'Free Standard on Prepaid' : 'Fast Air Upgrade: ₹149'}
                   </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
@@ -1633,7 +1685,9 @@ export default function HomePage() {
                     }`}
                   >
                     <span className="text-[11px] block">Prepaid Online</span>
-                    <span className="text-[9px] text-emerald-300 font-bold mt-0.5">FREE DELIVERY (₹0)</span>
+                    <span className="text-[9px] text-emerald-300 font-bold mt-0.5">
+                      {calcTier === 'STANDARD' ? 'FREE DELIVERY (₹0)' : '₹149 (AIR)'}
+                    </span>
                   </button>
 
                   <button
@@ -1646,7 +1700,9 @@ export default function HomePage() {
                     }`}
                   >
                     <span className="text-[11px] block">Pay on Delivery</span>
-                    <span className="text-[9px] text-amber-200 font-bold mt-0.5">+₹500 COD Fee</span>
+                    <span className="text-[9px] text-amber-200 font-bold mt-0.5">
+                      {calcTier === 'STANDARD' ? '+₹500 COD' : '+₹649 COD'}
+                    </span>
                   </button>
 
                   <button
@@ -1670,7 +1726,7 @@ export default function HomePage() {
               <div className="flex items-center justify-between border-b border-slate-700 pb-3">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Route Telemetry</span>
                 <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">
-                  NATIONAL AIR CORRIDOR
+                  {calcTier === 'FAST' ? 'NATIONAL AIR CARGO' : 'SURFACE GROUND NETWORK'}
                 </span>
               </div>
 
@@ -1681,7 +1737,9 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Estimated Transit SLA:</span>
-                  <span className="font-bold text-blue-300">{calcRoute.transitSummary}</span>
+                  <span className="font-bold text-blue-300">
+                    {calcTier === 'FAST' ? '24–36 Hours (Next-Flight Air Cargo)' : '2–3 Business Days (Standard Ground)'}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">Doorstep Verification:</span>
@@ -1689,7 +1747,7 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400">
-                    {calcPaymentMode === 'FINANCE' ? 'Finance Installment:' : 'Standard Delivery:'}
+                    {calcPaymentMode === 'FINANCE' ? 'Finance Installment:' : calcTier === 'FAST' ? 'Fast Air Linehaul:' : 'Standard Delivery:'}
                   </span>
                   <span className="font-mono font-bold text-white">
                     {calcPaymentMode === 'FINANCE'
@@ -1703,7 +1761,7 @@ export default function HomePage() {
                 <div>
                   <div className="text-[10px] uppercase font-bold text-slate-400">
                     {calcPaymentMode === 'PREPAID'
-                      ? 'Prepaid Delivery Fee:'
+                      ? calcTier === 'STANDARD' ? 'Prepaid Delivery Fee:' : 'Fast Air Upgrade Fee:'
                       : calcPaymentMode === 'COD'
                       ? 'COD Doorstep Slot Lock:'
                       : 'Down Payment Today:'}
@@ -1711,11 +1769,23 @@ export default function HomePage() {
                   <div className="flex items-baseline gap-2">
                     <div className="text-2xl font-black font-mono">
                       {calcPaymentMode === 'PREPAID' ? (
-                        <span className="text-emerald-400">₹0 (FREE)</span>
+                        calcTier === 'STANDARD' ? (
+                          <span className="text-emerald-400">₹0 (FREE)</span>
+                        ) : (
+                          <span className="text-blue-400">₹149</span>
+                        )
                       ) : calcPaymentMode === 'COD' ? (
-                        <span className="text-amber-400">₹500</span>
+                        calcTier === 'STANDARD' ? (
+                          <span className="text-amber-400">₹500</span>
+                        ) : (
+                          <span className="text-amber-400">₹649</span>
+                        )
                       ) : (
-                        <span className="text-purple-400">₹0 (No Advance)</span>
+                        calcTier === 'STANDARD' ? (
+                          <span className="text-purple-400">₹0 (No Advance)</span>
+                        ) : (
+                          <span className="text-purple-400">₹149</span>
+                        )
                       )}
                     </div>
                     {calcPaymentMode === 'PREPAID' && (
@@ -1726,7 +1796,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <Link
-                  href={`/in/deals/new?type=send&declaredValue=${calcValue}&payMode=${calcPaymentMode}`}
+                  href={`/in/deals/new?type=send&declaredValue=${calcValue}&payMode=${calcPaymentMode}&tier=${calcTier}`}
                   className="px-5 py-3 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-lg shadow-[#0066FF]/30 transition active:scale-95"
                 >
                   Book Consignment &rarr;

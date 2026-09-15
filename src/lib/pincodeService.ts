@@ -529,7 +529,7 @@ export function calculateEstimatedTransitTime(
   distanceKm: number,
   tier: DeliveryServiceTier
 ): { transitTime: string; estimatedDays: string } {
-  if (tier === 'FASTEST_AIR_RUSH') {
+  if (tier === 'FASTEST_AIR_RUSH' || tier === 'FAST_DELIVERY') {
     if (distanceKm <= 40) {
       return {
         transitTime: 'Within 3–4 Hours Today (Dedicated Express Courier)',
@@ -597,7 +597,7 @@ export function calculateEstimatedTransitTime(
     }
   }
 
-  // STANDARD_GROUND
+  // STANDARD_GROUND or STANDARD_DELIVERY
   if (distanceKm <= 40) {
     return {
       transitTime: '1–2 Business Days from Pickup',
@@ -790,10 +790,10 @@ export function calculateTierPricing(
 
   const fastest = buildBreakdown(
     'FASTEST_AIR_RUSH',
-    'SafeShip SuperFast Air',
-    'Guaranteed Next-Flight Air Linehaul & White-Glove Open-Box Escrow',
-    '⚡ FASTEST DELIVERY',
-    effectiveDistance > 1500 ? '24–36H AIR CARGO' : 'WITHIN 24H',
+    'SafeShip Fast Delivery (Express Air)',
+    'Guaranteed Next-Flight Air Linehaul & Priority Express Handover',
+    '⚡ FAST DELIVERY',
+    effectiveDistance > 1500 ? '24–36H AIR CARGO' : 'WITHIN 24–36H',
     fastestBase,
     fastestDistanceSurcharge,
     fastestVerification,
@@ -805,7 +805,7 @@ export function calculateTierPricing(
     'PRIORITY_EXPRESS',
     'SafeShip Priority Express',
     'Commercial Air & Expressway Corridor Linehaul',
-    'MOST POPULAR',
+    'POPULAR',
     undefined,
     priorityBase,
     priorityDistanceSurcharge,
@@ -816,9 +816,9 @@ export function calculateTierPricing(
 
   const ground = buildBreakdown(
     'STANDARD_GROUND',
-    'SafeShip Standard Ground',
-    'Economical Surface Freight Linehaul Network',
-    'ECONOMICAL',
+    'SafeShip Standard Delivery',
+    'Economical & Reliable Surface Linehaul Network',
+    'STANDARD',
     undefined,
     groundBase,
     groundDistanceSurcharge,
@@ -839,14 +839,16 @@ export function calculateTierPricing(
     0,
     sameDayAvailable,
     !sameDayAvailable
-      ? `Intercity distance (${effectiveDistance} km) exceeds same-day fleet perimeter (max 50 km). Choose SuperFast Air for 24–36h next-flight delivery.`
+      ? `Intercity distance (${effectiveDistance} km) exceeds same-day fleet perimeter (max 50 km). Choose Fast Delivery for 24–36h next-flight delivery.`
       : undefined
   );
 
   return {
     FASTEST_AIR_RUSH: fastest,
-    PRIORITY_EXPRESS: priority,
     STANDARD_GROUND: ground,
+    FAST_DELIVERY: { ...fastest, tier: 'FAST_DELIVERY' },
+    STANDARD_DELIVERY: { ...ground, tier: 'STANDARD_DELIVERY' },
+    PRIORITY_EXPRESS: priority,
     SAME_DAY_DIRECT: sameDay
   };
 }

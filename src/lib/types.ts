@@ -31,10 +31,14 @@ export type ItemCategory =
   | 'OTHER';
 
 export type DeliveryServiceTier =
-  | 'FASTEST_AIR_RUSH'
-  | 'PRIORITY_EXPRESS'
   | 'STANDARD_GROUND'
+  | 'FASTEST_AIR_RUSH'
+  | 'STANDARD_DELIVERY'
+  | 'FAST_DELIVERY'
+  | 'PRIORITY_EXPRESS'
   | 'SAME_DAY_DIRECT';
+
+export type PickupSlot = 'MORNING_10_1' | 'AFTERNOON_2_5';
 
 export type PaymentPreference = 'PREPAID' | 'PAY_ON_DELIVERY' | 'FINANCE_EMI';
 
@@ -205,6 +209,8 @@ export interface SafeDeal {
   codCharge?: number;
   freeDeliveryDiscount?: number;
   financePlan?: FinancePlan;
+  pickupSlot?: PickupSlot;
+  estimatedDeliveryDate?: string;
   middleMileCheckpoints?: {
     id: string;
     name: string;

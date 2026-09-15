@@ -131,6 +131,8 @@ export function createNewDeal(params: {
   codCharge?: number;
   freeDeliveryDiscount?: number;
   financePlan?: SafeDeal['financePlan'];
+  pickupSlot?: SafeDeal['pickupSlot'];
+  estimatedDeliveryDate?: string;
 }): SafeDeal {
   const deals = getStoredDeals();
   const newId = `SS${Math.floor(10000 + Math.random() * 90000)}`;
@@ -228,6 +230,8 @@ export function createNewDeal(params: {
     codCharge: params.codCharge,
     freeDeliveryDiscount: params.freeDeliveryDiscount,
     financePlan: params.financePlan,
+    pickupSlot: params.pickupSlot || 'MORNING_10_1',
+    estimatedDeliveryDate: params.estimatedDeliveryDate,
     middleMileCheckpoints: params.middleMileCheckpoints,
     insurancePolicyNumber: params.insurancePolicyNumber || `POL-ICICI-LOMBARD-2026-${newId}`,
     packageWeightKg: params.packageWeightKg,
