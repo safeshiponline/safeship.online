@@ -141,6 +141,7 @@ export function createNewDeal(params: {
   const pricing = calculateEscrowBreakdown({
     itemPrice: params.declaredValue,
     deliveryTier: params.deliveryTier || 'INTERCITY_INSURED',
+    shippingFee: params.upfrontPricing?.totalUpfront || params.upfrontPaid,
     feeSplitOption: params.feeSplitOption || 'BUYER_PAYS_ALL',
     milestoneAdvancePercent: 30
   });

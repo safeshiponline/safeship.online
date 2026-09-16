@@ -3,6 +3,7 @@ import { EscrowBreakdown, FeeSplitOption } from './types';
 export interface CalculationInput {
   itemPrice: number; // In INR ₹
   deliveryTier?: 'HYPERLOCAL_SAME_DAY' | 'FASTEST_AIR_RUSH' | 'METRO_NEXT_DAY' | 'INTERCITY_INSURED';
+  shippingFee?: number; // Realistic distance-calculated courier delivery fee
   feeSplitOption: FeeSplitOption;
   milestoneAdvancePercent?: number; // default 30%
 }
@@ -21,19 +22,22 @@ export function calculateEscrowBreakdown(input: CalculationInput): EscrowBreakdo
   const gstOnEscrowFee = Math.round(basePlatformFee * 0.18);
   const platformEscrowFee = basePlatformFee + gstOnEscrowFee;
 
-  // Courier delivery charge (includes white-glove doorstep open-box inspection & transit insurance)
-  // For orders <= ₹15,000, rates remain lower/promotional as before (Free inspection, budget courier).
-  // For orders > ₹15,000, rates dynamically account for bonded flight cargo & white-glove unboxing.
-  const isUnder15k = itemPrice <= 15000;
-  let shippingInsuranceFee = isUnder15k ? 349 : 899;
-  if (input.deliveryTier === 'HYPERLOCAL_SAME_DAY') {
-    shippingInsuranceFee = isUnder15k ? 199 : 349;
+  // Realistic Courier delivery charge according to distance:
+  // - If distance-calculated shipping fee is provided, use it directly.
+  // - Otherwise fallback to realistic standard rates based on service tier:
+  //   Hyperlocal Same-Day: ₹119 | Standard Ground: ₹149 | Priority Express: ₹229 | Express Air: ₹349
+  let shippingInsuranceFee: number;
+  if (typeof input.shippingFee === 'number' && input.shippingFee >= 0) {
+    shippingInsuranceFee = Math.round(input.shippingFee);
+  } else if (input.deliveryTier === 'HYPERLOCAL_SAME_DAY') {
+    shippingInsuranceFee = 119;
   } else if (input.deliveryTier === 'FASTEST_AIR_RUSH') {
-    shippingInsuranceFee = isUnder15k ? 899 : 1899; // 24-36h Next-Flight Air Rush
+    shippingInsuranceFee = 349;
   } else if (input.deliveryTier === 'METRO_NEXT_DAY') {
-    shippingInsuranceFee = isUnder15k ? 349 : 899; // Priority Air Linehaul (2-3 Days)
-  } else if (input.deliveryTier === 'INTERCITY_INSURED') {
-    shippingInsuranceFee = isUnder15k ? 499 : 599; // Standard Ground Linehaul
+    shippingInsuranceFee = 229;
+  } else {
+    // Default Standard Ground Linehaul (realistic courier cost, never ₹500)
+    shippingInsuranceFee = 149;
   }
 
   const totalFee = platformEscrowFee + shippingInsuranceFee;

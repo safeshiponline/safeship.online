@@ -658,11 +658,11 @@ export function calculateTierPricing(
   const groundVerification = 0;
   const sameDayVerification = 0;
 
-  // 3. Distance Surcharge
+  // 3. Distance Surcharge calculated strictly according to distance
   // Local (<= 50 km): ₹0
-  // Regional (50 - 350 km, e.g. 270 km Jaipur-Delhi): ₹20 - ₹30
-  // Intercity (350 - 1000 km): ₹40 - ₹60
-  // Cross-country (> 1000 km): ₹70 - ₹90
+  // Regional (50 - 350 km, e.g. 150 km Mumbai-Pune, 270 km Jaipur-Delhi): ₹12 - ₹36
+  // Intercity (350 - 1000 km, e.g. 366 km BLR-MAA): ₹25 - ₹65
+  // Cross-country (> 1000 km, e.g. 2150 km BLR-DEL): ₹60 - ₹120
   const effectiveDistance = Math.max(0, distanceKm);
   const calcDistanceSurcharge = (perKmRate: number, maxSurcharge: number) => {
     if (effectiveDistance <= 50) return 0;
@@ -670,9 +670,9 @@ export function calculateTierPricing(
     return Math.min(maxSurcharge, Math.max(10, raw));
   };
 
-  const groundDistanceSurcharge = calcDistanceSurcharge(0.08, 90);   // For 270 km: 18 -> ₹20
-  const fastestDistanceSurcharge = calcDistanceSurcharge(0.14, 130); // For 270 km: 31 -> ₹30
-  const priorityDistanceSurcharge = calcDistanceSurcharge(0.10, 100);
+  const groundDistanceSurcharge = calcDistanceSurcharge(0.08, 90);   // E.g. for 366 km: ~₹25
+  const priorityDistanceSurcharge = calcDistanceSurcharge(0.12, 120); // E.g. for 366 km: ~₹38
+  const fastestDistanceSurcharge = calcDistanceSurcharge(0.16, 170);  // E.g. for 366 km: ~₹51
 
   const sameDayAvailable = effectiveDistance <= 50;
   const sameDayDistanceSurcharge = sameDayAvailable && effectiveDistance > 15
@@ -680,19 +680,20 @@ export function calculateTierPricing(
     : 0;
 
   // 4. Base Linehaul Courier Fee
-  // Realistic Indian courier rates for electronics (0.5kg - 1kg):
-  // Standard Ground: ₹49 - ₹89 base (Total courier cost: ₹49 to ₹179 based on distance)
-  // Express Air: ₹129 - ₹179 base (Total courier cost: ₹149 to ₹289 based on distance)
-  let groundBase = effectiveDistance <= 50 ? 49 : effectiveDistance <= 350 ? 69 : effectiveDistance <= 1000 ? 89 : 109;
-  let fastestBase = effectiveDistance <= 350 ? 129 : effectiveDistance <= 1000 ? 169 : 199;
-  let priorityBase = effectiveDistance <= 350 ? 99 : effectiveDistance <= 1000 ? 129 : 149;
-  let sameDayBase = 119;
+  // Realistic Indian courier rates for electronics with door pickup & verified delivery:
+  // - Standard Ground: ₹79 (local) to ₹279 (cross-country)
+  // - Priority Express: ₹139 (local) to ₹399 (cross-country)
+  // - Express Air: ₹219 (local) to ₹589 (cross-country)
+  let groundBase = effectiveDistance <= 50 ? 79 : effectiveDistance <= 350 ? 109 : effectiveDistance <= 1000 ? 144 : 189;
+  let priorityBase = effectiveDistance <= 50 ? 139 : effectiveDistance <= 350 ? 169 : effectiveDistance <= 1000 ? 219 : 289;
+  let fastestBase = effectiveDistance <= 50 ? 219 : effectiveDistance <= 350 ? 249 : effectiveDistance <= 1000 ? 319 : 419;
+  let sameDayBase = 149;
 
   if (isExchange) {
-    // 2-Way exchange courier handling
-    groundBase = Math.round(groundBase * 1.5);
-    fastestBase = Math.round(fastestBase * 1.5);
-    priorityBase = Math.round(priorityBase * 1.5);
+    // 2-Way exchange courier handling for both parties (round-trip consignment)
+    groundBase = Math.round(groundBase * 1.6);
+    priorityBase = Math.round(priorityBase * 1.6);
+    fastestBase = Math.round(fastestBase * 1.6);
   }
 
   const fastestEscrowCustody = 0;
@@ -733,11 +734,12 @@ export function calculateTierPricing(
     }
 
     const rawTotal = base + surcharge;
-    // Realistic courier rate bounds:
-    // Ground: ₹49 to ₹199 max
-    // Air: ₹149 to ₹329 max
-    const minFloor = tier === 'STANDARD_GROUND' ? 49 : tier === 'FASTEST_AIR_RUSH' ? 149 : 99;
-    const maxCap = tier === 'STANDARD_GROUND' ? 199 : tier === 'FASTEST_AIR_RUSH' ? 329 : 249;
+    // Calibrated realistic Indian courier bounds:
+    // Ground: ₹79 (local) to ₹279 (national)
+    // Priority: ₹139 (local) to ₹399 (national)
+    // Air: ₹219 (local) to ₹589 (national)
+    const minFloor = tier === 'STANDARD_GROUND' ? 79 : tier === 'PRIORITY_EXPRESS' ? 139 : 219;
+    const maxCap = tier === 'STANDARD_GROUND' ? 279 : tier === 'PRIORITY_EXPRESS' ? 399 : 589;
     const clampedTotal = Math.min(maxCap, Math.max(minFloor, rawTotal));
     const adjustedBase = clampedTotal - surcharge;
 
