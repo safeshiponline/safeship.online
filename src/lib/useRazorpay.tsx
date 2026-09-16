@@ -134,15 +134,23 @@ export function useRazorpay() {
             setLoading(false);
           }
         },
-        prefill: opts.prefill || {
-          name: 'SafeShip Customer',
-          email: 'customer@safeship.online',
-          contact: '+91 98765 43210',
+        prefill: {
+          name: opts.prefill?.name || 'SafeShip Verified Customer',
+          email: opts.prefill?.email || 'customer@safeship.online',
+          contact: opts.prefill?.contact
+            ? opts.prefill.contact.replace(/\D/g, '').slice(-10) || '9876543210'
+            : '9876543210',
+        },
+        readonly: {
+          contact: true,
+          email: true,
+          name: true,
         },
         theme: {
           color: '#0066FF',
         },
         modal: {
+          confirm_close: true,
           ondismiss: () => {
             setLoading(false);
             if (opts.onDismiss) {

@@ -50,6 +50,7 @@ export interface FinancePlan {
   totalPayable: number;
   isNoCost: boolean;
   interestRateAnnual: number;
+  totalInterest?: number;
   processingFee: number;
   provider: string; // e.g. 'SafeShip 0% Cardless Finance' | 'Bajaj Finserv' | 'Snapmint' | 'ZestMoney'
 }

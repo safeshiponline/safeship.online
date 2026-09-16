@@ -25,19 +25,19 @@ export function calculateEscrowBreakdown(input: CalculationInput): EscrowBreakdo
   // Realistic Courier delivery charge according to distance:
   // - If distance-calculated shipping fee is provided, use it directly.
   // - Otherwise fallback to realistic standard rates based on service tier:
-  //   Hyperlocal Same-Day: ₹119 | Standard Ground: ₹149 | Priority Express: ₹229 | Express Air: ₹349
+  //   Hyperlocal Same-Day: ₹149 | Standard Ground: ₹189 | Priority Express: ₹299 | Express Air: ₹499
   let shippingInsuranceFee: number;
   if (typeof input.shippingFee === 'number' && input.shippingFee >= 0) {
     shippingInsuranceFee = Math.round(input.shippingFee);
   } else if (input.deliveryTier === 'HYPERLOCAL_SAME_DAY') {
-    shippingInsuranceFee = 119;
-  } else if (input.deliveryTier === 'FASTEST_AIR_RUSH') {
-    shippingInsuranceFee = 349;
-  } else if (input.deliveryTier === 'METRO_NEXT_DAY') {
-    shippingInsuranceFee = 229;
-  } else {
-    // Default Standard Ground Linehaul (realistic courier cost, never ₹500)
     shippingInsuranceFee = 149;
+  } else if (input.deliveryTier === 'FASTEST_AIR_RUSH') {
+    shippingInsuranceFee = 499;
+  } else if (input.deliveryTier === 'METRO_NEXT_DAY') {
+    shippingInsuranceFee = 299;
+  } else {
+    // Default Standard Ground Linehaul
+    shippingInsuranceFee = 189;
   }
 
   const totalFee = platformEscrowFee + shippingInsuranceFee;

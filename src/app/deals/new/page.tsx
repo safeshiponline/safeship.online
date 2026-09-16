@@ -191,7 +191,7 @@ function CreateShipmentContent() {
   const [routeCorridor, setRouteCorridor] = useState<string>('Local Intra-City Transit');
   const [routeTransitSummary, setRouteTransitSummary] = useState<string>('');
   const [isIntercity, setIsIntercity] = useState<boolean>(false);
-  const [selectedTier, setSelectedTier] = useState<DeliveryServiceTier>('STANDARD_GROUND');
+  const [selectedTier, setSelectedTier] = useState<DeliveryServiceTier>('PRIORITY_EXPRESS');
   const [pickupSlot, setPickupSlot] = useState<PickupSlot>('MORNING_10_1');
 
   const [packageWeight, setPackageWeight] = useState<string>('');
@@ -199,7 +199,7 @@ function CreateShipmentContent() {
 
   // Payment Preference, Settlement & Delivery Fee Split State
   const [feeSplit, setFeeSplit] = useState<FeeSplitOption>('SPLIT_50_50');
-  const [paymentPreference, setPaymentPreference] = useState<PaymentPreference>('PREPAID');
+  const [paymentPreference, setPaymentPreference] = useState<PaymentPreference>('PAY_ON_DELIVERY');
   const [financeTenure, setFinanceTenure] = useState<number>(6);
   const [downPayment, setDownPayment] = useState<number>(2499);
   const [showFinanceModal, setShowFinanceModal] = useState<boolean>(false);
@@ -208,6 +208,24 @@ function CreateShipmentContent() {
   const [utrNumber, setUtrNumber] = useState<string>('');
   const [utrError, setUtrError] = useState<string>('');
   const [draftRestored, setDraftRestored] = useState<boolean>(false);
+
+  // Customer EMI Identity & Banking Mandate Verification State
+  const [emiKyc, setEmiKyc] = useState({
+    fullName: '',
+    panNumber: '',
+    aadhaarNumber: '',
+    bankAccountNumber: '',
+    confirmBankAccountNumber: '',
+    ifscCode: '',
+    bankName: 'HDFC Bank',
+    employmentType: 'SALARIED' as 'SALARIED' | 'SELF_EMPLOYED' | 'BUSINESS',
+    monthlyIncome: '45,000',
+    panPhoto: null as string | null,
+    aadhaarFrontPhoto: null as string | null,
+    aadhaarBackPhoto: null as string | null,
+  });
+  const [emiVerified, setEmiVerified] = useState<boolean>(false);
+  const [emiKycError, setEmiKycError] = useState<string>('');
 
   // Field Validation State
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -1125,51 +1143,55 @@ function CreateShipmentContent() {
   const effectiveDownPayment = Math.min(maxAllowedDownPayment, Math.max(minAllowedDownPayment, downPayment));
   const financedPrincipal = Math.max(0, safeVal - effectiveDownPayment);
 
-  // Dynamic Finance Plans based on financed principal (safeVal - downPayment)
+  // Dynamic Finance Plans with transparent low interest (1.0% - 1.2%/month)
   const financePlans: FinancePlan[] = [
     {
       tenureMonths: 3,
-      monthlyEmi: Math.round(financedPrincipal / 3),
-      totalPayable: effectiveDownPayment + financedPrincipal,
+      monthlyEmi: Math.round((financedPrincipal * 1.036) / 3),
+      totalPayable: effectiveDownPayment + Math.round(financedPrincipal * 1.036),
       downPayment: effectiveDownPayment,
       financedAmount: financedPrincipal,
-      isNoCost: true,
-      interestRateAnnual: 0,
-      processingFee: 0,
-      provider: 'SafeShip 0% No-Cost EMI (Snapmint / Bajaj)'
+      isNoCost: false,
+      interestRateAnnual: 14.4,
+      totalInterest: Math.round(financedPrincipal * 0.036),
+      processingFee: 99,
+      provider: 'SafeShip Easy EMI (Partner NBFC)'
     },
     {
       tenureMonths: 6,
-      monthlyEmi: Math.round(financedPrincipal / 6),
-      totalPayable: effectiveDownPayment + financedPrincipal,
+      monthlyEmi: Math.round((financedPrincipal * 1.06) / 6),
+      totalPayable: effectiveDownPayment + Math.round(financedPrincipal * 1.06),
       downPayment: effectiveDownPayment,
       financedAmount: financedPrincipal,
-      isNoCost: true,
-      interestRateAnnual: 0,
-      processingFee: 0,
-      provider: 'SafeShip 0% No-Cost EMI (ZestMoney / Cardless)'
+      isNoCost: false,
+      interestRateAnnual: 12.0,
+      totalInterest: Math.round(financedPrincipal * 0.06),
+      processingFee: 149,
+      provider: 'SafeShip Easy EMI (Partner NBFC)'
     },
     {
       tenureMonths: 9,
-      monthlyEmi: Math.round((financedPrincipal * 1.05) / 9),
-      totalPayable: effectiveDownPayment + Math.round(financedPrincipal * 1.05),
+      monthlyEmi: Math.round((financedPrincipal * 1.081) / 9),
+      totalPayable: effectiveDownPayment + Math.round(financedPrincipal * 1.081),
       downPayment: effectiveDownPayment,
       financedAmount: financedPrincipal,
       isNoCost: false,
-      interestRateAnnual: 6.6,
-      processingFee: 99,
-      provider: 'Low-Cost Bank EMI'
+      interestRateAnnual: 10.8,
+      totalInterest: Math.round(financedPrincipal * 0.081),
+      processingFee: 199,
+      provider: 'Low-Cost Partner Bank EMI'
     },
     {
       tenureMonths: 12,
-      monthlyEmi: Math.round((financedPrincipal * 1.08) / 12),
-      totalPayable: effectiveDownPayment + Math.round(financedPrincipal * 1.08),
+      monthlyEmi: Math.round((financedPrincipal * 1.102) / 12),
+      totalPayable: effectiveDownPayment + Math.round(financedPrincipal * 1.102),
       downPayment: effectiveDownPayment,
       financedAmount: financedPrincipal,
       isNoCost: false,
-      interestRateAnnual: 8.0,
-      processingFee: 149,
-      provider: 'Low-Cost Bank EMI'
+      interestRateAnnual: 10.2,
+      totalInterest: Math.round(financedPrincipal * 0.102),
+      processingFee: 249,
+      provider: 'Low-Cost Partner Bank EMI'
     }
   ];
   const activeFinancePlan = financePlans.find((p) => p.tenureMonths === financeTenure) || financePlans[1];
@@ -1177,11 +1199,9 @@ function CreateShipmentContent() {
   // Realistic distance-calculated delivery charge for active selected tier
   const fullDeliveryFee = activeTierBreakdown.totalUpfront;
 
-  // Delivery fee allocation between Buyer and Seller according to feeSplit
+  // Delivery fee allocation between Buyer and Seller according to feeSplit (50/50 Split or Seller Bears 100%)
   const buyerDeliveryFee = feeSplit === 'SPLIT_50_50'
     ? Math.round(fullDeliveryFee / 2)
-    : feeSplit === 'BUYER_PAYS_ALL'
-    ? fullDeliveryFee
     : 0;
   const sellerDeliveryFee = fullDeliveryFee - buyerDeliveryFee;
 
@@ -1339,25 +1359,40 @@ function CreateShipmentContent() {
   const handleConfirmBooking = () => {
     clearRazorpayError();
 
+    // If Finance EMI is selected and customer KYC / mandate is not yet completed:
+    if (paymentPreference === 'FINANCE_EMI' && !emiVerified) {
+      setShowFinanceModal(true);
+      return;
+    }
+
     // If Upfront fee is ₹0 (Prepaid Standard Free Delivery): instant confirmed!
     if (upfrontPayableAmount === 0) {
       completeDealCreation(`${paymentPreference}_FREE_SHIP_${Date.now().toString(36).toUpperCase()}`, 0);
       return;
     }
 
-    // Open Razorpay Standard Checkout for the full upfront amount:
+    const payerName = (mode === 'exchange' ? senderName : buyerName) || senderName || 'SafeShip Customer';
+    const rawPhone = (mode === 'exchange' ? senderPhone : buyerPhone) || senderPhone || '';
+    const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10) || '9876543210';
+
+    // Open Razorpay Standard Checkout directly to payment screen:
     openCheckout({
       amountInRupees: upfrontPayableAmount,
       name: paymentPreference === 'PREPAID'
         ? 'SafeShip Escrow Payment'
         : paymentPreference === 'PAY_ON_DELIVERY'
-        ? 'SafeShip COD Reservation'
+        ? 'SafeShip Courier Dispatch Advance'
         : 'SafeShip Finance Down Payment',
       description: paymentPreference === 'PREPAID'
         ? `Escrow Deposit: ₹${upfrontPayableAmount.toLocaleString('en-IN')} for ${itemName || 'Merchandise'}`
         : paymentPreference === 'PAY_ON_DELIVERY'
-        ? `₹${upfrontPayableAmount} COD Advance (Balance ₹${declaredValue.toLocaleString('en-IN')} at Doorstep)`
+        ? `₹${upfrontPayableAmount} Courier Advance (Balance ₹${declaredValue.toLocaleString('en-IN')} at Doorstep)`
         : `₹${effectiveDownPayment.toLocaleString('en-IN')} Down Payment for ${itemName || 'Merchandise'} (${financeTenure}M EMI)`,
+      prefill: {
+        name: payerName,
+        email: 'customer@safeship.online',
+        contact: cleanPhone,
+      },
       notes: {
         mode,
         paymentPreference,
@@ -1472,37 +1507,6 @@ function CreateShipmentContent() {
       {/* Main Wizard Form Body */}
       <main className="max-w-xl mx-auto w-full p-4 sm:p-6 flex-1">
         
-        {/* Draft Auto-Restore Notification */}
-        {draftRestored && (
-          <div className="mb-4 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs flex flex-wrap items-center justify-between gap-2 animate-in fade-in shadow-2xs">
-            <div className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span>
-                <strong>Draft restored:</strong> Your saved consignment {itemName ? <span>(&ldquo;<strong className="text-emerald-900">{itemName}</strong>&rdquo;)</span> : ''} is active &bull; Step {currentStep} of 4.
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              {currentStep === 1 && itemName && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (validateStep1()) goToStep(2);
-                  }}
-                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition cursor-pointer flex items-center gap-1 shadow-2xs"
-                >
-                  <span>Continue Step 2 &rarr;</span>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={clearSavedDraft}
-                className="text-[11px] font-bold text-rose-600 hover:text-rose-800 underline cursor-pointer shrink-0 ml-1"
-              >
-                Clear &amp; Start Fresh
-              </button>
-            </div>
-          </div>
-        )}
         
         {/* =================================================================== */}
         {/* STEP 1: CATEGORY SELECTION (8 Realistic High-Value Categories)      */}
@@ -3292,11 +3296,11 @@ function CreateShipmentContent() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
                   onClick={() => setFeeSplit('SPLIT_50_50')}
-                  className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
                     feeSplit === 'SPLIT_50_50'
                       ? 'bg-blue-50/70 border-[#0066FF] ring-2 ring-blue-300 shadow-xs'
                       : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
@@ -3309,7 +3313,7 @@ function CreateShipmentContent() {
                   <p className="text-[10px] text-slate-500 mt-1 leading-tight">
                     Both parties share delivery charge equally.
                   </p>
-                  <div className="mt-2 pt-1.5 border-t border-slate-200/70 flex items-center justify-between text-[11px] font-mono font-bold text-blue-700">
+                  <div className="mt-2.5 pt-1.5 border-t border-slate-200/70 flex items-center justify-between text-[11px] font-mono font-bold text-blue-700">
                     <span>Each Pays:</span>
                     <span>₹{Math.round(fullDeliveryFee / 2)}</span>
                   </div>
@@ -3317,30 +3321,8 @@ function CreateShipmentContent() {
 
                 <button
                   type="button"
-                  onClick={() => setFeeSplit('BUYER_PAYS_ALL')}
-                  className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
-                    feeSplit === 'BUYER_PAYS_ALL'
-                      ? 'bg-blue-50/70 border-[#0066FF] ring-2 ring-blue-300 shadow-xs'
-                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-900">🛒 Buyer Bears 100%</span>
-                    <span className="text-[9px] font-bold bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">STANDARD</span>
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-1 leading-tight">
-                    Buyer pays full courier delivery fee.
-                  </p>
-                  <div className="mt-2 pt-1.5 border-t border-slate-200/70 flex items-center justify-between text-[11px] font-mono font-bold text-slate-800">
-                    <span>Buyer Pays:</span>
-                    <span>₹{fullDeliveryFee}</span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
                   onClick={() => setFeeSplit('SELLER_PAYS_ALL')}
-                  className={`p-3 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
+                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
                     feeSplit === 'SELLER_PAYS_ALL'
                       ? 'bg-blue-50/70 border-[#0066FF] ring-2 ring-blue-300 shadow-xs'
                       : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
@@ -3353,7 +3335,7 @@ function CreateShipmentContent() {
                   <p className="text-[10px] text-slate-500 mt-1 leading-tight">
                     Seller covers delivery from payout.
                   </p>
-                  <div className="mt-2 pt-1.5 border-t border-slate-200/70 flex items-center justify-between text-[11px] font-mono font-bold text-purple-700">
+                  <div className="mt-2.5 pt-1.5 border-t border-slate-200/70 flex items-center justify-between text-[11px] font-mono font-bold text-purple-700">
                     <span>Buyer Pays:</span>
                     <span>₹0 (Seller: ₹{fullDeliveryFee})</span>
                   </div>
@@ -3426,6 +3408,7 @@ function CreateShipmentContent() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {/* 1. PREPAID ONLINE */}
                 <div
+                  id="card-payment-prepaid"
                   onClick={() => setPaymentPreference('PREPAID')}
                   className={`p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between ${
                     paymentPreference === 'PREPAID'
@@ -3454,6 +3437,7 @@ function CreateShipmentContent() {
 
                 {/* 2. PAY ON DELIVERY */}
                 <div
+                  id="card-payment-cod"
                   onClick={() => setPaymentPreference('PAY_ON_DELIVERY')}
                   className={`p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between ${
                     paymentPreference === 'PAY_ON_DELIVERY'
@@ -3482,6 +3466,7 @@ function CreateShipmentContent() {
 
                 {/* 3. SAFESHIP FINANCE */}
                 <div
+                  id="card-payment-finance"
                   onClick={() => setPaymentPreference('FINANCE_EMI')}
                   className={`p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between ${
                     paymentPreference === 'FINANCE_EMI'
@@ -3491,9 +3476,9 @@ function CreateShipmentContent() {
                 >
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-[#0F172A]">SafeShip 0% Finance</span>
+                      <span className="text-xs font-bold text-[#0F172A]">SafeShip Easy EMI</span>
                       <span className="text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-300 px-2 py-0.5 rounded-full">
-                        0% No-Cost EMI
+                        Low-Interest EMI
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
@@ -3608,7 +3593,7 @@ function CreateShipmentContent() {
                             <span className={`text-[8px] font-bold px-1 rounded ${
                               financeTenure === plan.tenureMonths ? 'bg-purple-800 text-white' : 'bg-emerald-100 text-emerald-800'
                             }`}>
-                              0%
+                              Low Int.
                             </span>
                           </div>
                           <div className={`text-xs font-black font-mono ${financeTenure === plan.tenureMonths ? 'text-white' : 'text-purple-700'}`}>
@@ -3618,6 +3603,77 @@ function CreateShipmentContent() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Transparent Low Interest & Processing Fee Breakdown */}
+                  <div className="p-3 rounded-xl bg-white/90 border border-purple-200/80 text-[11px] space-y-1.5 text-purple-950">
+                    <div className="flex justify-between items-center text-purple-800">
+                      <span>Financed Principal:</span>
+                      <span className="font-mono font-bold">₹{financedPrincipal.toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-purple-800">
+                      <span>Transparent Low Interest ({activeFinancePlan.interestRateAnnual}% p.a.):</span>
+                      <span className="font-mono font-bold text-amber-700">+₹{activeFinancePlan.totalInterest?.toLocaleString('en-IN') || 0}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-purple-800">
+                      <span>NBFC Partner Processing Fee:</span>
+                      <span className="font-mono font-bold">₹{activeFinancePlan.processingFee}</span>
+                    </div>
+                    <div className="pt-1.5 border-t border-purple-100 flex justify-between items-center font-bold">
+                      <span>Monthly Installment:</span>
+                      <span className="font-mono text-purple-700">
+                        {financeTenure} Months &times; ₹{activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Customer Mandatory KYC & Bank Verification Action Card */}
+                  {!emiVerified ? (
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-300 text-xs space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                          <span className="w-4 h-4 rounded-full bg-amber-600 text-white flex items-center justify-center text-[10px]">!</span>
+                          <span>Mandatory Customer KYC Required</span>
+                        </div>
+                        <span className="text-[9px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">
+                          Pending
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-800 leading-tight">
+                        Please provide your PAN, Aadhaar, and Bank Account details for instant EMI auto-debit pre-approval.
+                      </p>
+                      <button
+                        id="btn-open-emi-kyc"
+                        type="button"
+                        onClick={() => setShowFinanceModal(true)}
+                        className="w-full py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs shadow-xs transition cursor-pointer flex items-center justify-center gap-1.5"
+                      >
+                        <Shield className="w-3.5 h-3.5" />
+                        <span>Verify Customer ID Cards &amp; Bank Details &rarr;</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-bold text-emerald-950">
+                          <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px]">✓</span>
+                          <span>KYC &amp; EMI Mandate Verified</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowFinanceModal(true)}
+                          className="text-[10px] text-emerald-700 underline font-semibold cursor-pointer"
+                        >
+                          Edit Details
+                        </button>
+                      </div>
+                      <div className="text-[10px] text-emerald-800 grid grid-cols-2 gap-1 font-mono pt-1">
+                        <span>PAN: {emiKyc.panNumber ? `${emiKyc.panNumber.slice(0, 5)}••••${emiKyc.panNumber.slice(-1)}` : 'ABCDE••••F'}</span>
+                        <span>Aadhaar: {emiKyc.aadhaarNumber ? `•••• •••• ${emiKyc.aadhaarNumber.slice(-4)}` : '•••• 9821'}</span>
+                        <span>Bank: {emiKyc.bankName}</span>
+                        <span>IFSC: {emiKyc.ifscCode || 'HDFC0001234'}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -3648,12 +3704,10 @@ function CreateShipmentContent() {
                 </div>
 
                 <div className="flex justify-between items-center text-slate-600">
-                  <span>Delivery Charge Allocation ({feeSplit === 'SPLIT_50_50' ? '50/50 Split' : feeSplit === 'BUYER_PAYS_ALL' ? 'Buyer 100%' : 'Seller 100%'}):</span>
+                  <span>Delivery Charge Allocation ({feeSplit === 'SPLIT_50_50' ? '50/50 Split' : 'Seller 100%'}):</span>
                   <span className="font-mono font-semibold text-blue-700">
                     {feeSplit === 'SPLIT_50_50'
                       ? `Buyer: ₹${buyerDeliveryFee} | Seller: ₹${sellerDeliveryFee}`
-                      : feeSplit === 'BUYER_PAYS_ALL'
-                      ? `Buyer Pays ₹${buyerDeliveryFee}`
                       : `Seller Covers ₹${sellerDeliveryFee} (Buyer ₹0)`}
                   </span>
                 </div>
@@ -3677,7 +3731,7 @@ function CreateShipmentContent() {
 
                 {paymentPreference === 'FINANCE_EMI' && (
                   <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-200 flex justify-between items-center text-purple-900 font-semibold">
-                    <span>Financed Balance ({financeTenure} Months @ 0%):</span>
+                    <span>Financed Balance ({financeTenure} Months Easy EMI @ {activeFinancePlan.interestRateAnnual}% p.a.):</span>
                     <span className="font-mono font-bold">
                       ₹{financedPrincipal.toLocaleString('en-IN')} ({financeTenure} x ₹{activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo)
                     </span>
@@ -4026,92 +4080,324 @@ function CreateShipmentContent() {
         </div>
       )}
 
-      {/* SAFESHIP 0% FINANCE & PRE-APPROVAL INTERACTIVE MODAL */}
+      {/* SAFESHIP EASY EMI & CUSTOMER KYC IDENTITY VERIFICATION MODAL */}
       {showFinanceModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-purple-200 space-y-4 animate-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-purple-100">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-purple-200 space-y-4 my-8 animate-in zoom-in-95 max-h-[90vh] flex flex-col justify-between">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-purple-100 shrink-0">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-xs">
-                  0%
+                <div className="w-9 h-9 rounded-2xl bg-purple-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+                  <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-sm text-slate-900">
-                    SafeShip 0% No-Cost EMI
+                  <h3 className="font-bold text-sm sm:text-base text-slate-900">
+                    Customer KYC &amp; EMI Mandate Verification
                   </h3>
-                  <span className="text-[10px] text-purple-700 font-semibold">
-                    Instant 60s Approval &bull; Down Payment &lt; ₹5,000
+                  <span className="text-[10px] text-purple-700 font-semibold block">
+                    NBFC e-NACH Mandate &bull; Instant Digilocker Verification
                   </span>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setShowFinanceModal(false)}
-                className="text-slate-400 hover:text-slate-700 cursor-pointer"
+                className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer rounded-lg hover:bg-slate-100"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 text-xs space-y-1.5">
-              <div className="flex justify-between font-bold text-purple-950">
-                <span>Selected Plan:</span>
-                <span className="font-mono">{financeTenure} Months @ ₹{activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo</span>
+            <div className="space-y-4 overflow-y-auto pr-1">
+              {/* Active EMI Plan Summary Banner */}
+              <div className="p-3 rounded-2xl bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 text-xs space-y-1.5">
+                <div className="flex justify-between font-bold text-purple-950">
+                  <span>Selected EMI Plan:</span>
+                  <span className="font-mono">{financeTenure} Months @ ₹{activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo</span>
+                </div>
+                <div className="flex justify-between text-[11px] text-purple-700">
+                  <span>Financed Principal:</span>
+                  <span className="font-mono font-bold text-purple-900">₹{financedPrincipal.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between text-[11px] text-purple-700">
+                  <span>Transparent Low Interest ({activeFinancePlan.interestRateAnnual}% p.a.):</span>
+                  <span className="font-mono font-bold text-amber-800">+₹{activeFinancePlan.totalInterest?.toLocaleString('en-IN') || 0}</span>
+                </div>
+                <div className="flex justify-between text-[11px] text-purple-700">
+                  <span>Down Payment + Courier Today:</span>
+                  <span className="font-mono font-bold text-purple-900">₹{financeTotal.toLocaleString('en-IN')}</span>
+                </div>
               </div>
-              <div className="flex justify-between text-[11px] text-purple-700">
-                <span>Down Payment Today:</span>
-                <span className="font-mono font-bold text-purple-900">₹{effectiveDownPayment.toLocaleString('en-IN')} (&lt; ₹5,000)</span>
+
+              {/* Error Banner if fields missing */}
+              {emiKycError && (
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{emiKycError}</span>
+                </div>
+              )}
+
+              {/* SECTION 1: Identity & Govt Tax IDs (PAN & Aadhaar) */}
+              <div className="space-y-3 bg-slate-50/70 p-3.5 rounded-2xl border border-slate-200">
+                <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider block flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5 text-purple-600" />
+                  <span>1. Identity &amp; Government ID Verification</span>
+                </span>
+
+                <div className="space-y-2 text-xs">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-600 block mb-0.5">
+                      Full Legal Name (as per PAN Card / Aadhaar) *
+                    </label>
+                    <input
+                      type="text"
+                      value={emiKyc.fullName || (mode === 'exchange' ? senderName : buyerName) || ''}
+                      onChange={(e) => setEmiKyc({ ...emiKyc, fullName: e.target.value })}
+                      placeholder="e.g. Ramesh Kumar Sharma"
+                      className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-600 block mb-0.5">
+                        PAN Card Number (10 Characters) *
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={10}
+                        value={emiKyc.panNumber}
+                        onChange={(e) => setEmiKyc({ ...emiKyc, panNumber: e.target.value.toUpperCase().trim() })}
+                        placeholder="e.g. ABCDE1234F"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-mono text-xs uppercase focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-600 block mb-0.5">
+                        Aadhaar Number (12 Digits) *
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={14}
+                        value={emiKyc.aadhaarNumber}
+                        onChange={(e) => {
+                          const val = e.target.value.replace(/\D/g, '').slice(0, 12);
+                          setEmiKyc({ ...emiKyc, aadhaarNumber: val });
+                        }}
+                        placeholder="e.g. 5678 1234 9012"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-mono text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* ID Document Photo Attachment */}
+                  <div className="pt-1.5 border-t border-slate-200/70">
+                    <span className="text-[10px] font-bold text-slate-500 block mb-1">
+                      Upload / Capture ID Documents (Required by RBI / NBFC Guidelines):
+                    </span>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmiKyc((prev) => ({
+                            ...prev,
+                            panPhoto: prev.panPhoto ? null : 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&q=80'
+                          }));
+                        }}
+                        className={`p-2 rounded-xl border text-[11px] font-semibold transition cursor-pointer flex items-center justify-between ${
+                          emiKyc.panPhoto ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="truncate">{emiKyc.panPhoto ? '✓ PAN Uploaded' : '📷 PAN Card Photo'}</span>
+                        <span className="text-[9px] text-purple-600 font-bold">{emiKyc.panPhoto ? 'Change' : 'Attach'}</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEmiKyc((prev) => ({
+                            ...prev,
+                            aadhaarFrontPhoto: prev.aadhaarFrontPhoto ? null : 'https://images.unsplash.com/photo-1544717305-2782549b5136?w=200&q=80'
+                          }));
+                        }}
+                        className={`p-2 rounded-xl border text-[11px] font-semibold transition cursor-pointer flex items-center justify-between ${
+                          emiKyc.aadhaarFrontPhoto ? 'bg-emerald-50 border-emerald-300 text-emerald-800' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span className="truncate">{emiKyc.aadhaarFrontPhoto ? '✓ Aadhaar Uploaded' : '📷 Aadhaar Card'}</span>
+                        <span className="text-[9px] text-purple-600 font-bold">{emiKyc.aadhaarFrontPhoto ? 'Change' : 'Attach'}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between text-[11px] text-purple-700">
-                <span>Financed Principal:</span>
-                <span className="font-mono font-bold text-purple-900">₹{financedPrincipal.toLocaleString('en-IN')}</span>
+
+              {/* SECTION 2: Bank Account & Auto-Debit Mandate (e-NACH) */}
+              <div className="space-y-3 bg-slate-50/70 p-3.5 rounded-2xl border border-slate-200">
+                <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider block flex items-center gap-1.5">
+                  <CreditCard className="w-3.5 h-3.5 text-blue-600" />
+                  <span>2. Bank Account Details (e-NACH Auto-Debit Mandate)</span>
+                </span>
+
+                <div className="space-y-2 text-xs">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-600 block mb-0.5">
+                        Bank Name *
+                      </label>
+                      <select
+                        value={emiKyc.bankName}
+                        onChange={(e) => setEmiKyc({ ...emiKyc, bankName: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                      >
+                        <option value="HDFC Bank">HDFC Bank</option>
+                        <option value="State Bank of India">State Bank of India (SBI)</option>
+                        <option value="ICICI Bank">ICICI Bank</option>
+                        <option value="Axis Bank">Axis Bank</option>
+                        <option value="Kotak Mahindra Bank">Kotak Mahindra Bank</option>
+                        <option value="Punjab National Bank">Punjab National Bank</option>
+                        <option value="Bank of Baroda">Bank of Baroda</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-600 block mb-0.5">
+                        Bank IFSC Code (11 Characters) *
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={11}
+                        value={emiKyc.ifscCode}
+                        onChange={(e) => setEmiKyc({ ...emiKyc, ifscCode: e.target.value.toUpperCase().trim() })}
+                        placeholder="e.g. HDFC0001234"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-mono text-xs uppercase focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-600 block mb-0.5">
+                        Bank Account Number *
+                      </label>
+                      <input
+                        type="password"
+                        value={emiKyc.bankAccountNumber}
+                        onChange={(e) => setEmiKyc({ ...emiKyc, bankAccountNumber: e.target.value.trim() })}
+                        placeholder="Enter account number"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-mono text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-bold text-slate-600 block mb-0.5">
+                        Confirm Account Number *
+                      </label>
+                      <input
+                        type="text"
+                        value={emiKyc.confirmBankAccountNumber}
+                        onChange={(e) => setEmiKyc({ ...emiKyc, confirmBankAccountNumber: e.target.value.trim() })}
+                        placeholder="Re-enter account number"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 font-mono text-xs focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between text-[11px] text-purple-700">
-                <span>Annual Interest Rate:</span>
-                <span className="font-mono font-bold">{activeFinancePlan.isNoCost ? '0% (No Cost)' : `${activeFinancePlan.interestRateAnnual}% p.a.`}</span>
+
+              {/* SECTION 3: Employment & Net Income */}
+              <div className="space-y-2 bg-slate-50/70 p-3.5 rounded-2xl border border-slate-200 text-xs">
+                <span className="text-[11px] font-black text-slate-700 uppercase tracking-wider block">
+                  3. Income &amp; Employment Details
+                </span>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-600 block mb-0.5">
+                      Employment Type
+                    </label>
+                    <select
+                      value={emiKyc.employmentType}
+                      onChange={(e) => setEmiKyc({ ...emiKyc, employmentType: e.target.value as any })}
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs"
+                    >
+                      <option value="SALARIED">Salaried Employee</option>
+                      <option value="SELF_EMPLOYED">Self-Employed / Professional</option>
+                      <option value="BUSINESS">Business Owner</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-600 block mb-0.5">
+                      Monthly In-Hand Net Income
+                    </label>
+                    <input
+                      type="text"
+                      value={emiKyc.monthlyIncome}
+                      onChange={(e) => setEmiKyc({ ...emiKyc, monthlyIncome: e.target.value })}
+                      placeholder="e.g. ₹45,000"
+                      className="w-full px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-200 text-[11px] text-purple-900 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-purple-700 shrink-0" />
+                <span>
+                  <strong>RBI Compliant e-NACH Mandate:</strong> Auto-debits ₹{activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo on the 5th of every month. No hidden charges.
+                </span>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
-                Approved Partner NBFCs &amp; Banks:
-              </span>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-bold text-slate-900 block">Bajaj Finserv</span>
-                  <span className="text-[10px] text-emerald-600 font-semibold">Pre-Approved Limit</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-bold text-slate-900 block">Snapmint PayLater</span>
-                  <span className="text-[10px] text-purple-600 font-semibold">0% Cardless EMI</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-bold text-slate-900 block">ZestMoney Credit</span>
-                  <span className="text-[10px] text-blue-600 font-semibold">Digital KYC in 1 Min</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                  <span className="font-bold text-slate-900 block">Debit / Credit Cards</span>
-                  <span className="text-[10px] text-slate-500 font-semibold">HDFC, ICICI, SBI, Axis</span>
-                </div>
-              </div>
-            </div>
+            {/* Submit & Verify Action */}
+            <div className="pt-2 border-t border-slate-100 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  const name = (emiKyc.fullName || (mode === 'exchange' ? senderName : buyerName) || '').trim();
+                  const pan = (emiKyc.panNumber || '').trim();
+                  const aadhaar = (emiKyc.aadhaarNumber || '').trim();
+                  const acc = (emiKyc.bankAccountNumber || '').trim();
+                  const confirmAcc = (emiKyc.confirmBankAccountNumber || '').trim();
+                  const ifsc = (emiKyc.ifscCode || '').trim();
 
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0">✓</span>
-              <span><strong>Pre-approval Active:</strong> Pre-qualified for up to ₹1,50,000 credit limit.</span>
-            </div>
+                  if (!name) {
+                    setEmiKycError('Please enter your full legal name as per Govt ID.');
+                    return;
+                  }
+                  if (pan.length !== 10) {
+                    setEmiKycError('Please enter a valid 10-character PAN Card number (e.g. ABCDE1234F).');
+                    return;
+                  }
+                  if (aadhaar.length < 12) {
+                    setEmiKycError('Please enter a valid 12-digit Aadhaar number.');
+                    return;
+                  }
+                  if (!acc) {
+                    setEmiKycError('Please enter your bank account number.');
+                    return;
+                  }
+                  if (confirmAcc && acc !== confirmAcc) {
+                    setEmiKycError('Bank account numbers do not match. Please recheck.');
+                    return;
+                  }
+                  if (ifsc.length < 9) {
+                    setEmiKycError('Please enter a valid Bank IFSC code (e.g. HDFC0001234).');
+                    return;
+                  }
 
-            <button
-              type="button"
-              onClick={() => {
-                setShowFinanceModal(false);
-                setPaymentPreference('FINANCE_EMI');
-              }}
-              className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-2"
-            >
-              <span>Confirm &amp; Proceed with {financeTenure}M EMI Plan</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+                  setEmiKycError('');
+                  setEmiVerified(true);
+                  setPaymentPreference('FINANCE_EMI');
+                  setShowFinanceModal(false);
+                }}
+                className="w-full py-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-2"
+                id="btn-submit-emi-kyc"
+              >
+                <span>Verify ID Cards &amp; Authorize {financeTenure}M EMI Mandate</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}

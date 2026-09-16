@@ -660,19 +660,20 @@ export function calculateTierPricing(
 
   // 3. Distance Surcharge calculated strictly according to distance
   // Local (<= 50 km): ₹0
-  // Regional (50 - 350 km, e.g. 150 km Mumbai-Pune, 270 km Jaipur-Delhi): ₹12 - ₹36
-  // Intercity (350 - 1000 km, e.g. 366 km BLR-MAA): ₹25 - ₹65
-  // Cross-country (> 1000 km, e.g. 2150 km BLR-DEL): ₹60 - ₹120
+  // Regional (50 - 350 km, e.g. 150 km Mumbai-Pune, 308 km Jaipur-Delhi): ₹15 - ₹45
+  // Intercity (350 - 1000 km, e.g. 366 km BLR-MAA): ₹25 - ₹95
+  // National (1000 - 2000 km, e.g. 1400 km DEL-MUM): ₹75 - ₹250
+  // Cross-country (> 2000 km, e.g. 2700 km Srinagar-Kanyakumari / DEL-BLR): ₹200 - ₹700
   const effectiveDistance = Math.max(0, distanceKm);
   const calcDistanceSurcharge = (perKmRate: number, maxSurcharge: number) => {
     if (effectiveDistance <= 50) return 0;
     const raw = Math.round((effectiveDistance - 50) * perKmRate);
-    return Math.min(maxSurcharge, Math.max(10, raw));
+    return Math.min(maxSurcharge, Math.max(12, raw));
   };
 
-  const groundDistanceSurcharge = calcDistanceSurcharge(0.08, 90);   // E.g. for 366 km: ~₹25
-  const priorityDistanceSurcharge = calcDistanceSurcharge(0.12, 120); // E.g. for 366 km: ~₹38
-  const fastestDistanceSurcharge = calcDistanceSurcharge(0.16, 170);  // E.g. for 366 km: ~₹51
+  const groundDistanceSurcharge = calcDistanceSurcharge(0.08, 240);   // For 2700 km: ~₹212
+  const priorityDistanceSurcharge = calcDistanceSurcharge(0.15, 450); // For 2700 km: ~₹398
+  const fastestDistanceSurcharge = calcDistanceSurcharge(0.26, 780);  // For 2700 km: ~₹689
 
   const sameDayAvailable = effectiveDistance <= 50;
   const sameDayDistanceSurcharge = sameDayAvailable && effectiveDistance > 15
@@ -681,13 +682,28 @@ export function calculateTierPricing(
 
   // 4. Base Linehaul Courier Fee
   // Realistic Indian courier rates for electronics with door pickup & verified delivery:
-  // - Standard Ground: ₹79 (local) to ₹279 (cross-country)
-  // - Priority Express: ₹139 (local) to ₹399 (cross-country)
-  // - Express Air: ₹219 (local) to ₹589 (cross-country)
-  let groundBase = effectiveDistance <= 50 ? 79 : effectiveDistance <= 350 ? 109 : effectiveDistance <= 1000 ? 144 : 189;
-  let priorityBase = effectiveDistance <= 50 ? 139 : effectiveDistance <= 350 ? 169 : effectiveDistance <= 1000 ? 219 : 289;
-  let fastestBase = effectiveDistance <= 50 ? 219 : effectiveDistance <= 350 ? 249 : effectiveDistance <= 1000 ? 319 : 419;
-  let sameDayBase = 149;
+  // - Standard Ground: Economical surface linehaul (₹89 local to ~₹490 cross-country 2700km)
+  // - Priority Express: Mid-tier expressway & commercial air corridor (₹159 local to ~₹890 cross-country 2700km)
+  // - Express Air: Dedicated commercial cargo flight rush (₹249 local to ~₹1490 cross-country 2700km)
+  let groundBase = effectiveDistance <= 50 ? 89
+    : effectiveDistance <= 350 ? 119
+    : effectiveDistance <= 1000 ? 159
+    : effectiveDistance <= 2000 ? 219
+    : 279;
+
+  let priorityBase = effectiveDistance <= 50 ? 159
+    : effectiveDistance <= 350 ? 209
+    : effectiveDistance <= 1000 ? 299
+    : effectiveDistance <= 2000 ? 419
+    : 519;
+
+  let fastestBase = effectiveDistance <= 50 ? 249
+    : effectiveDistance <= 350 ? 349
+    : effectiveDistance <= 1000 ? 479
+    : effectiveDistance <= 2000 ? 679
+    : 819;
+
+  let sameDayBase = 159;
 
   if (isExchange) {
     // 2-Way exchange courier handling for both parties (round-trip consignment)
@@ -734,12 +750,12 @@ export function calculateTierPricing(
     }
 
     const rawTotal = base + surcharge;
-    // Calibrated realistic Indian courier bounds:
-    // Ground: ₹79 (local) to ₹279 (national)
-    // Priority: ₹139 (local) to ₹399 (national)
-    // Air: ₹219 (local) to ₹589 (national)
-    const minFloor = tier === 'STANDARD_GROUND' ? 79 : tier === 'PRIORITY_EXPRESS' ? 139 : 219;
-    const maxCap = tier === 'STANDARD_GROUND' ? 279 : tier === 'PRIORITY_EXPRESS' ? 399 : 589;
+    // Calibrated realistic Indian courier bounds across local to cross-country (up to 3500 km):
+    // Ground: ₹89 to ₹549 max
+    // Priority: ₹159 to ₹999 max
+    // Air: ₹249 to ₹1,699 max
+    const minFloor = tier === 'STANDARD_GROUND' ? 89 : tier === 'PRIORITY_EXPRESS' ? 159 : 249;
+    const maxCap = tier === 'STANDARD_GROUND' ? 549 : tier === 'PRIORITY_EXPRESS' ? 999 : 1699;
     const clampedTotal = Math.min(maxCap, Math.max(minFloor, rawTotal));
     const adjustedBase = clampedTotal - surcharge;
 
