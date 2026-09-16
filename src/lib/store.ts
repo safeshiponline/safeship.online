@@ -175,18 +175,12 @@ export function createNewDeal(params: {
     imeiNumber: params.imeiNumber || params.imeiAuditReport?.imei,
     imeiAuditReport: params.imeiAuditReport,
     pickupAttemptStatus: params.pickupAttemptStatus || {
-      isDelayed: true,
-      reason: 'Seller Unreachable / Call Not Answered during scheduled pickup window',
-      callAttempts: [
-        {
-          time: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) + ' IST',
-          caller: 'Rahul K. (Field Officer KA-4012)',
-          target: `Seller (${params.sellerPhone || '+91 98290 12890'})`,
-          outcome: 'Ringing — No Answer (35s timeout)',
-          note: `Courier executive dispatched to ${params.pickupAddress || params.city}. Outbound phone call unanswered.`
-        }
-      ],
-      nextAttemptScheduled: 'Tomorrow, 10:30 AM – 01:00 PM IST',
+      isDelayed: false,
+      reason: '',
+      callAttempts: [],
+      nextAttemptScheduled: params.estimatedDeliveryDate
+        ? `Pickup scheduled for today (${params.pickupSlot === 'MORNING_10_1' ? '10:00 AM – 01:00 PM' : '02:00 PM – 05:00 PM'})`
+        : 'Pickup scheduled during selected window',
       callbackRequested: false
     },
     city: params.city,
@@ -234,13 +228,33 @@ export function createNewDeal(params: {
     downPayment: params.downPayment,
     pickupSlot: params.pickupSlot || 'MORNING_10_1',
     estimatedDeliveryDate: params.estimatedDeliveryDate,
-    middleMileCheckpoints: params.middleMileCheckpoints,
+    middleMileCheckpoints: params.middleMileCheckpoints || [
+      {
+        id: 'chk_1',
+        name: `${params.city || 'Origin'} Ingestion Hub`,
+        hub: `${params.city || 'Origin'} Mother Distribution Center`,
+        status: 'COMPLETED',
+        timestamp: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) + ' IST'
+      },
+      {
+        id: 'chk_2',
+        name: `${params.routeCorridor || 'Express Logistics Corridor'} Gateway`,
+        hub: 'Automated Intercity Sorting Hub',
+        status: 'PENDING'
+      },
+      {
+        id: 'chk_3',
+        name: `Destination Last-Mile Delivery Hub`,
+        hub: 'SafeShip Certified Custody Depot',
+        status: 'PENDING'
+      }
+    ],
     insurancePolicyNumber: params.insurancePolicyNumber || `POL-ICICI-LOMBARD-2026-${newId}`,
     packageWeightKg: params.packageWeightKg,
     dimensionsCm: params.dimensionsCm,
     buyerReleasePin: buyerPin,
     sellerPickupCode: sellerCode,
-    status: params.upfrontPaid ? 'IN_TRANSIT' : 'PENDING_ACCEPTANCE',
+    status: 'COURIER_ASSIGNED',
     assignedCourier: {
       id: 'cr_rahul_k',
       name: 'Rahul K.',
@@ -592,6 +606,77 @@ export function requestSellerCallback(dealId: string): SafeDeal | null {
     description: 'Seller indicated availability. Dispatch desk priority re-dial queued for execution.'
   });
 
+  deals[index] = deal;
+  saveStoredDeals(deals);
+  syncDealToUserOrders(deal);
+  return deal;
+}
+
+export function advanceDealMilestone(dealId: string, nextStatus: DealStatus): SafeDeal | null {
+  const deals = getStoredDeals();
+  const index = deals.findIndex((d) => d.id === dealId);
+  if (index === -1) return null;
+
+  const deal = { ...deals[index] };
+  deal.status = nextStatus;
+
+  if (nextStatus === 'PICKUP_INSPECTION') {
+    deal.auditTrail.push({
+      id: `aud_${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      actor: 'COURIER',
+      title: 'Field Officer At Pickup Location',
+      description: `${deal.assignedCourier?.name || 'Rahul K.'} is conducting doorstep physical audit and IMEI verification.`
+    });
+  } else if (nextStatus === 'PICKUP_VERIFIED' || nextStatus === 'IN_TRANSIT') {
+    deal.status = 'IN_TRANSIT';
+    if (!deal.tamperSeal) {
+      deal.tamperSeal = {
+        sealId: `SSP-${deal.id}-SAFE`,
+        barcode: `99${deal.id}4820`,
+        appliedAt: new Date().toISOString(),
+        inspectedBy: deal.assignedCourier?.name || 'Rahul K.',
+        inspectionPhotos: deal.itemPhotos,
+        intactVerifiedAtDelivery: false
+      };
+    }
+    deal.middleMileCheckpoints = deal.middleMileCheckpoints?.map((chk, i) =>
+      i === 0 ? { ...chk, status: 'COMPLETED' } : i === 1 ? { ...chk, status: 'IN_TRANSIT', timestamp: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) + ' IST' } : chk
+    );
+    deal.auditTrail.push({
+      id: `aud_${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      actor: 'COURIER',
+      title: 'Item Sealed in Tamper Bag & In Transit',
+      description: `Verified condition matching declaration. Sealed in tamper bag #${deal.tamperSeal?.sealId}. Dispatched along ${deal.routeCorridor || 'express corridor'}.`
+    });
+  } else if (nextStatus === 'OUT_FOR_DELIVERY') {
+    deal.status = 'OUT_FOR_DELIVERY';
+    deal.middleMileCheckpoints = deal.middleMileCheckpoints?.map((chk) => ({ ...chk, status: 'COMPLETED' }));
+    deal.auditTrail.push({
+      id: `aud_${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      actor: 'COURIER',
+      title: 'Out for Doorstep Delivery',
+      description: `Assigned officer arrived at delivery locality. 10-minute doorstep unboxing window ready.`
+    });
+  } else if (nextStatus === 'COMPLETED') {
+    deal.status = 'COMPLETED';
+    deal.escrowVault.isLocked = false;
+    deal.escrowVault.finalReleasedAt = new Date().toISOString();
+    if (deal.tamperSeal) {
+      deal.tamperSeal.intactVerifiedAtDelivery = true;
+    }
+    deal.auditTrail.push({
+      id: `aud_${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      actor: 'BUYER',
+      title: 'Doorstep Unboxing Approved & PIN Verified',
+      description: `Buyer validated device condition and shared 6-digit release OTP. Escrow payout disbursed to seller.`
+    });
+  }
+
+  deal.updatedAt = new Date().toISOString();
   deals[index] = deal;
   saveStoredDeals(deals);
   syncDealToUserOrders(deal);

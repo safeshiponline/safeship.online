@@ -647,88 +647,57 @@ export function calculateTierPricing(
   const value = Math.max(0, Number(declaredValue) || 0);
 
   // 1. Cargo Insurance Fee
-  // Capped between ₹29 and ₹320. For ₹8,000 item: ₹40.
-  const rawInsurance = value <= 5000 ? 29 : Math.round(value * 0.005);
-  const insuranceFee = Math.min(320, Math.max(29, rawInsurance));
+  // Nominal transit risk underwritten by ICICI Lombard (₹19 - ₹99)
+  const rawInsurance = value <= 5000 ? 19 : Math.round(value * 0.002);
+  const insuranceFee = Math.min(99, Math.max(19, rawInsurance));
 
   // 2. Doorstep Open-Box Inspection & Verification Fee
-  // Smoothly scales with value:
-  // <= 3,000: ₹0 (promo waiver)
-  // 3,001 - 10,000: ₹80 - ₹130 (for ₹8,000 item: ₹120)
-  // 10,001 - 25,000: ₹149
-  // > 25,000: ₹180 (Priority) / ₹220 (SuperFast Air)
-  let priorityVerification: number;
-  let fastestVerification: number;
-  let groundVerification: number;
-  let sameDayVerification: number;
-
-  if (value <= 3000) {
-    priorityVerification = 0;
-    fastestVerification = 0;
-    groundVerification = 0;
-    sameDayVerification = 0;
-  } else if (value <= 10000) {
-    priorityVerification = Math.round(60 + (value - 3000) * 0.009); // For 8k: 60 + 45 = ~105
-    fastestVerification = Math.round(80 + (value - 3000) * 0.011);
-    groundVerification = Math.round(40 + (value - 3000) * 0.006);
-    sameDayVerification = priorityVerification;
-  } else if (value <= 25000) {
-    priorityVerification = 149;
-    fastestVerification = 189;
-    groundVerification = 99;
-    sameDayVerification = 129;
-  } else {
-    priorityVerification = 180;
-    fastestVerification = 220;
-    groundVerification = 120;
-    sameDayVerification = 150;
-  }
+  // 100% Free Promotional Doorstep Inspection Waiver included
+  const priorityVerification = 0;
+  const fastestVerification = 0;
+  const groundVerification = 0;
+  const sameDayVerification = 0;
 
   // 3. Distance Surcharge
-  // Local (<= 40 km): ₹0
-  // Regional (40 - 350 km): ₹0.40/km (Priority) -> for 270 km: (270 - 40) * 0.40 = ₹92
-  // Cross-country (> 350 km): Damped square-root/sub-linear rate so 2,200 km doesn't exceed cap
+  // Local (<= 50 km): ₹0
+  // Regional (50 - 350 km, e.g. 270 km Jaipur-Delhi): ₹20 - ₹30
+  // Intercity (350 - 1000 km): ₹40 - ₹60
+  // Cross-country (> 1000 km): ₹70 - ₹90
   const effectiveDistance = Math.max(0, distanceKm);
-  const calcDistanceSurcharge = (multiplier: number) => {
-    if (effectiveDistance <= 40) return 0;
-    if (effectiveDistance <= 350) {
-      return Math.round((effectiveDistance - 40) * multiplier);
-    }
-    // Damped over 350 km
-    const baseRegional = (350 - 40) * multiplier;
-    const additional = Math.round(Math.min(1850, effectiveDistance - 350) * (multiplier * 0.45));
-    return Math.round(baseRegional + additional);
+  const calcDistanceSurcharge = (perKmRate: number, maxSurcharge: number) => {
+    if (effectiveDistance <= 50) return 0;
+    const raw = Math.round((effectiveDistance - 50) * perKmRate);
+    return Math.min(maxSurcharge, Math.max(10, raw));
   };
 
-  const priorityDistanceSurcharge = calcDistanceSurcharge(0.40); // For 270 km: 92
-  const fastestDistanceSurcharge = calcDistanceSurcharge(0.55);  // For 270 km: 127
-  const groundDistanceSurcharge = calcDistanceSurcharge(0.28);   // For 270 km: 64
+  const groundDistanceSurcharge = calcDistanceSurcharge(0.08, 90);   // For 270 km: 18 -> ₹20
+  const fastestDistanceSurcharge = calcDistanceSurcharge(0.14, 130); // For 270 km: 31 -> ₹30
+  const priorityDistanceSurcharge = calcDistanceSurcharge(0.10, 100);
 
   const sameDayAvailable = effectiveDistance <= 50;
   const sameDayDistanceSurcharge = sameDayAvailable && effectiveDistance > 15
-    ? Math.round((effectiveDistance - 15) * 3.2)
+    ? Math.round((effectiveDistance - 15) * 2.0)
     : 0;
 
-  // 4. Base Linehaul Fee
-  // Calibrated so that for ₹8,000 item at 270 km:
-  // Priority: Base (₹343) + Dist (₹92) + Verif (₹105) + Insur (₹40) = ₹580–₹600!
-  let priorityBase = isExchange ? 449 : 345;
-  let fastestBase = isExchange ? 599 : 460;
-  let groundBase = isExchange ? 280 : 190;
-  let sameDayBase = isExchange ? 399 : 240;
+  // 4. Base Linehaul Courier Fee
+  // Realistic Indian courier rates for electronics (0.5kg - 1kg):
+  // Standard Ground: ₹49 - ₹89 base (Total courier cost: ₹49 to ₹179 based on distance)
+  // Express Air: ₹129 - ₹179 base (Total courier cost: ₹149 to ₹289 based on distance)
+  let groundBase = effectiveDistance <= 50 ? 49 : effectiveDistance <= 350 ? 69 : effectiveDistance <= 1000 ? 89 : 109;
+  let fastestBase = effectiveDistance <= 350 ? 129 : effectiveDistance <= 1000 ? 169 : 199;
+  let priorityBase = effectiveDistance <= 350 ? 99 : effectiveDistance <= 1000 ? 129 : 149;
+  let sameDayBase = 119;
 
-  // For very low value items (< ₹3,000), provide a modest relief while respecting ₹250 floor
-  if (value < 3000) {
-    const valueRelief = Math.round((3000 - value) * 0.025);
-    priorityBase = Math.max(180, priorityBase - valueRelief);
-    fastestBase = Math.max(280, fastestBase - valueRelief);
-    groundBase = Math.max(140, groundBase - valueRelief);
+  if (isExchange) {
+    // 2-Way exchange courier handling
+    groundBase = Math.round(groundBase * 1.5);
+    fastestBase = Math.round(fastestBase * 1.5);
+    priorityBase = Math.round(priorityBase * 1.5);
   }
 
-  // Escrow custody seal (for fastest air rush on higher values)
-  const fastestEscrowCustody = value > 15000 ? 79 : 0;
+  const fastestEscrowCustody = 0;
 
-  // Helper to build breakdown, apply strictly clamped bounds (₹250 - ₹1,950), and balance base
+  // Helper to build breakdown, apply realistic clamped bounds, and balance base
   const buildBreakdown = (
     tier: DeliveryServiceTier,
     tierLabel: string,
@@ -763,11 +732,14 @@ export function calculateTierPricing(
       };
     }
 
-    const rawTotal = base + surcharge + verification + escrow + insuranceFee;
-    // Strictly clamp between ₹250 and ₹1,950
-    const clampedTotal = Math.min(1950, Math.max(250, rawTotal));
-    // Balance difference into baseFee to maintain 100% mathematical integrity
-    const adjustedBase = base + (clampedTotal - rawTotal);
+    const rawTotal = base + surcharge;
+    // Realistic courier rate bounds:
+    // Ground: ₹49 to ₹199 max
+    // Air: ₹149 to ₹329 max
+    const minFloor = tier === 'STANDARD_GROUND' ? 49 : tier === 'FASTEST_AIR_RUSH' ? 149 : 99;
+    const maxCap = tier === 'STANDARD_GROUND' ? 199 : tier === 'FASTEST_AIR_RUSH' ? 329 : 249;
+    const clampedTotal = Math.min(maxCap, Math.max(minFloor, rawTotal));
+    const adjustedBase = clampedTotal - surcharge;
 
     return {
       tier,

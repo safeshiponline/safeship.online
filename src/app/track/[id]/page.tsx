@@ -3,7 +3,7 @@
 import React, { use, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getDealById, getStoredDeals, requestSellerCallback } from '@/lib/store';
+import { getDealById, getStoredDeals, requestSellerCallback, advanceDealMilestone } from '@/lib/store';
 import { INITIAL_DEALS } from '@/lib/mockData';
 import { SafeDeal } from '@/lib/types';
 import { formatINR } from '@/lib/escrowCalculator';
@@ -510,6 +510,179 @@ function TrackingContent({
             </div>
           </div>
         )}
+
+        {/* ON-TIME DISPATCH TELEMETRY CARD */}
+        {(!deal.pickupAttemptStatus || !deal.pickupAttemptStatus.isDelayed) && deal.status === 'COURIER_ASSIGNED' && (
+          <div className="rounded-3xl border border-blue-200 bg-gradient-to-r from-blue-50/70 to-indigo-50/50 p-5 sm:p-6 shadow-xs space-y-4 animate-in fade-in">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-[#0066FF] text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <Truck className="w-5 h-5 animate-pulse" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-blue-200 text-blue-900 px-2 py-0.5 rounded">
+                      Courier Partner Dispatched
+                    </span>
+                    <span className="text-xs font-bold text-blue-900">
+                      On-Time Pickup &bull; {deal.pickupAttemptStatus?.nextAttemptScheduled || 'Scheduled Today'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                    SafeShip Bonded Field Officer <strong>{deal.assignedCourier?.name || 'Rahul K.'}</strong> has been assigned to pick up the parcel from <strong>{deal.seller.name}</strong> ({deal.seller.pickupAddress || deal.city}).
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>Open-Box Tamper Bag Assigned</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* SAFE & SECURE DUAL-HANDSHAKE VERIFICATION OTPs */}
+        <div className="rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-xs space-y-3">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+            <div className="flex items-center gap-2">
+              <Lock className="w-4 h-4 text-[#0066FF]" />
+              <h2 className="text-sm font-bold text-slate-900">
+                SafeShip Verified Handshake Passcodes (Doorstep Security)
+              </h2>
+            </div>
+            <span className="text-[10px] font-mono font-bold text-slate-500">
+              Zero Unauthorized Release
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Seller Pickup OTP */}
+            <div className="p-4 rounded-2xl bg-amber-50/60 border border-amber-200 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider">
+                  1. Seller Pickup Verification Code
+                </span>
+                <span className="text-[10px] text-amber-700 font-semibold bg-amber-100 px-1.5 py-0.5 rounded">
+                  4 Digits
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-black font-mono tracking-widest text-slate-900 bg-white px-3 py-1 rounded-xl border border-amber-300">
+                  {deal.sellerPickupCode || '8492'}
+                </span>
+                <p className="text-[11px] text-amber-900 leading-tight">
+                  Seller ({deal.seller.name}) gives this code to Field Officer <strong>{deal.assignedCourier?.name || 'Rahul K.'}</strong> only after physical inspection &amp; tamper sealing.
+                </p>
+              </div>
+            </div>
+
+            {/* Buyer Delivery PIN */}
+            <div className="p-4 rounded-2xl bg-emerald-50/60 border border-emerald-200 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider">
+                  2. Buyer Delivery Release PIN
+                </span>
+                <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100 px-1.5 py-0.5 rounded">
+                  6 Digits
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-2xl font-black font-mono tracking-widest text-slate-900 bg-white px-3 py-1 rounded-xl border border-emerald-300">
+                  {deal.buyerReleasePin || '482910'}
+                </span>
+                <p className="text-[11px] text-emerald-900 leading-tight">
+                  Buyer ({deal.buyer.name}) gives this code to courier only after the 10-minute doorstep unboxing test passes.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* MILESTONE STAGE PROGRESSION OPERATOR BAR */}
+        <div className="rounded-3xl border border-blue-200 bg-blue-50/40 p-4 shadow-xs space-y-2">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+            <span className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#0066FF]" />
+              <span>Shipment Stage Progression Simulator:</span>
+            </span>
+            <span className="text-[10px] text-slate-500">
+              Active Consignment Stage: <strong className="text-blue-700 font-mono font-bold">{deal.status}</strong>
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                const updated = advanceDealMilestone(deal.id, 'COURIER_ASSIGNED');
+                if (updated) setDeal(updated);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                deal.status === 'COURIER_ASSIGNED'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:border-blue-300'
+              }`}
+            >
+              1. Pickup Scheduled
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const updated = advanceDealMilestone(deal.id, 'PICKUP_INSPECTION');
+                if (updated) setDeal(updated);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                deal.status === 'PICKUP_INSPECTION'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:border-blue-300'
+              }`}
+            >
+              2. Doorstep Inspection
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const updated = advanceDealMilestone(deal.id, 'IN_TRANSIT');
+                if (updated) setDeal(updated);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                deal.status === 'IN_TRANSIT'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:border-blue-300'
+              }`}
+            >
+              3. Sealed &amp; In Transit
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const updated = advanceDealMilestone(deal.id, 'OUT_FOR_DELIVERY');
+                if (updated) setDeal(updated);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                deal.status === 'OUT_FOR_DELIVERY'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:border-blue-300'
+              }`}
+            >
+              4. Out for Delivery
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const updated = advanceDealMilestone(deal.id, 'COMPLETED');
+                if (updated) setDeal(updated);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                deal.status === 'COMPLETED'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-white text-slate-700 border border-slate-200 hover:border-emerald-300'
+              }`}
+            >
+              5. Completed &amp; Settled ✓
+            </button>
+          </div>
+        </div>
 
         {/* Live Vector Telemetry Map */}
         <LiveTrackingMap

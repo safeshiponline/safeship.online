@@ -173,6 +173,9 @@ function CreateShipmentContent() {
   const [showFinanceModal, setShowFinanceModal] = useState<boolean>(false);
   const [showUpiModal, setShowUpiModal] = useState<boolean>(false);
   const [upiCopied, setUpiCopied] = useState<boolean>(false);
+  const [utrNumber, setUtrNumber] = useState<string>('');
+  const [utrError, setUtrError] = useState<string>('');
+  const [draftRestored, setDraftRestored] = useState<boolean>(false);
 
   // Field Validation State
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -488,6 +491,88 @@ function CreateShipmentContent() {
         setCurrentStep(Number(reqStep));
       }
     } else {
+      // Form Draft Persistence: restore from localStorage if exists
+      if (searchParams.get('reset') === '1') {
+        try {
+          localStorage.removeItem('safeship_deal_draft_v2');
+        } catch {}
+      } else {
+        try {
+          const rawDraft = localStorage.getItem('safeship_deal_draft_v2');
+          if (rawDraft) {
+            const draft = JSON.parse(rawDraft);
+            if (draft.mode) setMode(draft.mode);
+            if (draft.selectedCategory) setSelectedCategory(draft.selectedCategory);
+            if (draft.itemName) setItemName(draft.itemName);
+            if (draft.condition) setCondition(draft.condition);
+            if (draft.declaredValue) setDeclaredValue(Number(draft.declaredValue));
+            if (draft.includedItems) setIncludedItems(draft.includedItems);
+            if (draft.productPhoto) setProductPhoto(draft.productPhoto);
+            if (Array.isArray(draft.uploadedPhotos) && draft.uploadedPhotos.length > 0) {
+              setUploadedPhotos(draft.uploadedPhotos);
+            }
+            if (draft.manualImei) setManualImei(draft.manualImei);
+            if (draft.backsidePhoto) setBacksidePhoto(draft.backsidePhoto);
+            if (draft.photoMatchResult) setPhotoMatchResult(draft.photoMatchResult);
+            if (draft.imeiAuditReport) setImeiAuditReport(draft.imeiAuditReport);
+            if (draft.exchangeItemName) setExchangeItemName(draft.exchangeItemName);
+            if (draft.exchangeCondition) setExchangeCondition(draft.exchangeCondition);
+            if (draft.exchangeValue) setExchangeValue(Number(draft.exchangeValue));
+            if (draft.exchangeIncluded) setExchangeIncluded(draft.exchangeIncluded);
+            if (draft.cashDifference !== undefined) setCashDifference(Number(draft.cashDifference));
+            if (draft.cashPayer) setCashPayer(draft.cashPayer);
+            if (draft.senderName) setSenderName(draft.senderName);
+            if (draft.senderPhone) setSenderPhone(draft.senderPhone);
+            if (draft.buyerName) setBuyerName(draft.buyerName);
+            if (draft.buyerPhone) setBuyerPhone(draft.buyerPhone);
+            if (draft.pickupLocation) setPickupLocation(draft.pickupLocation);
+            if (draft.pickupPincode) {
+              setPickupPincode(draft.pickupPincode);
+              const pick = resolvePincode(draft.pickupPincode);
+              setPickupCity(pick.city);
+              setPickupDistrict(pick.district);
+              setPickupState(pick.state);
+              setPickupHub(pick.hubName);
+            }
+            if (draft.dropLocation) setDropLocation(draft.dropLocation);
+            if (draft.dropPincode) {
+              setDropPincode(draft.dropPincode);
+              const drop = resolvePincode(draft.dropPincode);
+              setDropCity(drop.city);
+              setDropDistrict(drop.district);
+              setDropState(drop.state);
+              setDropHub(drop.hubName);
+            }
+            if (draft.pickupPincode && draft.dropPincode) {
+              const route = calculateRoadDistance(draft.pickupPincode, draft.dropPincode);
+              setDistanceKm(route.distanceKm);
+              setIsIntercity(route.isIntercity);
+              setRouteCorridor(route.corridorName);
+              setRouteTransitSummary(route.transitSummary);
+            }
+            if (draft.selectedTier) setSelectedTier(draft.selectedTier);
+            if (draft.pickupSlot) setPickupSlot(draft.pickupSlot);
+            if (draft.packageWeight) setPackageWeight(draft.packageWeight);
+            if (draft.paymentPreference) setPaymentPreference(draft.paymentPreference);
+            if (draft.financeTenure) setFinanceTenure(Number(draft.financeTenure));
+            if (draft.downPayment) setDownPayment(Number(draft.downPayment));
+            if (draft.isB2B !== undefined) setIsB2B(draft.isB2B);
+            if (draft.businessName) setBusinessName(draft.businessName);
+            if (draft.gstin) setGstin(draft.gstin);
+            if (draft.currentStep && draft.currentStep > 1) {
+              setCurrentStep(Number(draft.currentStep));
+            }
+            if (draft.step2Chunk) setStep2Chunk(draft.step2Chunk);
+            if (draft.step3Chunk) setStep3Chunk(draft.step3Chunk);
+            if (draft.itemName || draft.senderName || draft.pickupPincode) {
+              setDraftRestored(true);
+            }
+          }
+        } catch (e) {
+          console.warn('Failed restoring draft from localStorage:', e);
+        }
+      }
+
       const reqItem = searchParams.get('item');
       const reqImei = searchParams.get('imei');
       const reqPhoto = searchParams.get('photo');
@@ -539,6 +624,183 @@ function CreateShipmentContent() {
       setDownPayment(parsed);
     }
   }, [searchParams]);
+
+  // Navigate to step with browser history pushState to support native back button
+  const goToStep = (targetStep: number) => {
+    setCurrentStep(targetStep);
+    if (typeof window !== 'undefined') {
+      window.history.pushState({ step: targetStep }, '', `?step=${targetStep}`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  // Browser back/forward button handling (popstate)
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      if (e.state && typeof e.state.step === 'number') {
+        setCurrentStep(e.state.step);
+      } else {
+        const urlStep = new URLSearchParams(window.location.search).get('step');
+        if (urlStep) setCurrentStep(Number(urlStep));
+        else setCurrentStep(1);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Auto-save form state to localStorage on every change
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (!itemName && !senderName && !pickupPincode && !buyerName && declaredValue === 0) return;
+    try {
+      const draftData = {
+        mode,
+        selectedCategory,
+        itemName,
+        condition,
+        declaredValue,
+        includedItems,
+        uploadedPhotos,
+        productPhoto,
+        backsidePhoto,
+        manualImei,
+        photoMatchResult,
+        imeiAuditReport,
+        exchangeItemName,
+        exchangeCondition,
+        exchangeValue,
+        exchangeIncluded,
+        cashDifference,
+        cashPayer,
+        senderName,
+        senderPhone,
+        buyerName,
+        buyerPhone,
+        pickupLocation,
+        pickupPincode,
+        pickupCity,
+        pickupDistrict,
+        pickupState,
+        pickupHub,
+        dropLocation,
+        dropPincode,
+        dropCity,
+        dropDistrict,
+        dropState,
+        dropHub,
+        distanceKm,
+        routeCorridor,
+        routeTransitSummary,
+        isIntercity,
+        selectedTier,
+        pickupSlot,
+        packageWeight,
+        openBoxEnabled,
+        paymentPreference,
+        financeTenure,
+        downPayment,
+        isB2B,
+        businessName,
+        gstin,
+        currentStep,
+        step2Chunk,
+        step3Chunk,
+        savedAt: new Date().toISOString()
+      };
+      localStorage.setItem('safeship_deal_draft_v2', JSON.stringify(draftData));
+    } catch (e) {
+      console.warn('Failed auto-saving deal draft:', e);
+    }
+  }, [
+    mode,
+    selectedCategory,
+    itemName,
+    condition,
+    declaredValue,
+    includedItems,
+    uploadedPhotos,
+    productPhoto,
+    backsidePhoto,
+    manualImei,
+    photoMatchResult,
+    imeiAuditReport,
+    exchangeItemName,
+    exchangeCondition,
+    exchangeValue,
+    exchangeIncluded,
+    cashDifference,
+    cashPayer,
+    senderName,
+    senderPhone,
+    buyerName,
+    buyerPhone,
+    pickupLocation,
+    pickupPincode,
+    pickupCity,
+    pickupDistrict,
+    pickupState,
+    pickupHub,
+    dropLocation,
+    dropPincode,
+    dropCity,
+    dropDistrict,
+    dropState,
+    dropHub,
+    distanceKm,
+    routeCorridor,
+    routeTransitSummary,
+    isIntercity,
+    selectedTier,
+    pickupSlot,
+    packageWeight,
+    openBoxEnabled,
+    paymentPreference,
+    financeTenure,
+    downPayment,
+    isB2B,
+    businessName,
+    gstin,
+    currentStep,
+    step2Chunk,
+    step3Chunk
+  ]);
+
+  const clearSavedDraft = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('safeship_deal_draft_v2');
+    }
+    setDraftRestored(false);
+    setItemName('');
+    setSelectedCategory('');
+    setDeclaredValue(0);
+    setCondition('Used - Mint');
+    setIncludedItems('');
+    setProductPhoto(null);
+    setUploadedPhotos([]);
+    setManualImei('');
+    setBacksidePhoto(null);
+    setPhotoMatchResult(null);
+    setImeiAuditReport(null);
+    setExchangeItemName('');
+    setExchangeValue(0);
+    setExchangeIncluded('');
+    setCashDifference(0);
+    setSenderName('');
+    setSenderPhone('');
+    setBuyerName('');
+    setBuyerPhone('');
+    setPickupLocation('');
+    setPickupPincode('');
+    setPickupCity('');
+    setDropLocation('');
+    setDropPincode('');
+    setDropCity('');
+    setDistanceKm(0);
+    goToStep(1);
+    setStep2Chunk(1);
+    setStep3Chunk(1);
+  };
 
   // 8 Realistic Categories (Vehicles removed!)
   const categories: { id: ItemCategory; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -692,12 +954,12 @@ function CreateShipmentContent() {
   const handleNextStep = () => {
     if (currentStep === 1) {
       if (validateStep1()) {
-        setCurrentStep(2);
+        goToStep(2);
         setStep2Chunk(1);
       }
     } else if (currentStep === 2) {
       if (validateStep2()) {
-        setCurrentStep(3);
+        goToStep(3);
         setStep3Chunk(1);
       }
     } else if (currentStep === 3) {
@@ -710,7 +972,7 @@ function CreateShipmentContent() {
           setRouteCorridor(route.corridorName);
           setRouteTransitSummary(route.transitSummary);
         }
-        setCurrentStep(4);
+        goToStep(4);
       }
     }
   };
@@ -873,7 +1135,7 @@ function CreateShipmentContent() {
         condition: condition as any,
         itemPhotos: uploadedPhotos.length > 0 ? uploadedPhotos : ['/images/openbox_macro_4x3.webp'],
         sellerName: senderName.trim(),
-        sellerEmail: `${senderName.toLowerCase().replace(/\s+/g, '')}@safeship.online`,
+        sellerEmail: session?.email || `${senderName.toLowerCase().replace(/\s+/g, '')}@safeship.online`,
         sellerPhone: senderPhone.trim().startsWith('+91') ? senderPhone.trim() : `+91 ${senderPhone.trim()}`,
         pickupAddress: pickupLocation,
         city: pickupCity || 'Jaipur',
@@ -930,9 +1192,16 @@ function CreateShipmentContent() {
         }
       });
 
+      try {
+        localStorage.removeItem('safeship_deal_draft_v2');
+      } catch {}
+
       router.push(`/in/track/${created.id}?booked=true&payment_id=${paymentId}&mode=${paymentPreference}`);
     } catch (e) {
       console.error('Error creating deal record in store:', e);
+      try {
+        localStorage.removeItem('safeship_deal_draft_v2');
+      } catch {}
       router.push(`/in/track/SS48291?booked=true&payment_id=${paymentId}&mode=${paymentPreference}`);
     }
   };
@@ -1072,6 +1341,25 @@ function CreateShipmentContent() {
 
       {/* Main Wizard Form Body */}
       <main className="max-w-xl mx-auto w-full p-4 sm:p-6 flex-1">
+        
+        {/* Draft Auto-Restore Notification */}
+        {draftRestored && (
+          <div className="mb-4 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center justify-between animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>
+                <strong>Draft restored:</strong> Your previously entered consignment details are saved.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={clearSavedDraft}
+              className="text-[11px] font-bold text-rose-600 hover:text-rose-800 underline cursor-pointer shrink-0 ml-2"
+            >
+              Clear &amp; Start Fresh
+            </button>
+          </div>
+        )}
         
         {/* =================================================================== */}
         {/* STEP 1: CATEGORY SELECTION (8 Realistic High-Value Categories)      */}
@@ -1283,7 +1571,7 @@ function CreateShipmentContent() {
               <div className="md:hidden pt-3 border-t border-slate-100 flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(1)}
+                  onClick={() => goToStep(1)}
                   className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer"
                 >
                   ← Categories
@@ -1962,7 +2250,7 @@ function CreateShipmentContent() {
                 onClick={() => {
                   setStepErrorBanner('');
                   setErrors({});
-                  setCurrentStep(1);
+                  goToStep(1);
                 }}
                 className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50"
               >
@@ -2038,7 +2326,7 @@ function CreateShipmentContent() {
               {/* Rapid Preset Corridors */}
               <div className="p-3.5 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] space-y-2">
                 <span className="text-[11px] font-bold text-[#1E40AF] block">
-                  ⚡ Quick Demo Route Presets (One-Tap Setup):
+                  📍 Popular Corridors (One-Tap Route Setup):
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   <button
@@ -2187,7 +2475,7 @@ function CreateShipmentContent() {
                   <button
                     type="button"
                     onClick={() => {
-                      setCurrentStep(2);
+                      goToStep(2);
                       setStep2Chunk(3);
                     }}
                     className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer"
@@ -2421,7 +2709,7 @@ function CreateShipmentContent() {
                 onClick={() => {
                   setStepErrorBanner('');
                   setErrors({});
-                  setCurrentStep(2);
+                  goToStep(2);
                 }}
                 className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50"
               >
@@ -2524,13 +2812,13 @@ function CreateShipmentContent() {
                       </div>
                     ) : paymentPreference === 'PAY_ON_DELIVERY' ? (
                       <div>
-                        <span className="text-base font-black text-amber-700 font-mono">₹500</span>
-                        <span className="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded block mt-0.5">COD ADVANCE</span>
+                        <span className="text-base font-black text-slate-900 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
+                        <span className="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded block mt-0.5">GROUND RATE</span>
                       </div>
                     ) : (
                       <div>
+                        <span className="text-xs line-through text-slate-400 font-mono block">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
                         <span className="text-base font-black text-purple-700 font-mono">FREE (₹0)</span>
-                        <span className="text-[9px] font-bold text-purple-800 bg-purple-50 px-1.5 py-0.5 rounded block mt-0.5">DELIVERY</span>
                       </div>
                     )}
                   </div>
@@ -2560,17 +2848,17 @@ function CreateShipmentContent() {
                     {paymentPreference === 'PREPAID' ? (
                       <div>
                         <span className="text-xs line-through text-slate-400 font-mono block">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
-                        <span className="text-base font-black text-blue-600 font-mono">+₹149</span>
+                        <span className="text-base font-black text-blue-600 font-mono">+₹{Math.max(49, tierPricing.FASTEST_AIR_RUSH.totalUpfront - tierPricing.STANDARD_GROUND.totalUpfront)}</span>
                       </div>
                     ) : paymentPreference === 'PAY_ON_DELIVERY' ? (
                       <div>
-                        <span className="text-base font-black text-amber-700 font-mono">₹649</span>
-                        <span className="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded block mt-0.5">COD + AIR</span>
+                        <span className="text-base font-black text-blue-700 font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
+                        <span className="text-[9px] font-bold text-blue-800 bg-blue-50 px-1.5 py-0.5 rounded block mt-0.5">AIR LINEHAUL</span>
                       </div>
                     ) : (
                       <div>
-                        <span className="text-base font-black text-purple-700 font-mono">+₹149</span>
-                        <span className="text-[9px] font-bold text-purple-800 bg-purple-50 px-1.5 py-0.5 rounded block mt-0.5">AIR UPGRADE</span>
+                        <span className="text-xs line-through text-slate-400 font-mono block">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
+                        <span className="text-base font-black text-purple-700 font-mono">+₹{Math.max(49, tierPricing.FASTEST_AIR_RUSH.totalUpfront - tierPricing.STANDARD_GROUND.totalUpfront)}</span>
                       </div>
                     )}
                   </div>
@@ -3079,7 +3367,7 @@ function CreateShipmentContent() {
               <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(3)}
+                  onClick={() => goToStep(3)}
                   className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50"
                 >
                   Back
@@ -3129,23 +3417,16 @@ function CreateShipmentContent() {
                 </button>
               </div>
 
-              {/* Instant UPI QR Fallback & Demo Mode */}
-              <div className="flex items-center justify-center gap-3 pt-1 text-xs">
+              {/* Direct UPI Payment Option */}
+              <div className="flex items-center justify-center gap-2 pt-1 text-xs text-slate-500">
+                <span>Prefer direct UPI payment?</span>
                 <button
                   type="button"
                   onClick={() => setShowUpiModal(true)}
                   className="text-[#0066FF] font-bold hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <QrCode className="w-3.5 h-3.5" />
-                  <span>⚡ Instant UPI QR / Test Mode</span>
-                </button>
-                <span className="text-slate-300">&bull;</span>
-                <button
-                  type="button"
-                  onClick={() => router.push(`/in/open-box?type=${mode}&deal=SS48291`)}
-                  className="text-slate-500 hover:text-slate-800 underline cursor-pointer"
-                >
-                  Skip to Open-Box Console &rarr;
+                  <span>Scan SafeShip Escrow UPI QR &rarr;</span>
                 </button>
               </div>
             </div>
@@ -3450,35 +3731,56 @@ function CreateShipmentContent() {
               </button>
             </div>
 
-            {/* Action buttons */}
-            <div className="space-y-2 pt-1">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowUpiModal(false);
-                  completeDealCreation(
-                    `UPI_QR_${Date.now().toString(36).toUpperCase()}`,
-                    upfrontPayableAmount
-                  );
-                }}
-                className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-2"
-              >
-                <Check className="w-4 h-4" />
-                <span>I Have Paid ₹{upfrontPayableAmount.toLocaleString('en-IN')} — Confirm Booking</span>
-              </button>
+            {/* Direct UTR / Transaction ID Verification */}
+            <div className="space-y-3 pt-1">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                  <span>Enter 12-Digit UPI Ref / UTR:</span>
+                  <span className="text-[10px] text-slate-400 font-normal">From GPay / PhonePe / Paytm</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={utrNumber}
+                    onChange={(e) => {
+                      setUtrNumber(e.target.value.replace(/[^0-9A-Za-z]/g, '').slice(0, 16));
+                      setUtrError('');
+                    }}
+                    placeholder="e.g. 425619842103"
+                    className="w-full px-3.5 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-mono text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-[#0066FF] focus:bg-white transition uppercase"
+                  />
+                  {utrNumber.length >= 10 && (
+                    <span className="absolute right-3 top-3 text-emerald-600 text-xs font-bold">
+                      ✓ Valid Format
+                    </span>
+                  )}
+                </div>
+                {utrError && (
+                  <p className="text-[11px] text-rose-600 font-medium">{utrError}</p>
+                )}
+                <p className="text-[10px] text-slate-500 leading-tight">
+                  Once transferred via your UPI app to <strong className="text-slate-700">safeship@icici</strong>, enter the 12-digit Bank Reference / UTR number from your payment receipt to verify escrow receipt.
+                </p>
+              </div>
 
               <button
                 type="button"
                 onClick={() => {
+                  const cleaned = utrNumber.trim();
+                  if (!cleaned || cleaned.length < 8) {
+                    setUtrError('Please enter the 12-digit UPI transaction UTR from your UPI app receipt.');
+                    return;
+                  }
                   setShowUpiModal(false);
                   completeDealCreation(
-                    `TEST_DEMO_${Date.now().toString(36).toUpperCase()}`,
+                    `UPI_UTR_${cleaned.toUpperCase()}`,
                     upfrontPayableAmount
                   );
                 }}
-                className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition cursor-pointer text-center"
+                className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-2 active:scale-98"
               >
-                ⚡ Instant Demo Test (Bypass payment for testing)
+                <Check className="w-4 h-4" />
+                <span>Verify UTR &amp; Confirm Booking</span>
               </button>
             </div>
           </div>

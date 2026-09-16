@@ -343,7 +343,7 @@ export default function HomePage() {
             </span>
             <span className="font-bold text-white uppercase tracking-wider text-[10px]">Live Network Status:</span>
           </div>
-          <div className="flex items-center gap-6 overflow-x-auto no-scrollbar whitespace-nowrap text-slate-300 font-mono text-[11px]">
+          <div className="flex items-center gap-6 overflow-x-auto no-scrollbar scrollbar-none whitespace-nowrap text-slate-300 font-mono text-[11px]">
             <span className="flex items-center gap-1.5 text-emerald-400">
               <Check className="w-3 h-3" />
               <span>19,240+ Pincodes Fully Serviceable</span>
