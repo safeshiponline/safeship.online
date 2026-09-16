@@ -1199,19 +1199,30 @@ function CreateShipmentContent() {
   // Realistic distance-calculated delivery charge for active selected tier
   const fullDeliveryFee = activeTierBreakdown.totalUpfront;
 
+  // Prepay-Only Free Delivery Privilege:
+  // "keep delivery charge free for both slow and standard option prepay only"
+  // Slow option = STANDARD_GROUND, Standard option = PRIORITY_EXPRESS
+  const isTierEligibleForFreePrepay = selectedTier === 'STANDARD_GROUND' || selectedTier === 'PRIORITY_EXPRESS';
+  const isPrepaidFreeTier = paymentPreference === 'PREPAID' && isTierEligibleForFreePrepay;
+
   // Delivery fee allocation between Buyer and Seller according to feeSplit (50/50 Split or Seller Bears 100%)
-  const buyerDeliveryFee = feeSplit === 'SPLIT_50_50'
+  const rawBuyerDeliveryFee = feeSplit === 'SPLIT_50_50'
     ? Math.round(fullDeliveryFee / 2)
     : 0;
-  const sellerDeliveryFee = fullDeliveryFee - buyerDeliveryFee;
 
-  // Upfront Booking Payable Amount:
-  // - Prepaid Escrow: declaredValue + buyerDeliveryFee (Full escrow deposit + buyer delivery share)
-  // - Pay on Delivery (COD): buyerDeliveryFee (Distance-calculated courier booking advance to dispatch rider — NEVER flat ₹500!)
-  // - Finance: effectiveDownPayment + buyerDeliveryFee (Down payment + buyer delivery share)
-  const prepaidTotal = declaredValue + buyerDeliveryFee;
-  const codTotal = buyerDeliveryFee;
-  const financeTotal = effectiveDownPayment + buyerDeliveryFee;
+  // When prepaid on Slow or Standard tier, buyer delivery fee is 100% FREE (₹0).
+  // When COD (Pay on Delivery) or EMI, or Express Air rush, normal delivery fee applies.
+  const buyerDeliveryFee = isPrepaidFreeTier ? 0 : rawBuyerDeliveryFee;
+  const sellerDeliveryFee = isPrepaidFreeTier ? 0 : (fullDeliveryFee - rawBuyerDeliveryFee);
+
+  // Upfront Booking Payable Amount per payment option:
+  // - Prepaid Escrow: declaredValue + (isTierEligibleForFreePrepay ? 0 : rawBuyerDeliveryFee) (100% free delivery on slow & standard)
+  // - Pay on Delivery (COD): rawBuyerDeliveryFee (Distance + item value courier booking advance)
+  // - Finance: effectiveDownPayment + rawBuyerDeliveryFee (Down payment + courier dispatch advance)
+  const prepaidDeliveryShare = isTierEligibleForFreePrepay ? 0 : rawBuyerDeliveryFee;
+  const prepaidTotal = declaredValue + prepaidDeliveryShare;
+  const codTotal = rawBuyerDeliveryFee;
+  const financeTotal = effectiveDownPayment + rawBuyerDeliveryFee;
 
   const upfrontPayableAmount = paymentPreference === 'PREPAID'
     ? prepaidTotal
@@ -1219,7 +1230,7 @@ function CreateShipmentContent() {
     ? codTotal
     : financeTotal;
 
-  const freeDeliveryDiscount = feeSplit === 'SELLER_PAYS_ALL' ? fullDeliveryFee : 0;
+  const freeDeliveryDiscount = feeSplit === 'SELLER_PAYS_ALL' ? fullDeliveryFee : isPrepaidFreeTier ? rawBuyerDeliveryFee : 0;
   const codCharge = 0;
 
   // Dynamic Pickup and Delivery Dates
@@ -3171,21 +3182,28 @@ function CreateShipmentContent() {
                 </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* Tier 1: Standard Ground */}
+                {/* Tier 1: Standard Ground (Slow) */}
                 <div
+                  id="tier-card-STANDARD_GROUND"
                   onClick={() => setSelectedTier('STANDARD_GROUND')}
                   className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
                     selectedTier === 'STANDARD_GROUND'
-                      ? 'bg-emerald-50/60 border-emerald-600 ring-2 ring-emerald-300 shadow-sm'
+                      ? 'bg-emerald-50/70 border-emerald-600 ring-2 ring-emerald-300 shadow-sm'
                       : 'bg-white border-[#E2E8F0] hover:border-emerald-300'
                   }`}
                 >
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center justify-between gap-1.5 flex-wrap">
                       <span className="text-sm font-black text-slate-900">📦 Standard Ground</span>
-                      <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
-                        2–3 DAYS
-                      </span>
+                      {paymentPreference === 'PREPAID' ? (
+                        <span className="text-[9px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded-full shadow-2xs">
+                          FREE ON PREPAY
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          2–3 DAYS
+                        </span>
+                      )}
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
                       Reliable surface linehaul network with doorstep unboxing.
@@ -3194,11 +3212,20 @@ function CreateShipmentContent() {
                   <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
                     <span className="text-[10px] text-slate-400 font-semibold">Surface Linehaul</span>
                     <div className="text-right shrink-0">
-                      <div className="flex items-baseline gap-1.5 justify-end">
-                        <span className="text-base font-black text-slate-900 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
-                      </div>
+                      {paymentPreference === 'PREPAID' ? (
+                        <div className="flex items-baseline gap-1.5 justify-end">
+                          <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
+                          <span className="text-base font-black text-emerald-600 font-mono">FREE ₹0</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-baseline gap-1.5 justify-end">
+                          <span className="text-base font-black text-slate-900 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
+                        </div>
+                      )}
                       <span className="text-[10px] text-emerald-700 font-semibold block">
-                        {feeSplit === 'SPLIT_50_50'
+                        {paymentPreference === 'PREPAID'
+                          ? '🎁 Free on Prepay'
+                          : feeSplit === 'SPLIT_50_50'
                           ? `₹${Math.round(tierPricing.STANDARD_GROUND.totalUpfront / 2)} your share`
                           : feeSplit === 'SELLER_PAYS_ALL'
                           ? 'Seller covers'
@@ -3208,8 +3235,9 @@ function CreateShipmentContent() {
                   </div>
                 </div>
 
-                {/* Tier 2: Priority Express */}
+                {/* Tier 2: Priority Express (Standard) */}
                 <div
+                  id="tier-card-PRIORITY_EXPRESS"
                   onClick={() => setSelectedTier('PRIORITY_EXPRESS')}
                   className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
                     selectedTier === 'PRIORITY_EXPRESS'
@@ -3220,9 +3248,15 @@ function CreateShipmentContent() {
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center justify-between gap-1.5 flex-wrap">
                       <span className="text-sm font-black text-slate-900">🚀 Priority Express</span>
-                      <span className="text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full">
-                        1–2 DAYS
-                      </span>
+                      {paymentPreference === 'PREPAID' ? (
+                        <span className="text-[9px] font-black bg-blue-600 text-white px-2 py-0.5 rounded-full shadow-2xs">
+                          FREE ON PREPAY
+                        </span>
+                      ) : (
+                        <span className="text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full">
+                          1–2 DAYS
+                        </span>
+                      )}
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
                       Priority expressway &amp; commercial air corridor.
@@ -3231,11 +3265,20 @@ function CreateShipmentContent() {
                   <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
                     <span className="text-[10px] text-slate-400 font-semibold">Fast Linehaul</span>
                     <div className="text-right shrink-0">
-                      <div className="flex items-baseline gap-1.5 justify-end">
-                        <span className="text-base font-black text-blue-700 font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
-                      </div>
+                      {paymentPreference === 'PREPAID' ? (
+                        <div className="flex items-baseline gap-1.5 justify-end">
+                          <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
+                          <span className="text-base font-black text-emerald-600 font-mono">FREE ₹0</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-baseline gap-1.5 justify-end">
+                          <span className="text-base font-black text-blue-700 font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
+                        </div>
+                      )}
                       <span className="text-[10px] text-blue-700 font-semibold block">
-                        {feeSplit === 'SPLIT_50_50'
+                        {paymentPreference === 'PREPAID'
+                          ? '🎁 Free on Prepay'
+                          : feeSplit === 'SPLIT_50_50'
                           ? `₹${Math.round(tierPricing.PRIORITY_EXPRESS.totalUpfront / 2)} your share`
                           : feeSplit === 'SELLER_PAYS_ALL'
                           ? 'Seller covers'
@@ -3247,6 +3290,7 @@ function CreateShipmentContent() {
 
                 {/* Tier 3: Express Air Rush */}
                 <div
+                  id="tier-card-FASTEST_AIR_RUSH"
                   onClick={() => setSelectedTier('FASTEST_AIR_RUSH')}
                   className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
                     selectedTier === 'FASTEST_AIR_RUSH'
@@ -3282,6 +3326,33 @@ function CreateShipmentContent() {
                   </div>
                 </div>
               </div>
+
+              {/* Prepay Free Delivery Notice / Promotion */}
+              {paymentPreference === 'PREPAID' ? (
+                <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span><strong>Prepay Privilege Applied:</strong> Delivery charge is 100% FREE (₹0) on Standard Ground &amp; Priority Express tiers!</span>
+                  </div>
+                  <span className="text-[10px] font-bold bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded-full shrink-0">
+                    SAVE ₹{rawBuyerDeliveryFee}
+                  </span>
+                </div>
+              ) : (
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">💡</span>
+                    <span><strong>Prepay Offer:</strong> Switch to <strong>Prepaid Escrow</strong> below to get 100% FREE delivery on Standard Ground &amp; Priority Express!</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPaymentPreference('PREPAID')}
+                    className="text-[10px] font-bold text-blue-700 hover:underline shrink-0 cursor-pointer"
+                  >
+                    Select Prepay &rarr;
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* 2. DELIVERY CHARGE ALLOCATION (Fee Split - and it can for both!) */}
@@ -3419,12 +3490,18 @@ function CreateShipmentContent() {
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#0F172A]">Prepaid Escrow</span>
-                      <span className="text-[9px] font-black bg-blue-600 text-white px-2 py-0.5 rounded-full uppercase">
-                        {buyerDeliveryFee > 0 ? `+₹${buyerDeliveryFee} COURIER` : 'SELLER COVERS'}
+                      <span className="text-[9px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded-full uppercase">
+                        {isTierEligibleForFreePrepay
+                          ? '100% FREE DELIVERY'
+                          : rawBuyerDeliveryFee > 0
+                          ? `+₹${rawBuyerDeliveryFee} AIR COURIER`
+                          : 'FREE DELIVERY'}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
-                      Full item price held in safe escrow. Released only after your 10-min unboxing.
+                      {isTierEligibleForFreePrepay
+                        ? 'Full item price held in safe escrow. Delivery is 100% FREE (₹0) on this tier! Released only after your 10-min unboxing.'
+                        : 'Full item price held in safe cargo escrow. Released only after your 10-min unboxing.'}
                     </p>
                   </div>
                   <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-xs">
@@ -3703,14 +3780,24 @@ function CreateShipmentContent() {
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center text-slate-600">
-                  <span>Delivery Charge Allocation ({feeSplit === 'SPLIT_50_50' ? '50/50 Split' : 'Seller 100%'}):</span>
-                  <span className="font-mono font-semibold text-blue-700">
-                    {feeSplit === 'SPLIT_50_50'
-                      ? `Buyer: ₹${buyerDeliveryFee} | Seller: ₹${sellerDeliveryFee}`
-                      : `Seller Covers ₹${sellerDeliveryFee} (Buyer ₹0)`}
-                  </span>
-                </div>
+                {isPrepaidFreeTier ? (
+                  <div className="flex justify-between items-center text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-xl border border-emerald-200">
+                    <span className="font-semibold flex items-center gap-1.5">
+                      <span>🎁 Prepay Escrow Benefit:</span>
+                      <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.5 rounded-md font-bold uppercase">100% Free Courier</span>
+                    </span>
+                    <span className="font-mono font-bold">-₹{rawBuyerDeliveryFee} (₹0 to Pay)</span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Delivery Charge Allocation ({feeSplit === 'SPLIT_50_50' ? '50/50 Split' : 'Seller 100%'}):</span>
+                    <span className="font-mono font-semibold text-blue-700">
+                      {feeSplit === 'SPLIT_50_50'
+                        ? `Buyer: ₹${buyerDeliveryFee} | Seller: ₹${sellerDeliveryFee}`
+                        : `Seller Covers ₹${sellerDeliveryFee} (Buyer ₹0)`}
+                    </span>
+                  </div>
+                )}
 
                 <div className="flex justify-between items-center text-slate-600">
                   <span>10-Minute Doorstep Open-Box Inspection:</span>
@@ -3746,7 +3833,9 @@ function CreateShipmentContent() {
                     </span>
                     <span className="text-[11px] text-slate-500 block">
                       {paymentPreference === 'PREPAID'
-                        ? `Full Escrow Deposit + Delivery Share (100% refundable if rejected at doorstep)`
+                        ? isPrepaidFreeTier
+                          ? `Full Escrow Deposit (Delivery 100% FREE on Prepay) • 100% refundable if rejected`
+                          : `Full Escrow Deposit + Air Delivery Share • 100% refundable if rejected`
                         : paymentPreference === 'PAY_ON_DELIVERY'
                         ? `₹${codTotal} delivery advance to dispatch courier (Balance ₹${declaredValue.toLocaleString('en-IN')} at doorstep)`
                         : `₹${financeTotal.toLocaleString('en-IN')} (Down payment ₹${effectiveDownPayment} + Delivery ₹${buyerDeliveryFee})`}
@@ -3757,7 +3846,7 @@ function CreateShipmentContent() {
                       ₹{upfrontPayableAmount.toLocaleString('en-IN')}
                     </span>
                     <span className="text-[10px] text-emerald-600 font-bold">
-                      ✓ Zero Platform Fee
+                      {isPrepaidFreeTier ? '🎉 100% Free Delivery Applied' : '✓ Zero Platform Fee'}
                     </span>
                   </div>
                 </div>
