@@ -147,8 +147,7 @@ function CreateShipmentContent() {
   const [packageWeight, setPackageWeight] = useState<string>('');
   const [openBoxEnabled, setOpenBoxEnabled] = useState<boolean>(true);
 
-  // Delivery Fee Allocation & Payment State
-  const [feeSplit, setFeeSplit] = useState<FeeSplitOption>('SPLIT_50_50');
+  // Payment State
   const [showUpiModal, setShowUpiModal] = useState<boolean>(false);
   const [upiCopied, setUpiCopied] = useState<boolean>(false);
   const [utrNumber, setUtrNumber] = useState<string>('');
@@ -1019,17 +1018,12 @@ function CreateShipmentContent() {
   // Realistic distance & item-valuation calculated shipping fee for active selected tier
   const fullDeliveryFee = activeTierBreakdown.totalUpfront;
 
-  // Delivery fee allocation between Buyer and Seller according to feeSplit (50/50 Split or Seller Bears 100%)
-  const buyerDeliveryFee = feeSplit === 'SPLIT_50_50'
-    ? Math.round(fullDeliveryFee / 2)
-    : 0;
-  const sellerDeliveryFee = fullDeliveryFee - buyerDeliveryFee;
-
   // Upfront Booking Payable Amount:
-  // Strictly the verified courier shipping fee! Zero item escrow deposit, zero loans.
-  const upfrontPayableAmount = buyerDeliveryFee;
-
-  const freeDeliveryDiscount = feeSplit === 'SELLER_PAYS_ALL' ? fullDeliveryFee : 0;
+  // Strictly the verified courier shipping fee! Zero item escrow deposit, zero loans, direct shipping fee.
+  const upfrontPayableAmount = fullDeliveryFee;
+  const buyerDeliveryFee = fullDeliveryFee;
+  const sellerDeliveryFee = 0;
+  const freeDeliveryDiscount = 0;
   const codCharge = 0;
 
   // Dynamic Pickup and Delivery Dates
@@ -1122,7 +1116,7 @@ function CreateShipmentContent() {
         packageWeightKg: parseFloat(packageWeight) || 0.8,
         dimensionsCm: '20 x 15 x 10 cm',
         insurancePolicyNumber,
-        feeSplitOption: feeSplit,
+        feeSplitOption: 'BUYER_PAYS_ALL',
         paymentPreference: 'PAY_ON_DELIVERY',
         codCharge,
         freeDeliveryDiscount,
@@ -2863,11 +2857,7 @@ function CreateShipmentContent() {
                         <span className="text-base font-black text-slate-900 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
                       </div>
                       <span className="text-[10px] text-emerald-700 font-semibold block">
-                        {feeSplit === 'SPLIT_50_50'
-                          ? `₹${Math.round(tierPricing.STANDARD_GROUND.totalUpfront / 2)} your share`
-                          : feeSplit === 'SELLER_PAYS_ALL'
-                          ? 'Seller covers'
-                          : 'Full Courier'}
+                        Surface Linehaul
                       </span>
                     </div>
                   </div>
@@ -2901,11 +2891,7 @@ function CreateShipmentContent() {
                         <span className="text-base font-black text-blue-700 font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
                       </div>
                       <span className="text-[10px] text-blue-700 font-semibold block">
-                        {feeSplit === 'SPLIT_50_50'
-                          ? `₹${Math.round(tierPricing.PRIORITY_EXPRESS.totalUpfront / 2)} your share`
-                          : feeSplit === 'SELLER_PAYS_ALL'
-                          ? 'Seller covers'
-                          : 'Fast Linehaul'}
+                        Express Linehaul
                       </span>
                     </div>
                   </div>
@@ -2939,11 +2925,7 @@ function CreateShipmentContent() {
                         <span className="text-base font-black text-amber-700 font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
                       </div>
                       <span className="text-[10px] text-amber-700 font-semibold block">
-                        {feeSplit === 'SPLIT_50_50'
-                          ? `₹${Math.round(tierPricing.FASTEST_AIR_RUSH.totalUpfront / 2)} your share`
-                          : feeSplit === 'SELLER_PAYS_ALL'
-                          ? 'Seller covers'
-                          : 'Air Linehaul'}
+                        Air Linehaul
                       </span>
                     </div>
                   </div>
@@ -2951,71 +2933,12 @@ function CreateShipmentContent() {
               </div>
             </div>
 
-            {/* 2. DELIVERY CHARGE ALLOCATION (Fee Split - and it can for both!) */}
-            <div className="bg-white rounded-2xl p-4 border border-[#E2E8F0] shadow-xs space-y-2.5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <span className="text-xs font-bold text-[#334155] uppercase tracking-wider flex items-center gap-1.5">
-                  <ArrowLeftRight className="w-4 h-4 text-[#0066FF]" />
-                  <span>2. Delivery Fee Allocation (Who Bears Courier Charges?)</span>
-                </span>
-                <span className="text-[11px] text-slate-500">
-                  Total Delivery: <strong className="text-slate-900 font-mono">₹{fullDeliveryFee}</strong> (Based on {(distanceKm || effectiveDistance).toLocaleString('en-IN')} km)
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setFeeSplit('SPLIT_50_50')}
-                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
-                    feeSplit === 'SPLIT_50_50'
-                      ? 'bg-blue-50/70 border-[#0066FF] ring-2 ring-blue-300 shadow-xs'
-                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-900">⚖️ 50 / 50 Split</span>
-                    <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">RECOMMENDED</span>
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-1 leading-tight">
-                    Both parties share delivery charge equally.
-                  </p>
-                  <div className="mt-2.5 pt-1.5 border-t border-slate-200/70 flex items-center justify-between text-[11px] font-mono font-bold text-blue-700">
-                    <span>Each Pays:</span>
-                    <span>₹{Math.round(fullDeliveryFee / 2)}</span>
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setFeeSplit('SELLER_PAYS_ALL')}
-                  className={`p-3.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between ${
-                    feeSplit === 'SELLER_PAYS_ALL'
-                      ? 'bg-blue-50/70 border-[#0066FF] ring-2 ring-blue-300 shadow-xs'
-                      : 'bg-slate-50 border-slate-200 hover:bg-slate-100 text-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-900">🏪 Seller Bears 100%</span>
-                    <span className="text-[9px] font-bold bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded">FREE FOR BUYER</span>
-                  </div>
-                  <p className="text-[10px] text-slate-500 mt-1 leading-tight">
-                    Seller covers delivery from payout.
-                  </p>
-                  <div className="mt-2.5 pt-1.5 border-t border-slate-200/70 flex items-center justify-between text-[11px] font-mono font-bold text-purple-700">
-                    <span>Buyer Pays:</span>
-                    <span>₹0 (Seller: ₹{fullDeliveryFee})</span>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            {/* 3. PICKUP SCHEDULE & SLOT (Inline & Compact) */}
+            {/* 2. PICKUP SCHEDULE & SLOT (Inline & Compact) */}
             <div className="bg-white rounded-2xl p-3.5 border border-[#E2E8F0] shadow-xs space-y-2.5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                 <span className="text-xs font-bold text-[#334155] uppercase tracking-wider flex items-center gap-1.5">
                   <Calendar className="w-4 h-4 text-[#0066FF]" />
-                  <span>3. Pickup Schedule &amp; Slot</span>
+                  <span>2. Pickup Schedule &amp; Slot</span>
                 </span>
                 <span className="text-[11px] text-slate-500">
                   Scheduled for: <strong className="text-slate-900">{pickupDateFormatted}</strong> ({pickupCity || 'Jaipur'})
@@ -3061,11 +2984,11 @@ function CreateShipmentContent() {
             </div>
 
 
-            {/* 4. UNIFIED ORDER & SHIPPING SUMMARY */}
+            {/* 3. UNIFIED ORDER & SHIPPING SUMMARY */}
             <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E2E8F0] shadow-xs space-y-3">
               <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  4. Booking &amp; Shipping Fee Summary
+                  3. Booking &amp; Shipping Fee Summary
                 </span>
                 <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                   Open-Box Verified Transit
@@ -3090,15 +3013,6 @@ function CreateShipmentContent() {
                 </div>
 
                 <div className="flex justify-between items-center text-slate-600">
-                  <span>Shipping Fee Allocation ({feeSplit === 'SPLIT_50_50' ? '50/50 Split' : 'Seller 100%'}):</span>
-                  <span className="font-mono font-semibold text-blue-700">
-                    {feeSplit === 'SPLIT_50_50'
-                      ? `Buyer: ₹${buyerDeliveryFee} | Seller: ₹${sellerDeliveryFee}`
-                      : `Seller Covers ₹${sellerDeliveryFee} (Buyer ₹0)`}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center text-slate-600">
                   <span>10-Minute Doorstep Open-Box Inspection:</span>
                   <span className="font-semibold text-emerald-600">INCLUDED FREE (₹0)</span>
                 </div>
@@ -3115,9 +3029,7 @@ function CreateShipmentContent() {
                       Total Payable Today:
                     </span>
                     <span className="text-[11px] text-slate-500 block">
-                      {upfrontPayableAmount === 0
-                        ? 'Seller covers 100% courier shipping charge • ₹0 payable by buyer'
-                        : `Verified courier shipping fee payable upfront • Zero platform fee`}
+                      Verified courier shipping fee payable upfront &bull; Zero platform fee
                     </span>
                   </div>
                   <div className="text-left sm:text-right shrink-0">
@@ -3307,12 +3219,6 @@ function CreateShipmentContent() {
                     <>
                       <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
                       <span>Connecting Razorpay Gateway...</span>
-                    </>
-                  ) : upfrontPayableAmount === 0 ? (
-                    <>
-                      <ShieldCheck className="w-4 h-4 text-white" />
-                      <span>Confirm Booking (Seller Covers ₹{fullDeliveryFee} Shipping)</span>
-                      <ArrowRight className="w-4 h-4" />
                     </>
                   ) : (
                     <>
