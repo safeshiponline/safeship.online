@@ -35,7 +35,11 @@ import {
   Calendar,
   PackageCheck,
   Shield,
-  Sliders
+  Sliders,
+  QrCode,
+  Copy,
+  ChevronDown,
+  ChevronUp
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
 import { createNewDeal } from '@/lib/store';
@@ -167,6 +171,8 @@ function CreateShipmentContent() {
   const [financeTenure, setFinanceTenure] = useState<number>(6);
   const [downPayment, setDownPayment] = useState<number>(2499);
   const [showFinanceModal, setShowFinanceModal] = useState<boolean>(false);
+  const [showUpiModal, setShowUpiModal] = useState<boolean>(false);
+  const [upiCopied, setUpiCopied] = useState<boolean>(false);
 
   // Field Validation State
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -176,6 +182,8 @@ function CreateShipmentContent() {
   const [isB2B, setIsB2B] = useState<boolean>(false);
   const [businessName, setBusinessName] = useState<string>('');
   const [gstin, setGstin] = useState<string>('');
+  const [showGstAccordion, setShowGstAccordion] = useState<boolean>(false);
+  const [showSecurityAccordion, setShowSecurityAccordion] = useState<boolean>(false);
 
   // User Session & Google Auth State
   const [session, setSession] = useState<UserSession | null>(null);
@@ -791,17 +799,21 @@ function CreateShipmentContent() {
   const codCharge = paymentPreference === 'PAY_ON_DELIVERY' ? 500 : 0;
 
   // Upfront Booking Payable Amount:
-  // - Prepaid Standard: ₹0 (100% Free Delivery Waiver!)
-  // - Prepaid Fast: ₹149 (small extra fee for faster delivery)
-  // - Pay on Delivery (COD) Standard: ₹500 (doorstep cash handling & slot reservation)
+  // - Prepaid Standard: declaredValue (Full item escrow deposit, 100% Free Standard Delivery)
+  // - Prepaid Fast: declaredValue + 149 (Full item escrow deposit + ₹149 Fast Air linehaul)
+  // - Pay on Delivery (COD) Standard: ₹500 (doorstep slot reservation fee)
   // - Pay on Delivery (COD) Fast: ₹649 (₹500 COD + ₹149 Fast Air)
-  // - Finance Standard: effectiveDownPayment (Good down payment below ₹5,000, 100% free delivery)
-  // - Finance Fast: effectiveDownPayment + ₹149 (Down payment + Fast air upgrade)
+  // - Finance Standard: effectiveDownPayment (Down payment below ₹5,000, 100% Free Standard Delivery)
+  // - Finance Fast: effectiveDownPayment + ₹149 (Down payment + Fast Air upgrade)
+  const prepaidTotal = isFastTier ? declaredValue + fastDeliveryExtraFee : declaredValue;
+  const codTotal = isFastTier ? 500 + fastDeliveryExtraFee : 500;
+  const financeTotal = isFastTier ? effectiveDownPayment + fastDeliveryExtraFee : effectiveDownPayment;
+
   const upfrontPayableAmount = paymentPreference === 'PREPAID'
-    ? (isFastTier ? fastDeliveryExtraFee : 0)
+    ? prepaidTotal
     : paymentPreference === 'PAY_ON_DELIVERY'
-    ? (isFastTier ? 500 + fastDeliveryExtraFee : 500)
-    : (isFastTier ? effectiveDownPayment + fastDeliveryExtraFee : effectiveDownPayment);
+    ? codTotal
+    : financeTotal;
 
   // Dynamic Pickup and Delivery Dates
   const pickupDateObj = new Date();
@@ -849,84 +861,84 @@ function CreateShipmentContent() {
     clearError: clearRazorpayError
   } = useRazorpay();
 
+  const completeDealCreation = (paymentId: string, upfrontAmountPaid: number) => {
+    try {
+      const insurancePolicyNumber = `POL-ICICI-LOMBARD-2026-${Date.now().toString(36).toUpperCase()}`;
+
+      const created = createNewDeal({
+        title: mode === 'exchange' ? `2-Way Swap: ${itemName} ⇄ ${exchangeItemName}` : itemName,
+        description: `${mode === 'exchange' ? '2-Way Hardware Exchange' : 'SafeShip Doorstep Delivery'} from ${pickupCity || 'Jaipur'} to ${dropCity || 'Delhi'}. Verified via Open-Box audit on ${routeCorridor}.`,
+        category: (selectedCategory || 'SMARTPHONES_TABLETS') as ItemCategory,
+        declaredValue,
+        condition: condition as any,
+        itemPhotos: uploadedPhotos.length > 0 ? uploadedPhotos : ['/images/openbox_macro_4x3.webp'],
+        sellerName: senderName.trim(),
+        sellerEmail: `${senderName.toLowerCase().replace(/\s+/g, '')}@safeship.online`,
+        sellerPhone: senderPhone.trim().startsWith('+91') ? senderPhone.trim() : `+91 ${senderPhone.trim()}`,
+        pickupAddress: pickupLocation,
+        city: pickupCity || 'Jaipur',
+        pincode: pickupPincode,
+        serialNumber: imeiAuditReport?.serial || 'D4G7K3Y9L2',
+        imeiNumber: imeiAuditReport?.imei || manualImei || '358921094829104',
+        imeiAuditReport: imeiAuditReport || undefined,
+        buyerName: buyerName.trim(),
+        buyerPhone: buyerPhone.trim().startsWith('+91') ? buyerPhone.trim() : `+91 ${buyerPhone.trim()}`,
+        deliveryAddress: dropLocation,
+        isExchange: mode === 'exchange',
+        exchangeItem: mode === 'exchange' ? {
+          title: exchangeItemName,
+          condition: exchangeCondition,
+          declaredValue: exchangeValue,
+          cashDifference,
+          photos: ['/images/exchange_hero_4x3.webp']
+        } : undefined,
+        serviceTier: selectedTier,
+        pickupSlot,
+        estimatedDeliveryDate: deliveryDateFormatted,
+        distanceKm: distanceKm || effectiveDistance,
+        routeCorridor,
+        isIntercity,
+        packageWeightKg: parseFloat(packageWeight) || 0.8,
+        dimensionsCm: '20 x 15 x 10 cm',
+        insurancePolicyNumber,
+        paymentPreference,
+        codCharge,
+        freeDeliveryDiscount,
+        financePlan: paymentPreference === 'FINANCE_EMI' ? activeFinancePlan : undefined,
+        downPayment: paymentPreference === 'FINANCE_EMI' ? effectiveDownPayment : undefined,
+        upfrontPricing: {
+          baseFee: activeTierBreakdown.baseFee,
+          distanceSurcharge: activeTierBreakdown.distanceSurcharge,
+          insuranceFee: activeTierBreakdown.insuranceFee,
+          verificationFee: activeTierBreakdown.verificationFee,
+          totalUpfront: activeTierBreakdown.totalUpfront
+        },
+        upfrontPaid: upfrontAmountPaid,
+        paymentId,
+        billingInfo: {
+          businessName: isB2B && businessName.trim() ? businessName.trim() : undefined,
+          gstin: isB2B && gstin.trim() ? gstin.trim().toUpperCase() : undefined,
+          invoiceNumber: `INV-2026-SS-${Date.now().toString(36).toUpperCase()}`,
+          sacCode: '996812',
+          isB2B,
+          taxableAmount: Math.round((upfrontAmountPaid / 1.18) * 100) / 100,
+          cgst: Math.round(((upfrontAmountPaid - upfrontAmountPaid / 1.18) / 2) * 100) / 100,
+          sgst: Math.round(((upfrontAmountPaid - upfrontAmountPaid / 1.18) / 2) * 100) / 100,
+          igst: 0,
+          totalAmount: upfrontAmountPaid,
+          invoiceDate: new Date().toISOString()
+        }
+      });
+
+      router.push(`/in/track/${created.id}?booked=true&payment_id=${paymentId}&mode=${paymentPreference}`);
+    } catch (e) {
+      console.error('Error creating deal record in store:', e);
+      router.push(`/in/track/SS48291?booked=true&payment_id=${paymentId}&mode=${paymentPreference}`);
+    }
+  };
+
   const handleConfirmBooking = () => {
     clearRazorpayError();
-
-    const completeDealCreation = (paymentId: string, upfrontAmountPaid: number) => {
-      try {
-        const insurancePolicyNumber = `POL-ICICI-LOMBARD-2026-${Date.now().toString(36).toUpperCase()}`;
-
-        const created = createNewDeal({
-          title: mode === 'exchange' ? `2-Way Swap: ${itemName} ⇄ ${exchangeItemName}` : itemName,
-          description: `${mode === 'exchange' ? '2-Way Hardware Exchange' : 'SafeShip Doorstep Delivery'} from ${pickupCity || 'Jaipur'} to ${dropCity || 'Delhi'}. Verified via Open-Box audit on ${routeCorridor}.`,
-          category: (selectedCategory || 'SMARTPHONES_TABLETS') as ItemCategory,
-          declaredValue,
-          condition: condition as any,
-          itemPhotos: uploadedPhotos.length > 0 ? uploadedPhotos : ['/images/openbox_macro_4x3.webp'],
-          sellerName: senderName.trim(),
-          sellerEmail: `${senderName.toLowerCase().replace(/\s+/g, '')}@safeship.online`,
-          sellerPhone: senderPhone.trim().startsWith('+91') ? senderPhone.trim() : `+91 ${senderPhone.trim()}`,
-          pickupAddress: pickupLocation,
-          city: pickupCity || 'Jaipur',
-          pincode: pickupPincode,
-          serialNumber: imeiAuditReport?.serial || 'D4G7K3Y9L2',
-          imeiNumber: imeiAuditReport?.imei || manualImei || '358921094829104',
-          imeiAuditReport: imeiAuditReport || undefined,
-          buyerName: buyerName.trim(),
-          buyerPhone: buyerPhone.trim().startsWith('+91') ? buyerPhone.trim() : `+91 ${buyerPhone.trim()}`,
-          deliveryAddress: dropLocation,
-          isExchange: mode === 'exchange',
-          exchangeItem: mode === 'exchange' ? {
-            title: exchangeItemName,
-            condition: exchangeCondition,
-            declaredValue: exchangeValue,
-            cashDifference,
-            photos: ['/images/exchange_hero_4x3.webp']
-          } : undefined,
-          serviceTier: selectedTier,
-          pickupSlot,
-          estimatedDeliveryDate: deliveryDateFormatted,
-          distanceKm: distanceKm || effectiveDistance,
-          routeCorridor,
-          isIntercity,
-          packageWeightKg: parseFloat(packageWeight) || 0.8,
-          dimensionsCm: '20 x 15 x 10 cm',
-          insurancePolicyNumber,
-          paymentPreference,
-          codCharge,
-          freeDeliveryDiscount,
-          financePlan: paymentPreference === 'FINANCE_EMI' ? activeFinancePlan : undefined,
-          downPayment: paymentPreference === 'FINANCE_EMI' ? effectiveDownPayment : undefined,
-          upfrontPricing: {
-            baseFee: activeTierBreakdown.baseFee,
-            distanceSurcharge: activeTierBreakdown.distanceSurcharge,
-            insuranceFee: activeTierBreakdown.insuranceFee,
-            verificationFee: activeTierBreakdown.verificationFee,
-            totalUpfront: activeTierBreakdown.totalUpfront
-          },
-          upfrontPaid: upfrontAmountPaid,
-          paymentId,
-          billingInfo: {
-            businessName: isB2B && businessName.trim() ? businessName.trim() : undefined,
-            gstin: isB2B && gstin.trim() ? gstin.trim().toUpperCase() : undefined,
-            invoiceNumber: `INV-2026-SS-${Date.now().toString(36).toUpperCase()}`,
-            sacCode: '996812',
-            isB2B,
-            taxableAmount: Math.round((upfrontAmountPaid / 1.18) * 100) / 100,
-            cgst: Math.round(((upfrontAmountPaid - upfrontAmountPaid / 1.18) / 2) * 100) / 100,
-            sgst: Math.round(((upfrontAmountPaid - upfrontAmountPaid / 1.18) / 2) * 100) / 100,
-            igst: 0,
-            totalAmount: upfrontAmountPaid,
-            invoiceDate: new Date().toISOString()
-          }
-        });
-
-        router.push(`/in/track/${created.id}?booked=true&payment_id=${paymentId}&mode=${paymentPreference}`);
-      } catch (e) {
-        console.error('Error creating deal record in store:', e);
-        router.push(`/in/track/SS48291?booked=true&payment_id=${paymentId}&mode=${paymentPreference}`);
-      }
-    };
 
     // If Upfront fee is ₹0 (Prepaid Standard Free Delivery): instant confirmed!
     if (upfrontPayableAmount === 0) {
@@ -934,19 +946,19 @@ function CreateShipmentContent() {
       return;
     }
 
-    // Otherwise (Prepaid Fast @ ₹149, COD Standard @ ₹500, COD Fast @ ₹649, or Finance with Down Payment):
+    // Open Razorpay Standard Checkout for the full upfront amount:
     openCheckout({
       amountInRupees: upfrontPayableAmount,
       name: paymentPreference === 'PREPAID'
-        ? 'SafeShip Fast Delivery'
+        ? 'SafeShip Escrow Payment'
         : paymentPreference === 'PAY_ON_DELIVERY'
-        ? 'SafeShip COD Booking'
+        ? 'SafeShip COD Reservation'
         : 'SafeShip Finance Down Payment',
       description: paymentPreference === 'PREPAID'
-        ? `₹${upfrontPayableAmount} Fast Delivery Air Upgrade Fee`
+        ? `Escrow Deposit: ₹${upfrontPayableAmount.toLocaleString('en-IN')} for ${itemName || 'Merchandise'}`
         : paymentPreference === 'PAY_ON_DELIVERY'
-        ? `₹${upfrontPayableAmount} Doorstep COD Slot Lock (${activeTierBreakdown.tierLabel})`
-        : `₹${effectiveDownPayment} Down Payment ${isFastTier ? '+ ₹149 Fast Air Upgrade' : '(Free Delivery)'} for ${itemName || 'Merchandise'} (${financeTenure}M EMI)`,
+        ? `₹${upfrontPayableAmount} COD Advance (Balance ₹${declaredValue.toLocaleString('en-IN')} at Doorstep)`
+        : `₹${effectiveDownPayment.toLocaleString('en-IN')} Down Payment for ${itemName || 'Merchandise'} (${financeTenure}M EMI)`,
       notes: {
         mode,
         paymentPreference,
@@ -2428,148 +2440,208 @@ function CreateShipmentContent() {
         )}
 
         {/* =================================================================== */}
-        {/* STEP 4: SERVICE TIER SELECTION, PRICING & RAZORPAY SETTLEMENT       */}
+        {/* STEP 4: SERVICE TIER SELECTION, PRICING & ESCROW SETTLEMENT         */}
         {/* =================================================================== */}
         {currentStep === 4 && (
           <div className="space-y-4 animate-in fade-in">
-            <div>
-              <h2 className="text-xl font-bold text-[#0F172A]">
-                {mode === 'exchange' ? 'Review & Book 2-Way Exchange' : 'Select Delivery Tier & Confirm'}
-              </h2>
-              <p className="text-xs text-[#64748B] mt-0.5">
-                Upfront booking fee covers bonded routing and cargo insurance. Merchandise escrow (₹{declaredValue.toLocaleString('en-IN')}) is settled strictly at the doorstep.
-              </p>
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <div>
+                <h2 className="text-xl font-black text-[#0F172A]">
+                  {mode === 'exchange' ? 'Review & Book 2-Way Exchange' : 'Review & Confirm Booking'}
+                </h2>
+                <p className="text-xs text-[#64748B] mt-0.5">
+                  100% Escrow Protection &bull; 10-Minute Doorstep Open-Box Inspection Included
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 self-start sm:self-auto bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                <ShieldCheck className="w-4 h-4 text-[#0066FF]" />
+                <span className="text-[11px] font-bold text-[#0066FF]">
+                  ₹10 Lakhs Active Insurance
+                </span>
+              </div>
             </div>
 
-            {/* 2 DELIVERY OPTIONS SELECTION (Standard vs Fast) */}
-            <div className="space-y-2.5">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                <span className="text-xs font-bold text-[#334155] uppercase tracking-wider">
-                  Choose Delivery Speed (2 Options):
+            {/* 1. CONSIGNMENT CONTEXT BAR (Single compact card) */}
+            <div className="bg-white rounded-2xl p-3.5 border border-[#E2E8F0] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0066FF] flex items-center justify-center shrink-0 font-bold">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="font-black text-slate-900 truncate">{itemName || 'Merchandise'}</span>
+                    <span className="font-mono font-bold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded text-[11px]">
+                      ₹{declaredValue.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 truncate flex items-center gap-1.5 mt-0.5">
+                    <span>IMEI/Serial: <strong className="font-mono text-slate-700">{manualImei || 'Verified'}</strong></span>
+                    <span>&bull;</span>
+                    <span>{pickupCity || 'Jaipur'} &rarr; {dropCity || 'Delhi'} ({(distanceKm || effectiveDistance).toLocaleString('en-IN')} km)</span>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Open-Box Verified</span>
                 </span>
-                <span className="text-[11px] text-[#0066FF] font-semibold">
-                  Doorstep Open-Box Inspection Included ✓
+              </div>
+            </div>
+
+            {/* 2. DELIVERY SPEED (2 Clean Cards: Standard vs Fast) */}
+            <div className="space-y-2">
+              <span className="text-xs font-bold text-[#334155] uppercase tracking-wider block">
+                1. Delivery Speed
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Standard */}
+                <div
+                  onClick={() => setSelectedTier('STANDARD_GROUND')}
+                  className={`p-4 rounded-2xl border transition cursor-pointer relative flex items-start justify-between gap-3 ${
+                    selectedTier === 'STANDARD_GROUND'
+                      ? 'bg-emerald-50/60 border-emerald-600 ring-2 ring-emerald-300 shadow-sm'
+                      : 'bg-white border-[#E2E8F0] hover:border-emerald-300'
+                  }`}
+                >
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-black text-slate-900">📦 Standard Ground</span>
+                      <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
+                        2–3 DAYS
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      Reliable surface network with doorstep unboxing.
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    {paymentPreference === 'PREPAID' ? (
+                      <div>
+                        <span className="text-xs line-through text-slate-400 font-mono block">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
+                        <span className="text-base font-black text-emerald-600 font-mono">FREE (₹0)</span>
+                      </div>
+                    ) : paymentPreference === 'PAY_ON_DELIVERY' ? (
+                      <div>
+                        <span className="text-base font-black text-amber-700 font-mono">₹500</span>
+                        <span className="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded block mt-0.5">COD ADVANCE</span>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="text-base font-black text-purple-700 font-mono">FREE (₹0)</span>
+                        <span className="text-[9px] font-bold text-purple-800 bg-purple-50 px-1.5 py-0.5 rounded block mt-0.5">DELIVERY</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Fast */}
+                <div
+                  onClick={() => setSelectedTier('FASTEST_AIR_RUSH')}
+                  className={`p-4 rounded-2xl border transition cursor-pointer relative flex items-start justify-between gap-3 ${
+                    selectedTier === 'FASTEST_AIR_RUSH'
+                      ? 'bg-blue-50/60 border-[#0066FF] ring-2 ring-blue-300 shadow-sm'
+                      : 'bg-white border-[#E2E8F0] hover:border-blue-300'
+                  }`}
+                >
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-black text-slate-900">⚡ Express Air</span>
+                      <span className="text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-full shadow-2xs">
+                        24–36H NEXT FLIGHT
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      Priority next-flight commercial air linehaul.
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    {paymentPreference === 'PREPAID' ? (
+                      <div>
+                        <span className="text-xs line-through text-slate-400 font-mono block">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
+                        <span className="text-base font-black text-blue-600 font-mono">+₹149</span>
+                      </div>
+                    ) : paymentPreference === 'PAY_ON_DELIVERY' ? (
+                      <div>
+                        <span className="text-base font-black text-amber-700 font-mono">₹649</span>
+                        <span className="text-[9px] font-bold text-amber-800 bg-amber-50 px-1.5 py-0.5 rounded block mt-0.5">COD + AIR</span>
+                      </div>
+                    ) : (
+                      <div>
+                        <span className="text-base font-black text-purple-700 font-mono">+₹149</span>
+                        <span className="text-[9px] font-bold text-purple-800 bg-purple-50 px-1.5 py-0.5 rounded block mt-0.5">AIR UPGRADE</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. PICKUP SCHEDULE & SLOT (Inline & Compact) */}
+            <div className="bg-white rounded-2xl p-3.5 border border-[#E2E8F0] shadow-xs space-y-2.5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <span className="text-xs font-bold text-[#334155] uppercase tracking-wider flex items-center gap-1.5">
+                  <Calendar className="w-4 h-4 text-[#0066FF]" />
+                  <span>2. Pickup Schedule &amp; Slot</span>
+                </span>
+                <span className="text-[11px] text-slate-500">
+                  Scheduled for: <strong className="text-slate-900">{pickupDateFormatted}</strong> ({pickupCity || 'Jaipur'})
                 </span>
               </div>
 
-              {(['STANDARD_GROUND', 'FASTEST_AIR_RUSH'] as DeliveryServiceTier[]).map((tierKey) => {
-                const tier = tierPricing[tierKey];
-                const isSelected = selectedTier === tierKey;
-                const isFast = tierKey === 'FASTEST_AIR_RUSH';
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPickupSlot('MORNING_10_1')}
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-between ${
+                    pickupSlot === 'MORNING_10_1'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <span>☀️ Morning Slot</span>
+                  <span className="text-[10px] opacity-90">10 AM – 1 PM</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPickupSlot('AFTERNOON_2_5')}
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-between ${
+                    pickupSlot === 'AFTERNOON_2_5'
+                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <span>🌤️ Afternoon Slot</span>
+                  <span className="text-[10px] opacity-90">2 PM – 5 PM</span>
+                </button>
+              </div>
 
-                let priceNode: React.ReactNode;
-                if (paymentPreference === 'PREPAID') {
-                  priceNode = !isFast ? (
-                    <div className="text-right shrink-0 pl-2">
-                      <div className="flex items-baseline justify-end gap-1.5">
-                        <span className="text-xs line-through text-slate-400 font-mono">₹{tier.totalUpfront}</span>
-                        <span className="text-lg sm:text-xl font-black text-emerald-600 block leading-none font-mono">
-                          ₹0
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 mt-1 inline-block">
-                        100% FREE DELIVERY
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="text-right shrink-0 pl-2">
-                      <div className="flex items-baseline justify-end gap-1.5">
-                        <span className="text-xs line-through text-slate-400 font-mono">₹{tier.totalUpfront}</span>
-                        <span className="text-lg sm:text-xl font-black text-blue-600 block leading-none font-mono">
-                          ₹149
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 mt-1 inline-block">
-                        +₹149 EXPRESS AIR
-                      </span>
-                    </div>
-                  );
-                } else if (paymentPreference === 'PAY_ON_DELIVERY') {
-                  priceNode = (
-                    <div className="text-right shrink-0 pl-2">
-                      <span className="text-lg sm:text-xl font-black text-amber-700 block leading-none font-mono">
-                        ₹{!isFast ? 500 : 649}
-                      </span>
-                      <span className="text-[10px] text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 mt-1 inline-block">
-                        {!isFast ? '₹500 COD FEE' : '₹500 COD + ₹149 AIR'}
-                      </span>
-                    </div>
-                  );
-                } else {
-                  priceNode = (
-                    <div className="text-right shrink-0 pl-2">
-                      <span className="text-lg sm:text-xl font-black text-purple-700 block leading-none font-mono">
-                        {!isFast ? '₹0' : '₹149'}
-                      </span>
-                      <span className="text-[10px] text-purple-800 font-bold bg-purple-50 px-2 py-0.5 rounded-full border border-purple-200 mt-1 inline-block">
-                        {!isFast ? '0 DOWN PAYMENT' : '+₹149 AIR FEE'}
-                      </span>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div
-                    key={tierKey}
-                    onClick={() => setSelectedTier(tierKey)}
-                    className={`rounded-2xl p-3.5 sm:p-4 border transition cursor-pointer relative ${
-                      isSelected
-                        ? isFast
-                          ? 'bg-blue-50/70 border-[#0066FF] ring-2 ring-blue-300 shadow-sm'
-                          : 'bg-emerald-50/70 border-emerald-600 ring-2 ring-emerald-300 shadow-sm'
-                        : 'bg-white border-[#E2E8F0] hover:border-blue-300'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2 sm:gap-3">
-                      <div className="space-y-1 flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className={`text-sm font-black ${
-                            isSelected ? (isFast ? 'text-[#0066FF]' : 'text-emerald-800') : 'text-[#0F172A]'
-                          }`}>
-                            {isFast ? '⚡ SafeShip Fast Delivery (Express Air)' : '📦 SafeShip Standard Delivery'}
-                          </span>
-                          <span
-                            className={`text-[9px] sm:text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                              isFast
-                                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-xs'
-                                : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                            }`}
-                          >
-                            {isFast ? '24–36H NEXT-FLIGHT AIR' : 'MOST ECONOMICAL (2–3 DAYS)'}
-                          </span>
-                        </div>
-
-                        <p className="text-[11px] text-[#64748B] leading-tight">
-                          {isFast
-                            ? 'Guaranteed next-flight air linehaul with white-glove doorstep delivery.'
-                            : 'Reliable & economical surface network for maximum savings.'}{' '}
-                          &bull; <strong className="text-[#0F172A]">{tier.transitTime}</strong>
-                        </p>
-                      </div>
-
-                      {priceNode}
-                    </div>
-                  </div>
-                );
-              })}
+              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
+                <span className="flex items-center gap-1">
+                  <Lock className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Rider verifies secret <strong>4-digit Pickup OTP</strong> before parcel handover.</span>
+                </span>
+                <span className="font-semibold text-slate-700 hidden sm:inline">
+                  Estimated Delivery: {deliveryDateFormatted} ({deliveryTimeWindow})
+                </span>
+              </div>
             </div>
 
-            {/* =================================================================== */}
-            {/* PAYMENT MODE & SETTLEMENT PREFERENCE (Prepaid, COD, Finance EMI)    */}
-            {/* =================================================================== */}
-            <div className="space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+            {/* 4. PAYMENT & SETTLEMENT PREFERENCE (3 Cards) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-[#334155] uppercase tracking-wider flex items-center gap-1.5">
                   <CreditCard className="w-4 h-4 text-[#0066FF]" />
-                  <span>Choose Payment &amp; Settlement Preference:</span>
+                  <span>3. Payment &amp; Settlement Preference</span>
                 </span>
-                <span className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 self-start sm:self-auto">
-                  ⚡ Free Standard Delivery on Prepaid
+                <span className="text-[11px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  ⚡ 100% Free Standard Delivery on Prepaid
                 </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {/* 1. PREPAID ONLINE (FREE STANDARD / +₹149 FAST) */}
+                {/* 1. PREPAID ONLINE */}
                 <div
                   onClick={() => setPaymentPreference('PREPAID')}
                   className={`p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between ${
@@ -2578,30 +2650,26 @@ function CreateShipmentContent() {
                       : 'bg-white border-[#E2E8F0] hover:border-blue-200'
                   }`}
                 >
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-[#0F172A]">Prepaid Online</span>
-                      <span className="text-[9px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded-full uppercase tracking-wider shadow-2xs">
+                      <span className="text-xs font-bold text-[#0F172A]">Prepaid Escrow</span>
+                      <span className="text-[9px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded-full uppercase">
                         {isFastTier ? '+₹149 FAST' : 'FREE DELIVERY'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-[#64748B] leading-tight">
-                      Standard delivery is <strong>100% FREE (₹0)</strong>. Fast Air is just ₹149 extra.
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      Full item price held in safe escrow. Released only after your 10-min unboxing.
                     </p>
                   </div>
-
                   <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-medium">Upfront:</span>
-                    <div className="flex items-center gap-1.5 font-mono">
-                      <span className="line-through text-slate-400 text-[11px]">₹{activeTierBreakdown.totalUpfront}</span>
-                      <span className={`font-bold ${isFastTier ? 'text-blue-600' : 'text-emerald-600'}`}>
-                        {isFastTier ? '₹149' : '₹0 (FREE)'}
-                      </span>
-                    </div>
+                    <span className="text-slate-500">Pay Today:</span>
+                    <span className="font-mono font-black text-blue-700 text-sm">
+                      ₹{prepaidTotal.toLocaleString('en-IN')}
+                    </span>
                   </div>
                 </div>
 
-                {/* 2. PAY ON DELIVERY (₹500 COD CHARGE) */}
+                {/* 2. PAY ON DELIVERY */}
                 <div
                   onClick={() => setPaymentPreference('PAY_ON_DELIVERY')}
                   className={`p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between ${
@@ -2610,27 +2678,26 @@ function CreateShipmentContent() {
                       : 'bg-white border-[#E2E8F0] hover:border-amber-200'
                   }`}
                 >
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#0F172A]">Pay on Delivery</span>
                       <span className="text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full">
                         {isFastTier ? '₹649 COD' : '₹500 COD'}
                       </span>
                     </div>
-                    <p className="text-[11px] text-[#64748B] leading-tight">
-                      Inspect 10 mins at doorstep. Pay remaining cash or UPI QR upon satisfaction.
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      Pay slot lock today. Settle ₹{declaredValue.toLocaleString('en-IN')} cash/UPI at doorstep.
                     </p>
                   </div>
-
                   <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-medium">COD Upfront:</span>
-                    <span className="font-mono font-bold text-amber-700">
-                      {isFastTier ? '+₹649 COD' : '+₹500 COD'}
+                    <span className="text-slate-500">Pay Today:</span>
+                    <span className="font-mono font-black text-amber-700 text-sm">
+                      ₹{codTotal.toLocaleString('en-IN')}
                     </span>
                   </div>
                 </div>
 
-                {/* 3. SAFESHIP FINANCE (0% NO-COST EMI) */}
+                {/* 3. SAFESHIP FINANCE */}
                 <div
                   onClick={() => setPaymentPreference('FINANCE_EMI')}
                   className={`p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between ${
@@ -2639,65 +2706,62 @@ function CreateShipmentContent() {
                       : 'bg-white border-[#E2E8F0] hover:border-purple-200'
                   }`}
                 >
-                  <div className="space-y-1.5">
+                  <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-[#0F172A]">SafeShip Finance</span>
+                      <span className="text-xs font-bold text-[#0F172A]">SafeShip 0% Finance</span>
                       <span className="text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-300 px-2 py-0.5 rounded-full">
                         0% No-Cost EMI
                       </span>
                     </div>
-                    <p className="text-[11px] text-[#64748B] leading-tight">
-                      Split into easy monthly EMIs with flexible down payment below ₹5k. Free standard delivery included.
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      Down payment &lt; ₹5k today. Split balance into easy monthly EMIs.
                     </p>
                   </div>
-
                   <div className="pt-2.5 mt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-medium">Down Payment:</span>
-                    <span className="font-mono font-black text-purple-700">
-                      ₹{effectiveDownPayment.toLocaleString('en-IN')} <span className="text-[10px] text-emerald-600 font-bold">(&lt; ₹5k)</span>
+                    <span className="text-slate-500">Pay Today:</span>
+                    <span className="font-mono font-black text-purple-700 text-sm">
+                      ₹{financeTotal.toLocaleString('en-IN')}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* DYNAMIC DOWN PAYMENT ADJUSTER & EMI TENURE SELECTOR (Shown when Finance is selected) */}
+              {/* DYNAMIC DOWN PAYMENT ADJUSTER & EMI TENURE (When Finance is selected) */}
               {paymentPreference === 'FINANCE_EMI' && (
-                <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-purple-50/90 via-indigo-50/60 to-purple-50/90 border border-purple-200 space-y-4 animate-in fade-in">
-                  
-                  {/* DOWN PAYMENT ADJUSTMENT HEADER */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-purple-200/70">
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-purple-50/90 to-indigo-50/60 border border-purple-200 space-y-3.5 animate-in fade-in">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-purple-200/70">
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs">
-                        <Sliders className="w-4 h-4" />
+                      <div className="w-7 h-7 rounded-xl bg-purple-600 text-white flex items-center justify-center shadow-xs">
+                        <Sliders className="w-3.5 h-3.5" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <h4 className="text-xs font-black text-purple-950 uppercase tracking-wide">
-                            Adjust Down Payment
+                            Down Payment Adjuster
                           </h4>
                           <span className="text-[9px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 px-1.5 py-0.2 rounded">
                             Strictly &lt; ₹5,000 Policy
                           </span>
                         </div>
-                        <p className="text-[11px] text-purple-800/80">
-                          Higher down payment reduces monthly installments. Capped below ₹5,000 for zero-risk pre-approval.
+                        <p className="text-[10px] text-purple-800/80">
+                          Balance ₹{financedPrincipal.toLocaleString('en-IN')} is split into monthly EMIs
                         </p>
                       </div>
                     </div>
-                    <div className="text-left sm:text-right shrink-0 bg-white px-3 py-1.5 rounded-xl border border-purple-200 shadow-2xs">
-                      <span className="text-[10px] text-slate-500 font-semibold block">Active Down Payment:</span>
-                      <span className="text-base font-black font-mono text-purple-700">
+                    <div className="bg-white px-3 py-1 rounded-xl border border-purple-200 text-right self-start sm:self-auto">
+                      <span className="text-[9px] text-slate-500 font-semibold block">Down Payment:</span>
+                      <span className="text-sm font-black font-mono text-purple-700">
                         ₹{effectiveDownPayment.toLocaleString('en-IN')}
                       </span>
                     </div>
                   </div>
 
-                  {/* INTERACTIVE RANGE SLIDER & QUICK PRESETS */}
-                  <div className="space-y-3 bg-white/80 p-3.5 rounded-xl border border-purple-200/80">
+                  {/* Slider & Presets */}
+                  <div className="space-y-2.5 bg-white/90 p-3 rounded-xl border border-purple-200/80">
                     <div className="flex items-center justify-between text-xs font-semibold text-purple-950">
                       <span>Adjust with Slider:</span>
                       <span className="text-[11px] font-mono text-purple-700 font-bold">
-                        ₹{effectiveDownPayment.toLocaleString('en-IN')} / ₹{maxAllowedDownPayment.toLocaleString('en-IN')} max
+                        ₹{effectiveDownPayment.toLocaleString('en-IN')} (Max ₹4,999)
                       </span>
                     </div>
 
@@ -2708,589 +2772,247 @@ function CreateShipmentContent() {
                       step={100}
                       value={effectiveDownPayment}
                       onChange={(e) => setDownPayment(Number(e.target.value))}
-                      className="w-full accent-purple-600 h-2.5 bg-purple-100 rounded-lg cursor-pointer focus:outline-none focus:ring-2 focus:ring-purple-400"
+                      className="w-full accent-purple-600 h-2 bg-purple-100 rounded-lg cursor-pointer focus:outline-none"
                     />
 
-                    <div className="flex justify-between items-center text-[10px] text-slate-500 font-mono">
-                      <span>Min: ₹{minAllowedDownPayment.toLocaleString('en-IN')}</span>
-                      <span className="text-purple-700 font-semibold">Slide to fine-tune</span>
-                      <span className="font-bold text-purple-900">Cap: ₹{maxAllowedDownPayment.toLocaleString('en-IN')} (&lt; ₹5k)</span>
-                    </div>
-
-                    {/* QUICK PRESET CHIPS */}
-                    <div className="pt-2 border-t border-purple-100 flex flex-wrap items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-purple-900 mr-1">Quick Presets:</span>
+                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                      <span className="text-[10px] font-bold text-purple-900 mr-1">Presets:</span>
                       {[
                         { label: '₹1,499 Lite', val: 1499 },
                         { label: '₹2,499 Standard', val: 2499 },
                         { label: '₹3,499 Popular', val: 3499 },
                         { label: '₹4,999 Max (< 5k)', val: 4999 }
                       ]
-                        .filter((preset) => preset.val <= maxAllowedDownPayment && preset.val >= minAllowedDownPayment)
+                        .filter((p) => p.val <= maxAllowedDownPayment && p.val >= minAllowedDownPayment)
                         .map((preset) => (
                           <button
                             key={preset.val}
                             type="button"
                             onClick={() => setDownPayment(preset.val)}
-                            className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition cursor-pointer border ${
+                            className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition cursor-pointer border ${
                               effectiveDownPayment === preset.val
-                                ? 'bg-purple-600 text-white border-purple-700 shadow-2xs ring-1 ring-purple-400'
-                                : 'bg-white text-purple-900 border-purple-200 hover:bg-purple-50 hover:border-purple-300'
+                                ? 'bg-purple-600 text-white border-purple-700 shadow-2xs'
+                                : 'bg-white text-purple-900 border-purple-200 hover:bg-purple-50'
                             }`}
                           >
                             {preset.label}
                           </button>
                         ))}
                     </div>
-
-                    {/* DIRECT STEPPER INPUT */}
-                    <div className="pt-2 border-t border-purple-100 flex items-center justify-between gap-2">
-                      <span className="text-[11px] font-medium text-slate-600">Manual Amount:</span>
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setDownPayment((prev) => Math.max(minAllowedDownPayment, prev - 500))}
-                          className="w-7 h-7 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-900 font-bold text-xs flex items-center justify-center transition cursor-pointer"
-                          title="Decrease ₹500"
-                        >
-                          -500
-                        </button>
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">₹</span>
-                          <input
-                            type="number"
-                            min={minAllowedDownPayment}
-                            max={maxAllowedDownPayment}
-                            value={effectiveDownPayment}
-                            onChange={(e) => {
-                              const val = Number(e.target.value);
-                              if (!isNaN(val)) {
-                                setDownPayment(Math.min(maxAllowedDownPayment, Math.max(minAllowedDownPayment, val)));
-                              }
-                            }}
-                            className="w-24 pl-5 pr-2 py-1 bg-white border border-purple-300 rounded-lg text-xs font-bold font-mono text-purple-950 focus:ring-2 focus:ring-purple-400 focus:outline-none"
-                          />
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setDownPayment((prev) => Math.min(maxAllowedDownPayment, prev + 500))}
-                          className="w-7 h-7 rounded-lg bg-purple-100 hover:bg-purple-200 text-purple-900 font-bold text-xs flex items-center justify-center transition cursor-pointer"
-                          title="Increase ₹500"
-                        >
-                          +500
-                        </button>
-                      </div>
-                    </div>
                   </div>
 
-                  {/* FINANCED PRINCIPAL RECALCULATION STRIP */}
-                  <div className="p-3 rounded-xl bg-purple-100/70 border border-purple-200/90 flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-1.5">
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-purple-700 shrink-0" />
-                      <span className="text-purple-950">
-                        Item: <strong>₹{safeVal.toLocaleString('en-IN')}</strong> &minus; Down Payment: <strong>₹{effectiveDownPayment.toLocaleString('en-IN')}</strong> =
-                      </span>
-                    </div>
-                    <div className="font-mono text-purple-900 font-bold text-sm shrink-0">
-                      Financed Balance: <span className="text-purple-700 underline font-black">₹{financedPrincipal.toLocaleString('en-IN')}</span>
-                    </div>
-                  </div>
-
-                  {/* DYNAMIC EMI TENURE SELECTOR */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-purple-950">
-                        Select Repayment Tenure for ₹{financedPrincipal.toLocaleString('en-IN')}:
-                      </span>
-                      <span className="text-[10px] text-purple-700 font-bold bg-white px-2 py-0.5 rounded border border-purple-200">
-                        Instant Cardless Approval
-                      </span>
-                    </div>
-
+                  {/* Tenure Grid */}
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] font-bold text-purple-950 block">
+                      Select Tenure for Financed Balance ₹{financedPrincipal.toLocaleString('en-IN')}:
+                    </span>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {financePlans.map((plan) => (
                         <button
                           key={plan.tenureMonths}
                           type="button"
                           onClick={() => setFinanceTenure(plan.tenureMonths)}
-                          className={`p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                          className={`p-2 rounded-xl border text-left transition cursor-pointer ${
                             financeTenure === plan.tenureMonths
                               ? 'bg-purple-600 text-white border-purple-700 shadow-sm ring-2 ring-purple-300'
                               : 'bg-white text-slate-800 border-purple-200 hover:border-purple-400'
                           }`}
                         >
-                          <div className="flex items-center justify-between mb-1">
-                            <span className={`text-[11px] font-bold ${financeTenure === plan.tenureMonths ? 'text-white' : 'text-slate-900'}`}>
-                              {plan.tenureMonths} Months
+                          <div className="flex items-center justify-between mb-0.5">
+                            <span className={`text-[10px] font-bold ${financeTenure === plan.tenureMonths ? 'text-white' : 'text-slate-900'}`}>
+                              {plan.tenureMonths}M
                             </span>
-                            {plan.isNoCost && (
-                              <span className={`text-[8px] font-bold px-1 rounded ${
-                                financeTenure === plan.tenureMonths
-                                  ? 'bg-purple-800 text-white'
-                                  : 'bg-emerald-100 text-emerald-800'
-                              }`}>
-                                0% INT
-                              </span>
-                            )}
+                            <span className={`text-[8px] font-bold px-1 rounded ${
+                              financeTenure === plan.tenureMonths ? 'bg-purple-800 text-white' : 'bg-emerald-100 text-emerald-800'
+                            }`}>
+                              0%
+                            </span>
                           </div>
-                          <div className={`text-sm font-black font-mono ${financeTenure === plan.tenureMonths ? 'text-white' : 'text-purple-700'}`}>
+                          <div className={`text-xs font-black font-mono ${financeTenure === plan.tenureMonths ? 'text-white' : 'text-purple-700'}`}>
                             ₹{plan.monthlyEmi.toLocaleString('en-IN')}<span className="text-[9px] font-normal">/mo</span>
-                          </div>
-                          <div className={`text-[9px] mt-0.5 ${financeTenure === plan.tenureMonths ? 'text-purple-100' : 'text-slate-400'}`}>
-                            Financed: ₹{plan.financedAmount?.toLocaleString('en-IN')}
                           </div>
                         </button>
                       ))}
                     </div>
                   </div>
-
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-purple-900 pt-1 gap-1">
-                    <span>Partners: <strong>Bajaj Finserv &bull; Snapmint &bull; ZestMoney &bull; HDFC/ICICI EMI</strong></span>
-                    <button
-                      type="button"
-                      onClick={() => setShowFinanceModal(true)}
-                      className="text-purple-700 font-bold underline cursor-pointer self-start sm:self-auto"
-                    >
-                      View Pre-approval Criteria &rarr;
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
 
-            {/* UPFRONT MATHEMATICAL PRICE BREAKDOWN */}
+            {/* 5. UNIFIED ORDER SUMMARY CARD (Single clean card) */}
             <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E2E8F0] shadow-xs space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2.5 border-b border-[#F1F5F9] gap-1.5">
-                <div className="min-w-0">
-                  <h3 className="text-xs font-bold text-[#64748B] uppercase tracking-wider">
-                    Upfront Booking Breakdown ({activeTierBreakdown.tierLabel})
-                  </h3>
-                  <p className="text-[10px] text-slate-500 mt-0.5">
-                    Calibrated for {(distanceKm || effectiveDistance).toLocaleString('en-IN')} km route &amp; ₹{declaredValue.toLocaleString('en-IN')} item valuation
-                  </p>
-                </div>
-                <span className="text-[11px] font-bold text-[#0066FF] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100 shrink-0 self-start sm:self-center">
-                  {(distanceKm || effectiveDistance).toLocaleString('en-IN')} km Route
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                  4. Booking &amp; Payment Summary
                 </span>
-              </div>
-
-              <div className="space-y-2.5 text-xs">
-                <div className="flex justify-between items-center text-[#475569] gap-2">
-                  <span className="min-w-0">Base Linehaul Air/Freight Charge:</span>
-                  <span className="font-semibold text-[#0F172A] font-mono shrink-0">₹{activeTierBreakdown.baseFee.toLocaleString('en-IN')}</span>
-                </div>
-
-                <div className="flex justify-between items-center text-[#475569] gap-2">
-                  <span className="min-w-0">National Corridor Distance Surcharge:</span>
-                  <span className="font-semibold text-[#0F172A] font-mono shrink-0">₹{activeTierBreakdown.distanceSurcharge.toLocaleString('en-IN')}</span>
-                </div>
-
-                {/* Doorstep unboxing row */}
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-1.5 border-y border-slate-100/80 text-[#475569] gap-1.5">
-                  <div className="min-w-0">
-                    <span className="font-medium text-[#0F172A]">Doorstep Open-Box Inspection &amp; Testing:</span>
-                    <span className="text-[10px] text-emerald-600 font-semibold block">
-                      Promotional doorstep inspection waiver applied
-                    </span>
-                  </div>
-                  <div className="text-left sm:text-right shrink-0 font-semibold text-emerald-700">
-                    <span className="inline-flex items-center gap-1.5 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      <span className="line-through text-slate-400 font-normal text-[11px]">₹149</span>
-                      <span className="text-emerald-700 font-bold text-xs">FREE PROMO (₹0)</span>
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center text-[#475569] gap-2">
-                  <span className="min-w-0">
-                    Comprehensive Cargo Insurance ({declaredValue > 5000 ? '0.5% for ₹' + declaredValue.toLocaleString('en-IN') : 'Flat ₹5,000 cover'}):
-                  </span>
-                  <span className="font-semibold text-[#0F172A] font-mono shrink-0">₹{activeTierBreakdown.insuranceFee.toLocaleString('en-IN')}</span>
-                </div>
-
-                {/* Subtotal line */}
-                <div className="flex justify-between items-center text-slate-500 text-[11px] pt-1">
-                  <span>Standard Logistics Subtotal:</span>
-                  <span className="font-mono line-through">₹{activeTierBreakdown.totalUpfront.toLocaleString('en-IN')}</span>
-                </div>
-
-                {/* FINANCE DOWN PAYMENT ROW */}
-                {paymentPreference === 'FINANCE_EMI' && (
-                  <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-between text-purple-900 animate-in fade-in">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="w-4 h-4 rounded-full bg-purple-600 text-white flex items-center justify-center font-bold text-[9px] shrink-0">₹</span>
-                      <span className="font-bold text-xs truncate">
-                        Upfront Down Payment (<span className="text-purple-700 font-semibold">&lt; ₹5,000 policy</span>):
-                      </span>
-                    </div>
-                    <span className="font-mono font-black text-purple-800 text-xs shrink-0">
-                      +₹{effectiveDownPayment.toLocaleString('en-IN')}.00
-                    </span>
-                  </div>
-                )}
-
-                {/* PREPAID / FINANCE FREE DELIVERY DISCOUNT ROW */}
-                {(paymentPreference === 'PREPAID' || paymentPreference === 'FINANCE_EMI') && (
-                  <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-emerald-900 animate-in fade-in">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[9px] shrink-0">✓</span>
-                      <span className="font-bold text-xs truncate">
-                        {!isFastTier ? `${paymentPreference === 'PREPAID' ? 'Prepaid' : 'Finance'} Free Delivery Waiver:` : `${paymentPreference === 'PREPAID' ? 'Prepaid' : 'Finance'} Express Air Savings:`}
-                      </span>
-                    </div>
-                    <span className="font-mono font-black text-emerald-700 text-xs shrink-0">
-                      {!isFastTier
-                        ? `-₹${activeTierBreakdown.totalUpfront.toLocaleString('en-IN')} (100% FREE)`
-                        : `-₹${(activeTierBreakdown.totalUpfront - fastDeliveryExtraFee).toLocaleString('en-IN')} (Pay only ₹149)`}
-                    </span>
-                  </div>
-                )}
-
-                {/* PAY ON DELIVERY (COD) CHARGE ROW */}
-                {paymentPreference === 'PAY_ON_DELIVERY' && (
-                  <div className="p-2 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between text-amber-900 animate-in fade-in">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="w-4 h-4 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-[9px] shrink-0">!</span>
-                      <span className="font-bold text-xs truncate">
-                        {!isFastTier ? 'Doorstep COD Handling & Verification Fee:' : 'Doorstep COD Handling + Fast Air Fee:'}
-                      </span>
-                    </div>
-                    <span className="font-mono font-black text-amber-800 text-xs shrink-0">
-                      {!isFastTier ? '+₹500.00 COD' : `+₹${(500 + fastDeliveryExtraFee).toLocaleString('en-IN')}.00 (₹500 COD + ₹149 Air)`}
-                    </span>
-                  </div>
-                )}
-
-                {/* FINAL UPFRONT SUMMARY */}
-                <div className="pt-3 border-t border-[#E2E8F0] flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                  <div className="min-w-0">
-                    <span className="text-sm font-black text-[#0F172A] block">
-                      {paymentPreference === 'PREPAID'
-                        ? !isFastTier ? 'Total Upfront Courier Booking Fee:' : 'Total Upfront Fast Air Upgrade Fee:'
-                        : paymentPreference === 'PAY_ON_DELIVERY'
-                        ? 'Total Upfront COD Slot Reservation Fee:'
-                        : !isFastTier ? 'Total Upfront Down Payment Today:' : 'Total Upfront Down Payment & Air Fee:'}
-                    </span>
-                    <span className="text-[10px] text-emerald-600 font-semibold block">
-                      {paymentPreference === 'PREPAID'
-                        ? !isFastTier
-                          ? '100% Free Standard Delivery • Settle item price (₹' + declaredValue.toLocaleString('en-IN') + ') at doorstep'
-                          : '₹149 Fast Air express fee • Settle item price (₹' + declaredValue.toLocaleString('en-IN') + ') at doorstep'
-                        : paymentPreference === 'PAY_ON_DELIVERY'
-                        ? (!isFastTier ? '₹500 COD charge' : '₹649 COD & Fast Air charge') + ' paid now • Settle item price (₹' + declaredValue.toLocaleString('en-IN') + ') at doorstep'
-                        : '₹' + effectiveDownPayment.toLocaleString('en-IN') + ' down payment paid today • Balance ₹' + financedPrincipal.toLocaleString('en-IN') + ' in ' + financeTenure + ' EMIs of ₹' + activeFinancePlan.monthlyEmi.toLocaleString('en-IN') + '/mo starting after unboxing'}
-                    </span>
-                  </div>
-                  <div className="text-left sm:text-right shrink-0">
-                    <span className="text-2xl font-black text-[#0066FF] font-mono tracking-tight block">
-                      ₹{upfrontPayableAmount.toLocaleString('en-IN')}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      {paymentPreference === 'PREPAID' && !isFastTier
-                        ? 'Free Shipping Promo Applied'
-                        : paymentPreference === 'PREPAID' && isFastTier
-                        ? '₹149 Express Air Fee'
-                        : paymentPreference === 'FINANCE_EMI'
-                        ? isFastTier ? `₹${effectiveDownPayment} Down + ₹149 Air` : 'Free Delivery Included'
-                        : 'Includes Doorstep Verification'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* GST TAX INVOICE & COMPLIANCE SECTION */}
-            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E2E8F0] shadow-xs space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-2.5 border-b border-[#F1F5F9] gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#0066FF] flex items-center justify-center font-bold text-xs shrink-0">
-                    <FileText className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-xs font-bold text-[#0F172A] uppercase tracking-wider truncate">
-                      GST Tax Invoice &amp; Billable Compliance
-                    </h3>
-                    <p className="text-[10px] text-slate-500 truncate">
-                      SAC Code: <strong>996812</strong> &bull; SafeShip GSTIN: <strong>08AAECS2938Q1ZP</strong>
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 shrink-0 self-start sm:self-center">
-                  18% GST Included
-                </span>
-              </div>
-
-              {/* B2B Input Tax Credit Toggle */}
-              <div className="space-y-2">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={isB2B}
-                    onChange={(e) => setIsB2B(e.target.checked)}
-                    className="w-4 h-4 text-[#0066FF] rounded border-slate-300 focus:ring-blue-500 cursor-pointer"
-                  />
-                  <span className="text-xs font-semibold text-[#334155]">
-                    Add Company Name &amp; GSTIN for Input Tax Credit (B2B Tax Invoice)
-                  </span>
-                </label>
-
-                {isB2B && (
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5 animate-in fade-in">
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                        Registered Business / Firm Name:
-                      </label>
-                      <input
-                        type="text"
-                        value={businessName}
-                        onChange={(e) => setBusinessName(e.target.value)}
-                        placeholder="e.g., Apex Tech Ventures LLP"
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF]"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">
-                        15-Digit GSTIN Number:
-                      </label>
-                      <input
-                        type="text"
-                        maxLength={15}
-                        value={gstin}
-                        onChange={(e) => setGstin(e.target.value.toUpperCase())}
-                        placeholder="e.g., 08AAECS2938Q1ZP"
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-mono text-slate-900 outline-hidden focus:border-[#0066FF]"
-                      />
-                      {gstin && gstin.length === 15 && (
-                        <p className="text-[10px] text-emerald-600 font-semibold mt-1">
-                          ✓ Valid GSTIN: Input Tax Credit of ₹{Math.round(activeTierBreakdown.totalUpfront - activeTierBreakdown.totalUpfront / 1.18).toLocaleString('en-IN')} will be credited on GSTR-2B.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Tax Invoice Breakdown Grid */}
-              <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200/80 text-[11px] space-y-1 text-slate-600 font-mono">
-                <div className="flex justify-between">
-                  <span>Taxable Freight Value:</span>
-                  <span className="font-semibold text-slate-900">
-                    ₹{(Math.round((activeTierBreakdown.totalUpfront / 1.18) * 100) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>CGST (9.0%):</span>
-                  <span className="font-semibold text-slate-900">
-                    ₹{(Math.round(((activeTierBreakdown.totalUpfront - activeTierBreakdown.totalUpfront / 1.18) / 2) * 100) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>SGST (9.0%):</span>
-                  <span className="font-semibold text-slate-900">
-                    ₹{(Math.round(((activeTierBreakdown.totalUpfront - activeTierBreakdown.totalUpfront / 1.18) / 2) * 100) / 100).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-                <div className="pt-1.5 border-t border-slate-200 flex justify-between font-bold text-slate-900 font-sans text-xs">
-                  <span>Total Tax Invoice (100% Tax Deductible):</span>
-                  <span className="text-[#0066FF]">₹{activeTierBreakdown.totalUpfront.toLocaleString('en-IN')}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* =================================================================== */}
-            {/* COMPREHENSIVE PRE-PAYMENT DISPATCH & ESCROW BRIEFING                 */}
-            {/* Essential details before payment: pickup, arrival, safety, refund   */}
-            {/* =================================================================== */}
-            <div className="bg-white rounded-3xl p-4 sm:p-5 border-2 border-blue-200 shadow-xs space-y-4 animate-in fade-in">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold">
-                    <PackageCheck className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black text-slate-900">
-                      Consignment Dispatch &amp; Handover Briefing
-                    </h3>
-                    <p className="text-[11px] text-slate-500">
-                      Essential shipment schedules and escrow guarantees before payment
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[10px] font-black uppercase tracking-wider bg-blue-50 text-blue-700 px-3 py-1 rounded-full border border-blue-200 self-start sm:self-center">
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
                   100% Escrow Protected
                 </span>
               </div>
 
-              {/* 2-Column Grid: WHEN IS PICKUP vs WHEN WILL IT BE DELIVERED */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {/* 1. PICKUP DISPATCH SCHEDULE */}
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-[#0066FF]" />
-                      <span className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                        1. Pickup Schedule &amp; Slot
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
-                      Bonded Fleet
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between items-center text-slate-600">
+                  <span>Merchandise Declared Valuation:</span>
+                  <span className="font-mono font-semibold text-slate-900">₹{declaredValue.toLocaleString('en-IN')}</span>
+                </div>
+
+                <div className="flex justify-between items-center text-slate-600">
+                  <span>Logistics &amp; Linehaul ({selectedTier === 'FASTEST_AIR_RUSH' ? 'Express Air' : 'Standard Ground'}):</span>
+                  {isFastTier ? (
+                    <span className="font-mono font-semibold text-blue-600">+₹149</span>
+                  ) : (
+                    <span className="font-mono font-semibold text-emerald-600">
+                      <span className="line-through text-slate-400 mr-1.5">₹{activeTierBreakdown.totalUpfront}</span>
+                      FREE (₹0)
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex justify-between items-center text-slate-600">
+                  <span>10-Minute Doorstep Open-Box Inspection:</span>
+                  <span className="font-semibold text-emerald-600">FREE PROMO (₹0)</span>
+                </div>
+
+                <div className="flex justify-between items-center text-slate-600">
+                  <span>In-Transit Cargo Insurance (₹10 Lakhs Cover):</span>
+                  <span className="font-semibold text-slate-900">Included</span>
+                </div>
+
+                {paymentPreference === 'PAY_ON_DELIVERY' && (
+                  <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 flex justify-between items-center text-amber-900 font-semibold">
+                    <span>Doorstep Cash/UPI Balance to Pay Rider:</span>
+                    <span className="font-mono font-bold">₹{declaredValue.toLocaleString('en-IN')}</span>
+                  </div>
+                )}
+
+                {paymentPreference === 'FINANCE_EMI' && (
+                  <div className="p-2.5 rounded-xl bg-purple-50 border border-purple-200 flex justify-between items-center text-purple-900 font-semibold">
+                    <span>Financed Balance ({financeTenure} Months @ 0%):</span>
+                    <span className="font-mono font-bold">
+                      ₹{financedPrincipal.toLocaleString('en-IN')} ({financeTenure} x ₹{activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo)
                     </span>
                   </div>
+                )}
 
-                  <div className="bg-white p-2.5 rounded-xl border border-slate-200/80 space-y-1 text-xs">
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-slate-500 text-[11px]">Scheduled Date:</span>
-                      <span className="font-bold text-slate-900">{pickupDateFormatted}</span>
-                    </div>
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-slate-500 text-[11px]">Pickup Location:</span>
-                      <span className="font-medium text-slate-800 text-right truncate max-w-[200px]">
-                        {pickupLocation || 'Malviya Nagar'}, {pickupCity || 'Jaipur'} ({pickupPincode || '302017'})
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-slate-500 text-[11px]">Sender Contact:</span>
-                      <span className="font-medium text-slate-800">{senderName || 'Sender'} ({senderPhone || 'Contact'})</span>
-                    </div>
-                  </div>
-
-                  {/* Interactive Morning / Afternoon Slot Selector */}
+                {/* Prominent Payable Today */}
+                <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
-                    <label className="text-[10px] font-bold text-slate-600 uppercase block mb-1">
-                      Choose Pickup Slot:
-                    </label>
-                    <div className="grid grid-cols-2 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setPickupSlot('MORNING_10_1')}
-                        className={`py-1.5 px-2.5 rounded-xl text-left border text-[11px] font-bold transition cursor-pointer flex items-center justify-between ${
-                          pickupSlot === 'MORNING_10_1'
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        <span>☀️ Morning</span>
-                        <span className="text-[9px] opacity-90">10 AM – 1 PM</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPickupSlot('AFTERNOON_2_5')}
-                        className={`py-1.5 px-2.5 rounded-xl text-left border text-[11px] font-bold transition cursor-pointer flex items-center justify-between ${
-                          pickupSlot === 'AFTERNOON_2_5'
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                            : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        <span>🌤️ Afternoon</span>
-                        <span className="text-[9px] opacity-90">2 PM – 5 PM</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="text-[10px] text-slate-500 flex items-center gap-1.5 pt-0.5">
-                    <Lock className="w-3 h-3 text-slate-400 shrink-0" />
-                    <span>Rider verifies secret <strong>4-digit Sender Pickup OTP</strong> before parcel handover.</span>
-                  </div>
-                </div>
-
-                {/* 2. ESTIMATED DELIVERY ARRIVAL WINDOW */}
-                <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Truck className="w-4 h-4 text-[#0066FF]" />
-                      <span className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                        2. Delivery Arrival Window
-                      </span>
-                    </div>
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                      isFastTier ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-100 text-emerald-900'
-                    }`}>
-                      {isFastTier ? '⚡ Fast Express Air' : 'Standard Ground'}
+                    <span className="text-sm font-black text-[#0F172A] block">
+                      Total Payable Today:
+                    </span>
+                    <span className="text-[11px] text-slate-500 block">
+                      {paymentPreference === 'PREPAID'
+                        ? 'Full Escrow Deposit (100% refundable if rejected at doorstep)'
+                        : paymentPreference === 'PAY_ON_DELIVERY'
+                        ? `₹500 COD reservation advance (Balance ₹${declaredValue.toLocaleString('en-IN')} at doorstep)`
+                        : `₹${effectiveDownPayment.toLocaleString('en-IN')} down payment (Balance in ${financeTenure} monthly EMIs)`}
                     </span>
                   </div>
-
-                  <div className="bg-white p-2.5 rounded-xl border border-slate-200/80 space-y-1 text-xs">
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-slate-500 text-[11px]">Guaranteed Arrival:</span>
-                      <span className="font-bold text-[#0066FF]">{deliveryDateFormatted}</span>
-                    </div>
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-slate-500 text-[11px]">Delivery SLA Window:</span>
-                      <span className="font-bold text-slate-900">{deliveryTimeWindow}</span>
-                    </div>
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-slate-500 text-[11px]">Destination:</span>
-                      <span className="font-medium text-slate-800 text-right truncate max-w-[200px]">
-                        {dropLocation || 'DLF Phase 2'}, {dropCity || 'Gurgaon'} ({dropPincode || '110001'})
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-slate-500 text-[11px]">Transit Corridor:</span>
-                      <span className="font-mono text-slate-700 text-[11px]">
-                        {pickupCity || 'Jaipur'} &rarr; {dropCity || 'Delhi'} ({(distanceKm || effectiveDistance).toLocaleString('en-IN')} km)
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-[10px] text-emerald-800 flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span><strong>10-Minute Doorstep Unboxing:</strong> Buyer tests device condition before releasing funds.</span>
+                  <div className="text-left sm:text-right shrink-0">
+                    <span className="text-2xl sm:text-3xl font-black text-[#0066FF] font-mono tracking-tight block">
+                      ₹{upfrontPayableAmount.toLocaleString('en-IN')}
+                    </span>
+                    <span className="text-[10px] text-emerald-600 font-bold">
+                      ✓ Zero Platform Fee
+                    </span>
                   </div>
                 </div>
               </div>
+            </div>
 
-              {/* VERIFIED CONSIGNMENT & ESCROW PROTOCOL RECAP */}
-              <div className="p-3.5 rounded-2xl bg-blue-50/50 border border-blue-100 space-y-2">
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                  3. Verified Merchandise &amp; Protection Protocol
-                </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-                  <div className="bg-white p-2 rounded-xl border border-blue-100">
-                    <span className="text-[10px] text-slate-400 block">Declared Item:</span>
-                    <span className="font-bold text-slate-900 truncate block">{itemName || 'Smartphone'}</span>
-                  </div>
-                  <div className="bg-white p-2 rounded-xl border border-blue-100">
-                    <span className="text-[10px] text-slate-400 block">Declared Value:</span>
-                    <span className="font-bold text-[#0066FF] font-mono block">₹{declaredValue.toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="bg-white p-2 rounded-xl border border-blue-100">
-                    <span className="text-[10px] text-slate-400 block">IMEI / Serial No:</span>
-                    <span className="font-mono text-slate-800 text-[11px] truncate block">
-                      {manualImei || 'Verified Clean'}
+            {/* 6. OPTIONAL COLLAPSIBLE ACCORDIONS (B2B GST & Security Specs) */}
+            <div className="space-y-2">
+              {/* Accordion 1: B2B GST Invoice */}
+              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden text-xs">
+                <button
+                  type="button"
+                  onClick={() => setShowGstAccordion(!showGstAccordion)}
+                  className="w-full p-3 flex items-center justify-between text-left hover:bg-slate-50 transition cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-[#0066FF]" />
+                    <span className="font-bold text-slate-800">
+                      Need B2B Tax Invoice with GSTIN? (Optional)
                     </span>
                   </div>
-                  <div className="bg-white p-2 rounded-xl border border-blue-100">
-                    <span className="text-[10px] text-slate-400 block">Insurance Cover:</span>
-                    <span className="font-bold text-emerald-600 block">₹10 Lakhs Active</span>
+                  {showGstAccordion ? (
+                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                  )}
+                </button>
+
+                {showGstAccordion && (
+                  <div className="p-3.5 pt-0 border-t border-slate-100 space-y-2.5 animate-in fade-in">
+                    <p className="text-[11px] text-slate-500">
+                      SafeShip GSTIN: <strong>08AAECS2938Q1ZP</strong> &bull; SAC: <strong>996812</strong> (18% GST Included).
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Company / Business Name:</label>
+                        <input
+                          type="text"
+                          value={businessName}
+                          onChange={(e) => {
+                            setBusinessName(e.target.value);
+                            setIsB2B(true);
+                          }}
+                          placeholder="e.g. Apex Technologies LLP"
+                          className="w-full px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF]"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">15-Digit GSTIN:</label>
+                        <input
+                          type="text"
+                          maxLength={15}
+                          value={gstin}
+                          onChange={(e) => {
+                            setGstin(e.target.value.toUpperCase());
+                            setIsB2B(true);
+                          }}
+                          placeholder="e.g. 08AAECS2938Q1ZP"
+                          className="w-full px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-900 outline-hidden focus:border-[#0066FF]"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
 
-              {/* WHAT YOU PAY TODAY VS AT DOORSTEP */}
-              <div className="p-3 rounded-2xl bg-slate-900 text-white text-xs space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-blue-300 flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5 text-blue-400" />
-                    <span>What you pay today vs at the doorstep:</span>
-                  </span>
-                  <span className="font-mono font-bold text-white text-sm">
-                    Pay Now: ₹{upfrontPayableAmount.toLocaleString('en-IN')}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
-                  {paymentPreference === 'PREPAID'
-                    ? !isFastTier
-                      ? `You pay ₹0 upfront today with 100% Free Standard Delivery. The gadget price (₹${declaredValue.toLocaleString('en-IN')}) is held securely in RBI-regulated escrow and transferred to seller only after your 10-minute doorstep open-box satisfaction.`
-                      : `You pay only ₹149 express air upgrade fee today (Standard linehaul is 100% waived). The gadget price (₹${declaredValue.toLocaleString('en-IN')}) is settled after 10-minute open-box verification.`
-                    : paymentPreference === 'PAY_ON_DELIVERY'
-                    ? !isFastTier
-                      ? `You pay ₹500 COD reservation charge today. Settle the gadget price (₹${declaredValue.toLocaleString('en-IN')}) at the doorstep via Cash or instant UPI QR upon inspection.`
-                      : `You pay ₹649 today (₹500 COD fee + ₹149 Fast Air upgrade). Settle gadget price (₹${declaredValue.toLocaleString('en-IN')}) at doorstep after unboxing.`
-                    : !isFastTier
-                    ? `You pay ₹${effectiveDownPayment.toLocaleString('en-IN')} down payment today (< ₹5,000 policy with Free Standard Delivery). The remaining ₹${financedPrincipal.toLocaleString('en-IN')} is split into ${financeTenure} monthly EMIs of ₹${activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo starting 30 days after verified unboxing.`
-                    : `You pay ₹${upfrontPayableAmount.toLocaleString('en-IN')} today (₹${effectiveDownPayment.toLocaleString('en-IN')} down payment + ₹149 Fast Air upgrade). The remaining ₹${financedPrincipal.toLocaleString('en-IN')} is split into ${financeTenure} monthly EMIs of ₹${activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo.`}
-                  {' '}If rejected during the doorstep open-box audit, the item is returned safely to sender with ₹0 buyer liability.
-                </p>
+              {/* Accordion 2: Verified Consignment & Insurance Details */}
+              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden text-xs">
+                <button
+                  type="button"
+                  onClick={() => setShowSecurityAccordion(!showSecurityAccordion)}
+                  className="w-full p-3 flex items-center justify-between text-left hover:bg-slate-50 transition cursor-pointer"
+                >
+                  <div className="flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-emerald-600" />
+                    <span className="font-bold text-slate-800">
+                      Consignment Security &amp; Escrow Guarantee Policy
+                    </span>
+                  </div>
+                  {showSecurityAccordion ? (
+                    <ChevronUp className="w-4 h-4 text-slate-400" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-slate-400" />
+                  )}
+                </button>
+
+                {showSecurityAccordion && (
+                  <div className="p-3.5 pt-0 border-t border-slate-100 text-[11px] text-slate-600 space-y-2 animate-in fade-in">
+                    <p>
+                      <strong>1. Doorstep Inspection:</strong> The delivery rider unboxes the parcel in front of the buyer and waits 10 minutes for testing before OTP release.
+                    </p>
+                    <p>
+                      <strong>2. Rejection &amp; Return:</strong> If the item fails inspection, the buyer rejects the consignment and their payment is immediately refunded. The item is returned safely to sender.
+                    </p>
+                    <p>
+                      <strong>3. Transit Insurance:</strong> Covered up to ₹10 Lakhs by ICICI Lombard against physical transit loss or damage.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -3308,26 +3030,17 @@ function CreateShipmentContent() {
               </div>
             )}
 
-            {/* GOOGLE SIGN-IN OPTION BEFORE BUYING / BOOKING */}
+            {/* GOOGLE SIGN-IN BANNER (Compact) */}
             {!session ? (
-              <div className="p-4 rounded-3xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <GoogleIcon className="w-5 h-5" />
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-900">
-                        Sign in with Google before Booking
-                      </h4>
-                      <p className="text-[11px] text-slate-600">
-                        Link this consignment to your Google account to track live, get OTPs, and access ₹10L insurance.
-                      </p>
-                    </div>
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <GoogleIcon className="w-5 h-5 shrink-0" />
+                  <div>
+                    <span className="font-bold text-slate-900 block">Link to Google Account</span>
+                    <span className="text-[11px] text-slate-500">For live GPS tracking, warranty access, and SMS OTP updates.</span>
                   </div>
-                  <span className="text-[10px] font-bold text-[#0066FF] bg-white border border-blue-200 px-2 py-0.5 rounded-full shrink-0">
-                    Recommended
-                  </span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5 shrink-0 self-start sm:self-auto">
                   <button
                     type="button"
                     onClick={() => {
@@ -3335,37 +3048,33 @@ function CreateShipmentContent() {
                         redirectToGoogleLogin(window.location.pathname + window.location.search);
                       }
                     }}
-                    className="flex-1 py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-xs font-bold text-slate-800 flex items-center justify-center gap-2 shadow-2xs transition active:scale-98 cursor-pointer"
+                    className="py-1.5 px-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-xs font-bold text-slate-800 flex items-center gap-1.5 shadow-2xs transition active:scale-98 cursor-pointer"
                   >
-                    <GoogleIcon className="w-4 h-4" />
+                    <GoogleIcon className="w-3.5 h-3.5" />
                     <span>Sign in with Google</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowAuthModal(true)}
-                    className="py-2.5 px-3 rounded-xl bg-blue-100 hover:bg-blue-200 text-[#0066FF] text-xs font-bold transition cursor-pointer shrink-0"
-                    title="Choose Account or Enter Gmail"
+                    className="py-1.5 px-2.5 rounded-xl bg-blue-100 hover:bg-blue-200 text-[#0066FF] text-xs font-bold transition cursor-pointer"
                   >
                     1-Tap
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2.5">
-                  <img src={session.avatarUrl} alt={session.name} className="w-7 h-7 rounded-full ring-2 ring-emerald-300" />
-                  <div>
-                    <span className="font-bold text-emerald-950 block">Booking linked to {session.name}</span>
-                    <span className="text-[10px] text-emerald-700">{session.email} &bull; Google Verified</span>
-                  </div>
+              <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <img src={session.avatarUrl} alt={session.name} className="w-6 h-6 rounded-full ring-1 ring-emerald-300" />
+                  <span className="font-bold text-emerald-950">Linked to {session.name} ({session.email})</span>
                 </div>
-                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-md">
-                  ✓ READY
+                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
+                  ✓ VERIFIED
                 </span>
               </div>
             )}
 
-            {/* Action Buttons */}
+            {/* ACTION BUTTONS */}
             <div className="space-y-2 pt-2">
               <div className="flex gap-2">
                 <button
@@ -3381,7 +3090,7 @@ function CreateShipmentContent() {
                   onClick={handleConfirmBooking}
                   className={`flex-1 py-4 rounded-2xl text-white font-black text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer ${
                     paymentPreference === 'PREPAID'
-                      ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'
+                      ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/30'
                       : paymentPreference === 'PAY_ON_DELIVERY'
                       ? 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/30'
                       : 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/30'
@@ -3394,11 +3103,9 @@ function CreateShipmentContent() {
                     </>
                   ) : paymentPreference === 'PREPAID' ? (
                     <>
-                      <Sparkles className="w-4 h-4 text-white" />
+                      <Lock className="w-4 h-4 text-white" />
                       <span>
-                        {!isFastTier
-                          ? 'Confirm Booking • 100% FREE Delivery (₹0)'
-                          : 'Pay ₹149 Fast Air Fee • Settle Item at Doorstep'}
+                        Pay ₹{upfrontPayableAmount.toLocaleString('en-IN')} Escrow &amp; Confirm Booking
                       </span>
                       <ArrowRight className="w-4 h-4" />
                     </>
@@ -3406,9 +3113,7 @@ function CreateShipmentContent() {
                     <>
                       <Lock className="w-4 h-4 text-white" />
                       <span>
-                        {!isFastTier
-                          ? 'Pay ₹500 COD Slot Charge • Balance at Doorstep'
-                          : 'Pay ₹649 COD & Fast Air • Balance at Doorstep'}
+                        Pay ₹{upfrontPayableAmount.toLocaleString('en-IN')} COD Advance &amp; Confirm Booking
                       </span>
                       <ArrowRight className="w-4 h-4" />
                     </>
@@ -3416,9 +3121,7 @@ function CreateShipmentContent() {
                     <>
                       <CreditCard className="w-4 h-4 text-white" />
                       <span>
-                        {!isFastTier
-                          ? `Pay ₹${effectiveDownPayment.toLocaleString('en-IN')} Down Payment & Book (₹${activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo)`
-                          : `Pay ₹${upfrontPayableAmount.toLocaleString('en-IN')} (Down + Air) & Book (₹${activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo)`}
+                        Pay ₹{upfrontPayableAmount.toLocaleString('en-IN')} Down Payment &amp; Book (₹{activeFinancePlan.monthlyEmi.toLocaleString('en-IN')}/mo)
                       </span>
                       <ArrowRight className="w-4 h-4" />
                     </>
@@ -3426,13 +3129,23 @@ function CreateShipmentContent() {
                 </button>
               </div>
 
-              <div className="text-center pt-1">
+              {/* Instant UPI QR Fallback & Demo Mode */}
+              <div className="flex items-center justify-center gap-3 pt-1 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setShowUpiModal(true)}
+                  className="text-[#0066FF] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <QrCode className="w-3.5 h-3.5" />
+                  <span>⚡ Instant UPI QR / Test Mode</span>
+                </button>
+                <span className="text-slate-300">&bull;</span>
                 <button
                   type="button"
                   onClick={() => router.push(`/in/open-box?type=${mode}&deal=SS48291`)}
-                  className="text-[11px] text-[#64748B] hover:text-[#0066FF] underline cursor-pointer"
+                  className="text-slate-500 hover:text-slate-800 underline cursor-pointer"
                 >
-                  Or test Open-Box Doorstep Console without payment &rarr;
+                  Skip to Open-Box Console &rarr;
                 </button>
               </div>
             </div>
@@ -3616,6 +3329,158 @@ function CreateShipmentContent() {
               <span>Confirm &amp; Proceed with {financeTenure}M EMI Plan</span>
               <ArrowRight className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+      )}
+
+
+      {/* INSTANT UPI QR ESCROW PAYMENT MODAL */}
+      {showUpiModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold">
+                  <QrCode className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900">Instant UPI Escrow Transfer</h3>
+                  <p className="text-[10px] text-slate-500">Scan via GPay, PhonePe, Paytm, or BHIM</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowUpiModal(false)}
+                className="text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Amount badge */}
+            <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-3 flex items-center justify-between">
+              <div>
+                <span className="text-[10px] text-blue-700 font-bold uppercase tracking-wider block">
+                  {paymentPreference === 'PREPAID'
+                    ? 'Escrow Deposit'
+                    : paymentPreference === 'PAY_ON_DELIVERY'
+                    ? 'COD Slot Reservation'
+                    : 'Down Payment (< ₹5k)'}
+                </span>
+                <span className="text-xs text-slate-600">
+                  {itemName || 'Merchandise Booking'}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-xl font-black font-mono text-[#0066FF] block">
+                  ₹{upfrontPayableAmount.toLocaleString('en-IN')}
+                </span>
+                <span className="text-[9px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                  ✓ 100% Escrow Safe
+                </span>
+              </div>
+            </div>
+
+            {/* QR Code display */}
+            <div className="flex flex-col items-center justify-center py-2 bg-slate-50 rounded-2xl border border-slate-200/80 p-4">
+              <div className="relative w-44 h-44 rounded-2xl shadow-xs border border-slate-200 bg-white p-3 flex items-center justify-center">
+                <svg viewBox="0 0 100 100" className="w-full h-full text-slate-900 fill-current">
+                  {/* Top-Left Finder */}
+                  <rect x="5" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" strokeWidth="4" />
+                  <rect x="11" y="11" width="14" height="14" rx="2" fill="currentColor" />
+                  {/* Top-Right Finder */}
+                  <rect x="69" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" strokeWidth="4" />
+                  <rect x="75" y="11" width="14" height="14" rx="2" fill="currentColor" />
+                  {/* Bottom-Left Finder */}
+                  <rect x="5" y="69" width="26" height="26" rx="4" fill="none" stroke="currentColor" strokeWidth="4" />
+                  <rect x="11" y="75" width="14" height="14" rx="2" fill="currentColor" />
+                  {/* Data modules */}
+                  <rect x="36" y="8" width="5" height="5" />
+                  <rect x="45" y="8" width="5" height="5" />
+                  <rect x="56" y="8" width="5" height="5" />
+                  <rect x="36" y="18" width="5" height="5" />
+                  <rect x="50" y="18" width="5" height="5" />
+                  <rect x="56" y="24" width="5" height="5" />
+                  <rect x="8" y="36" width="5" height="5" />
+                  <rect x="16" y="36" width="5" height="5" />
+                  <rect x="24" y="42" width="5" height="5" />
+                  <rect x="8" y="48" width="5" height="5" />
+                  <rect x="20" y="52" width="5" height="5" />
+                  <rect x="36" y="36" width="5" height="5" />
+                  <rect x="58" y="36" width="5" height="5" />
+                  <rect x="68" y="36" width="5" height="5" />
+                  <rect x="78" y="42" width="5" height="5" />
+                  <rect x="86" y="36" width="5" height="5" />
+                  <rect x="36" y="56" width="5" height="5" />
+                  <rect x="48" y="56" width="5" height="5" />
+                  <rect x="58" y="56" width="5" height="5" />
+                  <rect x="70" y="52" width="5" height="5" />
+                  <rect x="82" y="56" width="5" height="5" />
+                  <rect x="36" y="70" width="5" height="5" />
+                  <rect x="44" y="76" width="5" height="5" />
+                  <rect x="54" y="70" width="5" height="5" />
+                  <rect x="64" y="76" width="5" height="5" />
+                  <rect x="74" y="70" width="5" height="5" />
+                  <rect x="84" y="76" width="5" height="5" />
+                  <rect x="40" y="86" width="5" height="5" />
+                  <rect x="52" y="86" width="5" height="5" />
+                  <rect x="66" y="86" width="5" height="5" />
+                  <rect x="80" y="86" width="5" height="5" />
+                  {/* Center Shield Badge */}
+                  <rect x="38" y="38" width="24" height="24" rx="6" fill="#0066FF" />
+                  <path d="M50 43 L56 46 V51 C56 55 50 58 50 58 C50 58 44 55 44 51 V46 Z" fill="white" />
+                </svg>
+              </div>
+              <span className="text-[11px] font-mono text-slate-500 mt-2">
+                UPI ID: <strong className="text-slate-900">safeship@icici</strong>
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (navigator.clipboard) {
+                    navigator.clipboard.writeText('safeship@icici');
+                    setUpiCopied(true);
+                    setTimeout(() => setUpiCopied(false), 2500);
+                  }
+                }}
+                className="mt-1 text-[11px] text-[#0066FF] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                <Copy className="w-3.5 h-3.5" />
+                <span>{upiCopied ? '✓ Copied to clipboard' : 'Copy UPI ID'}</span>
+              </button>
+            </div>
+
+            {/* Action buttons */}
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowUpiModal(false);
+                  completeDealCreation(
+                    `UPI_QR_${Date.now().toString(36).toUpperCase()}`,
+                    upfrontPayableAmount
+                  );
+                }}
+                className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Check className="w-4 h-4" />
+                <span>I Have Paid ₹{upfrontPayableAmount.toLocaleString('en-IN')} — Confirm Booking</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setShowUpiModal(false);
+                  completeDealCreation(
+                    `TEST_DEMO_${Date.now().toString(36).toUpperCase()}`,
+                    upfrontPayableAmount
+                  );
+                }}
+                className="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition cursor-pointer text-center"
+              >
+                ⚡ Instant Demo Test (Bypass payment for testing)
+              </button>
+            </div>
           </div>
         </div>
       )}

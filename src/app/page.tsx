@@ -222,20 +222,20 @@ export default function HomePage() {
   const effectiveCalcDownPayment = Math.min(maxCalcDown, Math.max(minCalcDown, calcDownPayment));
   const calcFinancedPrincipal = Math.max(0, calcValue - effectiveCalcDownPayment);
 
-  // Pricing calculation:
-  // - Prepaid: Standard is ₹0 (Free Delivery), Fast is ₹149 (nominal air fee)
-  // - COD: Standard is ₹500, Fast is ₹649 (₹500 COD + ₹149 Air)
-  // - Finance: Standard is effectiveCalcDownPayment, Fast is effectiveCalcDownPayment + ₹149
+  // Upfront Payable calculation:
+  // - Prepaid: Full Escrow (calcValue) with Standard Free Delivery, or calcValue + 149 for Fast Air
+  // - COD: ₹500 slot reservation advance (or ₹649 for Fast Air)
+  // - Finance: effectiveCalcDownPayment (< ₹5k) with Standard Free Delivery, or + ₹149 for Fast Air
   const estimatedFare = React.useMemo(() => {
     const isFast = calcTier === 'FAST';
     if (calcPaymentMode === 'PREPAID') {
-      return isFast ? 149 : 0;
+      return isFast ? calcValue + 149 : calcValue;
     }
     if (calcPaymentMode === 'COD') {
       return isFast ? 649 : 500;
     }
     return isFast ? effectiveCalcDownPayment + 149 : effectiveCalcDownPayment;
-  }, [calcPaymentMode, calcTier, effectiveCalcDownPayment]);
+  }, [calcPaymentMode, calcTier, calcValue, effectiveCalcDownPayment]);
 
   const monthlyFinanceEmi = React.useMemo(() => {
     return Math.round(calcFinancedPrincipal / 6);
@@ -1815,7 +1815,7 @@ export default function HomePage() {
                 <div>
                   <div className="text-[10px] uppercase font-bold text-slate-400">
                     {calcPaymentMode === 'PREPAID'
-                      ? calcTier === 'STANDARD' ? 'Prepaid Delivery Fee:' : 'Fast Air Upgrade Fee:'
+                      ? calcTier === 'STANDARD' ? 'Upfront Escrow (Free Standard Delivery):' : 'Upfront Escrow (+ Fast Air Upgrade):'
                       : calcPaymentMode === 'COD'
                       ? 'COD Doorstep Slot Lock:'
                       : calcTier === 'STANDARD' ? 'Down Payment Today (< ₹5k):' : 'Down Payment + Fast Air Today:'}
@@ -1824,9 +1824,9 @@ export default function HomePage() {
                     <div className="text-2xl font-black font-mono">
                       {calcPaymentMode === 'PREPAID' ? (
                         calcTier === 'STANDARD' ? (
-                          <span className="text-emerald-400">₹0 (FREE)</span>
+                          <span className="text-emerald-400">₹{calcValue.toLocaleString('en-IN')}</span>
                         ) : (
-                          <span className="text-blue-400">₹149</span>
+                          <span className="text-blue-400">₹{(calcValue + 149).toLocaleString('en-IN')}</span>
                         )
                       ) : calcPaymentMode === 'COD' ? (
                         calcTier === 'STANDARD' ? (
@@ -1843,8 +1843,8 @@ export default function HomePage() {
                       )}
                     </div>
                     {calcPaymentMode === 'PREPAID' && (
-                      <span className="text-[11px] text-slate-400 line-through">
-                        ₹{standardDeliveryCost}
+                      <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-700/60">
+                        {calcTier === 'STANDARD' ? '100% FREE DELIVERY' : '+₹149 FAST AIR'}
                       </span>
                     )}
                   </div>
