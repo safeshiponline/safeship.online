@@ -1045,16 +1045,23 @@ function CreateShipmentContent() {
   ];
   const activeFinancePlan = financePlans.find((p) => p.tenureMonths === financeTenure) || financePlans[1];
 
-  const isFastTier = selectedTier === 'FASTEST_AIR_RUSH' || selectedTier === 'FAST_DELIVERY';
-  const fastDeliveryExtraFee = 149;
+  const priorityExtraFee = Math.max(25, tierPricing.PRIORITY_EXPRESS.totalUpfront - tierPricing.STANDARD_GROUND.totalUpfront);
+  const fastDeliveryExtraFee = Math.max(49, tierPricing.FASTEST_AIR_RUSH.totalUpfront - tierPricing.STANDARD_GROUND.totalUpfront);
+
+  const tierExtraFee = selectedTier === 'FASTEST_AIR_RUSH'
+    ? fastDeliveryExtraFee
+    : selectedTier === 'PRIORITY_EXPRESS'
+    ? priorityExtraFee
+    : 0;
 
   // Delivery Fee Discount:
   // - Prepaid Standard: 100% Free delivery (activeTierBreakdown.totalUpfront waived to ₹0)
-  // - Prepaid Fast: Linehaul waived down to ₹149 express air upgrade
+  // - Prepaid Priority: Linehaul waived down to priority upgrade (+₹35)
+  // - Prepaid Fast Air: Linehaul waived down to fast air upgrade (+₹75)
   // - Finance Standard: 100% Free delivery (only down payment paid upfront)
-  // - Finance Fast: Discount applied, down payment + ₹149 express upgrade
+  // - Finance Upgrades: Down payment + tier upgrade
   const freeDeliveryDiscount = (paymentPreference === 'PREPAID' || paymentPreference === 'FINANCE_EMI')
-    ? (isFastTier ? Math.max(0, activeTierBreakdown.totalUpfront - fastDeliveryExtraFee) : activeTierBreakdown.totalUpfront)
+    ? (tierExtraFee > 0 ? Math.max(0, activeTierBreakdown.totalUpfront - tierExtraFee) : activeTierBreakdown.totalUpfront)
     : 0;
 
   // COD Handling Charge: ₹500 for Pay on Delivery
@@ -1062,14 +1069,14 @@ function CreateShipmentContent() {
 
   // Upfront Booking Payable Amount:
   // - Prepaid Standard: declaredValue (Full item escrow deposit, 100% Free Standard Delivery)
-  // - Prepaid Fast: declaredValue + 149 (Full item escrow deposit + ₹149 Fast Air linehaul)
+  // - Prepaid Priority/Fast: declaredValue + tierExtraFee (Full item escrow + courier speed upgrade)
   // - Pay on Delivery (COD) Standard: ₹500 (doorstep slot reservation fee)
-  // - Pay on Delivery (COD) Fast: ₹649 (₹500 COD + ₹149 Fast Air)
+  // - Pay on Delivery (COD) Upgrades: ₹500 + tierExtraFee
   // - Finance Standard: effectiveDownPayment (Down payment below ₹5,000, 100% Free Standard Delivery)
-  // - Finance Fast: effectiveDownPayment + ₹149 (Down payment + Fast Air upgrade)
-  const prepaidTotal = isFastTier ? declaredValue + fastDeliveryExtraFee : declaredValue;
-  const codTotal = isFastTier ? 500 + fastDeliveryExtraFee : 500;
-  const financeTotal = isFastTier ? effectiveDownPayment + fastDeliveryExtraFee : effectiveDownPayment;
+  // - Finance Upgrades: effectiveDownPayment + tierExtraFee
+  const prepaidTotal = declaredValue + tierExtraFee;
+  const codTotal = 500 + tierExtraFee;
+  const financeTotal = effectiveDownPayment + tierExtraFee;
 
   const upfrontPayableAmount = paymentPreference === 'PREPAID'
     ? prepaidTotal
@@ -1088,8 +1095,10 @@ function CreateShipmentContent() {
   });
 
   const deliveryDateObj = new Date(pickupDateObj);
-  if (isFastTier) {
+  if (selectedTier === 'FASTEST_AIR_RUSH') {
     deliveryDateObj.setDate(pickupDateObj.getDate() + 1);
+  } else if (selectedTier === 'PRIORITY_EXPRESS') {
+    deliveryDateObj.setDate(pickupDateObj.getDate() + 2);
   } else {
     deliveryDateObj.setDate(pickupDateObj.getDate() + 3);
   }
@@ -1099,8 +1108,10 @@ function CreateShipmentContent() {
     month: 'short',
     year: 'numeric'
   });
-  const deliveryTimeWindow = isFastTier
+  const deliveryTimeWindow = selectedTier === 'FASTEST_AIR_RUSH'
     ? 'By 2:00 PM (Within 24–36 Hours Guaranteed)'
+    : selectedTier === 'PRIORITY_EXPRESS'
+    ? 'By 5:00 PM (1–2 Business Days Guaranteed)'
     : 'By 7:00 PM (2–3 Business Days Guaranteed)';
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -2778,23 +2789,23 @@ function CreateShipmentContent() {
               </div>
             </div>
 
-            {/* 2. DELIVERY SPEED (2 Clean Cards: Standard vs Fast) */}
+            {/* 2. DELIVERY SPEED (3 Clean Tiers: Standard Ground, Priority Express, Express Air) */}
             <div className="space-y-2">
               <span className="text-xs font-bold text-[#334155] uppercase tracking-wider block">
-                1. Delivery Speed
+                1. Delivery Speed (3 Service Tiers)
               </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {/* Standard */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {/* Tier 1: Standard Ground */}
                 <div
                   onClick={() => setSelectedTier('STANDARD_GROUND')}
-                  className={`p-4 rounded-2xl border transition cursor-pointer relative flex items-start justify-between gap-3 ${
+                  className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
                     selectedTier === 'STANDARD_GROUND'
                       ? 'bg-emerald-50/60 border-emerald-600 ring-2 ring-emerald-300 shadow-sm'
                       : 'bg-white border-[#E2E8F0] hover:border-emerald-300'
                   }`}
                 >
                   <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
+                    <div className="flex items-center justify-between gap-1.5 flex-wrap">
                       <span className="text-sm font-black text-slate-900">📦 Standard Ground</span>
                       <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
                         2–3 DAYS
@@ -2804,63 +2815,112 @@ function CreateShipmentContent() {
                       Reliable surface network with doorstep unboxing.
                     </p>
                   </div>
-                  <div className="text-right shrink-0">
-                    {paymentPreference === 'PREPAID' ? (
-                      <div>
-                        <span className="text-xs line-through text-slate-400 font-mono block">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
-                        <span className="text-base font-black text-emerald-600 font-mono">FREE (₹0)</span>
-                      </div>
-                    ) : paymentPreference === 'PAY_ON_DELIVERY' ? (
-                      <div>
-                        <span className="text-base font-black text-slate-900 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
-                        <span className="text-[9px] font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded block mt-0.5">GROUND RATE</span>
-                      </div>
-                    ) : (
-                      <div>
-                        <span className="text-xs line-through text-slate-400 font-mono block">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
-                        <span className="text-base font-black text-purple-700 font-mono">FREE (₹0)</span>
-                      </div>
-                    )}
+                  <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                    <span className="text-[10px] text-slate-400 font-semibold">Surface Linehaul</span>
+                    <div className="text-right shrink-0">
+                      {paymentPreference === 'PREPAID' ? (
+                        <div className="flex items-baseline gap-1.5 justify-end">
+                          <span className="text-[11px] line-through text-slate-400 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
+                          <span className="text-sm font-black text-emerald-600 font-mono">FREE (₹0)</span>
+                        </div>
+                      ) : paymentPreference === 'PAY_ON_DELIVERY' ? (
+                        <div className="flex items-baseline gap-1.5 justify-end">
+                          <span className="text-sm font-black text-slate-900 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
+                          <span className="text-[8px] font-bold text-slate-600 bg-slate-100 px-1 py-0.5 rounded">GROUND</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-baseline gap-1.5 justify-end">
+                          <span className="text-[11px] line-through text-slate-400 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
+                          <span className="text-sm font-black text-purple-700 font-mono">FREE (₹0)</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {/* Fast */}
+                {/* Tier 2: Priority Express */}
                 <div
-                  onClick={() => setSelectedTier('FASTEST_AIR_RUSH')}
-                  className={`p-4 rounded-2xl border transition cursor-pointer relative flex items-start justify-between gap-3 ${
-                    selectedTier === 'FASTEST_AIR_RUSH'
-                      ? 'bg-blue-50/60 border-[#0066FF] ring-2 ring-blue-300 shadow-sm'
+                  onClick={() => setSelectedTier('PRIORITY_EXPRESS')}
+                  className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
+                    selectedTier === 'PRIORITY_EXPRESS'
+                      ? 'bg-blue-50/70 border-[#0066FF] ring-2 ring-blue-300 shadow-sm'
                       : 'bg-white border-[#E2E8F0] hover:border-blue-300'
                   }`}
                 >
                   <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-black text-slate-900">⚡ Express Air</span>
-                      <span className="text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-full shadow-2xs">
-                        24–36H NEXT FLIGHT
+                    <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                      <span className="text-sm font-black text-slate-900">🚀 Priority Express</span>
+                      <span className="text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full">
+                        1–2 DAYS
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
-                      Priority next-flight commercial air linehaul.
+                      Priority expressway &amp; commercial air corridor.
                     </p>
                   </div>
-                  <div className="text-right shrink-0">
-                    {paymentPreference === 'PREPAID' ? (
-                      <div>
-                        <span className="text-xs line-through text-slate-400 font-mono block">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
-                        <span className="text-base font-black text-blue-600 font-mono">+₹{Math.max(49, tierPricing.FASTEST_AIR_RUSH.totalUpfront - tierPricing.STANDARD_GROUND.totalUpfront)}</span>
-                      </div>
-                    ) : paymentPreference === 'PAY_ON_DELIVERY' ? (
-                      <div>
-                        <span className="text-base font-black text-blue-700 font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
-                        <span className="text-[9px] font-bold text-blue-800 bg-blue-50 px-1.5 py-0.5 rounded block mt-0.5">AIR LINEHAUL</span>
-                      </div>
-                    ) : (
-                      <div>
-                        <span className="text-xs line-through text-slate-400 font-mono block">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
-                        <span className="text-base font-black text-purple-700 font-mono">+₹{Math.max(49, tierPricing.FASTEST_AIR_RUSH.totalUpfront - tierPricing.STANDARD_GROUND.totalUpfront)}</span>
-                      </div>
-                    )}
+                  <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                    <span className="text-[10px] text-slate-400 font-semibold">Fast Linehaul</span>
+                    <div className="text-right shrink-0">
+                      {paymentPreference === 'PREPAID' ? (
+                        <div className="flex items-baseline gap-1.5 justify-end">
+                          <span className="text-[11px] line-through text-slate-400 font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
+                          <span className="text-sm font-black text-blue-600 font-mono">+₹{priorityExtraFee}</span>
+                        </div>
+                      ) : paymentPreference === 'PAY_ON_DELIVERY' ? (
+                        <div className="flex items-baseline gap-1.5 justify-end">
+                          <span className="text-sm font-black text-blue-700 font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
+                          <span className="text-[8px] font-bold text-blue-800 bg-blue-50 px-1 py-0.5 rounded">EXPRESS</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-baseline gap-1.5 justify-end">
+                          <span className="text-[11px] line-through text-slate-400 font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
+                          <span className="text-sm font-black text-purple-700 font-mono">+₹{priorityExtraFee}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tier 3: Express Air Rush */}
+                <div
+                  onClick={() => setSelectedTier('FASTEST_AIR_RUSH')}
+                  className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
+                    selectedTier === 'FASTEST_AIR_RUSH'
+                      ? 'bg-amber-50/60 border-amber-500 ring-2 ring-amber-300 shadow-sm'
+                      : 'bg-white border-[#E2E8F0] hover:border-amber-300'
+                  }`}
+                >
+                  <div className="space-y-1 min-w-0">
+                    <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                      <span className="text-sm font-black text-slate-900">⚡ Express Air</span>
+                      <span className="text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-full shadow-2xs">
+                        24–36H FLIGHT
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500 leading-tight">
+                      Next commercial cargo flight &amp; express dispatch.
+                    </p>
+                  </div>
+                  <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                    <span className="text-[10px] text-slate-400 font-semibold">Next Flight Cargo</span>
+                    <div className="text-right shrink-0">
+                      {paymentPreference === 'PREPAID' ? (
+                        <div className="flex items-baseline gap-1.5 justify-end">
+                          <span className="text-[11px] line-through text-slate-400 font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
+                          <span className="text-sm font-black text-amber-700 font-mono">+₹{fastDeliveryExtraFee}</span>
+                        </div>
+                      ) : paymentPreference === 'PAY_ON_DELIVERY' ? (
+                        <div className="flex items-baseline gap-1.5 justify-end">
+                          <span className="text-sm font-black text-amber-700 font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
+                          <span className="text-[8px] font-bold text-amber-800 bg-amber-50 px-1 py-0.5 rounded">AIR LINEHAUL</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-baseline gap-1.5 justify-end">
+                          <span className="text-[11px] line-through text-slate-400 font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
+                          <span className="text-sm font-black text-purple-700 font-mono">+₹{fastDeliveryExtraFee}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2942,7 +3002,7 @@ function CreateShipmentContent() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#0F172A]">Prepaid Escrow</span>
                       <span className="text-[9px] font-black bg-emerald-600 text-white px-2 py-0.5 rounded-full uppercase">
-                        {isFastTier ? '+₹149 FAST' : 'FREE DELIVERY'}
+                        {tierExtraFee > 0 ? `+₹${tierExtraFee}` : 'FREE DELIVERY'}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
@@ -2970,7 +3030,7 @@ function CreateShipmentContent() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#0F172A]">Pay on Delivery</span>
                       <span className="text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full">
-                        {isFastTier ? '₹649 COD' : '₹500 COD'}
+                        {tierExtraFee > 0 ? `₹${codTotal} COD` : '₹500 COD'}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
@@ -3145,12 +3205,15 @@ function CreateShipmentContent() {
                 </div>
 
                 <div className="flex justify-between items-center text-slate-600">
-                  <span>Logistics &amp; Linehaul ({selectedTier === 'FASTEST_AIR_RUSH' ? 'Express Air' : 'Standard Ground'}):</span>
-                  {isFastTier ? (
-                    <span className="font-mono font-semibold text-blue-600">+₹149</span>
+                  <span>Logistics &amp; Linehaul ({selectedTier === 'FASTEST_AIR_RUSH' ? 'Express Air' : selectedTier === 'PRIORITY_EXPRESS' ? 'Priority Express' : 'Standard Ground'}):</span>
+                  {tierExtraFee > 0 ? (
+                    <span className="font-mono font-semibold text-blue-600">
+                      <span className="line-through text-slate-400 mr-1.5 font-normal">₹{activeTierBreakdown.totalUpfront}</span>
+                      +₹{tierExtraFee}
+                    </span>
                   ) : (
                     <span className="font-mono font-semibold text-emerald-600">
-                      <span className="line-through text-slate-400 mr-1.5">₹{activeTierBreakdown.totalUpfront}</span>
+                      <span className="line-through text-slate-400 mr-1.5 font-normal">₹{activeTierBreakdown.totalUpfront}</span>
                       FREE (₹0)
                     </span>
                   )}

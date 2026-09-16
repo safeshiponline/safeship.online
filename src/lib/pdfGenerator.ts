@@ -122,7 +122,7 @@ export function generateConsignmentNotePDF(deal: SafeDeal): jsPDF {
   doc.text('Central Gateway Hub, Malviya Nagar, Jaipur, RJ - 302017', margin + 6, y + 16);
   doc.text('GSTIN: 08AAECS2938Q1ZP • State Code: 08 (Rajasthan)', margin + 6, y + 21);
   doc.text('CIN: U63090RJ2026PTC098234 • PAN: AAECS2938Q', margin + 6, y + 26);
-  doc.text('Toll-Free Helpline: 1800 890 2829 • billing@safeship.online', margin + 6, y + 31);
+  doc.text('24/7 Digital Support: support@safeship.online • safeship.online', margin + 6, y + 31);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(royalBlue[0], royalBlue[1], royalBlue[2]);
   doc.text('RBI Section 10A Regulated Trustee Nodal Escrow', margin + 6, y + 36);

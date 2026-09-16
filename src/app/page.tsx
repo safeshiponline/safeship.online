@@ -365,8 +365,11 @@ export default function HomePage() {
             </span>
           </div>
           <div className="hidden lg:flex items-center gap-2 shrink-0 font-sans text-[11px]">
-            <span className="text-slate-400">24/7 Helpline:</span>
-            <a href="tel:18008902829" className="text-white font-bold hover:underline">1800 890 2829</a>
+            <span className="text-slate-400">24/7 Support:</span>
+            <span className="text-emerald-400 font-bold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live AI Support Desk
+            </span>
           </div>
         </div>
       </div>

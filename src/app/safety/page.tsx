@@ -210,8 +210,8 @@ export default function SafetyTrustHubPage() {
               ICICI Bank Limited &bull; Section 10A Escrow Rail
             </div>
             <div>
-              <strong className="text-slate-900 block">24/7 Toll-Free National Helpline:</strong>
-              <a href="tel:18008902829" className="font-bold text-[#0066FF] hover:underline font-mono">1800 890 2829</a>
+              <strong className="text-slate-900 block">24/7 Digital Concierge &amp; Dispute Portal:</strong>
+              <span className="font-semibold text-emerald-600 font-sans">Live AI Support Desk &bull; Instant In-App Resolution</span>
             </div>
           </div>
         </section>

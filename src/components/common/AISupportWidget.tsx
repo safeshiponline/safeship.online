@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Headphones, X, Send, ShieldCheck, Phone, Check } from '@/components/common/Icons';
+import { Headphones, X, Send, ShieldCheck, Check } from '@/components/common/Icons';
 
 interface Message {
   id: string;
@@ -192,15 +192,8 @@ export function AISupportWidget() {
               </div>
             </div>
 
-            {/* Direct Escalation Links & Close Button */}
+            {/* Close Button */}
             <div className="flex items-center gap-1.5">
-              <a
-                href="tel:18008902829"
-                title="Call 1800 890 2829"
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center text-white transition"
-              >
-                <Phone className="w-3.5 h-3.5" />
-              </a>
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}

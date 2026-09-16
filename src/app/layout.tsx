@@ -133,7 +133,8 @@ const jsonLdData = {
       description: 'Ultra-premium P2P & B2C courier delivery and escrow platform with guaranteed doorstep open-box inspection.',
       contactPoint: {
         '@type': 'ContactPoint',
-        telephone: '+91-1800-890-2829',
+        email: 'support@safeship.online',
+        url: 'https://safeship.online/in',
         contactType: 'customer support',
         areaServed: 'IN',
         availableLanguage: ['en', 'hi'],
@@ -172,8 +173,8 @@ const jsonLdData = {
           },
           {
             '@type': 'Offer',
-            name: 'SafeShip Same-Day Direct',
-            description: 'Dedicated intra-city courier dispatch within 4-6 hours with live GPS telemetry.'
+            name: 'SafeShip Express Air',
+            description: 'Next-flight commercial air linehaul with 24-36h transit and priority doorstep inspection.'
           }
         ]
       }
@@ -192,10 +193,10 @@ const jsonLdData = {
         },
         {
           '@type': 'Question',
-          name: 'What is the official SafeShip customer care helpline number?',
+          name: 'How do I contact SafeShip customer support?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'SafeShip’s official 24/7 toll-free customer care number across India is 1800 890 2829. You can also track shipments in real time, view digital consignment waybills, and initiate claims directly at https://safeship.online/in.'
+            text: 'SafeShip provides 24/7 in-app customer support via our live AI Concierge and dedicated claims team at https://safeship.online/in and via email at support@safeship.online. You can track shipments in real time, view digital consignment waybills, and resolve claims instantly without waiting on telephone hold.'
           }
         },
         {

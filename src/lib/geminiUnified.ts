@@ -35,22 +35,81 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
 /**
- * Helper to invoke OpenAI-compatible Gemini endpoint
+ * Helper to invoke Google Gemini REST API directly when an official API key is present
+ */
+async function callGoogleGeminiNative(
+  messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+  apiKey: string,
+  model = 'gemini-2.0-flash',
+  temperature = 0.2
+): Promise<string | null> {
+  try {
+    const contents = messages
+      .filter((m) => m.role !== 'system')
+      .map((m) => ({
+        role: m.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+      }));
+
+    const systemMessage = messages.find((m) => m.role === 'system');
+    const requestBody: any = {
+      contents,
+      generationConfig: {
+        temperature
+      }
+    };
+
+    if (systemMessage) {
+      requestBody.systemInstruction = {
+        parts: [{ text: systemMessage.content }]
+      };
+    }
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!res.ok) {
+      console.warn('Google Gemini native API error status:', res.status);
+      return null;
+    }
+
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || null;
+  } catch (err) {
+    console.warn('Failed calling Google Gemini native API:', err);
+    return null;
+  }
+}
+
+/**
+ * Helper to invoke OpenAI-compatible or Google Gemini endpoint
  */
 export async function callGeminiChat(
   messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
   temperature = 0.2
 ): Promise<string | null> {
+  const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
   const baseUrl = process.env.GEMINI_BASE_URL || process.env.OPENAI_BASE_URL || 'http://localhost:8317/v1';
-  const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || 'cpa_sk_8f7b2c5d9a1e4c3a7f8b9d0e1f2a3b4c';
   const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
+  // 1. If an official Google Gemini API Key (starts with AIza) is present, use Google native endpoint
+  if (apiKey && apiKey.startsWith('AIza')) {
+    const nativeRes = await callGoogleGeminiNative(messages, apiKey, model, temperature);
+    if (nativeRes) return nativeRes;
+  }
+
+  // 2. Invoke OpenAI-compatible Gemini endpoint (e.g. local proxy or custom base url)
   try {
+    const effectiveKey = apiKey || 'cpa_sk_8f7b2c5d9a1e4c3a7f8b9d0e1f2a3b4c';
     const res = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        Authorization: `Bearer ${effectiveKey}`
       },
       body: JSON.stringify({
         model,
@@ -59,17 +118,24 @@ export async function callGeminiChat(
       })
     });
 
-    if (!res.ok) {
+    if (res.ok) {
+      const data = await res.json();
+      const content = data.choices?.[0]?.message?.content;
+      if (content) return content;
+    } else {
       console.warn('Gemini proxy call failed with status:', res.status);
-      return null;
     }
-
-    const data = await res.json();
-    return data.choices?.[0]?.message?.content || null;
   } catch (err) {
     console.warn('Error connecting to Gemini proxy:', err);
-    return null;
   }
+
+  // 3. Fallback: try native Google endpoint if standard apiKey is available
+  if (apiKey && !apiKey.startsWith('cpa_sk_')) {
+    const fallbackRes = await callGoogleGeminiNative(messages, apiKey, model, temperature);
+    if (fallbackRes) return fallbackRes;
+  }
+
+  return null;
 }
 
 /**
@@ -174,26 +240,33 @@ export async function getAICustomerSupportResponse(
   dealContext?: any
 ): Promise<string> {
   const systemPrompt = `You are a Senior Customer Care Specialist at SafeShip India (safeship.online).
-SafeShip provides trusted Open-Box Delivery and 2-Way Item Exchanges across India.
+SafeShip provides India's most secure Open-Box Delivery and 2-Way Hardware Exchanges.
 Core Operating Principles:
-1. "What you see is what you receive" — SafeShip protects both buyers and sellers through verified doorstep unboxing and hardware inspection.
-2. Delivery Tiers & Calibrated Transparent Pricing:
-   - Minimum booking fee across India is strictly ₹250 (never lower). Maximum booking fee is strictly ₹1,950 (never higher).
-   - For a typical item valued around ₹8,000 on an intercity corridor (e.g. Jaipur to Delhi, ~270 km), Priority Express is calibrated to around ~₹600 all-inclusive (~₹590–₹610).
-   - SafeShip SuperFast Air (⚡ Fastest Delivery): Guaranteed 24–36h transit via next-flight commercial cargo + white-glove doorstep open-box inspection. For long-haul cross-country corridors like South India (Bengaluru, Chennai, Hyderabad, Kochi) to Delhi NCR (~2,200 km), cost is ~₹1,650–₹1,950 all-inclusive (or ~₹850–₹975 each on a 50/50 fee split) covering flight cargo space, bonded delivery officer inspection, tamper-evident security packaging, and declared value transit insurance.
-   - SafeShip Priority Express: 1–2 days for regional corridors (e.g. Jaipur to Delhi), 2–3 business days for cross-country commercial air linehaul (~₹1,200–₹1,350 for South to Delhi).
-   - SafeShip Standard Ground: 2–3 business days regional, 4–5 business days cross-country surface freight (~₹250–₹950).
-   - Same-Day Direct: Sub-4 hours dedicated fleet for local intra-city shipments (<= 50 km).
-   - Realistic SLAs: Never make generic or unrealistic claims like "12 hours" for cross-country routes; specify realistic transit windows based on distance and service level.
-3. Zero Escrow Lock: SafeShip ONLY collects the minimal delivery charges upfront. Product capital is NEVER locked upfront without verification.
-4. Open-Box Inspection: When courier partner Rahul K. arrives, the recipient is granted a 15-minute physical inspection window to unbox, inspect cosmetic condition, verify serial/IMEI, and test the item before making any payment.
-5. Doorstep Settlement: After approving the product, the recipient completes payment via dynamic UPI QR generated on the courier terminal.
-6. Zero-Risk Return: If the item is defective, counterfeit, or misrepresented, the recipient rejects it immediately. Product charge is ₹0, and the item is returned safely to the sender.
-7. 2-Way Item Swap: For peer-to-peer exchanges (e.g., trading a phone for a laptop), courier audits both items simultaneously at the doorstep before completing the exchange.
+1. "What you see is what you receive" — SafeShip protects both buyers and sellers through verified 10-minute doorstep unboxing and hardware inspection before money changes hands.
+2. 3 SafeShip Delivery Tiers:
+   - 📦 Standard Ground: Economical national surface network (2–3 business days regional, 3–5 days cross-country). Fees range from ₹49 to ₹199 based on road distance (e.g., Jaipur to Delhi ~270 km is ₹90). Delivery is 100% FREE (₹0) when Prepaid Escrow is chosen!
+   - 🚀 Priority Express: Commercial air & expressway corridor linehaul (1–2 business days). Fees range from ₹99 to ₹249 based on distance (e.g., ~₹125 for Jaipur to Delhi, or a +₹35 upgrade on prepaid).
+   - ⚡ Express Air (Next-Flight Out): Guaranteed next-flight commercial cargo + priority handling (24–36 hours). Fees range from ₹149 to ₹329 based on distance (e.g., ~₹165 for Jaipur to Delhi, or a +₹75 upgrade on prepaid).
+3. Realistic Distance-Based Transparent Pricing:
+   - All rates are strictly calculated by road/flight distance. Standard Ground delivery is never ₹500.
+   - Promotional ₹0 Doorstep Open-Box Inspection waiver is included on all bookings.
+   - Nominal transit cargo insurance underwritten by ICICI Lombard (₹19–₹99).
+4. Payment Preferences:
+   - 100% Prepaid Escrow: Full item value safely held in RBI Section 10A ICICI Trustee Nodal Escrow (VPA: safeship@icici). Standard Ground delivery is 100% FREE.
+   - Pay on Delivery (COD): ₹500 advance slot lock collected upfront; balance item amount settled at doorstep via UPI only after unboxing passes.
+   - SafeShip 0% Finance: Upfront down payment < ₹5,000 (e.g. ₹2,499) with 3/6/9/12 month zero-cost EMIs.
+5. Doorstep Verification & Dual Handshake Codes:
+   - Seller Handshake: 4-digit pickup code verified by officer Rahul K. before parcel is sealed into tamper-evident vault bag.
+   - Buyer Handshake: 6-digit release PIN shared by recipient with the delivery officer ONLY AFTER the 10-minute unboxing and test passes.
+   - Zero-Risk Rejection: If the device is fake, damaged, or misrepresented, the recipient rejects it with ₹0 product charges, and it is safely returned to the sender.
+6. 2-Way Hardware Exchange:
+   - For phone/laptop swaps, courier Rahul K. audits both devices simultaneously at the doorstep before releasing any cash difference or completing the swap.
+7. 24/7 Digital Support Desk:
+   - SafeShip provides instantaneous 24/7 in-app customer support directly through this live support desk and support@safeship.online. Telephone hold queues have been replaced with direct instant AI resolution and live operational escalation.
 Communication Style & Persona:
-- Professional, reassuring, clear, polite, and institutional (Stripe & Apple quality).
-- Always speak as SafeShip Support / Customer Care. NEVER refer to yourself as an AI, bot, or "SafeShip AI".
-- Use Indian Rupees (₹) and Indian geographic context concisely.`;
+- Professional, reassuring, concise, polite, and institutional (Apple & Stripe quality).
+- Speak as SafeShip Support / Customer Care. Do NOT refer to yourself as a bot or AI.
+- Always use Indian Rupees (₹) and Indian geographic context concisely.`;
 
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
     { role: 'system', content: systemPrompt }
@@ -223,23 +296,23 @@ Communication Style & Persona:
 
   // Rule-based fallback
   const q = userQuestion.toLowerCase();
-  if (q.includes('delhi') || q.includes('south') || q.includes('fast delivery') || q.includes('fastest')) {
-    return 'For fast delivery from South India (e.g. Bengaluru, Chennai, Hyderabad) to Delhi NCR (~2,200 km), SafeShip offers "SuperFast Air Rush" with guaranteed 24–36 hour transit via next commercial cargo flight. The total upfront cost is ~₹1,650–₹1,950 (or ~₹850–₹975 per person on our 50/50 fee split). Unlike standard closed-box couriers, this includes dedicated white-glove doorstep open-box inspection by a bonded officer, IMEI verification, tamper-evident security vault sealing, and 100% escrow protection!';
+  if (q.includes('delhi') || q.includes('jaipur') || q.includes('rate') || q.includes('fee') || q.includes('cost') || q.includes('price')) {
+    return 'SafeShip provides transparent distance-based shipping across 3 tiers:\n\n* **Standard Ground (2–3 Days):** ₹49–₹199 based on distance (e.g. Jaipur to Delhi ~270 km is ₹90, and **100% FREE** on Prepaid Escrow).\n* **Priority Express (1–2 Days):** ₹99–₹249 based on distance (~₹125 for Jaipur-Delhi).\n* **Express Air (24–36h Next-Flight):** ₹149–₹329 based on distance (~₹165 for Jaipur-Delhi).\n\nAll tiers include our promotional ₹0 Doorstep Open-Box Inspection waiver and ICICI Lombard cargo transit insurance!';
+  }
+  if (q.includes('tier') || q.includes('speed') || q.includes('fast') || q.includes('air')) {
+    return 'SafeShip offers 3 delivery tiers:\n\n1. **Standard Ground (2–3 Days):** Surface linehaul, ₹49–₹199 (Free on prepaid).\n2. **Priority Express (1–2 Days):** Express corridor & commercial air, ₹99–₹249.\n3. **Express Air (24–36h):** Guaranteed next-flight air cargo, ₹149–₹329.\n\nEvery shipment includes 10-minute doorstep unboxing and verified handshake passcodes.';
   }
   if (q.includes('open box') || q.includes('open-box') || q.includes('inspect')) {
-    return 'SafeShip Open-Box Delivery allows you to physically unbox and inspect the hardware with our bonded courier before paying a single rupee for the merchandise! You verify the screen, IMEI, and power state at your doorstep. Payment is collected via UPI only after you approve the item.';
-  }
-  if (q.includes('fee') || q.includes('charge') || q.includes('price') || q.includes('cost')) {
-    return 'SafeShip provides transparent tier pricing calibrated between ₹250 (minimum floor) and ₹1,950 (maximum ceiling). For an item valued around ₹8,000 on an intercity corridor (e.g. Jaipur to Delhi), Priority Express is ~₹600 all-inclusive. Lower-value items have smoothly reduced fees (down to ₹250), and all tiers include white-glove doorstep open-box verification and cargo insurance!';
+    return 'SafeShip Open-Box Delivery allows you to physically unbox, inspect cosmetic condition, verify serial/IMEI, and test hardware with our courier officer before paying a single rupee for the item. Merchandise payment is completed via UPI only after you approve the device at your doorstep!';
   }
   if (q.includes('exchange') || q.includes('swap')) {
-    return 'With SafeShip 2-Way Exchange, our courier officer audits both items simultaneously at the doorstep. Any agreed trade difference is paid via UPI on the spot. If either party is unsatisfied, both retain their original devices with ₹0 product charges.';
+    return 'With SafeShip 2-Way Hardware Exchange, our courier officer audits both devices simultaneously at the doorstep. Any agreed trade difference is settled via UPI on the spot. If either party is unsatisfied, both retain their original devices with ₹0 product charges.';
   }
   if (q.includes('fake') || q.includes('scam') || q.includes('reject') || q.includes('return')) {
-    return 'If the item does not match specifications or shows undisclosed defects, you can reject the parcel right in front of the courier officer. You are charged ₹0 for the item, and the courier returns it safely to the sender in a tamper-evident vault bag.';
+    return 'If the item does not match specifications or displays undisclosed defects, you can reject the parcel right in front of the courier officer. You are charged ₹0 for the item, and the courier returns it safely to the sender in a tamper-evident vault bag.';
   }
 
-  return 'Hello! Welcome to SafeShip Support. We are here to assist with Open-Box inspections, SuperFast Air (24–36h) delivery, live courier tracking, or doorstep UPI payments. How can we help you today?';
+  return 'Hello! Welcome to SafeShip Support. We are here to assist with 3-tier delivery rates, 10-minute doorstep open-box inspection, live courier telemetry, or ICICI nodal escrow payments. How can we help you today?';
 }
 
 /**
