@@ -1036,14 +1036,22 @@ function CreateShipmentContent() {
     year: 'numeric'
   });
 
+  // Dynamic realistic transit days based on tier and linehaul road distance:
+  // Long-distance cross-country (>1600km): Ground: 6–7 days, Mid/Priority: 3–4 days, Fastest: 2 days
+  const getTransitDays = (tier: DeliveryServiceTier, dist: number): number => {
+    if (tier === 'FASTEST_AIR_RUSH' || tier === 'FAST_DELIVERY') {
+      return dist <= 50 ? 0 : dist <= 350 ? 1 : 2;
+    }
+    if (tier === 'PRIORITY_EXPRESS') {
+      return dist <= 50 ? 1 : dist <= 350 ? 2 : dist <= 900 ? 3 : 4;
+    }
+    // STANDARD_GROUND
+    return dist <= 50 ? 2 : dist <= 350 ? 3 : dist <= 900 ? 4 : dist <= 1600 ? 5 : 7;
+  };
+
+  const transitDays = getTransitDays(selectedTier, distanceKm || effectiveDistance);
   const deliveryDateObj = new Date(pickupDateObj);
-  if (selectedTier === 'FASTEST_AIR_RUSH') {
-    deliveryDateObj.setDate(pickupDateObj.getDate() + 1);
-  } else if (selectedTier === 'PRIORITY_EXPRESS') {
-    deliveryDateObj.setDate(pickupDateObj.getDate() + 2);
-  } else {
-    deliveryDateObj.setDate(pickupDateObj.getDate() + 3);
-  }
+  deliveryDateObj.setDate(pickupDateObj.getDate() + Math.max(1, transitDays));
   const deliveryDateFormatted = deliveryDateObj.toLocaleDateString('en-IN', {
     weekday: 'long',
     day: 'numeric',
@@ -1051,10 +1059,10 @@ function CreateShipmentContent() {
     year: 'numeric'
   });
   const deliveryTimeWindow = selectedTier === 'FASTEST_AIR_RUSH'
-    ? 'By 2:00 PM (Within 24–36 Hours Guaranteed)'
+    ? (transitDays <= 1 ? 'By 2:00 PM (Within 24 Hours Guaranteed)' : 'By 5:00 PM (2 Days Air Cargo Guaranteed)')
     : selectedTier === 'PRIORITY_EXPRESS'
-    ? 'By 5:00 PM (1–2 Business Days Guaranteed)'
-    : 'By 7:00 PM (2–3 Business Days Guaranteed)';
+    ? `By 6:00 PM (${tierPricing.PRIORITY_EXPRESS.estimatedDays} Guaranteed)`
+    : `By 8:00 PM (${tierPricing.STANDARD_GROUND.estimatedDays} Guaranteed)`;
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -2842,8 +2850,8 @@ function CreateShipmentContent() {
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center justify-between gap-1.5 flex-wrap">
                       <span className="text-sm font-black text-slate-900">📦 Standard Ground</span>
-                      <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full">
-                        2–3 DAYS
+                      <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full uppercase">
+                        {tierPricing.STANDARD_GROUND.estimatedDays}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
@@ -2876,8 +2884,8 @@ function CreateShipmentContent() {
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center justify-between gap-1.5 flex-wrap">
                       <span className="text-sm font-black text-slate-900">🚀 Priority Express</span>
-                      <span className="text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full">
-                        1–2 DAYS
+                      <span className="text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full uppercase">
+                        {tierPricing.PRIORITY_EXPRESS.estimatedDays}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
@@ -2910,8 +2918,8 @@ function CreateShipmentContent() {
                   <div className="space-y-1 min-w-0">
                     <div className="flex items-center justify-between gap-1.5 flex-wrap">
                       <span className="text-sm font-black text-slate-900">⚡ Express Air</span>
-                      <span className="text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-full shadow-2xs">
-                        24–36H FLIGHT
+                      <span className="text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-full shadow-2xs uppercase">
+                        {tierPricing.FASTEST_AIR_RUSH.estimatedDays}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">

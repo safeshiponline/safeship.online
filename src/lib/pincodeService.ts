@@ -530,7 +530,7 @@ export function calculateEstimatedTransitTime(
   tier: DeliveryServiceTier
 ): { transitTime: string; estimatedDays: string } {
   if (tier === 'FASTEST_AIR_RUSH' || tier === 'FAST_DELIVERY') {
-    if (distanceKm <= 40) {
+    if (distanceKm <= 50) {
       return {
         transitTime: 'Within 3–4 Hours Today (Dedicated Express Courier)',
         estimatedDays: 'Same-Day'
@@ -540,21 +540,16 @@ export function calculateEstimatedTransitTime(
         transitTime: 'Within 18–24 Hours (Next-Morning 11:00 AM)',
         estimatedDays: 'Next-Day'
       };
-    } else if (distanceKm <= 800) {
+    } else if (distanceKm <= 1200) {
       return {
-        transitTime: 'Within 24 Hours (Next-Day Priority Air)',
-        estimatedDays: '1 Day'
-      };
-    } else if (distanceKm <= 1500) {
-      return {
-        transitTime: '24–36 Hours from Pickup (Direct Flight Corridor)',
+        transitTime: 'Within 24–36 Hours (Next-Flight Priority Air)',
         estimatedDays: '1–2 Days'
       };
     } else {
-      // Long distance intercity e.g. South India to Delhi (2,200+ km)
+      // Long distance / cross country (e.g. Srinagar to Kanyakumari, 2,700+ km)
       return {
-        transitTime: '24–36 Hours from Pickup (Guaranteed Next-Flight Air Cargo)',
-        estimatedDays: '24–36 Hours'
+        transitTime: 'Within 24–48 Hours from Pickup (Direct Flight Air Cargo)',
+        estimatedDays: '2 Days'
       };
     }
   }
@@ -573,7 +568,7 @@ export function calculateEstimatedTransitTime(
   }
 
   if (tier === 'PRIORITY_EXPRESS') {
-    if (distanceKm <= 40) {
+    if (distanceKm <= 50) {
       return {
         transitTime: 'By Tomorrow 2:00 PM (Within 24h of Pickup)',
         estimatedDays: '1 Day'
@@ -585,20 +580,20 @@ export function calculateEstimatedTransitTime(
       };
     } else if (distanceKm <= 900) {
       return {
-        transitTime: '2 Business Days from Pickup (Intercity Express)',
-        estimatedDays: '2 Days'
+        transitTime: '2–3 Business Days from Pickup (Intercity Express)',
+        estimatedDays: '2–3 Days'
       };
     } else {
-      // Cross-country intercity e.g. South to Delhi
+      // Cross-country intercity long distance (e.g. >900 km, Srinagar to Kanyakumari)
       return {
-        transitTime: '2–3 Business Days from Pickup (Commercial Air Cargo)',
-        estimatedDays: '2–3 Days'
+        transitTime: '3–4 Business Days from Pickup (Priority Expressway & Commercial Air Corridor)',
+        estimatedDays: '3–4 Days'
       };
     }
   }
 
   // STANDARD_GROUND or STANDARD_DELIVERY
-  if (distanceKm <= 40) {
+  if (distanceKm <= 50) {
     return {
       transitTime: '1–2 Business Days from Pickup',
       estimatedDays: '1–2 Days'
@@ -619,9 +614,10 @@ export function calculateEstimatedTransitTime(
       estimatedDays: '4–5 Days'
     };
   } else {
+    // Cross-country national surface linehaul (>1600 km, e.g. 2,700–3,500 km)
     return {
-      transitTime: '5–6 Business Days from Pickup (National Linehaul)',
-      estimatedDays: '5–6 Days'
+      transitTime: '6–7 Business Days from Pickup (National Surface Linehaul Network)',
+      estimatedDays: '6–7 Days'
     };
   }
 }
@@ -667,8 +663,8 @@ export function calculateTierPricing(
     return Math.min(320, 195 + Math.round((val - 60000) * 0.0018));
   };
   const groundItemValueSurcharge = calcItemValueSurcharge(value);
-  const priorityItemValueSurcharge = Math.min(260, Math.round(value * 0.0016));
-  const fastestItemValueSurcharge = Math.min(360, Math.round(value * 0.0022));
+  const priorityItemValueSurcharge = Math.min(340, Math.round(value * 0.0020));
+  const fastestItemValueSurcharge = Math.min(480, Math.round(value * 0.0028));
 
   // 4. Distance Surcharge calculated strictly according to linehaul road distance
   const effectiveDistance = Math.max(0, distanceKm);
@@ -679,8 +675,8 @@ export function calculateTierPricing(
   };
 
   const groundDistanceSurcharge = calcDistanceSurcharge(0.09, 290);   // For 2700 km: ~₹238
-  const priorityDistanceSurcharge = calcDistanceSurcharge(0.16, 490); // For 2700 km: ~₹424
-  const fastestDistanceSurcharge = calcDistanceSurcharge(0.28, 850);  // For 2700 km: ~₹742
+  const priorityDistanceSurcharge = calcDistanceSurcharge(0.20, 620); // Slightly higher express linehaul
+  const fastestDistanceSurcharge = calcDistanceSurcharge(0.35, 1050); // Slightly higher priority air cargo
 
   const sameDayAvailable = effectiveDistance <= 50;
   const sameDayDistanceSurcharge = sameDayAvailable && effectiveDistance > 15
@@ -698,17 +694,17 @@ export function calculateTierPricing(
     : effectiveDistance <= 2000 ? 289
     : 369) + groundItemValueSurcharge;
 
-  let priorityBase = (effectiveDistance <= 50 ? 189
-    : effectiveDistance <= 350 ? 249
-    : effectiveDistance <= 1000 ? 349
-    : effectiveDistance <= 2000 ? 489
-    : 599) + priorityItemValueSurcharge;
+  let priorityBase = (effectiveDistance <= 50 ? 219
+    : effectiveDistance <= 350 ? 289
+    : effectiveDistance <= 1000 ? 399
+    : effectiveDistance <= 2000 ? 549
+    : 679) + priorityItemValueSurcharge;
 
-  let fastestBase = (effectiveDistance <= 50 ? 289
-    : effectiveDistance <= 350 ? 399
-    : effectiveDistance <= 1000 ? 549
-    : effectiveDistance <= 2000 ? 789
-    : 989) + fastestItemValueSurcharge;
+  let fastestBase = (effectiveDistance <= 50 ? 329
+    : effectiveDistance <= 350 ? 449
+    : effectiveDistance <= 1000 ? 649
+    : effectiveDistance <= 2000 ? 899
+    : 1149) + fastestItemValueSurcharge;
 
   let sameDayBase = 189 + groundItemValueSurcharge;
 
@@ -758,11 +754,11 @@ export function calculateTierPricing(
 
     const rawTotal = base + surcharge;
     // Calibrated realistic Indian courier bounds across local to cross-country (up to 3500 km):
-    // Ground: ₹149 to ₹999 max (scaled by distance AND item value)
-    // Priority: ₹249 to ₹1,499 max
-    // Air: ₹399 to ₹2,399 max
-    const minFloor = tier === 'STANDARD_GROUND' ? 149 : tier === 'PRIORITY_EXPRESS' ? 249 : 399;
-    const maxCap = tier === 'STANDARD_GROUND' ? 999 : tier === 'PRIORITY_EXPRESS' ? 1499 : 2399;
+    // Ground: ₹149 to ₹999 max (stays standard as requested)
+    // Priority: ₹299 to ₹1,799 max (slightly higher)
+    // Air: ₹449 to ₹2,799 max (slightly higher)
+    const minFloor = tier === 'STANDARD_GROUND' ? 149 : tier === 'PRIORITY_EXPRESS' ? 299 : 449;
+    const maxCap = tier === 'STANDARD_GROUND' ? 999 : tier === 'PRIORITY_EXPRESS' ? 1799 : 2799;
     const clampedTotal = Math.min(maxCap, Math.max(minFloor, rawTotal));
     const adjustedBase = clampedTotal - surcharge;
 
