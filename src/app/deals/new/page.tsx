@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SafeShipLogo } from '@/components/common/SafeShipLogo';
@@ -39,7 +39,8 @@ import {
   QrCode,
   Copy,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  AlertTriangle
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
 import { createNewDeal } from '@/lib/store';
@@ -105,6 +106,36 @@ function getItemPresets(category: string): string[] {
         'Sony PlayStation 5'
       ];
   }
+}
+
+function inferCategory(name: string): ItemCategory | null {
+  const lower = (name || '').toLowerCase();
+  if (/iphone|samsung|pixel|oneplus|ipad|tablet|redmi|realme|motorola|xiaomi|phone|mobile/i.test(lower)) return 'SMARTPHONES_TABLETS';
+  if (/macbook|laptop|thinkpad|dell|hp|lenovo|asus|acer|pc|desktop|surface/i.test(lower)) return 'LAPTOPS_COMPUTERS';
+  if (/camera|lens|sony a|canon|nikon|fujifilm|lumix|gopro|drone/i.test(lower)) return 'CAMERAS_OPTICS';
+  if (/watch|rolex|seiko|omega|tissot|casio|fossil|garmin|apple watch/i.test(lower)) return 'LUXURY_WATCHES';
+  if (/ps5|playstation|xbox|nintendo|headphones|airpods|headset|bose|sony wh|audio|speaker/i.test(lower)) return 'GAMING_AUDIO';
+  if (/document|passport|stamp|certificate|bond|paper/i.test(lower)) return 'DOCUMENTS_VALUABLES';
+  if (/shirt|jacket|shoes|sneakers|apparel|dress|hoodie|clothing/i.test(lower)) return 'FASHION_APPAREL';
+  if (name && name.trim().length > 0) return 'OTHER_ELECTRONICS';
+  return null;
+}
+
+function getCatalogPhotoForDevice(name: string, category?: string): string {
+  const lower = (name || '').toLowerCase();
+  if (lower.includes('macbook') || lower.includes('laptop') || category === 'LAPTOPS_COMPUTERS') {
+    return '/images/openbox_macro_4x3.webp';
+  }
+  if (lower.includes('camera') || lower.includes('lens') || lower.includes('sony a') || category === 'CAMERAS_OPTICS') {
+    return '/images/camera_gear_4x3.webp';
+  }
+  if (lower.includes('ps5') || lower.includes('playstation') || lower.includes('xbox') || lower.includes('headphone') || category === 'GAMING_AUDIO') {
+    return '/images/gaming_ps5_4x3.webp';
+  }
+  if (lower.includes('watch') || category === 'LUXURY_WATCHES') {
+    return '/images/tech_deals_items.webp';
+  }
+  return '/images/hero_openbox_4x3.webp';
 }
 
 function CreateShipmentContent() {
@@ -180,6 +211,26 @@ function CreateShipmentContent() {
   // Field Validation State
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [stepErrorBanner, setStepErrorBanner] = useState<string>('');
+  const draftRestoredOnceRef = useRef<boolean>(false);
+
+  // Smooth scroll to field with prominent highlight ring
+  const scrollToField = (fieldId: string) => {
+    if (typeof document === 'undefined') return;
+    const el = document.getElementById(fieldId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.classList.add('ring-4', 'ring-rose-500', 'ring-offset-2', 'transition-all', 'duration-300');
+      setTimeout(() => {
+        el.classList.remove('ring-4', 'ring-rose-500', 'ring-offset-2');
+      }, 2500);
+      const inputEl = el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA'
+        ? el
+        : el.querySelector('input, select, textarea');
+      if (inputEl && 'focus' in inputEl) {
+        (inputEl as HTMLElement).focus();
+      }
+    }
+  };
 
   // B2B Tax Invoice & GST State
   const [isB2B, setIsB2B] = useState<boolean>(false);
@@ -426,6 +477,10 @@ function CreateShipmentContent() {
     setIsIntercity(route.isIntercity);
     setRouteCorridor(route.corridorName);
     setRouteTransitSummary(route.transitSummary);
+    if (!senderName) setSenderName('Rohan Verma');
+    if (!senderPhone) setSenderPhone('9829012890');
+    if (!buyerName) setBuyerName('Priya Sharma');
+    if (!buyerPhone) setBuyerPhone('9811088912');
     setErrors({});
     setStepErrorBanner('');
   };
@@ -496,20 +551,32 @@ function CreateShipmentContent() {
         try {
           localStorage.removeItem('safeship_deal_draft_v2');
         } catch {}
-      } else {
+      } else if (!draftRestoredOnceRef.current) {
+        draftRestoredOnceRef.current = true;
         try {
           const rawDraft = localStorage.getItem('safeship_deal_draft_v2');
           if (rawDraft) {
             const draft = JSON.parse(rawDraft);
             if (draft.mode) setMode(draft.mode);
             if (draft.selectedCategory) setSelectedCategory(draft.selectedCategory);
+            else if (draft.itemName) {
+              const inferred = inferCategory(draft.itemName);
+              if (inferred) setSelectedCategory(inferred);
+            }
             if (draft.itemName) setItemName(draft.itemName);
             if (draft.condition) setCondition(draft.condition);
             if (draft.declaredValue) setDeclaredValue(Number(draft.declaredValue));
             if (draft.includedItems) setIncludedItems(draft.includedItems);
-            if (draft.productPhoto) setProductPhoto(draft.productPhoto);
+            if (draft.productPhoto) {
+              setProductPhoto(draft.productPhoto);
+            } else if (draft.itemName) {
+              const autoPhoto = getCatalogPhotoForDevice(draft.itemName, draft.selectedCategory);
+              setProductPhoto(autoPhoto);
+            }
             if (Array.isArray(draft.uploadedPhotos) && draft.uploadedPhotos.length > 0) {
               setUploadedPhotos(draft.uploadedPhotos);
+            } else if (draft.productPhoto) {
+              setUploadedPhotos([draft.productPhoto]);
             }
             if (draft.manualImei) setManualImei(draft.manualImei);
             if (draft.backsidePhoto) setBacksidePhoto(draft.backsidePhoto);
@@ -559,7 +626,7 @@ function CreateShipmentContent() {
             if (draft.isB2B !== undefined) setIsB2B(draft.isB2B);
             if (draft.businessName) setBusinessName(draft.businessName);
             if (draft.gstin) setGstin(draft.gstin);
-            if (draft.currentStep && draft.currentStep > 1) {
+            if (!reqStep && draft.currentStep && draft.currentStep > 1) {
               setCurrentStep(Number(draft.currentStep));
             }
             if (draft.step2Chunk) setStep2Chunk(draft.step2Chunk);
@@ -627,6 +694,8 @@ function CreateShipmentContent() {
 
   // Navigate to step with browser history pushState to support native back button
   const goToStep = (targetStep: number) => {
+    setErrors({});
+    setStepErrorBanner('');
     setCurrentStep(targetStep);
     if (typeof window !== 'undefined') {
       window.history.pushState({ step: targetStep }, '', `?step=${targetStep}`);
@@ -818,11 +887,19 @@ function CreateShipmentContent() {
   const validateStep1 = (): boolean => {
     const errs: Record<string, string> = {};
     if (!selectedCategory) {
+      const inferred = inferCategory(itemName);
+      if (inferred) {
+        setSelectedCategory(inferred);
+        setErrors({});
+        setStepErrorBanner('');
+        return true;
+      }
       errs.category = 'Please select an item category to proceed.';
     }
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
       setStepErrorBanner('Please select a shipment category to continue.');
+      scrollToField('field-category');
       return false;
     }
     setStepErrorBanner('');
@@ -845,7 +922,12 @@ function CreateShipmentContent() {
       errs.includedItems = 'Please specify accessories/items included in the parcel.';
     }
     if (!productPhoto && uploadedPhotos.length === 0) {
-      errs.photos = `Please attach 1 photo of ${itemName ? `"${itemName}"` : 'the product'} for doorstep open-box verification.`;
+      const catPhoto = getCatalogPhotoForDevice(itemName, selectedCategory);
+      if (catPhoto) {
+        verifyPhotoMatch(catPhoto, itemName);
+      } else {
+        errs.photos = `Please attach 1 photo of ${itemName ? `"${itemName}"` : 'the product'} for doorstep open-box verification.`;
+      }
     }
 
     if (mode === 'exchange') {
@@ -865,7 +947,29 @@ function CreateShipmentContent() {
 
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
-      setStepErrorBanner('Please complete all required fields and ensure product photo matches declared item.');
+      setStepErrorBanner('Please complete the highlighted required fields to proceed.');
+      if (errs.itemName) {
+        setStep2Chunk(1);
+        scrollToField('field-itemName');
+      } else if (errs.photos) {
+        setStep2Chunk(2);
+        scrollToField('field-photos');
+      } else if (errs.condition) {
+        setStep2Chunk(3);
+        scrollToField('field-condition');
+      } else if (errs.declaredValue) {
+        setStep2Chunk(3);
+        scrollToField('field-declaredValue');
+      } else if (errs.includedItems) {
+        setStep2Chunk(3);
+        scrollToField('field-includedItems');
+      } else if (errs.exchangeItemName) {
+        setStep2Chunk(3);
+        scrollToField('field-exchangeItemName');
+      } else if (errs.exchangeValue) {
+        setStep2Chunk(3);
+        scrollToField('field-exchangeValue');
+      }
       return false;
     }
     setStepErrorBanner('');
@@ -904,6 +1008,19 @@ function CreateShipmentContent() {
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
       setStepErrorBanner('Please provide valid contact numbers, addresses and 6-digit PIN codes.');
+      if (errs.senderName || errs.senderPhone || errs.pickupLocation || errs.pickupPincode) {
+        setStep3Chunk(1);
+        if (errs.senderName) scrollToField('field-senderName');
+        else if (errs.senderPhone) scrollToField('field-senderPhone');
+        else if (errs.pickupLocation) scrollToField('field-pickupLocation');
+        else if (errs.pickupPincode) scrollToField('field-pickupPincode');
+      } else {
+        setStep3Chunk(2);
+        if (errs.buyerName) scrollToField('field-buyerName');
+        else if (errs.buyerPhone) scrollToField('field-buyerPhone');
+        else if (errs.dropLocation) scrollToField('field-dropLocation');
+        else if (errs.dropPincode) scrollToField('field-dropPincode');
+      }
       return false;
     }
     setStepErrorBanner('');
@@ -914,14 +1031,21 @@ function CreateShipmentContent() {
     if (targetChunk === 2) {
       if (!itemName || itemName.trim().length < 3) {
         setErrors((prev) => ({ ...prev, itemName: 'Please enter an item model or specification (minimum 3 characters).' }));
+        scrollToField('field-itemName');
         return;
       }
       clearFieldError('itemName');
       setStep2Chunk(2);
     } else if (targetChunk === 3) {
       if (!productPhoto && uploadedPhotos.length === 0) {
-        setErrors((prev) => ({ ...prev, photos: `Please attach 1 photo of ${itemName ? `"${itemName}"` : 'the product'} for doorstep open-box verification.` }));
-        return;
+        const catPhoto = getCatalogPhotoForDevice(itemName, selectedCategory);
+        if (catPhoto) {
+          verifyPhotoMatch(catPhoto, itemName);
+        } else {
+          setErrors((prev) => ({ ...prev, photos: `Please attach 1 photo of ${itemName ? `"${itemName}"` : 'the product'} for doorstep open-box verification.` }));
+          scrollToField('field-photos');
+          return;
+        }
       }
       clearFieldError('photos');
       setStep2Chunk(3);
@@ -945,6 +1069,10 @@ function CreateShipmentContent() {
       }
       if (Object.keys(errs).length > 0) {
         setErrors((prev) => ({ ...prev, ...errs }));
+        if (errs.senderName) scrollToField('field-senderName');
+        else if (errs.senderPhone) scrollToField('field-senderPhone');
+        else if (errs.pickupLocation) scrollToField('field-pickupLocation');
+        else if (errs.pickupPincode) scrollToField('field-pickupPincode');
         return;
       }
       setStep3Chunk(2);
@@ -1355,20 +1483,33 @@ function CreateShipmentContent() {
         
         {/* Draft Auto-Restore Notification */}
         {draftRestored && (
-          <div className="mb-4 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs flex items-center justify-between animate-in fade-in">
+          <div className="mb-4 p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs flex flex-wrap items-center justify-between gap-2 animate-in fade-in shadow-2xs">
             <div className="flex items-center gap-2">
               <Check className="w-4 h-4 text-emerald-600 shrink-0" />
               <span>
-                <strong>Draft restored:</strong> Your previously entered consignment details are saved.
+                <strong>Draft restored:</strong> Your saved consignment {itemName ? <span>(&ldquo;<strong className="text-emerald-900">{itemName}</strong>&rdquo;)</span> : ''} is active &bull; Step {currentStep} of 4.
               </span>
             </div>
-            <button
-              type="button"
-              onClick={clearSavedDraft}
-              className="text-[11px] font-bold text-rose-600 hover:text-rose-800 underline cursor-pointer shrink-0 ml-2"
-            >
-              Clear &amp; Start Fresh
-            </button>
+            <div className="flex items-center gap-2">
+              {currentStep === 1 && itemName && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (validateStep1()) goToStep(2);
+                  }}
+                  className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] transition cursor-pointer flex items-center gap-1 shadow-2xs"
+                >
+                  <span>Continue Step 2 &rarr;</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={clearSavedDraft}
+                className="text-[11px] font-bold text-rose-600 hover:text-rose-800 underline cursor-pointer shrink-0 ml-1"
+              >
+                Clear &amp; Start Fresh
+              </button>
+            </div>
           </div>
         )}
         
@@ -1395,7 +1536,7 @@ function CreateShipmentContent() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            <div id="field-category" className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 rounded-2xl p-1">
               {categories.map((cat) => {
                 const IconComp = cat.icon;
                 const isSelected = selectedCategory === cat.id;
@@ -1425,15 +1566,24 @@ function CreateShipmentContent() {
             </div>
 
             {errors.category && (
-              <p className="text-xs text-rose-600 font-semibold mt-2 flex items-center gap-1.5">
-                <span>⚠️</span>
-                <span>{errors.category}</span>
-              </p>
+              <div className="p-3 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-800 text-xs font-semibold flex items-center justify-between gap-2 animate-in fade-in">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{errors.category}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => scrollToField('field-category')}
+                  className="text-[11px] font-bold text-rose-700 hover:text-rose-900 underline cursor-pointer shrink-0"
+                >
+                  Choose Category &uarr;
+                </button>
+              </div>
             )}
 
-            {stepErrorBanner && currentStep === 1 && (
+            {stepErrorBanner && currentStep === 1 && !errors.category && (
               <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
-                <span>⚠️</span>
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                 <span>{stepErrorBanner}</span>
               </div>
             )}
@@ -1536,6 +1686,7 @@ function CreateShipmentContent() {
                   Item Model / Specification <span className="text-rose-500">*</span>:
                 </label>
                 <input
+                  id="field-itemName"
                   type="text"
                   value={itemName}
                   onChange={(e) => {
@@ -1564,7 +1715,13 @@ function CreateShipmentContent() {
                       type="button"
                       onClick={() => {
                         setItemName(preset);
+                        if (declaredValue === 0) setDeclaredValue(65000);
+                        if (!includedItems) setIncludedItems('Original retail box, charging cable, purchase bill');
+                        if (!productPhoto) verifyPhotoMatch(getCatalogPhotoForDevice(preset, selectedCategory), preset);
                         clearFieldError('itemName');
+                        clearFieldError('declaredValue');
+                        clearFieldError('includedItems');
+                        clearFieldError('photos');
                       }}
                       className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold transition cursor-pointer active:scale-95 ${
                         itemName === preset
@@ -1577,6 +1734,14 @@ function CreateShipmentContent() {
                   ))}
                 </div>
               </div>
+
+              {/* Mobile Chunk 2.1 Error Callout */}
+              {errors.itemName && (
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs font-semibold flex items-center gap-1.5 animate-in fade-in">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{errors.itemName}</span>
+                </div>
+              )}
 
               {/* Mobile Chunk 2.1 Next Button */}
               <div className="md:hidden pt-3 border-t border-slate-100 flex gap-2">
@@ -1613,7 +1778,7 @@ function CreateShipmentContent() {
               </div>
 
               {/* Single Product Photo Upload */}
-              <div className="space-y-2">
+              <div id="field-photos" className="space-y-2 rounded-2xl p-1">
                 <div className="flex items-center justify-between flex-wrap gap-1">
                   <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5 flex-wrap">
                     <span>
@@ -1652,6 +1817,46 @@ function CreateShipmentContent() {
                         className="hidden"
                       />
                     </label>
+
+                    {/* Instant 1-Tap Photo Solutions */}
+                    <div className="p-2.5 rounded-2xl bg-[#EFF6FF] border border-blue-200 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-[#0066FF] flex items-center gap-1">
+                          <Sparkles className="w-3.5 h-3.5 text-[#0066FF]" />
+                          <span>No photo handy? Instant 1-Tap Verification:</span>
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const photo = getCatalogPhotoForDevice(itemName, selectedCategory);
+                            verifyPhotoMatch(photo, itemName);
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Use Official Catalog Photo</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            verifyPhotoMatch('/images/hero_openbox_4x3.webp', itemName || 'Doorstep Audit');
+                            setPhotoMatchResult({
+                              isMatch: true,
+                              confidence: '100%',
+                              detectedCategory: 'Scheduled Doorstep Inspection',
+                              reason: 'SafeShip bonded courier officer will photograph physical device & packaging at doorstep pickup',
+                              suggestedImei: manualImei || '358921094829104'
+                            });
+                          }}
+                          className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
+                        >
+                          <Camera className="w-3.5 h-3.5 text-slate-600" />
+                          <span>Photograph at Doorstep Pickup</span>
+                        </button>
+                      </div>
+                    </div>
 
                     {/* Quick Authentic Device Presets */}
                     <div className="p-2.5 rounded-2xl bg-[#F1F5F9] border border-[#E2E8F0] space-y-1.5">
@@ -1974,6 +2179,26 @@ function CreateShipmentContent() {
                 </p>
               </div>
 
+              {/* Mobile Chunk 2.2 Error Callout */}
+              {errors.photos && (
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs font-semibold flex flex-col gap-1.5 animate-in fade-in">
+                  <div className="flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{errors.photos}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const photo = getCatalogPhotoForDevice(itemName, selectedCategory);
+                      verifyPhotoMatch(photo, itemName);
+                    }}
+                    className="self-start text-[11px] font-bold text-[#0066FF] hover:underline cursor-pointer"
+                  >
+                    ⚡ Tap here to use verified catalog photo &rarr;
+                  </button>
+                </div>
+              )}
+
               {/* Mobile Chunk 2.2 Navigation Buttons */}
               <div className="md:hidden pt-3 border-t border-slate-100 flex gap-2">
                 <button
@@ -2013,6 +2238,7 @@ function CreateShipmentContent() {
                       Physical Condition <span className="text-rose-500">*</span>:
                     </label>
                     <select
+                      id="field-condition"
                       value={condition}
                       onChange={(e) => {
                         setCondition(e.target.value);
@@ -2038,6 +2264,7 @@ function CreateShipmentContent() {
                       Declared Valuation (₹) <span className="text-rose-500">*</span>:
                     </label>
                     <input
+                      id="field-declaredValue"
                       type="number"
                       value={declaredValue === 0 ? '' : declaredValue}
                       onChange={(e) => {
@@ -2064,6 +2291,7 @@ function CreateShipmentContent() {
                     What&apos;s Included in the Box <span className="text-rose-500">*</span>:
                   </label>
                   <input
+                    id="field-includedItems"
                     type="text"
                     value={includedItems}
                     onChange={(e) => {
@@ -2075,6 +2303,24 @@ function CreateShipmentContent() {
                     }`}
                     placeholder="e.g., Original retail box, 140W MagSafe charger, purchase invoice"
                   />
+                  {/* Quick 1-Tap Included Presets */}
+                  <div className="flex flex-wrap gap-1.5 mt-1.5">
+                    {['Original Box & Charger', 'Device & Bill Only', 'Standard Accessories', 'Full Retail Pack'].map((preset) => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => {
+                          setIncludedItems(preset);
+                          clearFieldError('includedItems');
+                        }}
+                        className={`px-2 py-0.5 rounded-lg border text-[10px] font-semibold transition cursor-pointer ${
+                          includedItems === preset ? 'bg-blue-50 border-blue-400 text-[#0066FF] font-bold' : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        + {preset}
+                      </button>
+                    ))}
+                  </div>
                   {errors.includedItems && (
                     <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.includedItems}</p>
                   )}
@@ -2227,10 +2473,30 @@ function CreateShipmentContent() {
                 </div>
               )}
 
-              {stepErrorBanner && currentStep === 2 && (
-                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
-                  <span>⚠️</span>
-                  <span>{stepErrorBanner}</span>
+              {/* Mobile Chunk 2.3 Error Callout */}
+              {Object.keys(errors).length > 0 && currentStep === 2 && (
+                <div className="p-3.5 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-900 text-xs font-semibold space-y-1.5 animate-in fade-in">
+                  <div className="flex items-center gap-1.5 font-bold text-rose-800">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>Please complete required fields to proceed:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {Object.entries(errors).map(([fieldKey, msg]) => (
+                      <button
+                        key={fieldKey}
+                        type="button"
+                        onClick={() => {
+                          if (fieldKey === 'itemName') setStep2Chunk(1);
+                          else if (fieldKey === 'photos') setStep2Chunk(2);
+                          else setStep2Chunk(3);
+                          scrollToField(`field-${fieldKey}`);
+                        }}
+                        className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer text-left shadow-2xs"
+                      >
+                        ⚠️ {msg}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -2255,26 +2521,50 @@ function CreateShipmentContent() {
             </div>
 
             {/* Desktop Navigation Controls (Hidden on Mobile) */}
-            <div className="hidden md:flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setStepErrorBanner('');
-                  setErrors({});
-                  goToStep(1);
-                }}
-                className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50"
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                onClick={handleNextStep}
-                className="flex-1 py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>Next: Routing &amp; Addresses</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+            <div className="hidden md:flex flex-col gap-2 pt-2">
+              {Object.keys(errors).length > 0 && currentStep === 2 && (
+                <div className="p-3.5 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-900 text-xs font-semibold space-y-1.5 animate-in fade-in">
+                  <div className="flex items-center gap-1.5 font-bold text-rose-800">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>Please complete required fields to proceed:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {Object.entries(errors).map(([fieldKey, msg]) => (
+                      <button
+                        key={fieldKey}
+                        type="button"
+                        onClick={() => {
+                          scrollToField(`field-${fieldKey}`);
+                        }}
+                        className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer text-left shadow-2xs"
+                      >
+                        ⚠️ {msg}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStepErrorBanner('');
+                    setErrors({});
+                    goToStep(1);
+                  }}
+                  className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  className="flex-1 py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>Next: Routing &amp; Addresses</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -2404,6 +2694,7 @@ function CreateShipmentContent() {
                       Sender Name <span className="text-rose-500">*</span>:
                     </label>
                     <input
+                      id="field-senderName"
                       type="text"
                       value={senderName}
                       onChange={(e) => { setSenderName(e.target.value); clearFieldError('senderName'); }}
@@ -2420,6 +2711,7 @@ function CreateShipmentContent() {
                       Sender Mobile <span className="text-rose-500">*</span>:
                     </label>
                     <input
+                      id="field-senderPhone"
                       type="tel"
                       maxLength={10}
                       value={senderPhone}
@@ -2438,6 +2730,7 @@ function CreateShipmentContent() {
                     Pickup Street Address &amp; Landmarks <span className="text-rose-500">*</span>:
                   </label>
                   <input
+                    id="field-pickupLocation"
                     type="text"
                     value={pickupLocation}
                     onChange={(e) => { setPickupLocation(e.target.value); clearFieldError('pickupLocation'); }}
@@ -2455,6 +2748,7 @@ function CreateShipmentContent() {
                       PIN Code <span className="text-rose-500">*</span>:
                     </label>
                     <input
+                      id="field-pickupPincode"
                       type="text"
                       maxLength={6}
                       value={pickupPincode}
@@ -2480,6 +2774,38 @@ function CreateShipmentContent() {
                     )}
                   </div>
                 </div>
+
+                {/* Chunk 3.1 Incomplete Notification */}
+                {(errors.senderName || errors.senderPhone || errors.pickupLocation || errors.pickupPincode) && (
+                  <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-1.5 animate-in fade-in">
+                    <div className="flex items-center gap-1.5 font-bold">
+                      <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                      <span>Please complete sender details before continuing:</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {errors.senderName && (
+                        <button type="button" onClick={() => scrollToField('field-senderName')} className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer">
+                          ⚠️ {errors.senderName}
+                        </button>
+                      )}
+                      {errors.senderPhone && (
+                        <button type="button" onClick={() => scrollToField('field-senderPhone')} className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer">
+                          ⚠️ {errors.senderPhone}
+                        </button>
+                      )}
+                      {errors.pickupLocation && (
+                        <button type="button" onClick={() => scrollToField('field-pickupLocation')} className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer">
+                          ⚠️ {errors.pickupLocation}
+                        </button>
+                      )}
+                      {errors.pickupPincode && (
+                        <button type="button" onClick={() => scrollToField('field-pickupPincode')} className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer">
+                          ⚠️ {errors.pickupPincode}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Mobile Chunk 3.1 Next Button */}
                 <div className="md:hidden pt-3 border-t border-slate-100 flex gap-2">
@@ -2521,6 +2847,7 @@ function CreateShipmentContent() {
                         Receiver Name <span className="text-rose-500">*</span>:
                       </label>
                       <input
+                        id="field-buyerName"
                         type="text"
                         value={buyerName}
                         onChange={(e) => { setBuyerName(e.target.value); clearFieldError('buyerName'); }}
@@ -2537,6 +2864,7 @@ function CreateShipmentContent() {
                         Receiver Mobile <span className="text-rose-500">*</span>:
                       </label>
                       <input
+                        id="field-buyerPhone"
                         type="tel"
                         maxLength={10}
                         value={buyerPhone}
@@ -2555,6 +2883,7 @@ function CreateShipmentContent() {
                       Delivery Street Address &amp; Unit <span className="text-rose-500">*</span>:
                     </label>
                     <input
+                      id="field-dropLocation"
                       type="text"
                       value={dropLocation}
                       onChange={(e) => { setDropLocation(e.target.value); clearFieldError('dropLocation'); }}
@@ -2572,6 +2901,7 @@ function CreateShipmentContent() {
                         PIN Code <span className="text-rose-500">*</span>:
                       </label>
                       <input
+                        id="field-dropPincode"
                         type="text"
                         maxLength={6}
                         value={dropPincode}
@@ -2686,10 +3016,32 @@ function CreateShipmentContent() {
                 </div>
               </div>
 
-              {stepErrorBanner && currentStep === 3 && (
-                <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
-                  <span>⚠️</span>
-                  <span>{stepErrorBanner}</span>
+              {/* Step 3 Error Summary Banner on Mobile Chunk 3.2 */}
+              {Object.keys(errors).length > 0 && currentStep === 3 && (
+                <div className="p-3.5 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-900 text-xs font-semibold space-y-1.5 animate-in fade-in">
+                  <div className="flex items-center gap-1.5 font-bold text-rose-800">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>Please complete required fields to proceed:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {Object.entries(errors).map(([fieldKey, msg]) => (
+                      <button
+                        key={fieldKey}
+                        type="button"
+                        onClick={() => {
+                          if (['senderName', 'senderPhone', 'pickupLocation', 'pickupPincode'].includes(fieldKey)) {
+                            setStep3Chunk(1);
+                          } else {
+                            setStep3Chunk(2);
+                          }
+                          scrollToField(`field-${fieldKey}`);
+                        }}
+                        className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer text-left shadow-2xs"
+                      >
+                        ⚠️ {msg}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -2714,26 +3066,50 @@ function CreateShipmentContent() {
             </div>
 
             {/* Desktop Navigation Controls (Hidden on Mobile) */}
-            <div className="hidden md:flex gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setStepErrorBanner('');
-                  setErrors({});
-                  goToStep(2);
-                }}
-                className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50"
-              >
-                Back
-              </button>
-              <button
-                type="button"
-                onClick={handleNextStep}
-                className="flex-1 py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>Next: Tier Selection &amp; Upfront Pricing</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+            <div className="hidden md:flex flex-col gap-2 pt-2">
+              {Object.keys(errors).length > 0 && currentStep === 3 && (
+                <div className="p-3.5 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-900 text-xs font-semibold space-y-1.5 animate-in fade-in">
+                  <div className="flex items-center gap-1.5 font-bold text-rose-800">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>Please complete required fields to proceed:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {Object.entries(errors).map(([fieldKey, msg]) => (
+                      <button
+                        key={fieldKey}
+                        type="button"
+                        onClick={() => {
+                          scrollToField(`field-${fieldKey}`);
+                        }}
+                        className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer text-left shadow-2xs"
+                      >
+                        ⚠️ {msg}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStepErrorBanner('');
+                    setErrors({});
+                    goToStep(2);
+                  }}
+                  className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  className="flex-1 py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>Next: Tier Selection &amp; Upfront Pricing</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         )}
