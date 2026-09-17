@@ -159,6 +159,7 @@ export interface EscrowBreakdown {
 
 export interface SafeDeal {
   id: string;
+  trackingId?: string;
   title: string;
   description: string;
   category: ItemCategory;

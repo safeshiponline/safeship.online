@@ -74,16 +74,16 @@ export function getDealById(id: string): SafeDeal | undefined {
 
   // 1. Check user orders first
   const userOrders = getUserOrders();
-  const userFound = userOrders.find((d) => d.id.toLowerCase() === target);
+  const userFound = userOrders.find((d) => d.id.toLowerCase() === target || d.trackingId?.toLowerCase() === target);
   if (userFound) return userFound;
 
   // 2. Check stored deals
   const deals = getStoredDeals();
-  const found = deals.find((d) => d.id.toLowerCase() === target);
+  const found = deals.find((d) => d.id.toLowerCase() === target || d.trackingId?.toLowerCase() === target);
   if (found) return found;
 
   // 3. Check demo INITIAL_DEALS (e.g. SS48291)
-  const initFound = INITIAL_DEALS.find((d) => d.id.toLowerCase() === target);
+  const initFound = INITIAL_DEALS.find((d) => d.id.toLowerCase() === target || d.trackingId?.toLowerCase() === target);
   if (initFound) return initFound;
 
   // If not found anywhere, return undefined so a proper "Not Found" UI is shown.
@@ -166,14 +166,15 @@ export function createNewDeal(params: {
 
   const newDeal: SafeDeal = {
     id: newId,
+    trackingId: `SS-TRK-${Math.floor(100000 + Math.random() * 900000)}`,
     billingInfo: defaultBilling,
     title: params.title,
     description: params.description,
     category: params.category,
     declaredValue: params.declaredValue,
     condition: params.condition,
-    serialNumber: params.serialNumber || (params.imeiAuditReport?.serial || 'D4G7K3Y9L2'),
-    imeiNumber: params.imeiNumber || params.imeiAuditReport?.imei,
+    serialNumber: params.serialNumber || params.imeiAuditReport?.serial || undefined,
+    imeiNumber: params.imeiNumber || params.imeiAuditReport?.imei || undefined,
     imeiAuditReport: params.imeiAuditReport,
     pickupAttemptStatus: params.pickupAttemptStatus || {
       isDelayed: false,
@@ -259,11 +260,11 @@ export function createNewDeal(params: {
     assignedCourier: {
       id: 'cr_rahul_k',
       name: 'Rahul K.',
-      rating: 4.9,
+      rating: 4.98,
       completedDeliveries: 1480,
-      phone: '+91 98765 43210',
-      vehicleModel: 'Bajaj Pulsar 150 (Navy Blue)',
-      plateNumber: 'DL 01 AX 4829',
+      phone: '+91 98290 ••••• (Bridge: 080-4719-2300)',
+      vehicleModel: 'Bajaj Pulsar 150 (Silver)',
+      plateNumber: 'KA 03 HY 4012',
       fleetPartner: 'SafeShip Direct Fleet',
       avatarUrl: '/images/courier_rahul_avatar.webp',
       currentLocation: {

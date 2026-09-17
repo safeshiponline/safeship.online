@@ -274,32 +274,15 @@ function CreateShipmentContent() {
       const data = await res.json();
       if (data.success && data.result) {
         setPhotoMatchResult(data.result);
-        if (data.result.suggestedImei && !manualImei) {
-          setManualImei(data.result.suggestedImei);
-        }
-        if (data.result.isMatch) {
-          setImeiAuditReport({
-            status: 'VALID',
-            imei: data.result.suggestedImei || manualImei || '358921094829104',
-            serial: manualImei || 'D4G7K3Y9L2',
-            brand: 'OEM Certified',
-            model: effectiveName,
-            cleanImei: true,
-            warrantyEligible: true,
-            details: data.result.reason,
-            verifiedAt: new Date().toLocaleTimeString('en-IN')
-          });
-        }
+        // Do not touch manualImei on front photo verification (cosmetic only)
       }
     } catch {
       setPhotoMatchResult({
         isMatch: true,
         confidence: '98.5%',
         detectedCategory: 'Verified Hardware',
-        reason: `Photo visual features match declared "${effectiveName}"`,
-        suggestedImei: '358921094829104'
+        reason: `Photo visual features match declared "${effectiveName}"`
       });
-      if (!manualImei) setManualImei('358921094829104');
     } finally {
       setIsMatchingPhoto(false);
     }
@@ -321,20 +304,14 @@ function CreateShipmentContent() {
       });
       const data = await res.json();
       if (data && data.result) {
-        const extracted = data.result.imei || data.result.serial || '358921094829104';
-        setManualImei(extracted);
+        const extracted = (data.result.imei || data.result.serial || '').trim();
+        if (extracted) {
+          setManualImei(extracted);
+        }
         setImeiAuditReport(data.result);
-      } else {
-        const fallbackNum = (itemName || '').toLowerCase().includes('macbook') || (itemName || '').toLowerCase().includes('laptop')
-          ? 'D4G7K3Y9L2'
-          : '358921094829104';
-        setManualImei(fallbackNum);
       }
-    } catch {
-      const fallbackNum = (itemName || '').toLowerCase().includes('macbook') || (itemName || '').toLowerCase().includes('laptop')
-        ? 'D4G7K3Y9L2'
-        : '358921094829104';
-      setManualImei(fallbackNum);
+    } catch (err) {
+      console.warn('SafeShip Vision OCR scan error:', err);
     } finally {
       setIsScanningBackside(false);
       clearFieldError('imei');
@@ -1126,8 +1103,8 @@ function CreateShipmentContent() {
         pickupAddress: pickupLocation,
         city: pickupCity || 'Jaipur',
         pincode: pickupPincode,
-        serialNumber: imeiAuditReport?.serial || 'D4G7K3Y9L2',
-        imeiNumber: imeiAuditReport?.imei || manualImei || '358921094829104',
+        serialNumber: manualImei.trim() || imeiAuditReport?.serial || undefined,
+        imeiNumber: manualImei.trim() || imeiAuditReport?.imei || undefined,
         imeiAuditReport: imeiAuditReport || undefined,
         buyerName: buyerName.trim(),
         buyerPhone: buyerPhone.trim().startsWith('+91') ? buyerPhone.trim() : `+91 ${buyerPhone.trim()}`,
@@ -1633,7 +1610,7 @@ function CreateShipmentContent() {
                               confidence: '100%',
                               detectedCategory: 'Scheduled Doorstep Inspection',
                               reason: 'SafeShip bonded courier officer will photograph physical device & packaging at doorstep pickup',
-                              suggestedImei: manualImei || '358921094829104'
+                              suggestedImei: manualImei || undefined
                             });
                           }}
                           className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
@@ -1745,7 +1722,7 @@ function CreateShipmentContent() {
                                 confidence: '96.0%',
                                 detectedCategory: photoMatchResult.detectedCategory || 'Declared Item',
                                 reason: `Confirmed by sender — doorstep officer will audit physical item against declared "${itemName}".`,
-                                suggestedImei: photoMatchResult.suggestedImei || manualImei || '358921094829104'
+                                suggestedImei: photoMatchResult.suggestedImei || manualImei || undefined
                               });
                               clearFieldError('photos');
                             }}
@@ -2880,7 +2857,7 @@ function CreateShipmentContent() {
                     <div className="flex items-center justify-between gap-1.5 flex-wrap">
                       <span className="text-sm font-black text-slate-900">📦 Standard Ground</span>
                       <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full uppercase">
-                        Delivers {getDeliveryDateShort('STANDARD_GROUND')}
+                        Delivers {getDeliveryDateShort('STANDARD_GROUND')} ({getTransitDays('STANDARD_GROUND', distanceKm || effectiveDistance)} Days)
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
@@ -2914,7 +2891,7 @@ function CreateShipmentContent() {
                     <div className="flex items-center justify-between gap-1.5 flex-wrap">
                       <span className="text-sm font-black text-slate-900">🚀 Priority Express</span>
                       <span className="text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full uppercase">
-                        Delivers {getDeliveryDateShort('PRIORITY_EXPRESS')}
+                        Delivers {getDeliveryDateShort('PRIORITY_EXPRESS')} ({getTransitDays('PRIORITY_EXPRESS', distanceKm || effectiveDistance)} Days)
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
@@ -2948,7 +2925,7 @@ function CreateShipmentContent() {
                     <div className="flex items-center justify-between gap-1.5 flex-wrap">
                       <span className="text-sm font-black text-slate-900">⚡ Express Air</span>
                       <span className="text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-full shadow-2xs uppercase">
-                        Delivers {getDeliveryDateShort('FASTEST_AIR_RUSH')}
+                        Delivers {getDeliveryDateShort('FASTEST_AIR_RUSH')} ({getTransitDays('FASTEST_AIR_RUSH', distanceKm || effectiveDistance)} Days)
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
@@ -3078,7 +3055,7 @@ function CreateShipmentContent() {
                       +₹{calculatedInsuranceFee}
                     </span>
                     <span className="text-[10px] text-slate-500 block">
-                      {includeInsurance ? `(~0.25% of ₹${declaredValue.toLocaleString('en-IN')})` : 'Opted Out'}
+                      {includeInsurance ? `(~0.5% of ₹${declaredValue.toLocaleString('en-IN')})` : 'Opted Out'}
                     </span>
                   </div>
                 </div>

@@ -81,7 +81,7 @@ export function AISupportWidget() {
     {
       id: '1',
       sender: 'agent',
-      text: 'Hello! Welcome to SafeShip Support. How can we assist you with Open-Box deliveries, upfront charges (₹349 1-way / ₹548 2-way swap), or doorstep inspection today?',
+      text: 'Hello! Welcome to SafeShip 24/7 AI Support. How can we assist you with our 3-tier deliveries (7–8d Ground, 3–4d Priority Express, 2d Air Rush), 10-minute doorstep unboxing, or transit insurance (~0.5%) today?',
       time: 'Just now'
     }
   ]);
@@ -96,9 +96,9 @@ export function AISupportWidget() {
 
   const quickPrompts = [
     'How does open-box delivery work?',
-    'Why is only delivery charged upfront?',
-    'How does 2-Way Item Swap work?',
-    'What if I reject the parcel at the door?'
+    'What are the delivery times for Priority Express?',
+    'How does transit cargo insurance work?',
+    'How do I contact Officer Rahul K.?'
   ];
 
   const handleSend = async (textToSend?: string) => {
@@ -147,7 +147,7 @@ export function AISupportWidget() {
         {
           id: (Date.now() + 1).toString(),
           sender: 'agent',
-          text: 'SafeShip Open-Box Delivery guarantees that only the delivery fee is charged upfront (₹349 1-way / ₹548 2-way swap). You pay the product price via UPI only after you inspect and accept the device with courier Rahul K. at your doorstep!',
+          text: 'SafeShip Open-Box Delivery guarantees that only the distance-based courier delivery fee is charged upfront. You inspect the item for 10 minutes with Officer Rahul K. and pay the merchandise price via UPI only after you approve and accept the device!',
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -161,6 +161,7 @@ export function AISupportWidget() {
       {/* Floating Trigger Button (Mobile + Desktop) */}
       {!isOpen && (
         <button
+          id="btn-open-ai-support"
           type="button"
           onClick={() => setIsOpen(true)}
           className="fixed bottom-4 md:bottom-6 right-3.5 sm:right-6 z-30 w-11 h-11 md:w-auto md:h-auto p-0 md:px-4 md:py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white shadow-xl shadow-[#0066FF]/35 flex items-center justify-center md:gap-2.5 transition active:scale-95 group cursor-pointer border-2 border-white"
@@ -195,6 +196,7 @@ export function AISupportWidget() {
             {/* Close Button */}
             <div className="flex items-center gap-1.5">
               <button
+                id="btn-close-ai-support"
                 type="button"
                 onClick={() => setIsOpen(false)}
                 className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center transition cursor-pointer"

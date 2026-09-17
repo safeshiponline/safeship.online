@@ -537,8 +537,8 @@ export function getRealisticTransitDays(tier: DeliveryServiceTier, distanceKm: n
     return dist <= 50 ? 0 : 1;
   }
   if (tier === 'PRIORITY_EXPRESS') {
-    // Mid tier: 2 days local, 3 days short corridor (<=400 km), 4 days medium/long corridor (<=1800 km), 5 days extreme
-    return dist <= 50 ? 2 : dist <= 400 ? 3 : dist <= 1800 ? 4 : 5;
+    // Mid tier: strictly 3 to 4 days across all nationwide corridors
+    return dist <= 600 ? 3 : 4;
   }
   // STANDARD_GROUND / STANDARD_DELIVERY
   // Standard shipping: 5 days local, 7 days short/medium corridor (<=800 km), 8 days long/national corridor (>800 km)
@@ -546,14 +546,14 @@ export function getRealisticTransitDays(tier: DeliveryServiceTier, distanceKm: n
 }
 
 /**
- * Calculates nominal, value-calibrated cargo transit insurance fee.
- * 0.25% of product value, bounded reasonably between ₹29 and ₹299.
+ * Calculates value-calibrated cargo transit insurance fee.
+ * ~0.5% of product value, bounded reasonably between ₹59 and ₹599.
  * Underwritten by ICICI Lombard Marine Inland Transit Insurance.
  */
 export function calculateInsuranceFee(declaredValue: number): number {
   const value = Math.max(0, Number(declaredValue) || 0);
-  if (value === 0) return 29;
-  return Math.min(299, Math.max(29, Math.round(value * 0.0025)));
+  if (value === 0) return 59;
+  return Math.min(599, Math.max(59, Math.round(value * 0.005)));
 }
 
 /**
@@ -601,25 +601,15 @@ export function calculateEstimatedTransitTime(
   }
 
   if (tier === 'PRIORITY_EXPRESS') {
-    if (distanceKm <= 50) {
-      return {
-        transitTime: 'Within 2 Business Days (Priority Urban Hub Linehaul)',
-        estimatedDays: `${days} Days`
-      };
-    } else if (distanceKm <= 400) {
+    if (days === 3) {
       return {
         transitTime: 'Within 3 Business Days (Priority Expressway Corridor Linehaul)',
-        estimatedDays: `${days} Days`
-      };
-    } else if (distanceKm <= 1800) {
-      return {
-        transitTime: 'Within 4 Business Days (Expressway Intercity Corridor)',
-        estimatedDays: `${days} Days`
+        estimatedDays: '3 Days'
       };
     } else {
       return {
-        transitTime: 'Within 5 Business Days (Long-Haul Intercity Expressway Linehaul)',
-        estimatedDays: `${days} Days`
+        transitTime: 'Within 4 Business Days (Expressway Intercity Corridor Linehaul)',
+        estimatedDays: '4 Days'
       };
     }
   }
