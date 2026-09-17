@@ -2888,7 +2888,7 @@ function CreateShipmentContent() {
                     </p>
                   </div>
                   <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                    <span className="text-[10px] text-slate-400 font-semibold">Surface Linehaul</span>
+                    <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
                     <div className="text-right shrink-0">
                       <div className="flex items-baseline gap-1.5 justify-end">
                         <span className="text-base font-black text-slate-900 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
@@ -2922,7 +2922,7 @@ function CreateShipmentContent() {
                     </p>
                   </div>
                   <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                    <span className="text-[10px] text-slate-400 font-semibold">Fast Linehaul</span>
+                    <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
                     <div className="text-right shrink-0">
                       <div className="flex items-baseline gap-1.5 justify-end">
                         <span className="text-base font-black text-blue-700 font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
@@ -2956,7 +2956,7 @@ function CreateShipmentContent() {
                     </p>
                   </div>
                   <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                    <span className="text-[10px] text-slate-400 font-semibold">Next Flight Cargo</span>
+                    <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
                     <div className="text-right shrink-0">
                       <div className="flex items-baseline gap-1.5 justify-end">
                         <span className="text-base font-black text-amber-700 font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>

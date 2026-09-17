@@ -522,26 +522,27 @@ export function calculateRoadDistance(originPin: string, destPin: string): RoadR
 
 /**
  * Calculates realistic transit days based on logistics tier and actual road/linehaul distance across India.
- * Eliminates unrealistic promises, scaling predictably with national geography:
- * - Local / Intra-city (<= 50 km): Air: 1 day, Priority: 1 day, Ground: 2 days
- * - Short Corridor (50-400 km, e.g. Jaipur-Delhi): Air: 1 day, Priority: 2 days, Ground: 3 days
- * - Medium Corridor (400-1000 km, e.g. Delhi-Lucknow): Air: 2 days, Priority: 3 days, Ground: 4 days
- * - Long Corridor (1000-1800 km, e.g. Delhi-Mumbai): Air: 2 days, Priority: 4 days, Ground: 5 days
- * - Extreme Cross-Country (>1800 km, e.g. Srinagar-Kanyakumari 3466 km): Air: 3 days, Priority: 5 days, Ground: 7 days
+ * Calibrated strictly to realistic nationwide linehaul transit times:
+ * - Standard Shipping (Ground): Takes ~7–8 days across intercity routes (5 days local <=50 km, 7 days <=800 km, 8 days >800 km)
+ * - Priority Express (Mid): Takes ~3–4 days across intercity routes (2 days local <=50 km, 3 days <=400 km, 4 days <=1800 km, 5 days extreme)
+ * - Express Air (Top): Takes ~2 days across India (1 day local <=50 km, 2 days <=1800 km, 3 days extreme >1800 km)
  */
 export function getRealisticTransitDays(tier: DeliveryServiceTier, distanceKm: number): number {
   const dist = Math.max(0, distanceKm);
   if (tier === 'FASTEST_AIR_RUSH' || tier === 'FAST_DELIVERY') {
-    return dist <= 50 ? 1 : dist <= 400 ? 1 : dist <= 1500 ? 2 : 3;
+    // Top tier: 1 day local, 2 days across majority of India (up to 1800 km), 3 days extreme cross-country
+    return dist <= 50 ? 1 : dist <= 1800 ? 2 : 3;
   }
   if (tier === 'SAME_DAY_DIRECT') {
     return dist <= 50 ? 0 : 1;
   }
   if (tier === 'PRIORITY_EXPRESS') {
-    return dist <= 50 ? 1 : dist <= 400 ? 2 : dist <= 1000 ? 3 : dist <= 2000 ? 4 : 5;
+    // Mid tier: 2 days local, 3 days short corridor (<=400 km), 4 days medium/long corridor (<=1800 km), 5 days extreme
+    return dist <= 50 ? 2 : dist <= 400 ? 3 : dist <= 1800 ? 4 : 5;
   }
   // STANDARD_GROUND / STANDARD_DELIVERY
-  return dist <= 50 ? 2 : dist <= 400 ? 3 : dist <= 1000 ? 4 : dist <= 1800 ? 5 : 7;
+  // Standard shipping: 5 days local, 7 days short/medium corridor (<=800 km), 8 days long/national corridor (>800 km)
+  return dist <= 50 ? 5 : dist <= 800 ? 7 : 8;
 }
 
 /**
@@ -572,20 +573,15 @@ export function calculateEstimatedTransitTime(
         transitTime: 'Within 24 Hours (Dedicated Express Courier)',
         estimatedDays: `${days} Day`
       };
-    } else if (distanceKm <= 400) {
+    } else if (distanceKm <= 1800) {
       return {
-        transitTime: 'Within 24 Hours (Next-Flight Air Express)',
-        estimatedDays: `${days} Day`
-      };
-    } else if (distanceKm <= 1500) {
-      return {
-        transitTime: 'Within 24–48 Hours (Direct Flight Air Cargo)',
+        transitTime: 'Within 2 Business Days (Guaranteed Commercial Air Cargo)',
         estimatedDays: `${days} Days`
       };
     } else {
-      // Extreme cross country (>1500 km, e.g. Srinagar to Kanyakumari, 2,700+ km)
+      // Extreme cross country (>1800 km, e.g. Srinagar to Kanyakumari, 2,700+ km)
       return {
-        transitTime: 'Within 2–3 Days (National Commercial Air Linehaul)',
+        transitTime: 'Within 3 Business Days (National Commercial Air Linehaul)',
         estimatedDays: `${days} Days`
       };
     }
@@ -607,27 +603,22 @@ export function calculateEstimatedTransitTime(
   if (tier === 'PRIORITY_EXPRESS') {
     if (distanceKm <= 50) {
       return {
-        transitTime: 'By Tomorrow (Within 24h of Pickup)',
-        estimatedDays: `${days} Day`
+        transitTime: 'Within 2 Business Days (Priority Urban Hub Linehaul)',
+        estimatedDays: `${days} Days`
       };
     } else if (distanceKm <= 400) {
       return {
-        transitTime: '1–2 Business Days from Pickup (Express Linehaul)',
+        transitTime: 'Within 3 Business Days (Priority Expressway Corridor Linehaul)',
         estimatedDays: `${days} Days`
       };
-    } else if (distanceKm <= 1000) {
+    } else if (distanceKm <= 1800) {
       return {
-        transitTime: '2–3 Business Days from Pickup (Intercity Express)',
-        estimatedDays: `${days} Days`
-      };
-    } else if (distanceKm <= 2000) {
-      return {
-        transitTime: '3–4 Business Days from Pickup (Expressway Corridor)',
+        transitTime: 'Within 4 Business Days (Expressway Intercity Corridor)',
         estimatedDays: `${days} Days`
       };
     } else {
       return {
-        transitTime: '4–5 Business Days from Pickup (Long-Haul Expressway Linehaul)',
+        transitTime: 'Within 5 Business Days (Long-Haul Intercity Expressway Linehaul)',
         estimatedDays: `${days} Days`
       };
     }
@@ -636,28 +627,18 @@ export function calculateEstimatedTransitTime(
   // STANDARD_GROUND or STANDARD_DELIVERY
   if (distanceKm <= 50) {
     return {
-      transitTime: '1–2 Business Days from Pickup',
+      transitTime: 'Within 5 Business Days from Pickup (Standard Ground)',
       estimatedDays: `${days} Days`
     };
-  } else if (distanceKm <= 400) {
+  } else if (distanceKm <= 800) {
     return {
-      transitTime: '2–3 Business Days from Pickup',
-      estimatedDays: `${days} Days`
-    };
-  } else if (distanceKm <= 1000) {
-    return {
-      transitTime: '3–4 Business Days from Pickup',
-      estimatedDays: `${days} Days`
-    };
-  } else if (distanceKm <= 1800) {
-    return {
-      transitTime: '4–5 Business Days from Pickup (Surface Freight)',
+      transitTime: 'Within 7 Business Days from Pickup (Regional Surface Linehaul Network)',
       estimatedDays: `${days} Days`
     };
   } else {
-    // Cross-country national surface linehaul (>1800 km, e.g. 2,700–3,500 km)
+    // Cross-country national surface linehaul (>800 km, e.g. 1,400–3,500 km)
     return {
-      transitTime: '6–7 Business Days from Pickup (National Surface Linehaul Network)',
+      transitTime: 'Within 8 Business Days from Pickup (National Surface Linehaul Network)',
       estimatedDays: `${days} Days`
     };
   }
