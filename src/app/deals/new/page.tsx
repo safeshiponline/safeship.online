@@ -42,7 +42,7 @@ import { createNewDeal } from '@/lib/store';
 import { getSession, UserSession } from '@/lib/auth';
 import { ProductPhotoMatchResult } from '@/lib/geminiUnified';
 import { ItemCategory, DeliveryServiceTier, PickupSlot, FeeSplitOption } from '@/lib/types';
-import { resolvePincode, calculateRoadDistance, calculateTierPricing } from '@/lib/pincodeService';
+import { resolvePincode, calculateRoadDistance, calculateTierPricing, calculateInsuranceFee, getRealisticTransitDays } from '@/lib/pincodeService';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
 
 export default function CreateShipmentPage() {
@@ -143,6 +143,9 @@ function CreateShipmentContent() {
   const [openBoxEnabled, setOpenBoxEnabled] = useState<boolean>(true);
 
   const [draftRestored, setDraftRestored] = useState<boolean>(false);
+
+  // Transit Cargo Insurance Checkbox state
+  const [includeInsurance, setIncludeInsurance] = useState<boolean>(true);
 
   // Subtle non-refundable courier shipping fee agreement
   const [agreeTerms, setAgreeTerms] = useState<boolean>(true);
@@ -553,6 +556,7 @@ function CreateShipmentContent() {
             if (draft.isB2B !== undefined) setIsB2B(draft.isB2B);
             if (draft.businessName) setBusinessName(draft.businessName);
             if (draft.gstin) setGstin(draft.gstin);
+            if (draft.includeInsurance !== undefined) setIncludeInsurance(Boolean(draft.includeInsurance));
             if (!reqStep && draft.currentStep && draft.currentStep > 1) {
               setCurrentStep(Number(draft.currentStep));
             }
@@ -676,6 +680,7 @@ function CreateShipmentContent() {
         isIntercity,
         selectedTier,
         pickupSlot,
+        includeInsurance,
         packageWeight,
         openBoxEnabled,
         isB2B,
@@ -731,6 +736,7 @@ function CreateShipmentContent() {
     isIntercity,
     selectedTier,
     pickupSlot,
+    includeInsurance,
     packageWeight,
     openBoxEnabled,
     isB2B,
@@ -1026,10 +1032,14 @@ function CreateShipmentContent() {
   // Realistic distance & item-valuation calculated shipping fee for active selected tier
   const fullDeliveryFee = activeTierBreakdown.totalUpfront;
 
+  // Cargo Transit Insurance fee calculated dynamically according to declared product value (~0.25%, min ₹29, max ₹299)
+  const calculatedInsuranceFee = calculateInsuranceFee(declaredValue);
+  const activeInsuranceFee = includeInsurance ? calculatedInsuranceFee : 0;
+
   // Upfront Booking Payable Amount:
-  // Strictly the verified courier shipping fee! Zero item escrow deposit, zero loans, direct shipping fee.
-  const upfrontPayableAmount = fullDeliveryFee;
-  const buyerDeliveryFee = fullDeliveryFee;
+  // Strictly the verified courier shipping fee + optional cargo transit insurance! Zero item escrow deposit, zero loans, direct shipping fee.
+  const upfrontPayableAmount = fullDeliveryFee + activeInsuranceFee;
+  const buyerDeliveryFee = upfrontPayableAmount;
   const sellerDeliveryFee = 0;
   const freeDeliveryDiscount = 0;
   const codCharge = 0;
@@ -1044,17 +1054,9 @@ function CreateShipmentContent() {
     year: 'numeric'
   });
 
-  // Dynamic realistic transit days based on tier and linehaul road distance:
-  // Long-distance cross-country (>1600km): Ground: 6–7 days, Mid/Priority: 3–4 days, Fastest: 2 days
+  // Dynamic realistic transit days based on tier and linehaul road distance across India
   const getTransitDays = (tier: DeliveryServiceTier, dist: number): number => {
-    if (tier === 'FASTEST_AIR_RUSH' || tier === 'FAST_DELIVERY') {
-      return dist <= 50 ? 0 : dist <= 350 ? 1 : 2;
-    }
-    if (tier === 'PRIORITY_EXPRESS') {
-      return dist <= 50 ? 1 : dist <= 350 ? 2 : dist <= 900 ? 3 : 4;
-    }
-    // STANDARD_GROUND
-    return dist <= 50 ? 2 : dist <= 350 ? 3 : dist <= 900 ? 4 : dist <= 1600 ? 5 : 7;
+    return getRealisticTransitDays(tier, dist);
   };
 
   // Helper to compute single exact calendar delivery date for each tier
@@ -1146,7 +1148,7 @@ function CreateShipmentContent() {
         isIntercity,
         packageWeightKg: parseFloat(packageWeight) || 0.8,
         dimensionsCm: '20 x 15 x 10 cm',
-        insurancePolicyNumber,
+        insurancePolicyNumber: includeInsurance ? insurancePolicyNumber : undefined,
         feeSplitOption: 'BUYER_PAYS_ALL',
         paymentPreference: 'PAY_ON_DELIVERY',
         codCharge,
@@ -1154,9 +1156,9 @@ function CreateShipmentContent() {
         upfrontPricing: {
           baseFee: activeTierBreakdown.baseFee,
           distanceSurcharge: activeTierBreakdown.distanceSurcharge,
-          insuranceFee: activeTierBreakdown.insuranceFee,
+          insuranceFee: activeInsuranceFee,
           verificationFee: activeTierBreakdown.verificationFee,
-          totalUpfront: activeTierBreakdown.totalUpfront
+          totalUpfront: upfrontPayableAmount
         },
         upfrontPaid: upfrontAmountPaid,
         paymentId,
@@ -2812,13 +2814,15 @@ function CreateShipmentContent() {
                   {mode === 'exchange' ? 'Review & Book 2-Way Exchange' : 'Review & Confirm Booking'}
                 </h2>
                 <p className="text-xs text-[#64748B] mt-0.5">
-                  Doorstep Open-Box Inspection &bull; ₹10 Lakhs Transit Insurance Included
+                  Doorstep Open-Box Inspection &bull; {includeInsurance ? '₹10 Lakhs Transit Insurance Included' : 'Standard Carrier Transit'}
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 self-start sm:self-auto bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-                <ShieldCheck className="w-4 h-4 text-[#0066FF]" />
-                <span className="text-[11px] font-bold text-[#0066FF]">
-                  ₹10 Lakhs Active Insurance
+              <div className={`flex items-center gap-1.5 self-start sm:self-auto px-3 py-1 rounded-full border ${
+                includeInsurance ? 'bg-blue-50 border-blue-200 text-[#0066FF]' : 'bg-slate-100 border-slate-200 text-slate-600'
+              }`}>
+                <ShieldCheck className={`w-4 h-4 ${includeInsurance ? 'text-[#0066FF]' : 'text-slate-500'}`} />
+                <span className="text-[11px] font-bold">
+                  {includeInsurance ? '₹10 Lakhs Active Insurance' : 'Insurance Opted Out'}
                 </span>
               </div>
             </div>
@@ -3018,7 +3022,7 @@ function CreateShipmentContent() {
 
 
             {/* 3. UNIFIED ORDER & SHIPPING SUMMARY */}
-            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E2E8F0] shadow-xs space-y-3">
+            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E2E8F0] shadow-xs space-y-3.5">
               <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   3. Booking &amp; Shipping Fee Summary
@@ -3028,12 +3032,66 @@ function CreateShipmentContent() {
                 </span>
               </div>
 
-              <div className="space-y-2 text-xs">
+              {/* Interactive Cargo Transit Insurance Checkbox Card */}
+              <div
+                id="card-transit-insurance"
+                onClick={() => setIncludeInsurance(!includeInsurance)}
+                className={`p-3.5 rounded-2xl border transition-all cursor-pointer select-none ${
+                  includeInsurance
+                    ? 'bg-blue-50/70 border-[#0066FF] ring-1 ring-blue-200'
+                    : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      id="chk-transit-insurance"
+                      checked={includeInsurance}
+                      onChange={(e) => setIncludeInsurance(e.target.checked)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-0 cursor-pointer"
+                    />
+                    <div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <label
+                          htmlFor="chk-transit-insurance"
+                          className="text-xs font-black text-slate-900 cursor-pointer"
+                        >
+                          Comprehensive In-Transit Cargo Insurance
+                        </label>
+                        <span className="text-[9px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded uppercase">
+                          Recommended
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                        100% loss, theft &amp; transit damage cover underwritten by ICICI Lombard up to ₹10 Lakhs.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <span
+                      className={`text-xs font-mono font-black block ${
+                        includeInsurance ? 'text-[#0066FF]' : 'text-slate-400 line-through'
+                      }`}
+                    >
+                      +₹{calculatedInsuranceFee}
+                    </span>
+                    <span className="text-[10px] text-slate-500 block">
+                      {includeInsurance ? `(~0.25% of ₹${declaredValue.toLocaleString('en-IN')})` : 'Opted Out'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-xs pt-1">
                 <div className="flex justify-between items-center text-slate-600">
                   <span>Merchandise Declared Valuation:</span>
                   <span className="font-mono font-semibold text-slate-900">
                     ₹{declaredValue.toLocaleString('en-IN')}
-                    <span className="text-[10px] text-slate-400 font-normal ml-1">(Insured)</span>
+                    {includeInsurance && (
+                      <span className="text-[10px] text-blue-600 font-bold ml-1">(Insured)</span>
+                    )}
                   </span>
                 </div>
 
@@ -3062,7 +3120,13 @@ function CreateShipmentContent() {
 
                 <div className="flex justify-between items-center text-slate-600">
                   <span>In-Transit Cargo Insurance (₹10 Lakhs Cover):</span>
-                  <span className="font-semibold text-slate-900">Included</span>
+                  <span className="font-mono font-semibold">
+                    {includeInsurance ? (
+                      <span className="text-blue-700 font-bold">+₹{calculatedInsuranceFee}</span>
+                    ) : (
+                      <span className="text-slate-400 font-normal">Opted Out (₹0)</span>
+                    )}
+                  </span>
                 </div>
 
                 {/* Prominent Payable Today */}
@@ -3072,7 +3136,9 @@ function CreateShipmentContent() {
                       Total Payable Today:
                     </span>
                     <span className="text-[11px] text-slate-500 block">
-                      Verified courier shipping fee payable upfront &bull; Zero platform fee
+                      {includeInsurance
+                        ? `Courier shipping fee (₹${fullDeliveryFee}) + Transit insurance (₹${calculatedInsuranceFee})`
+                        : `Courier shipping fee only (₹${fullDeliveryFee}) • Insurance opted out`}
                     </span>
                   </div>
                   <div className="text-left sm:text-right shrink-0">

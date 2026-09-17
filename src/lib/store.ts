@@ -250,7 +250,7 @@ export function createNewDeal(params: {
         status: 'PENDING'
       }
     ],
-    insurancePolicyNumber: params.insurancePolicyNumber || `POL-ICICI-LOMBARD-2026-${newId}`,
+    insurancePolicyNumber: params.insurancePolicyNumber || undefined,
     packageWeightKg: params.packageWeightKg,
     dimensionsCm: params.dimensionsCm,
     buyerReleasePin: buyerPin,

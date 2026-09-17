@@ -521,6 +521,41 @@ export function calculateRoadDistance(originPin: string, destPin: string): RoadR
 }
 
 /**
+ * Calculates realistic transit days based on logistics tier and actual road/linehaul distance across India.
+ * Eliminates unrealistic promises, scaling predictably with national geography:
+ * - Local / Intra-city (<= 50 km): Air: 1 day, Priority: 1 day, Ground: 2 days
+ * - Short Corridor (50-400 km, e.g. Jaipur-Delhi): Air: 1 day, Priority: 2 days, Ground: 3 days
+ * - Medium Corridor (400-1000 km, e.g. Delhi-Lucknow): Air: 2 days, Priority: 3 days, Ground: 4 days
+ * - Long Corridor (1000-1800 km, e.g. Delhi-Mumbai): Air: 2 days, Priority: 4 days, Ground: 5 days
+ * - Extreme Cross-Country (>1800 km, e.g. Srinagar-Kanyakumari 3466 km): Air: 3 days, Priority: 5 days, Ground: 7 days
+ */
+export function getRealisticTransitDays(tier: DeliveryServiceTier, distanceKm: number): number {
+  const dist = Math.max(0, distanceKm);
+  if (tier === 'FASTEST_AIR_RUSH' || tier === 'FAST_DELIVERY') {
+    return dist <= 50 ? 1 : dist <= 400 ? 1 : dist <= 1500 ? 2 : 3;
+  }
+  if (tier === 'SAME_DAY_DIRECT') {
+    return dist <= 50 ? 0 : 1;
+  }
+  if (tier === 'PRIORITY_EXPRESS') {
+    return dist <= 50 ? 1 : dist <= 400 ? 2 : dist <= 1000 ? 3 : dist <= 2000 ? 4 : 5;
+  }
+  // STANDARD_GROUND / STANDARD_DELIVERY
+  return dist <= 50 ? 2 : dist <= 400 ? 3 : dist <= 1000 ? 4 : dist <= 1800 ? 5 : 7;
+}
+
+/**
+ * Calculates nominal, value-calibrated cargo transit insurance fee.
+ * 0.25% of product value, bounded reasonably between ₹29 and ₹299.
+ * Underwritten by ICICI Lombard Marine Inland Transit Insurance.
+ */
+export function calculateInsuranceFee(declaredValue: number): number {
+  const value = Math.max(0, Number(declaredValue) || 0);
+  if (value === 0) return 29;
+  return Math.min(299, Math.max(29, Math.round(value * 0.0025)));
+}
+
+/**
  * Calibrates realistic, distance-aware transit time estimation across India.
  * Eliminates generic or unrealistic "12 hour" promises for long journeys.
  * Dynamically tailored: sub-4h local, next-morning 18-24h short corridors, 24-36h air cargo cross-country.
@@ -529,27 +564,29 @@ export function calculateEstimatedTransitTime(
   distanceKm: number,
   tier: DeliveryServiceTier
 ): { transitTime: string; estimatedDays: string } {
+  const days = getRealisticTransitDays(tier, distanceKm);
+
   if (tier === 'FASTEST_AIR_RUSH' || tier === 'FAST_DELIVERY') {
     if (distanceKm <= 50) {
       return {
-        transitTime: 'Within 3–4 Hours Today (Dedicated Express Courier)',
-        estimatedDays: 'Same-Day'
+        transitTime: 'Within 24 Hours (Dedicated Express Courier)',
+        estimatedDays: `${days} Day`
       };
-    } else if (distanceKm <= 350) {
+    } else if (distanceKm <= 400) {
       return {
-        transitTime: 'Within 18–24 Hours (Next-Morning 11:00 AM)',
-        estimatedDays: 'Next-Day'
+        transitTime: 'Within 24 Hours (Next-Flight Air Express)',
+        estimatedDays: `${days} Day`
       };
-    } else if (distanceKm <= 1200) {
+    } else if (distanceKm <= 1500) {
       return {
-        transitTime: 'Within 24–36 Hours (Next-Flight Priority Air)',
-        estimatedDays: '1–2 Days'
+        transitTime: 'Within 24–48 Hours (Direct Flight Air Cargo)',
+        estimatedDays: `${days} Days`
       };
     } else {
-      // Long distance / cross country (e.g. Srinagar to Kanyakumari, 2,700+ km)
+      // Extreme cross country (>1500 km, e.g. Srinagar to Kanyakumari, 2,700+ km)
       return {
-        transitTime: 'Within 24–48 Hours from Pickup (Direct Flight Air Cargo)',
-        estimatedDays: '2 Days'
+        transitTime: 'Within 2–3 Days (National Commercial Air Linehaul)',
+        estimatedDays: `${days} Days`
       };
     }
   }
@@ -570,24 +607,28 @@ export function calculateEstimatedTransitTime(
   if (tier === 'PRIORITY_EXPRESS') {
     if (distanceKm <= 50) {
       return {
-        transitTime: 'By Tomorrow 2:00 PM (Within 24h of Pickup)',
-        estimatedDays: '1 Day'
+        transitTime: 'By Tomorrow (Within 24h of Pickup)',
+        estimatedDays: `${days} Day`
       };
-    } else if (distanceKm <= 350) {
+    } else if (distanceKm <= 400) {
       return {
         transitTime: '1–2 Business Days from Pickup (Express Linehaul)',
-        estimatedDays: '1–2 Days'
+        estimatedDays: `${days} Days`
       };
-    } else if (distanceKm <= 900) {
+    } else if (distanceKm <= 1000) {
       return {
         transitTime: '2–3 Business Days from Pickup (Intercity Express)',
-        estimatedDays: '2–3 Days'
+        estimatedDays: `${days} Days`
+      };
+    } else if (distanceKm <= 2000) {
+      return {
+        transitTime: '3–4 Business Days from Pickup (Expressway Corridor)',
+        estimatedDays: `${days} Days`
       };
     } else {
-      // Cross-country intercity long distance (e.g. >900 km, Srinagar to Kanyakumari)
       return {
-        transitTime: '3–4 Business Days from Pickup (Priority Expressway & Commercial Air Corridor)',
-        estimatedDays: '3–4 Days'
+        transitTime: '4–5 Business Days from Pickup (Long-Haul Expressway Linehaul)',
+        estimatedDays: `${days} Days`
       };
     }
   }
@@ -596,28 +637,28 @@ export function calculateEstimatedTransitTime(
   if (distanceKm <= 50) {
     return {
       transitTime: '1–2 Business Days from Pickup',
-      estimatedDays: '1–2 Days'
+      estimatedDays: `${days} Days`
     };
-  } else if (distanceKm <= 350) {
+  } else if (distanceKm <= 400) {
     return {
       transitTime: '2–3 Business Days from Pickup',
-      estimatedDays: '2–3 Days'
+      estimatedDays: `${days} Days`
     };
-  } else if (distanceKm <= 900) {
+  } else if (distanceKm <= 1000) {
     return {
       transitTime: '3–4 Business Days from Pickup',
-      estimatedDays: '3–4 Days'
+      estimatedDays: `${days} Days`
     };
-  } else if (distanceKm <= 1600) {
+  } else if (distanceKm <= 1800) {
     return {
       transitTime: '4–5 Business Days from Pickup (Surface Freight)',
-      estimatedDays: '4–5 Days'
+      estimatedDays: `${days} Days`
     };
   } else {
-    // Cross-country national surface linehaul (>1600 km, e.g. 2,700–3,500 km)
+    // Cross-country national surface linehaul (>1800 km, e.g. 2,700–3,500 km)
     return {
       transitTime: '6–7 Business Days from Pickup (National Surface Linehaul Network)',
-      estimatedDays: '6–7 Days'
+      estimatedDays: `${days} Days`
     };
   }
 }
@@ -643,9 +684,8 @@ export function calculateTierPricing(
   const value = Math.max(0, Number(declaredValue) || 0);
 
   // 1. Cargo Insurance Fee
-  // Nominal transit risk underwritten by ICICI Lombard (₹19 - ₹99)
-  const rawInsurance = value <= 5000 ? 19 : Math.round(value * 0.002);
-  const insuranceFee = Math.min(99, Math.max(19, rawInsurance));
+  // Nominal transit risk underwritten by ICICI Lombard (₹29 - ₹299, ~0.25%)
+  const insuranceFee = calculateInsuranceFee(value);
 
   // 2. Doorstep Open-Box Inspection & Verification Fee
   // 100% Free Promotional Doorstep Inspection Waiver included
