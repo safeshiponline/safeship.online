@@ -11,7 +11,6 @@ import {
   ArrowRight,
   Sparkles,
   Lock,
-  ChevronRight,
   Eye,
   EyeOff,
   User,
@@ -20,13 +19,16 @@ import {
   GoogleIcon,
   LogOut,
   Check,
-  X
+  X,
+  MapPin,
+  FileText
 } from '@/components/common/Icons';
 import { formatINR } from '@/lib/escrowCalculator';
 import {
   getSession,
-  clearSession,
-  loginWithGoogle,
+  loginWithCredentials,
+  registerUser,
+  updateUserProfile,
   redirectToGoogleLogin,
   logoutUser,
   UserSession
@@ -34,37 +36,56 @@ import {
 import { getUserOrders } from '@/lib/store';
 import { SafeDeal } from '@/lib/types';
 import { SafeShipLogo } from '@/components/common/SafeShipLogo';
+import { resolvePincode } from '@/lib/pincodeService';
 
 export default function ProfilePage() {
   const [session, setSession] = useState<UserSession | null>(null);
   const [orders, setOrders] = useState<SafeDeal[]>([]);
   const [isMounted, setIsMounted] = useState<boolean>(false);
 
-  // Pure Google Auth State (No Manual Password / Signup Forms)
+  // Authentication Form State
+  const [authMode, setAuthMode] = useState<'signin' | 'register'>('signin');
   const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [fullName, setFullName] = useState<string>('');
+  const [phone, setPhone] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string>('');
-  const [showGoogleModal, setShowGoogleModal] = useState<boolean>(false);
+
+  // Editable Profile State
+  const [editName, setEditName] = useState<string>('');
+  const [editPhone, setEditPhone] = useState<string>('');
+  const [editPickupAddress, setEditPickupAddress] = useState<string>('');
+  const [editPickupPincode, setEditPickupPincode] = useState<string>('');
+  const [editPickupCity, setEditPickupCity] = useState<string>('');
+  const [editDeliveryAddress, setEditDeliveryAddress] = useState<string>('');
+  const [editBusinessName, setEditBusinessName] = useState<string>('');
+  const [editGstin, setEditGstin] = useState<string>('');
+  const [profileSaving, setProfileSaving] = useState<boolean>(false);
+  const [profileSuccessMessage, setProfileSuccessMessage] = useState<string>('');
+  const [profileErrorMessage, setProfileErrorMessage] = useState<string>('');
 
   useEffect(() => {
     setIsMounted(true);
-    setSession(getSession());
+    const curr = getSession();
+    setSession(curr);
     setOrders(getUserOrders());
+    populateEditFields(curr);
 
-    // Check URL parameters for OAuth errors or prompt triggers
+    // Check URL parameters for OAuth errors or mode
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       const err = params.get('error');
-      if (err) {
-        setAuthError(decodeURIComponent(err));
-      }
-      if (params.get('google_prompt') === '1') {
-        setShowGoogleModal(true);
-      }
+      if (err) setAuthError(decodeURIComponent(err));
+      const modeParam = params.get('mode');
+      if (modeParam === 'register' || modeParam === 'signup') setAuthMode('register');
     }
 
     const handleAuthUpdate = () => {
-      setSession(getSession());
+      const updated = getSession();
+      setSession(updated);
+      populateEditFields(updated);
     };
 
     const handleOrdersUpdate = () => {
@@ -79,36 +100,135 @@ export default function ProfilePage() {
     };
   }, []);
 
-  const handleGoogleDirectRedirect = () => {
-    setIsSubmitting(true);
-    setAuthError('');
-    redirectToGoogleLogin('/profile');
+  const populateEditFields = (user: UserSession | null) => {
+    if (user) {
+      setEditName(user.name || '');
+      setEditPhone(user.phone || '');
+      setEditPickupAddress(user.pickupAddress || '');
+      setEditPickupPincode(user.pickupPincode || '');
+      setEditPickupCity(user.pickupCity || '');
+      setEditDeliveryAddress(user.deliveryAddress || '');
+      setEditBusinessName(user.businessName || '');
+      setEditGstin(user.gstin || '');
+    }
   };
 
-  const handleGoogleAuth = async (targetEmail?: string, targetName?: string) => {
-    setIsSubmitting(true);
+  const handlePickupPincodeChange = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 6);
+    setEditPickupPincode(digits);
+    if (digits.length === 6) {
+      const info = resolvePincode(digits);
+      if (info && info.city) {
+        setEditPickupCity(`${info.city}, ${info.state}`);
+      }
+    }
+  };
+
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
     setAuthError('');
-    const res = await loginWithGoogle(targetEmail, targetName);
+    if (!email.trim() || !password) {
+      setAuthError('Please enter both your email address and password.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const res = await loginWithCredentials({ email: email.trim(), password });
     setIsSubmitting(false);
-    setShowGoogleModal(false);
+
     if (res.success && res.user) {
       setSession(res.user);
-    } else if (res.error) {
-      setAuthError(res.error);
+      populateEditFields(res.user);
+    } else {
+      setAuthError(res.error || 'Failed to sign in. Please verify your credentials.');
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+    if (!fullName.trim() || fullName.trim().length < 2) {
+      setAuthError('Please enter your full name (at least 2 characters).');
+      return;
+    }
+    if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setAuthError('Please enter a valid email address.');
+      return;
+    }
+    if (!password || password.length < 6) {
+      setAuthError('Password must be at least 6 characters long.');
+      return;
+    }
+    if (phone.trim()) {
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length < 10) {
+        setAuthError('Please enter a valid 10-digit mobile number.');
+        return;
+      }
+    }
+
+    setIsSubmitting(true);
+    const res = await registerUser({
+      name: fullName.trim(),
+      email: email.trim(),
+      password,
+      phone: phone.trim() ? `+91 ${phone.replace(/\D/g, '').slice(-10)}` : undefined
+    });
+    setIsSubmitting(false);
+
+    if (res.success && res.user) {
+      setSession(res.user);
+      populateEditFields(res.user);
+    } else {
+      setAuthError(res.error || 'Failed to create account.');
+    }
+  };
+
+  const handleSaveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileSuccessMessage('');
+    setProfileErrorMessage('');
+
+    if (!editName.trim()) {
+      setProfileErrorMessage('Full Name is required.');
+      return;
+    }
+
+    setProfileSaving(true);
+    const res = await updateUserProfile({
+      name: editName.trim(),
+      phone: editPhone.trim(),
+      pickupAddress: editPickupAddress.trim(),
+      pickupPincode: editPickupPincode.trim(),
+      pickupCity: editPickupCity.trim(),
+      deliveryAddress: editDeliveryAddress.trim(),
+      businessName: editBusinessName.trim(),
+      gstin: editGstin.trim().toUpperCase()
+    });
+    setProfileSaving(false);
+
+    if (res.success && res.user) {
+      setSession(res.user);
+      setProfileSuccessMessage('Customer profile updated and saved to your account!');
+      setTimeout(() => setProfileSuccessMessage(''), 4000);
+    } else {
+      setProfileErrorMessage(res.error || 'Failed to update profile.');
     }
   };
 
   const handleSignOut = async () => {
-    if (confirm('Are you sure you want to sign out of SafeShip?')) {
+    if (confirm('Are you sure you want to sign out of your SafeShip account?')) {
       await logoutUser();
       setSession(null);
+      setEmail('');
+      setPassword('');
     }
   };
 
   if (!isMounted) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center text-xs font-semibold text-slate-500">
-        Loading SafeShip Profile...
+        Loading SafeShip Account...
       </div>
     );
   }
@@ -120,9 +240,9 @@ export default function ProfilePage() {
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 pb-28 md:pb-12 space-y-7">
 
-        {/* NOT LOGGED IN STATE - COMPLETE AUTHENTICATION PORTAL */}
+        {/* 1. NOT LOGGED IN STATE - REAL AUTHENTICATION PORTAL */}
         {!session ? (
-          <section className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-xs max-w-lg mx-auto my-4 animate-in fade-in space-y-6">
+          <section className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-10 shadow-xs max-w-md mx-auto my-4 animate-in fade-in space-y-6">
             <div className="text-center space-y-2">
               <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#0066FF] flex items-center justify-center mx-auto ring-6 ring-blue-50/50 shadow-xs mb-3">
                 <SafeShipLogo className="w-8 h-8" />
@@ -130,15 +250,47 @@ export default function ProfilePage() {
 
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-[#0066FF] text-xs font-bold border border-blue-200">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Verified Escrow Authentication</span>
+                <span>Verified Escrow &amp; Logistics Account</span>
               </span>
 
-              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                Sign in with Google
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+                {authMode === 'signin' ? 'Sign in to SafeShip' : 'Create SafeShip Account'}
               </h1>
-              <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
-                SafeShip connects directly to your Google account for doorstep identity verification, RBI nodal escrow protection, and 100% fraud prevention. No passwords required.
+              <p className="text-xs text-slate-600 max-w-sm mx-auto leading-relaxed">
+                Access your verified consignments, manage saved pickup addresses, and track real-time open-box inspections.
               </p>
+            </div>
+
+            {/* Tab Selector */}
+            <div className="flex rounded-xl bg-slate-100 p-1 border border-slate-200 text-xs font-bold">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('signin');
+                  setAuthError('');
+                }}
+                className={`flex-1 py-2 rounded-lg transition cursor-pointer ${
+                  authMode === 'signin'
+                    ? 'bg-white text-[#0066FF] shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthMode('register');
+                  setAuthError('');
+                }}
+                className={`flex-1 py-2 rounded-lg transition cursor-pointer ${
+                  authMode === 'register'
+                    ? 'bg-white text-[#0066FF] shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Create Account
+              </button>
             </div>
 
             {/* Error Alert Banner */}
@@ -155,154 +307,177 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* PRIMARY GOOGLE SIGN-IN ACTION */}
-            <div className="space-y-3 pt-2">
-              <button
-                type="button"
-                onClick={handleGoogleDirectRedirect}
-                disabled={isSubmitting}
-                className="w-full py-4 px-5 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-[#0066FF] text-slate-800 font-bold text-sm sm:text-base flex items-center justify-center gap-3 shadow-xs hover:shadow-md transition active:scale-98 cursor-pointer group"
-              >
-                {isSubmitting ? (
-                  <>
-                    <span className="w-5 h-5 rounded-full border-2 border-[#0066FF] border-t-transparent animate-spin" />
-                    <span>Connecting to Google...</span>
-                  </>
-                ) : (
-                  <>
-                    <GoogleIcon className="w-5 h-5 group-hover:scale-110 transition" />
-                    <span>Continue with Google / Gmail</span>
-                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 group-hover:text-[#0066FF] transition ml-1" />
-                  </>
-                )}
-              </button>
-
-              <p className="text-[11px] text-center text-slate-500">
-                Direct OAuth 2.0 connection. No passwords or manual signup needed.
-              </p>
-            </div>
-
-            {/* QUICK 1-TAP LOGIN & INSTANT VERIFICATION */}
-            <div className="pt-4 border-t border-slate-100 space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-700 uppercase tracking-wider text-[10px]">
-                  Instant 1-Tap Google Access
-                </span>
-                <span className="text-[10px] text-emerald-600 font-semibold flex items-center gap-1">
-                  <Check className="w-3 h-3" />
-                  <span>Real Session Guarantee</span>
-                </span>
-              </div>
-
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => handleGoogleAuth('aman.sharma@gmail.com', 'Aman Sharma')}
-                  disabled={isSubmitting}
-                  className="w-full p-3 rounded-2xl border border-slate-200 hover:border-[#0066FF] hover:bg-blue-50/40 flex items-center justify-between text-left transition cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-[#0066FF] text-white font-bold text-xs flex items-center justify-center ring-2 ring-blue-100">
-                      AS
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-slate-900 group-hover:text-[#0066FF]">
-                          Aman Sharma
-                        </span>
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800">
-                          VERIFIED
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-slate-500 font-mono">aman.sharma@gmail.com</span>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 group-hover:text-[#0066FF] transition" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleGoogleAuth('user.safeship@gmail.com', 'SafeShip Trader')}
-                  disabled={isSubmitting}
-                  className="w-full p-3 rounded-2xl border border-slate-200 hover:border-[#0066FF] hover:bg-blue-50/40 flex items-center justify-between text-left transition cursor-pointer group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center ring-2 ring-emerald-100">
-                      ST
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-slate-900 group-hover:text-[#0066FF]">
-                          SafeShip Verified Trader
-                        </span>
-                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800">
-                          KYC OK
-                        </span>
-                      </div>
-                      <span className="text-[11px] text-slate-500 font-mono">user.safeship@gmail.com</span>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 group-hover:text-[#0066FF] transition" />
-                </button>
-              </div>
-
-              {/* Or enter custom Gmail */}
-              <div className="pt-2">
-                <div className="flex gap-2">
+            {/* SIGN IN FORM */}
+            {authMode === 'signin' ? (
+              <form onSubmit={handleSignIn} className="space-y-4 pt-1">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                    Email Address
+                  </label>
                   <input
                     type="email"
+                    required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your Gmail (e.g. you@gmail.com)"
-                    className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition font-mono"
+                    placeholder="name@example.com"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
                   />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!email || !email.includes('@')) {
-                        setAuthError('Please enter a valid Gmail address.');
-                        return;
-                      }
-                      handleGoogleAuth(email.trim());
-                    }}
-                    disabled={isSubmitting}
-                    className="px-4 py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] disabled:opacity-50 text-white text-xs font-bold transition cursor-pointer shrink-0"
-                  >
-                    Login
-                  </button>
                 </div>
-              </div>
-            </div>
 
-            {/* TRUST HIGHLIGHTS */}
-            <div className="pt-4 border-t border-slate-100 grid grid-cols-3 gap-2 text-left">
-              <div className="p-2.5 rounded-xl bg-slate-50">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 mb-1" />
-                <span className="text-[10px] font-bold text-slate-800 block">₹0 Risk</span>
-                <span className="text-[9px] text-slate-500">Pay at unboxing</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-slate-50">
-                <Lock className="w-4 h-4 text-blue-600 mb-1" />
-                <span className="text-[10px] font-bold text-slate-800 block">RBI Escrow</span>
-                <span className="text-[9px] text-slate-500">ICICI Bank nodal</span>
-              </div>
-              <div className="p-2.5 rounded-xl bg-slate-50">
-                <Package className="w-4 h-4 text-purple-600 mb-1" />
-                <span className="text-[10px] font-bold text-slate-800 block">Live History</span>
-                <span className="text-[9px] text-slate-500">Encrypted records</span>
-              </div>
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs font-bold text-slate-700">
+                      Password
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-[11px] text-[#0066FF] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      <span>{showPassword ? 'Hide' : 'Show'}</span>
+                    </button>
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your account password"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-blue-600/20 transition active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      <span>Authenticating...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      <span>Sign In to SafeShip</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+            ) : (
+              /* CREATE ACCOUNT FORM */
+              <form onSubmit={handleRegister} className="space-y-3.5 pt-1">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="e.g. Rahul Sharma"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="name@example.com"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Mobile Phone Number (Optional)
+                  </label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="e.g. 98290 12345"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold text-slate-700">
+                      Password (min 6 chars)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-[11px] text-[#0066FF] hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      <span>{showPassword ? 'Hide' : 'Show'}</span>
+                    </button>
+                  </div>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    minLength={6}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Create a strong password"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition active:scale-98 cursor-pointer flex items-center justify-center gap-2 mt-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      <span>Creating Account...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-4 h-4" />
+                      <span>Create Account &amp; Sign In</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
+
+            {/* Google OAuth fallback if configured */}
+            <div className="pt-3 border-t border-slate-100 text-center">
+              <button
+                type="button"
+                onClick={() => redirectToGoogleLogin('/profile')}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
+              >
+                <GoogleIcon className="w-4 h-4" />
+                <span>Or continue with Google Account</span>
+              </button>
             </div>
           </section>
         ) : (
-          /* LOGGED IN STATE - REAL AUTHENTIC USER PROFILE */
+          /* 2. LOGGED IN STATE - COMPREHENSIVE CUSTOMER DASHBOARD */
           <>
-            {/* Profile Identity Card */}
+            {/* Account Identity Banner */}
             <section className="bg-white rounded-3xl border border-[#E2E8F0] p-6 sm:p-8 shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">
                 <div className="flex items-start sm:items-center gap-4">
                   <div className="relative">
                     <img
-                      src={session.avatarUrl}
+                      src={session.avatarUrl || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(session.name)}&backgroundColor=0066FF&textColor=FFFFFF`}
                       alt={session.name}
                       className="w-16 h-16 rounded-2xl object-cover ring-4 ring-blue-50 shadow-md"
                     />
@@ -320,17 +495,8 @@ export default function ProfilePage() {
                         {session.name}
                       </h1>
                       <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0066FF] border border-blue-200 text-[10px] font-mono font-bold tracking-tight flex items-center gap-1">
-                        {session.provider === 'google' ? (
-                          <>
-                            <GoogleIcon className="w-3 h-3" />
-                            <span>GOOGLE VERIFIED</span>
-                          </>
-                        ) : (
-                          <>
-                            <Check className="w-3 h-3 text-[#0066FF]" />
-                            <span>VERIFIED MEMBER</span>
-                          </>
-                        )}
+                        <Check className="w-3 h-3 text-[#0066FF]" />
+                        <span>VERIFIED ACCOUNT</span>
                       </span>
                     </div>
 
@@ -343,7 +509,7 @@ export default function ProfilePage() {
                         </>
                       )}
                       <span>&bull;</span>
-                      <span>ID: {session.memberCode || 'USR-2026'}</span>
+                      <span>Member ID: <strong>{session.memberCode || 'USR-2026'}</strong></span>
                       <span>&bull;</span>
                       <span>Joined {new Date(session.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}</span>
                     </p>
@@ -404,13 +570,177 @@ export default function ProfilePage() {
               </div>
             </section>
 
+            {/* EDITABLE CUSTOMER INFORMATION CARD */}
+            <section className="bg-white rounded-3xl border border-[#E2E8F0] p-6 sm:p-8 shadow-xs space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                <div>
+                  <h2 className="text-base font-bold text-[#0F172A] flex items-center gap-2">
+                    <User className="w-4 h-4 text-[#0066FF]" />
+                    <span>Customer Information &amp; Saved Logistics Preferences</span>
+                  </h2>
+                  <p className="text-xs text-[#64748B] mt-0.5">
+                    Saved details automatically prefill during courier booking and invoice generation.
+                  </p>
+                </div>
+              </div>
+
+              {profileSuccessMessage && (
+                <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+                  <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{profileSuccessMessage}</span>
+                </div>
+              )}
+
+              {profileErrorMessage && (
+                <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2 animate-in fade-in">
+                  <span>⚠️ {profileErrorMessage}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveProfile} className="space-y-4 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="e.g. Aman Sharma"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      Primary Contact Mobile
+                    </label>
+                    <input
+                      type="tel"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      placeholder="e.g. +91 98290 12345"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Logistics Pickup Details */}
+                <div className="pt-2 border-t border-slate-100 space-y-3">
+                  <span className="text-[11px] font-bold text-[#0066FF] uppercase tracking-wider block">
+                    Default Pickup Address (Doorstep Collection)
+                  </span>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      Doorstep Pickup Address Line
+                    </label>
+                    <input
+                      type="text"
+                      value={editPickupAddress}
+                      onChange={(e) => setEditPickupAddress(e.target.value)}
+                      placeholder="e.g. Flat 402, Royal Palms, Vaishali Nagar"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Pickup 6-Digit PIN Code
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={editPickupPincode}
+                        onChange={(e) => handlePickupPincodeChange(e.target.value)}
+                        placeholder="e.g. 302021"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        City / Hub
+                      </label>
+                      <input
+                        type="text"
+                        value={editPickupCity}
+                        onChange={(e) => setEditPickupCity(e.target.value)}
+                        placeholder="e.g. Jaipur, Rajasthan"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Optional B2B Tax GSTIN Details */}
+                <div className="pt-2 border-t border-slate-100 space-y-3">
+                  <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wider block">
+                    B2B Invoicing &amp; GSTIN (Optional)
+                  </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Company / Business Name
+                      </label>
+                      <input
+                        type="text"
+                        value={editBusinessName}
+                        onChange={(e) => setEditBusinessName(e.target.value)}
+                        placeholder="e.g. Apex Technologies LLP"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        15-Digit GSTIN
+                      </label>
+                      <input
+                        type="text"
+                        maxLength={15}
+                        value={editGstin}
+                        onChange={(e) => setEditGstin(e.target.value.toUpperCase())}
+                        placeholder="e.g. 08AAECS2938Q1ZP"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-900 uppercase outline-hidden focus:border-[#0066FF] focus:bg-white transition"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-3 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={profileSaving}
+                    className="px-6 py-3 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] disabled:opacity-50 text-white font-bold text-xs shadow-md transition cursor-pointer flex items-center gap-2 active:scale-98"
+                  >
+                    {profileSaving ? (
+                      <>
+                        <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                        <span>Saving Changes...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Save Customer Details</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </section>
+
             {/* Real User Orders Section */}
             <section className="space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-base font-bold text-[#0F172A]">Your Shipments &amp; Consignments</h2>
                   <p className="text-xs text-[#64748B] mt-0.5">
-                    Real orders booked from your account. Settle merchandise value only upon 10-minute doorstep unboxing.
+                    Real orders booked from your account.
                   </p>
                 </div>
                 <Link
@@ -487,95 +817,6 @@ export default function ProfilePage() {
         )}
 
       </main>
-
-      {/* GOOGLE SIGN-IN INTERACTIVE MODAL */}
-      {showGoogleModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <GoogleIcon className="w-5 h-5" />
-                <span className="font-bold text-sm text-slate-900">Sign in with Google</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowGoogleModal(false)}
-                className="text-slate-400 hover:text-slate-700 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Select an account or enter your Gmail address to securely sign in without passwords:
-            </p>
-
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => handleGoogleAuth('aman.sharma@gmail.com', 'Aman Sharma')}
-                className="w-full p-3 rounded-2xl border border-slate-200 hover:border-[#0066FF] hover:bg-blue-50/50 flex items-center justify-between text-left transition cursor-pointer group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
-                    AS
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-slate-900 group-hover:text-[#0066FF] block">
-                      Aman Sharma
-                    </span>
-                    <span className="text-[10px] text-slate-500">aman.sharma@gmail.com</span>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition" />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleGoogleAuth('user.safeship@gmail.com', 'SafeShip Trader')}
-                className="w-full p-3 rounded-2xl border border-slate-200 hover:border-[#0066FF] hover:bg-blue-50/50 flex items-center justify-between text-left transition cursor-pointer group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">
-                    ST
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-slate-900 group-hover:text-[#0066FF] block">
-                      SafeShip Trader
-                    </span>
-                    <span className="text-[10px] text-slate-500">user.safeship@gmail.com</span>
-                  </div>
-                </div>
-                <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition" />
-              </button>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 space-y-3">
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Or enter your Gmail address:
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="yourname@gmail.com"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF]"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleGoogleAuth(email)}
-                className="w-full py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-2"
-              >
-                <GoogleIcon className="w-4 h-4 text-white" />
-                <span>Continue with Google</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <MobileBottomNav />
     </div>

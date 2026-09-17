@@ -5,6 +5,14 @@ export interface UserSession {
   name: string;
   email: string;
   phone?: string;
+  pickupAddress?: string;
+  pickupPincode?: string;
+  pickupCity?: string;
+  deliveryAddress?: string;
+  deliveryPincode?: string;
+  deliveryCity?: string;
+  businessName?: string;
+  gstin?: string;
   avatarUrl?: string;
   provider: 'google' | 'credentials';
   createdAt: string;
@@ -219,6 +227,48 @@ export async function fetchCurrentUser(): Promise<UserSession | null> {
     return null;
   } catch {
     return getSession();
+  }
+}
+
+/**
+ * Update user customer profile in backend & client storage
+ */
+export async function updateUserProfile(updates: {
+  name?: string;
+  phone?: string;
+  pickupAddress?: string;
+  pickupPincode?: string;
+  pickupCity?: string;
+  deliveryAddress?: string;
+  deliveryPincode?: string;
+  deliveryCity?: string;
+  businessName?: string;
+  gstin?: string;
+}): Promise<{ success: boolean; user?: UserSession; error?: string }> {
+  try {
+    const token = getStoredToken();
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch('/api/auth/profile', {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(updates)
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      return { success: false, error: data.error || 'Failed to update profile.' };
+    }
+
+    saveSession(data.user, data.token);
+    return { success: true, user: data.user };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Network error updating profile.' };
   }
 }
 

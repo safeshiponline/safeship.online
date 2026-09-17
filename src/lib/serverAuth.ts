@@ -7,6 +7,14 @@ export interface ServerUser {
   name: string;
   email: string;
   phone?: string;
+  pickupAddress?: string;
+  pickupPincode?: string;
+  pickupCity?: string;
+  deliveryAddress?: string;
+  deliveryPincode?: string;
+  deliveryCity?: string;
+  businessName?: string;
+  gstin?: string;
   passwordHash?: string;
   salt?: string;
   avatarUrl?: string;
@@ -21,6 +29,14 @@ export interface AuthSessionData {
   name: string;
   email: string;
   phone?: string;
+  pickupAddress?: string;
+  pickupPincode?: string;
+  pickupCity?: string;
+  deliveryAddress?: string;
+  deliveryPincode?: string;
+  deliveryCity?: string;
+  businessName?: string;
+  gstin?: string;
   avatarUrl?: string;
   provider: 'google' | 'credentials';
   createdAt: string;
@@ -74,6 +90,14 @@ export function createSessionToken(user: ServerUser): string {
       email: user.email,
       name: user.name,
       phone: user.phone,
+      pickupAddress: user.pickupAddress,
+      pickupPincode: user.pickupPincode,
+      pickupCity: user.pickupCity,
+      deliveryAddress: user.deliveryAddress,
+      deliveryPincode: user.deliveryPincode,
+      deliveryCity: user.deliveryCity,
+      businessName: user.businessName,
+      gstin: user.gstin,
       provider: user.provider,
       memberCode: user.memberCode,
       iat: Math.floor(Date.now() / 1000),
@@ -124,6 +148,14 @@ export function verifySessionToken(token: string): AuthSessionData | null {
       name: decoded.name,
       email: decoded.email,
       phone: decoded.phone,
+      pickupAddress: decoded.pickupAddress,
+      pickupPincode: decoded.pickupPincode,
+      pickupCity: decoded.pickupCity,
+      deliveryAddress: decoded.deliveryAddress,
+      deliveryPincode: decoded.deliveryPincode,
+      deliveryCity: decoded.deliveryCity,
+      businessName: decoded.businessName,
+      gstin: decoded.gstin,
       avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(decoded.name)}&backgroundColor=0066FF&textColor=FFFFFF`,
       provider: decoded.provider || 'credentials',
       createdAt: new Date(decoded.iat * 1000).toISOString(),
@@ -144,6 +176,14 @@ export function sanitizeUser(user: ServerUser): AuthSessionData {
     name: user.name,
     email: user.email,
     phone: user.phone,
+    pickupAddress: user.pickupAddress,
+    pickupPincode: user.pickupPincode,
+    pickupCity: user.pickupCity,
+    deliveryAddress: user.deliveryAddress,
+    deliveryPincode: user.deliveryPincode,
+    deliveryCity: user.deliveryCity,
+    businessName: user.businessName,
+    gstin: user.gstin,
     avatarUrl:
       user.avatarUrl ||
       `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}&backgroundColor=0066FF&textColor=FFFFFF`,
@@ -334,4 +374,52 @@ export function authenticateGoogleUser(email: string, name?: string, avatarUrl?:
   users[normalizedEmail] = newUser;
   persistUsers(users);
   return newUser;
+}
+
+/**
+ * Update an existing customer profile record in persistent storage
+ */
+export function updateUserServer(
+  userIdOrEmail: string,
+  updates: Partial<Omit<ServerUser, 'id' | 'passwordHash' | 'salt' | 'createdAt' | 'memberCode'>>
+): ServerUser {
+  const users = loadUsers();
+  let targetUser: ServerUser | null = null;
+  let targetKey = '';
+
+  const query = userIdOrEmail.toLowerCase().trim();
+  for (const [emailKey, user] of Object.entries(users)) {
+    if (
+      user.id === userIdOrEmail ||
+      emailKey.toLowerCase().trim() === query ||
+      user.email.toLowerCase().trim() === query
+    ) {
+      targetUser = user;
+      targetKey = emailKey;
+      break;
+    }
+  }
+
+  if (!targetUser) {
+    throw new Error('User not found in system database.');
+  }
+
+  const updated: ServerUser = {
+    ...targetUser,
+    ...(updates.name !== undefined ? { name: updates.name.trim() } : {}),
+    ...(updates.phone !== undefined ? { phone: updates.phone.trim() } : {}),
+    ...(updates.pickupAddress !== undefined ? { pickupAddress: updates.pickupAddress.trim() } : {}),
+    ...(updates.pickupPincode !== undefined ? { pickupPincode: updates.pickupPincode.trim() } : {}),
+    ...(updates.pickupCity !== undefined ? { pickupCity: updates.pickupCity.trim() } : {}),
+    ...(updates.deliveryAddress !== undefined ? { deliveryAddress: updates.deliveryAddress.trim() } : {}),
+    ...(updates.deliveryPincode !== undefined ? { deliveryPincode: updates.deliveryPincode.trim() } : {}),
+    ...(updates.deliveryCity !== undefined ? { deliveryCity: updates.deliveryCity.trim() } : {}),
+    ...(updates.businessName !== undefined ? { businessName: updates.businessName.trim() } : {}),
+    ...(updates.gstin !== undefined ? { gstin: updates.gstin.trim().toUpperCase() } : {}),
+    ...(updates.avatarUrl !== undefined ? { avatarUrl: updates.avatarUrl } : {})
+  };
+
+  users[targetKey] = updated;
+  persistUsers(users);
+  return updated;
 }

@@ -200,17 +200,44 @@ function CreateShipmentContent() {
 
   // Load session on mount & react to auth changes
   useEffect(() => {
+    const applyUserSession = (user: UserSession | null) => {
+      if (!user) return;
+      setSession(user);
+      setSenderName((prev) => (!prev && user.name ? user.name : prev));
+      if (user.phone) {
+        const cleanPhone = user.phone.replace(/\D/g, '').slice(-10);
+        setSenderPhone((prev) => (!prev && cleanPhone ? cleanPhone : prev));
+      }
+      if (user.pickupAddress) {
+        setPickupLocation((prev) => (!prev ? user.pickupAddress! : prev));
+      }
+      if (user.pickupPincode) {
+        setPickupPincode((prev) => {
+          if (!prev && user.pickupPincode) {
+            const info = resolvePincode(user.pickupPincode);
+            if (info && info.city) {
+              setPickupCity(`${info.city}, ${info.state}`);
+            }
+            return user.pickupPincode;
+          }
+          return prev;
+        });
+      }
+      if (user.businessName) {
+        setBusinessName((prev) => (!prev ? user.businessName! : prev));
+      }
+      if (user.gstin) {
+        setGstin((prev) => (!prev ? user.gstin! : prev));
+        setIsB2B(true);
+      }
+    };
+
     const current = getSession();
-    setSession(current);
-    if (current && !senderName) {
-      setSenderName(current.name);
-    }
+    applyUserSession(current);
+
     const onAuthChange = () => {
       const updated = getSession();
-      setSession(updated);
-      if (updated && !senderName) {
-        setSenderName(updated.name);
-      }
+      applyUserSession(updated);
     };
     window.addEventListener('safeship_auth_changed', onAuthChange);
     return () => window.removeEventListener('safeship_auth_changed', onAuthChange);

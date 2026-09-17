@@ -75,8 +75,8 @@ export const Navbar: React.FC = () => {
               href="/in/profile"
               className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 hover:border-[#0066FF] text-xs font-bold text-slate-700 hover:text-[#0066FF] bg-white transition shadow-2xs"
             >
-              <GoogleIcon className="w-3.5 h-3.5" />
-              <span>Sign in</span>
+              <User className="w-3.5 h-3.5" />
+              <span>Sign in / Register</span>
             </Link>
           )}
           <Link href="/in/admin" className="text-[#64748B] hover:text-[#0F172A] transition text-xs">
