@@ -306,7 +306,7 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
         </div>
 
         {/* Certified Driver Profile Card */}
-        <DriverProfileCard courier={deal.assignedCourier} />
+        <DriverProfileCard courier={deal.assignedCourier} status={deal.status} />
 
         {/* Doorstep Photo Evidence Vault & AI Certificate */}
         <PhotoEvidenceVault

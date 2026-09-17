@@ -10,10 +10,10 @@ export const INITIAL_DEALS: SafeDeal[] = [
     declaredValue: 65000,
     condition: 'Mint / Like New',
     serialNumber: 'D4G7K3Y9L2',
-    imeiNumber: '358921094829104',
+    imeiNumber: '358921094829103',
     imeiAuditReport: {
       status: 'VALID',
-      imei: '358921094829104',
+      imei: '358921094829103',
       serial: 'D4G7K3Y9L2',
       brand: 'Apple',
       model: 'iPhone 15 Pro 256GB Natural Titanium',
@@ -23,25 +23,10 @@ export const INITIAL_DEALS: SafeDeal[] = [
       verifiedAt: '13 Sep 2026, 09:15 AM'
     },
     pickupAttemptStatus: {
-      isDelayed: true,
-      reason: 'Seller Unreachable / Call Not Answered during scheduled pickup window',
-      callAttempts: [
-        {
-          time: '11:15 AM IST',
-          caller: 'Rahul K. (Field Officer KA-4012)',
-          target: 'Seller (+91 98290 12890)',
-          outcome: 'Ringing — No Answer (35s timeout)',
-          note: 'Courier executive waited at Malviya Nagar pickup location for 10 minutes.'
-        },
-        {
-          time: '11:42 AM IST',
-          caller: 'SafeShip Central Dispatch IVR',
-          target: 'Seller (+91 98290 12890)',
-          outcome: 'Phone Switched Off / Out of Network Coverage',
-          note: 'Automated retry queued. SMS notification sent to seller.'
-        }
-      ],
-      nextAttemptScheduled: 'Tomorrow, 10:30 AM – 01:00 PM IST',
+      isDelayed: false,
+      reason: '',
+      callAttempts: [],
+      nextAttemptScheduled: 'Pickup scheduled today: 02:00 PM – 05:00 PM IST',
       callbackRequested: false
     },
     city: 'Jaipur',

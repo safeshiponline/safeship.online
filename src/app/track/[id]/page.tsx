@@ -216,7 +216,7 @@ function TrackingContent({
     );
   }
 
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : `https://safeship.online/in/track/${deal.id}`;
+  const shareUrl = typeof window !== 'undefined' ? `${window.location.origin}/in/track/${deal.trackingId || deal.id}` : `https://safeship.online/in/track/${deal.trackingId || deal.id}`;
 
   const copyTrackingLink = () => {
     navigator.clipboard.writeText(shareUrl);
@@ -225,15 +225,15 @@ function TrackingContent({
   };
 
   const isExchange = deal.isExchange || deal.id.includes('EXCH');
-  const upfrontFee = isExchange ? 548 : 349;
+  const upfrontFee = deal.upfrontPaid || deal.upfrontPricing?.totalUpfront || (isExchange ? 198 : 99);
 
   const getStatusStep = () => {
     switch (deal.status) {
       case 'DRAFT':
       case 'PENDING_ACCEPTANCE':
-        return 1;
       case 'ESCROW_PENDING':
       case 'ESCROW_LOCKED':
+        return 1;
       case 'COURIER_ASSIGNED':
         return 2;
       case 'PICKUP_INSPECTION':
@@ -860,7 +860,7 @@ function TrackingContent({
 
           {/* Sidebar Right (1 col): Driver Profile & Open-Box Shortcut */}
           <div className="space-y-6">
-            <DriverProfileCard courier={deal.assignedCourier} />
+            <DriverProfileCard courier={deal.assignedCourier} status={deal.status} />
 
             <div className="rounded-3xl border border-[#BFDBFE] bg-[#EFF6FF] p-5 shadow-xs space-y-3 text-xs">
               <div className="font-bold text-[#0F172A] text-sm tracking-tight flex items-center gap-1.5">

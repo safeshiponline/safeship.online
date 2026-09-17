@@ -235,8 +235,8 @@ export function createNewDeal(params: {
         id: 'chk_1',
         name: `${params.city || 'Origin'} Ingestion Hub`,
         hub: `${params.city || 'Origin'} Mother Distribution Center`,
-        status: 'COMPLETED',
-        timestamp: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) + ' IST'
+        status: 'PENDING',
+        timestamp: 'Pickup Queued'
       },
       {
         id: 'chk_2',
@@ -256,7 +256,7 @@ export function createNewDeal(params: {
     dimensionsCm: params.dimensionsCm,
     buyerReleasePin: buyerPin,
     sellerPickupCode: sellerCode,
-    status: 'COURIER_ASSIGNED',
+    status: params.upfrontPaid ? 'ESCROW_LOCKED' : 'PENDING_ACCEPTANCE',
     assignedCourier: {
       id: 'cr_rahul_k',
       name: 'Rahul K.',
@@ -296,7 +296,7 @@ export function createNewDeal(params: {
         id: `aud_${Date.now()}_1`,
         timestamp: new Date().toISOString(),
         actor: 'SELLER',
-        title: 'Shipment Created',
+        title: 'Consignment Created',
         description: `${params.sellerName} booked ${params.isExchange ? '2-Way Hardware Exchange' : '1-Way Safe Delivery'}.`
       },
       ...(params.upfrontPaid ? [{
@@ -310,8 +310,8 @@ export function createNewDeal(params: {
         id: `aud_${Date.now()}_3`,
         timestamp: new Date().toISOString(),
         actor: 'COURIER',
-        title: 'Assigned to Courier Rahul K.',
-        description: `SafeShip bonded custody officer assigned for pickup and doorstep inspection.`
+        title: 'Pickup Window Scheduled',
+        description: `Consignment queued for pickup during ${params.pickupSlot === 'MORNING_10_1' ? 'Morning (10:00 AM – 01:00 PM)' : 'Afternoon (02:00 PM – 05:00 PM)'} slot. Dedicated Custody Officer allocated 2 hours prior.`
       }
     ],
     createdAt: new Date().toISOString(),

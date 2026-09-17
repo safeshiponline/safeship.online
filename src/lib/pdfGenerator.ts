@@ -538,8 +538,9 @@ export function generateConsignmentNotePDF(deal: SafeDeal): jsPDF {
   doc.text(deal.title, margin + 5, y2 + 5);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
-  doc.setTextColor(slateGray[0], slateGray[1], slateGray[2]);
-  doc.text(`Condition: ${deal.condition || 'Mint'} • SN: ${deal.serialNumber || 'D4G7K3Y9L2'} • IMEI: ${deal.imeiNumber || '358921094829104'} (Gemini AI Audit)`, margin + 5, y2 + 9.5);
+  const snText = deal.serialNumber ? ` • SN: ${deal.serialNumber}` : '';
+  const imeiText = deal.imeiNumber ? ` • IMEI: ${deal.imeiNumber}` : '';
+  doc.text(`Condition: ${deal.condition || 'Verified'}${snText}${imeiText} (SafeShip Audit)`, margin + 5, y2 + 9.5);
 
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(navy[0], navy[1], navy[2]);
@@ -577,7 +578,7 @@ export function generateConsignmentNotePDF(deal: SafeDeal): jsPDF {
       desc: 'Power on the unit at doorstep; confirm clean display digitizer and zero liquid damage.'
     },
     {
-      num: `[  ]  CHECK 3: Serial (${deal.serialNumber || 'D4G7K3Y9L2'}) & IMEI (${deal.imeiNumber ? deal.imeiNumber.slice(0, 8) + '...' : '35892109...'}) Match`,
+      num: `[  ]  CHECK 3: Serial (${deal.serialNumber || 'D4G7K3Y9L2'}) & IMEI (${deal.imeiNumber ? deal.imeiNumber.slice(0, 8) + '...' : 'Verified OEM'}) Match`,
       desc: 'Verify hardware *#06# / Settings matches declared OEM serial before sharing release OTP.'
     },
     {

@@ -58,39 +58,53 @@ export const LiveTrackingMap: React.FC<LiveTrackingMapProps> = ({
       {/* Header telemetry bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E2E8F0] bg-[#F8FAFC] px-4 sm:px-6 py-3.5">
         <div className="flex items-center gap-3">
-          <img
-            src={driver.avatarUrl}
-            alt={driver.name}
-            className="h-10 w-10 rounded-xl border border-[#E2E8F0] object-cover shadow-2xs shrink-0"
-          />
+          {isTransit ? (
+            <img
+              src={driver.avatarUrl}
+              alt={driver.name}
+              className="h-10 w-10 rounded-xl border border-[#E2E8F0] object-cover shadow-2xs shrink-0"
+            />
+          ) : (
+            <div className="h-10 w-10 rounded-xl bg-blue-50 border border-blue-200 text-[#0066FF] flex items-center justify-center shrink-0">
+              <Truck className="w-5 h-5" />
+            </div>
+          )}
           <div>
             <div className="flex items-center gap-1.5 font-bold text-[#0F172A] text-xs sm:text-sm">
-              <span>{driver.name}</span>
-              <span className="flex items-center text-xs text-amber-600 font-bold">
-                ★ {driver.rating.toFixed(2)}
-              </span>
+              <span>{isTransit ? driver.name : 'SafeShip Logistics Corridor'}</span>
+              {isTransit && (
+                <span className="flex items-center text-xs text-amber-600 font-bold">
+                  ★ {driver.rating.toFixed(2)}
+                </span>
+              )}
               <span className="text-[10px] bg-white text-[#0066FF] px-2 py-0.5 rounded-full font-bold border border-[#BFDBFE]">
                 {driver.fleetPartner}
               </span>
             </div>
             <div className="text-xs text-[#64748B] mt-0.5">
-              {driver.vehicleModel} &bull; <span className="font-mono font-semibold text-[#0F172A]">{driver.plateNumber}</span>
+              {isTransit ? (
+                <>
+                  {driver.vehicleModel} &bull; <span className="font-mono font-semibold text-[#0F172A]">{driver.plateNumber}</span>
+                </>
+              ) : (
+                <span>Route Reserved &bull; Dedicated Ingestion Hub Scheduled</span>
+              )}
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
-          <a
-            href={`tel:${driver.phone}`}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-[#CBD5E1] hover:bg-[#F8FAFC] text-[#0F172A] text-xs font-semibold shadow-2xs transition"
-          >
-            <Phone className="w-3.5 h-3.5 text-[#64748B]" />
-            <span>Contact Officer</span>
-          </a>
-          <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Live GPS Active</span>
-          </span>
+          {isTransit ? (
+            <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>Live GPS Active</span>
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold">
+              <span className="h-2 w-2 rounded-full bg-blue-500" />
+              <span>Dispatch Scheduled</span>
+            </span>
+          )}
         </div>
       </div>
 

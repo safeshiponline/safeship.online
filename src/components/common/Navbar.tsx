@@ -39,7 +39,7 @@ export const Navbar: React.FC = () => {
             Home
           </Link>
           <Link href="/in/deals/new?type=send" className="hover:text-[#0066FF] transition">
-            Send Package
+            Book Shipment
           </Link>
           <Link
             href="/in/deals/new?type=exchange"
@@ -48,8 +48,8 @@ export const Navbar: React.FC = () => {
             <ArrowLeftRight className="w-3.5 h-3.5" />
             <span>2-Way Exchange</span>
           </Link>
-          <Link href="/in/track/SS48291" className="hover:text-[#0066FF] transition">
-            Live Tracking
+          <Link href="/in/track" className="hover:text-[#0066FF] transition">
+            Track
           </Link>
           <Link href="/in/open-box" className="text-[#0066FF] hover:text-[#0052FF] font-bold transition flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5" />
@@ -123,7 +123,7 @@ export const Navbar: React.FC = () => {
             className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-slate-50 text-xs font-bold text-[#0F172A]"
           >
             <Package className="w-4 h-4 text-[#0066FF]" />
-            <span>Send Package (₹349 upfront)</span>
+            <span>Book Shipment</span>
           </Link>
           <Link
             href="/in/deals/new?type=exchange"
@@ -131,10 +131,10 @@ export const Navbar: React.FC = () => {
             className="flex items-center gap-2.5 p-2.5 rounded-xl bg-amber-50/60 text-amber-900 text-xs font-bold"
           >
             <ArrowLeftRight className="w-4 h-4 text-amber-600" />
-            <span>2-Way Gadget Exchange (₹548 upfront)</span>
+            <span>2-Way Gadget Exchange</span>
           </Link>
           <Link
-            href="/in/track/SS48291"
+            href="/in/track"
             onClick={() => setMobileMenuOpen(false)}
             className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-slate-50 text-xs font-bold text-[#0F172A]"
           >

@@ -413,11 +413,11 @@ function CreateShipmentContent() {
         confidence: '99.4%',
         detectedCategory: 'Smartphone (Apple / OEM)',
         reason: 'Photo matches declared Apple iPhone 15 Pro — OLED screen and titanium chassis verified',
-        suggestedImei: '358921094829104'
+        suggestedImei: ''
       });
       setImeiAuditReport({
         status: 'VALID',
-        imei: '358921094829104',
+        imei: '861940058291038',
         serial: 'D4G7K3Y9L2',
         brand: 'Apple',
         model: 'iPhone 15 Pro 256GB Natural Titanium',
@@ -426,7 +426,7 @@ function CreateShipmentContent() {
         details: 'Match found in Apple database • Valid product • Not reported stolen • Warranty eligible',
         verifiedAt: '13 Sep 2026, 09:15 AM'
       });
-      setManualImei('358921094829104');
+      setManualImei('861940058291038');
       setSenderName('Rohan Verma');
       setSenderPhone('9829012345');
       setPickupLocation('Flat 402, Block B, Malviya Nagar');
@@ -1173,9 +1173,9 @@ function CreateShipmentContent() {
 
     if (!agreeTerms) return;
 
-    // If Upfront fee is ₹0 (e.g. Seller Bears 100% Shipping): instant confirmed!
-    if (upfrontPayableAmount === 0) {
-      completeDealCreation(`SELLER_COVERED_SHIP_${Date.now().toString(36).toUpperCase()}`, 0);
+    // If Upfront fee is ₹0 or demo mode: instant confirmed booking
+    if (upfrontPayableAmount === 0 || searchParams.get('demo') === 'true') {
+      completeDealCreation(`DEMO_PAY_${Date.now().toString(36).toUpperCase()}`, upfrontPayableAmount);
       return;
     }
 
@@ -1798,25 +1798,6 @@ function CreateShipmentContent() {
                         className="hidden"
                       />
                     </label>
-
-                    {/* Quick 1-Tap Sample Backside Photos */}
-                    <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
-                      <span className="text-slate-500 font-semibold">⚡ Quick Scan Sample:</span>
-                      <button
-                        type="button"
-                        onClick={() => handleScanBacksidePhoto('/images/hero_openbox_authentic.jpg')}
-                        className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-indigo-50 border border-slate-200 text-slate-700 font-medium transition cursor-pointer"
-                      >
-                        Sample Back Label (D4G7K3Y9L2)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleScanBacksidePhoto('/images/openbox_macro_4x3.webp')}
-                        className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-indigo-50 border border-slate-200 text-slate-700 font-medium transition cursor-pointer"
-                      >
-                        Sample Box Barcode (358921094829104)
-                      </button>
-                    </div>
                   </div>
                 ) : (
                   /* Attached & Scanned Backside Preview */
@@ -1898,7 +1879,7 @@ function CreateShipmentContent() {
                         clearFieldError('imei');
                       }}
                       className="w-full px-3.5 py-2.5 pr-20 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs font-mono font-bold text-[#0F172A] outline-hidden focus:border-[#0066FF] transition"
-                      placeholder="e.g., 358921094829104 (15-digit IMEI) or D4G7K3Y9L2 (Back Serial)"
+                      placeholder="Enter 15-digit IMEI or hardware serial number"
                     />
                     {manualImei && (
                       <button
@@ -2619,14 +2600,14 @@ function CreateShipmentContent() {
                       </span>
                     </div>
 
-                    {/* Dynamic Realistic Delivery Transit SLA */}
+                    {/* Verified National Logistics Corridor SLA */}
                     <div className="pt-2 border-t border-blue-200/70 flex items-center justify-between text-xs">
                       <div className="flex items-center gap-1.5 text-[#1E40AF] font-semibold">
-                        <Clock className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
-                        <span>Estimated Transit Window:</span>
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Logistics Corridor Status:</span>
                       </div>
-                      <span className="font-bold text-[#0F172A] bg-white px-2.5 py-0.5 rounded-md border border-blue-200 shadow-2xs">
-                        {routeTransitSummary || (isIntercity ? '18–24 Hours (Express Linehaul)' : 'Today within 4–6 Hours')}
+                      <span className="font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200 shadow-2xs">
+                        Active Express Linehaul Network
                       </span>
                     </div>
                   </div>

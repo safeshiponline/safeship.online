@@ -1,15 +1,19 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CourierAgent } from '@/lib/types';
+import { CourierAgent, DealStatus } from '@/lib/types';
 import { ShieldCheck, Truck, Phone, Check, Clock, Lock, X } from '../common/Icons';
 
 interface DriverProfileCardProps {
   courier?: CourierAgent;
+  status?: DealStatus;
   className?: string;
 }
 
-export const DriverProfileCard: React.FC<DriverProfileCardProps> = ({ courier, className = '' }) => {
+export const DriverProfileCard: React.FC<DriverProfileCardProps> = ({ courier, status, className = '' }) => {
+  // If the consignment is in early booking/escrow stage, display scheduled allocation
+  const isAwaitingDispatch = status === 'DRAFT' || status === 'PENDING_ACCEPTANCE' || status === 'ESCROW_PENDING' || status === 'ESCROW_LOCKED';
+
   // Always assign Rahul K. (Certified Custody Officer #KA-4012)
   const driver = {
     id: courier?.id || 'cr_rahul_k',
@@ -43,6 +47,54 @@ export const DriverProfileCard: React.FC<DriverProfileCardProps> = ({ courier, c
       setSentAlert(null);
     }, 3000);
   };
+
+  if (isAwaitingDispatch) {
+    return (
+      <div id="driver-profile-card" className={`rounded-3xl border border-[#CBD5E1] bg-white p-5 shadow-xs ${className}`}>
+        <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9] mb-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-xl bg-[#EFF6FF] text-[#0066FF] border border-[#BFDBFE] flex items-center justify-center">
+              <Clock className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-[#0F172A]">Field Custody Allocation</div>
+              <div className="text-[10px] text-[#64748B] font-medium">SafeShip Direct Fleet &bull; Pickup Scheduling</div>
+            </div>
+          </div>
+          <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+            <ShieldCheck className="w-3 h-3 text-blue-600" />
+            <span>Scheduled Window</span>
+          </span>
+        </div>
+
+        <div className="flex items-start gap-3.5">
+          <div className="h-14 w-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-400 shrink-0">
+            <Truck className="w-7 h-7 text-[#0066FF]" />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-bold text-sm text-[#0F172A]">Officer Allocation in Progress</span>
+              <span className="text-[10px] bg-slate-100 text-slate-700 font-semibold px-1.5 py-0.2 rounded border border-slate-200">
+                Hub Dispatch Queued
+              </span>
+            </div>
+
+            <p className="mt-1 text-xs text-[#475569] leading-relaxed font-medium">
+              A certified SafeShip Custody Officer is assigned 2 hours prior to your selected pickup window. Direct contact bridge and officer credentials will activate when the rider is en route from the local hub.
+            </p>
+
+            <div className="mt-2.5 flex items-center gap-1.5 text-[10px] text-slate-500 font-medium">
+              <Lock className="w-3 h-3 text-blue-600 shrink-0" />
+              <span className="font-semibold text-slate-700">Encrypted Telephony Bridge Standby</span>
+              <span className="text-[#CBD5E1]">&bull;</span>
+              <span>100% Identity Privacy</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

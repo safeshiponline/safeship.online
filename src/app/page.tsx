@@ -6,8 +6,8 @@ import { useRouter } from 'next/navigation';
 import { SafeShipLogo } from '@/components/common/SafeShipLogo';
 import { MobileBottomNav } from '@/components/common/MobileBottomNav';
 import { getUserOrders } from '@/lib/store';
-import { SafeDeal } from '@/lib/types';
-import { calculateRoadDistance, resolvePincode } from '@/lib/pincodeService';
+import { SafeDeal, DeliveryServiceTier } from '@/lib/types';
+import { calculateRoadDistance, resolvePincode, calculateTierPricing, calculateInsuranceFee } from '@/lib/pincodeService';
 import {
   Bell,
   Search,
@@ -48,96 +48,43 @@ export default function HomePage() {
   const [userOrders, setUserOrders] = useState<SafeDeal[]>([]);
   const [isMounted, setIsMounted] = useState<boolean>(false);
 
-  // Quick 1-Photo & IMEI Verification State (Direct on Main Page)
-  const [quickTab, setQuickTab] = useState<'VERIFY' | 'OFFICER'>('VERIFY');
-  const [quickItemName, setQuickItemName] = useState<string>('Apple iPhone 15 Pro Max');
-  const [quickImei, setQuickImei] = useState<string>('358921094829104');
-  const [quickPhoto, setQuickPhoto] = useState<string>('/images/hero_openbox_4x3.webp');
-  const [quickChecking, setQuickChecking] = useState<boolean>(false);
-  const [quickMatchStatus, setQuickMatchStatus] = useState<ProductPhotoMatchResult | null>({
-    isMatch: true,
-    confidence: '99.4%',
-    detectedCategory: 'Smartphone (Apple / OEM)',
-    reason: 'Photo matches declared Apple iPhone 15 Pro Max — OLED screen and titanium chassis verified',
-    suggestedImei: '358921094829104'
-  });
+  // Interactive Route & Instant Rate Estimator State
+  const [heroTab, setHeroTab] = useState<'ESTIMATOR' | 'TRACK'>('ESTIMATOR');
+  const [estFromPin, setEstFromPin] = useState<string>('302017'); // Jaipur
+  const [estToPin, setEstToPin] = useState<string>('110001'); // Delhi
+  const [estItemValue, setEstItemValue] = useState<number>(55000);
+  const [estTier, setEstTier] = useState<DeliveryServiceTier>('PRIORITY_EXPRESS');
+  const [heroTrackInput, setHeroTrackInput] = useState<string>('');
 
-  const handleQuickVerify = async (photoUrl: string, nameToCheck?: string) => {
-    setQuickPhoto(photoUrl);
-    const targetName = (nameToCheck !== undefined ? nameToCheck : quickItemName).trim();
-    if (!targetName || targetName.length < 2) {
-      setQuickMatchStatus(null);
-      return;
-    }
-    setQuickChecking(true);
-    try {
-      const res = await fetch('/api/gemini/scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'verify_match', photo: photoUrl, itemName: targetName })
-      });
-      const data = await res.json();
-      if (data.success && data.result) {
-        setQuickMatchStatus(data.result);
-        if (data.result.suggestedImei && !quickImei) {
-          setQuickImei(data.result.suggestedImei);
-        }
-      }
-    } catch {
-      setQuickMatchStatus({
-        isMatch: true,
-        confidence: '98.5%',
-        detectedCategory: 'Verified Hardware',
-        reason: `Photo verified against declared "${targetName}"`,
-        suggestedImei: '358921094829104'
-      });
-    } finally {
-      setQuickChecking(false);
-    }
-  };
+  // Auto-resolved logistics
+  const cleanFromPin = estFromPin.replace(/\D/g, '').slice(0, 6);
+  const cleanToPin = estToPin.replace(/\D/g, '').slice(0, 6);
+  const estOrigin = resolvePincode(cleanFromPin.length === 6 ? cleanFromPin : '302017');
+  const estDest = resolvePincode(cleanToPin.length === 6 ? cleanToPin : '110001');
+  const estRoute = calculateRoadDistance(cleanFromPin.length === 6 ? cleanFromPin : '302017', cleanToPin.length === 6 ? cleanToPin : '110001');
+  const estDistance = estRoute.distanceKm;
+  const estPricing = calculateTierPricing(estDistance, estItemValue, 'send');
+  const estInsurance = calculateInsuranceFee(estItemValue);
+  const estShippingCost = estTier === 'STANDARD_GROUND' 
+    ? estPricing['STANDARD_GROUND']?.totalUpfront || 149 
+    : estTier === 'PRIORITY_EXPRESS' 
+    ? estPricing['PRIORITY_EXPRESS']?.totalUpfront || 299 
+    : estPricing['FASTEST_AIR_RUSH']?.totalUpfront || 449;
+  const estTotalUpfront = estShippingCost + estInsurance;
 
-  const [quickBacksidePhoto, setQuickBacksidePhoto] = useState<string | null>(null);
-  const [quickScanningBackside, setQuickScanningBackside] = useState<boolean>(false);
-
-  const handleQuickScanBackside = async (photoData: string) => {
-    setQuickBacksidePhoto(photoData);
-    setQuickScanningBackside(true);
-    try {
-      const res = await fetch('/api/gemini/scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'verify_imei',
-          imeiPhoto: photoData,
-          itemName: quickItemName
-        })
-      });
-      const data = await res.json();
-      if (data.success && data.result) {
-        if (data.result.imei) {
-          setQuickImei(data.result.imei);
-        } else if (data.result.serial) {
-          setQuickImei(data.result.serial);
-        }
-      } else {
-        if (photoData.includes('hero_openbox')) {
-          setQuickImei('D4G7K3Y9L2');
-        } else {
-          setQuickImei('358921094829104');
-        }
-      }
-    } catch {
-      setQuickImei('358921094829104');
-    } finally {
-      setQuickScanningBackside(false);
-    }
-  };
-
-  const handleProceedWithQuickItem = () => {
-    const backsideParam = quickBacksidePhoto ? `&backside=${encodeURIComponent(quickBacksidePhoto)}` : '';
+  const handleProceedWithEstimatedRoute = () => {
     router.push(
-      `/in/deals/new?type=send&item=${encodeURIComponent(quickItemName)}&imei=${encodeURIComponent(quickImei)}&photo=${encodeURIComponent(quickPhoto)}${backsideParam}`
+      `/in/deals/new?type=send&fromPin=${encodeURIComponent(cleanFromPin || '302017')}&toPin=${encodeURIComponent(cleanToPin || '110001')}&val=${estItemValue}`
     );
+  };
+
+  const handleHeroTrackSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (heroTrackInput.trim()) {
+      router.push(`/in/track/${encodeURIComponent(heroTrackInput.trim())}`);
+    } else {
+      router.push('/in/track');
+    }
   };
 
   // Interactive Fare Calculator State
@@ -270,9 +217,9 @@ export default function HomePage() {
               <span className="hidden lg:block absolute -bottom-3.5 inset-x-0 h-0.5 bg-[#0066FF] rounded-full" />
             </Link>
             <Link href="/in/deals/new?type=send" className="hover:text-[#0066FF] transition py-1">
-              Send Package
+              Book Shipment
             </Link>
-            <Link href="/in/track/SS48291" className="hover:text-[#0066FF] transition py-1">
+            <Link href="/in/track" className="hover:text-[#0066FF] transition py-1">
               Track
             </Link>
             <Link href="/in/deals/new?type=exchange" className="hover:text-[#0066FF] transition flex items-center gap-1 text-amber-700 py-1">
@@ -601,18 +548,17 @@ export default function HomePage() {
                   href="/in/deals/new?type=send"
                   className="inline-flex items-center justify-center gap-2 py-3 px-5 sm:px-6 rounded-xl sm:rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs sm:text-sm shadow-md shadow-[#0066FF]/25 hover:shadow-lg hover:shadow-[#0066FF]/35 transition active:scale-98 cursor-pointer text-center"
                 >
-                  <Send className="w-4 h-4 shrink-0" />
-                  <span>Send a package &rarr;</span>
+                  <Package className="w-4 h-4 shrink-0" />
+                  <span>Book a Shipment &rarr;</span>
                 </Link>
 
-                <button
-                  type="button"
-                  onClick={() => setShowTrackModal(true)}
+                <Link
+                  href="/in/track"
                   className="inline-flex items-center justify-center gap-2 py-3 px-5 sm:px-6 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-[#0F172A] font-bold text-xs sm:text-sm shadow-2xs hover:shadow-xs transition active:scale-98 cursor-pointer text-center"
                 >
                   <Search className="w-4 h-4 text-slate-500 shrink-0" />
-                  <span>Track a shipment</span>
-                </button>
+                  <span>Track Consignment</span>
+                </Link>
 
                 <Link
                   href="/in/safety"
@@ -668,296 +614,227 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Desktop Right Column: Interactive 1-Photo & IMEI Verification + Officer */}
+            {/* Desktop Right Column: Interactive Instant Rate & Corridor Estimator */}
             <div className="hidden md:flex md:col-span-5 lg:col-span-5 items-center justify-center relative">
-              <div className="w-full max-w-md rounded-3xl bg-white border border-slate-200 p-5 shadow-sm relative overflow-hidden flex flex-col space-y-3.5">
+              <div className="w-full max-w-md rounded-3xl bg-white border border-slate-200 p-5 shadow-sm relative overflow-hidden flex flex-col space-y-4">
                 
-                {/* Mode Selector Tabs: Quick Verify vs Officer Telemetry */}
+                {/* Dual Mode Tabs: Rate & Corridor Estimator vs Quick Track */}
                 <div className="flex items-center justify-between bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs">
                   <button
                     type="button"
-                    onClick={() => setQuickTab('VERIFY')}
+                    onClick={() => setHeroTab('ESTIMATOR')}
                     className={`flex-1 py-1.5 px-3 rounded-xl font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                      quickTab === 'VERIFY'
+                      heroTab === 'ESTIMATOR'
                         ? 'bg-white text-[#0066FF] shadow-xs'
                         : 'text-slate-500 hover:text-slate-900'
                     }`}
                   >
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>AI Product Audit</span>
+                    <Truck className="w-4 h-4" />
+                    <span>Rate &amp; Corridor Quote</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => setQuickTab('OFFICER')}
+                    onClick={() => setHeroTab('TRACK')}
                     className={`flex-1 py-1.5 px-3 rounded-xl font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                      quickTab === 'OFFICER'
+                      heroTab === 'TRACK'
                         ? 'bg-white text-emerald-700 shadow-xs'
                         : 'text-slate-500 hover:text-slate-900'
                     }`}
                   >
-                    <Users className="w-4 h-4" />
-                    <span>Bonded Officer</span>
+                    <Search className="w-4 h-4" />
+                    <span>Quick Track</span>
                   </button>
                 </div>
 
-                {quickTab === 'VERIFY' ? (
-                  /* TAB 1: 1-PHOTO & IMEI AI VERIFICATION ON MAIN PAGE */
-                  <div className="space-y-3 animate-in fade-in">
+                {heroTab === 'ESTIMATOR' ? (
+                  /* TAB 1: INSTANT RATE & ROUTE ESTIMATOR */
+                  <div className="space-y-3.5 animate-in fade-in">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                      <span className="text-xs font-bold text-slate-900">
-                        Doorstep Verification Setup
+                      <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-[#0066FF]" />
+                        <span>Instant National Route Quote</span>
                       </span>
-                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
-                        ₹0 ADVANCE RISK
+                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
+                        19,240+ PINs Active
                       </span>
                     </div>
 
-                    {/* Field 1: Item Model / Spec */}
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        Item Model / Specification:
-                      </label>
-                      <input
-                        type="text"
-                        value={quickItemName}
-                        onChange={(e) => {
-                          setQuickItemName(e.target.value);
-                          handleQuickVerify(quickPhoto, e.target.value);
-                        }}
-                        placeholder="e.g. Apple iPhone 15 Pro Max"
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 font-semibold outline-hidden focus:border-[#0066FF]"
-                      />
-                    </div>
-
-                    {/* Field 2: Backside Number & IMEI / Serial No (Upload Photo & Scan) */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <label className="text-[11px] font-bold text-slate-800 flex items-center gap-1.5">
-                          <Scan className="w-3.5 h-3.5 text-indigo-600" />
-                          <span>Backside Number &amp; IMEI / Serial No:</span>
+                    {/* From & To PIN inputs */}
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                          Pickup PIN:
                         </label>
-                        <span className="text-[9px] text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">
-                          AI OCR Scan
+                        <input
+                          type="text"
+                          value={estFromPin}
+                          onChange={(e) => setEstFromPin(e.target.value)}
+                          placeholder="e.g. 302017"
+                          maxLength={6}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 outline-hidden focus:border-[#0066FF]"
+                        />
+                        <span className="text-[10px] text-slate-500 font-semibold block mt-1 truncate">
+                          {estOrigin.city ? `${estOrigin.city}, ${estOrigin.state}` : 'Invalid PIN'}
                         </span>
                       </div>
 
-                      {/* Photo Upload & Scan Input Bar */}
-                      <div className="flex items-center gap-2">
-                        <div className="relative flex-1">
-                          <input
-                            type="text"
-                            value={quickImei}
-                            onChange={(e) => setQuickImei(e.target.value)}
-                            placeholder="e.g. 358921094829104 or D4G7K3Y9L2"
-                            className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 outline-hidden focus:border-[#0066FF]"
-                          />
-                          {quickImei && (
-                            <button
-                              type="button"
-                              onClick={() => setQuickImei('')}
-                              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
-                              title="Clear"
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Backside Photo Upload / Scan Button */}
-                        <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-bold shadow-xs cursor-pointer transition shrink-0">
-                          <Scan className="w-3.5 h-3.5" />
-                          <span>{quickScanningBackside ? 'Scanning...' : 'Scan Backside'}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (ev) => {
-                                  if (ev.target?.result) {
-                                    handleQuickScanBackside(ev.target.result as string);
-                                  }
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                            className="hidden"
-                          />
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                          Delivery PIN:
                         </label>
-                      </div>
-
-                      {/* Scanning / Extracted Feedback Badge */}
-                      {quickScanningBackside && (
-                        <div className="flex items-center gap-2 p-1.5 px-2 rounded-lg bg-indigo-50 border border-indigo-200 text-[10px] font-bold text-indigo-700">
-                          <span className="w-3 h-3 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin shrink-0" />
-                          <span>SafeShip AI Vision reading backside label / barcode...</span>
-                        </div>
-                      )}
-
-                      {quickBacksidePhoto && !quickScanningBackside && (
-                        <div className="flex items-center justify-between p-1.5 px-2 rounded-lg bg-emerald-50 border border-emerald-200 text-[10px] text-emerald-800 font-semibold">
-                          <span className="flex items-center gap-1 truncate">
-                            <span className="text-emerald-600 font-bold">✓</span> Backside Photo Scanned: <code className="font-mono bg-white px-1 py-0.5 rounded border border-emerald-200 text-emerald-950 font-bold">{quickImei}</code>
-                          </span>
-                          <span className="text-[9px] bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold shrink-0">CEIR VALID</span>
-                        </div>
-                      )}
-
-                      {/* Quick 1-Tap Sample Backside Photos */}
-                      <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-slate-500">
-                        <span className="font-semibold">⚡ Quick Scan:</span>
-                        <button
-                          type="button"
-                          onClick={() => handleQuickScanBackside('/images/hero_openbox_authentic.jpg')}
-                          className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-indigo-50 border border-slate-200 text-slate-700 font-medium transition cursor-pointer"
-                        >
-                          Back Label (D4G7K3Y9L2)
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleQuickScanBackside('/images/openbox_macro_4x3.webp')}
-                          className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-indigo-50 border border-slate-200 text-slate-700 font-medium transition cursor-pointer"
-                        >
-                          Box Barcode (358921094829104)
-                        </button>
+                        <input
+                          type="text"
+                          value={estToPin}
+                          onChange={(e) => setEstToPin(e.target.value)}
+                          placeholder="e.g. 110001"
+                          maxLength={6}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 outline-hidden focus:border-[#0066FF]"
+                        />
+                        <span className="text-[10px] text-slate-500 font-semibold block mt-1 truncate">
+                          {estDest.city ? `${estDest.city}, ${estDest.state}` : 'Invalid PIN'}
+                        </span>
                       </div>
                     </div>
 
-                    {/* Field 3: Single Product Photo (1 photo required) */}
+                    {/* Route Corridor & Distance Badge */}
+                    <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200 flex items-center justify-between text-xs">
+                      <div className="min-w-0 pr-2">
+                        <span className="text-[10px] font-bold text-[#0066FF] block uppercase tracking-wider">
+                          Linehaul Route Corridor
+                        </span>
+                        <span className="font-bold text-[#0F172A] text-[11px] block truncate">
+                          {estRoute.corridorName}
+                        </span>
+                      </div>
+                      <span className="text-xs font-black text-[#0066FF] font-mono bg-white px-2 py-0.5 rounded border border-blue-200 shrink-0">
+                        {estDistance} km
+                      </span>
+                    </div>
+
+                    {/* Gadget Value & Insurance */}
                     <div>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-[11px] font-bold text-slate-700">
-                          Photo of {quickItemName ? `"${quickItemName}"` : 'Product'} (1 photo):
+                          Gadget Value (₹):
                         </label>
-                        <span className="text-[9px] text-slate-500">
-                          Audited at doorstep
+                        <span className="text-[10px] text-slate-500 font-medium">
+                          Transit Insurance: <strong className="text-emerald-700 font-bold font-mono">₹{estInsurance}</strong> (~0.5%)
                         </span>
                       </div>
+                      <input
+                        type="number"
+                        value={estItemValue}
+                        onChange={(e) => setEstItemValue(Math.max(0, Number(e.target.value) || 0))}
+                        step={1000}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 outline-hidden focus:border-[#0066FF]"
+                      />
+                    </div>
 
-                      {/* Photo Thumbnail + Presets */}
-                      <div className="flex items-center gap-2">
-                        <label
-                          className="relative w-12 h-12 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center p-0.5 cursor-pointer group hover:border-[#0066FF] transition"
-                          title={`Upload custom photo of ${quickItemName || 'product'}`}
-                        >
-                          <img src={quickPhoto} alt={quickItemName || "Product"} className="w-full h-full object-contain" />
-                          <div className="absolute inset-0 bg-slate-900/60 text-white text-[8px] font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                            Upload
-                          </div>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (ev) => {
-                                  if (ev.target?.result) {
-                                    handleQuickVerify(ev.target.result as string, quickItemName);
-                                  }
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
-                            className="hidden"
-                          />
-                        </label>
-                        <div className="flex-1 flex flex-wrap gap-1">
-                          {[
-                            { label: 'iPhone 15', url: '/images/hero_openbox_4x3.webp' },
-                            { label: 'MacBook', url: '/images/openbox_macro_4x3.webp' },
-                            { label: 'Sony A7', url: '/images/camera_gear_4x3.webp' },
-                            { label: 'PS5', url: '/images/gaming_ps5_4x3.webp' },
-                          ].map((p) => (
-                            <button
-                              key={p.label}
-                              type="button"
-                              onClick={() => handleQuickVerify(p.url, quickItemName)}
-                              className={`px-2 py-0.5 rounded text-[9px] font-semibold transition cursor-pointer border ${
-                                quickPhoto === p.url
-                                  ? 'bg-[#0066FF] text-white border-[#0066FF]'
-                                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                              }`}
-                            >
-                              {p.label}
-                            </button>
-                          ))}
-                        </div>
+                    {/* Speed Tier Selector */}
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                        Delivery Speed Tier:
+                      </label>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {[
+                          { id: 'STANDARD_GROUND' as const, label: 'Ground', days: '7–8d', price: estPricing['STANDARD_GROUND']?.totalUpfront || 149 },
+                          { id: 'PRIORITY_EXPRESS' as const, label: 'Priority', days: '3–4d', price: estPricing['PRIORITY_EXPRESS']?.totalUpfront || 299 },
+                          { id: 'FASTEST_AIR_RUSH' as const, label: 'Air Rush', days: '2d', price: estPricing['FASTEST_AIR_RUSH']?.totalUpfront || 449 },
+                        ].map((t) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            onClick={() => setEstTier(t.id)}
+                            className={`p-2 rounded-xl border text-center transition cursor-pointer ${
+                              estTier === t.id
+                                ? 'bg-blue-50 border-[#0066FF] text-[#0066FF] shadow-2xs'
+                                : 'bg-slate-50/60 border-slate-200 text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            <div className="text-[11px] font-bold">{t.label}</div>
+                            <div className="text-[10px] text-slate-500 font-medium">{t.days}</div>
+                            <div className="text-xs font-black mt-0.5 font-mono">₹{t.price}</div>
+                          </button>
+                        ))}
                       </div>
                     </div>
 
-                    {/* Real-Time Photo Match Status */}
-                    {quickChecking ? (
-                      <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-[#0066FF] text-[11px] font-bold flex items-center gap-2">
-                        <span className="w-3.5 h-3.5 rounded-full border-2 border-[#0066FF] border-t-transparent animate-spin shrink-0" />
-                        <span>Checking photo matches &quot;{quickItemName}&quot;...</span>
-                      </div>
-                    ) : quickMatchStatus && quickMatchStatus.isMatch ? (
-                      <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 flex items-center justify-between text-[11px]">
-                        <div className="flex items-center gap-1.5 min-w-0 pr-1">
-                          <div className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[9px] shrink-0">✓</div>
-                          <span className="font-bold truncate">Photo matches &quot;{quickItemName}&quot;</span>
-                        </div>
-                        <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded shrink-0">
-                          {quickMatchStatus.confidence}
+                    {/* Total Upfront Fee Summary */}
+                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                      <div>
+                        <span className="text-[11px] font-bold text-slate-600 block">
+                          Total Upfront Fee:
+                        </span>
+                        <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
+                          <Check className="w-3 h-3 text-emerald-600" />
+                          <span>10-min doorstep unboxing included</span>
                         </span>
                       </div>
-                    ) : quickMatchStatus && !quickMatchStatus.isMatch ? (
-                      <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-950 text-[11px] space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <span className="font-bold text-amber-900 flex items-center gap-1">
-                            <span>⚠️</span>
-                            <span>Visual Variance Noticed</span>
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setQuickMatchStatus({
-                                isMatch: true,
-                                confidence: '96.0%',
-                                detectedCategory: quickMatchStatus.detectedCategory || 'Declared Device',
-                                reason: `Confirmed by sender — physical verification will be conducted at doorstep unboxing.`,
-                                suggestedImei: quickMatchStatus.suggestedImei || quickImei || '358921094829104'
-                              });
-                            }}
-                            className="px-2 py-0.5 rounded bg-amber-600 hover:bg-amber-700 text-white text-[9px] font-bold cursor-pointer transition active:scale-95 shadow-2xs"
-                          >
-                            Approve Photo ✓
-                          </button>
-                        </div>
-                        <span className="text-[10px] text-amber-800 block">{quickMatchStatus.reason}</span>
+                      <div className="text-right">
+                        <span className="text-lg font-black font-mono text-[#0F172A] block leading-none">
+                          ₹{estTotalUpfront}
+                        </span>
+                        <span className="text-[9px] text-slate-500">
+                          (₹{estShippingCost} ship + ₹{estInsurance} ins)
+                        </span>
                       </div>
-                    ) : null}
+                    </div>
 
                     {/* Action CTA */}
                     <button
                       type="button"
-                      onClick={handleProceedWithQuickItem}
-                      className="w-full py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+                      onClick={handleProceedWithEstimatedRoute}
+                      className="w-full py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/25 transition active:scale-98 cursor-pointer flex items-center justify-center gap-2"
                     >
                       <span>Proceed to Consignment Booking</span>
                       <ChevronRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ) : (
-                  /* TAB 2: 3D OFFICER TELEMETRY SHOWCASE */
-                  <div className="flex flex-col items-center animate-in fade-in">
-                    <img
-                      src="/images/hero_courier.png"
-                      alt="SafeShip Verification Officer"
-                      className="w-48 lg:w-56 h-auto object-contain select-none pointer-events-none drop-shadow-sm my-1"
-                    />
-                    <div className="w-full mt-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                        <span className="font-bold text-slate-800 text-xs truncate">Bonded Officer Rahul K.</span>
+                  /* TAB 2: QUICK TRACK CONSIGNMENT */
+                  <form onSubmit={handleHeroTrackSubmit} className="space-y-4 animate-in fade-in py-2">
+                    <div className="text-center space-y-1">
+                      <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#0066FF] border border-blue-100 flex items-center justify-center mx-auto mb-2">
+                        <Search className="w-5 h-5" />
                       </div>
-                      <span className="text-[10px] font-mono font-bold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded border border-blue-100 shrink-0">
-                        HUB #14 &bull; JAIPUR
-                      </span>
+                      <h3 className="text-sm font-bold text-[#0F172A]">Direct Consignment Lookup</h3>
+                      <p className="text-[11px] text-slate-500">
+                        Query live telemetry, chain of custody, and unboxing verification.
+                      </p>
                     </div>
-                  </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-slate-700 block">
+                        Tracking ID or Consignment ID:
+                      </label>
+                      <input
+                        type="text"
+                        value={heroTrackInput}
+                        onChange={(e) => setHeroTrackInput(e.target.value)}
+                        placeholder="e.g. SS-TRK-482910 or SS48291"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 outline-hidden focus:border-[#0066FF]"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/25 transition active:scale-98 cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <Search className="w-3.5 h-3.5" />
+                      <span>Track Consignment &rarr;</span>
+                    </button>
+
+                    <div className="pt-2 border-t border-slate-100 space-y-2">
+                      <div className="flex items-center gap-2 text-[11px] text-slate-600 font-medium">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Officer Rahul K. (#KA-4012 Certified Custody)</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] text-slate-600 font-medium">
+                        <Lock className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                        <span>Encrypted Telephony Bridge &bull; 100% Caller Privacy</span>
+                      </div>
+                    </div>
+                  </form>
                 )}
 
               </div>
@@ -1036,8 +913,8 @@ export default function HomePage() {
                     href="/in/deals/new?type=send"
                     className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-2xs transition active:scale-95 shrink-0 whitespace-nowrap"
                   >
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Send a package</span>
+                    <Package className="w-3.5 h-3.5" />
+                    <span>Book a Shipment</span>
                   </Link>
                 </div>
               )}
@@ -1052,20 +929,20 @@ export default function HomePage() {
               </h2>
 
               <div className="grid grid-cols-3 gap-2 sm:gap-3.5">
-                {/* Action 1: Ship a package */}
+                {/* Action 1: Book Consignment */}
                 <Link
                   href="/in/deals/new?type=send"
                   className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 flex flex-col justify-between hover:border-[#0066FF] shadow-2xs hover:shadow-xs transition group cursor-pointer"
                 >
                   <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#EFF6FF] text-[#0066FF] flex items-center justify-center mb-2 group-hover:scale-105 transition">
-                    <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <Package className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div>
                     <div className="flex items-center justify-between text-xs font-bold text-[#0F172A] leading-tight">
-                      <span className="truncate">Ship a package</span>
+                      <span className="truncate">Book Shipment</span>
                       <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition shrink-0 ml-0.5" />
                     </div>
-                    <p className="text-[10px] text-[#64748B] mt-0.5">From ₹349 linehaul</p>
+                    <p className="text-[10px] text-[#64748B] mt-0.5">From ₹49 distance-based</p>
                   </div>
                 </Link>
 
@@ -1075,7 +952,7 @@ export default function HomePage() {
                   className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 flex flex-col justify-between hover:border-emerald-500 shadow-2xs hover:shadow-xs transition group cursor-pointer"
                 >
                   <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#ECFDF5] text-emerald-600 flex items-center justify-center mb-2 group-hover:scale-105 transition">
-                    <Package className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div>
                     <div className="flex items-center justify-between text-xs font-bold text-[#0F172A] leading-tight">
@@ -1087,9 +964,8 @@ export default function HomePage() {
                 </Link>
 
                 {/* Action 3: Track a shipment */}
-                <button
-                  type="button"
-                  onClick={() => setShowTrackModal(true)}
+                <Link
+                  href="/in/track"
                   className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 flex flex-col justify-between hover:border-purple-500 shadow-2xs hover:shadow-xs transition group cursor-pointer text-left w-full"
                 >
                   <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#FAF5FF] text-purple-600 flex items-center justify-center mb-2 group-hover:scale-105 transition">
@@ -1100,9 +976,9 @@ export default function HomePage() {
                       <span className="truncate">Track shipment</span>
                       <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition shrink-0 ml-0.5" />
                     </div>
-                    <p className="text-[10px] text-[#64748B] mt-0.5">Live GPS &amp; OTP</p>
+                    <p className="text-[10px] text-[#64748B] mt-0.5">Live Telemetry &amp; OTP</p>
                   </div>
-                </button>
+                </Link>
               </div>
             </section>
 

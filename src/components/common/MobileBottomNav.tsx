@@ -33,7 +33,7 @@ export const MobileBottomNav: React.FC = () => {
 
         {/* Shipments */}
         <Link
-          href="/in/track/SS48291"
+          href="/in/track"
           className={`flex flex-col items-center gap-0.5 transition group w-12 ${
             isShipments ? 'text-[#0066FF] font-bold' : 'text-[#64748B] hover:text-[#0F172A] font-medium'
           }`}
@@ -42,17 +42,17 @@ export const MobileBottomNav: React.FC = () => {
           <span className="text-[9px] tracking-tight">Shipments</span>
         </Link>
 
-        {/* Elevated Center Send Button (+) */}
+        {/* Elevated Center Book Button (+) */}
         <div className="-mt-6 flex flex-col items-center">
           <Link
             href="/in/deals/new?type=send"
             className="w-12 h-12 rounded-full bg-[#0066FF] text-white flex items-center justify-center shadow-lg shadow-[#0066FF]/35 hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 ring-4 ring-white"
-            title="Send Package"
-            aria-label="Send Package"
+            title="Book Consignment"
+            aria-label="Book Consignment"
           >
             <Plus className="w-5 h-5 text-white" strokeWidth={2.5} />
           </Link>
-          <span className="text-[9px] text-[#0066FF] font-bold mt-0.5">Send</span>
+          <span className="text-[9px] text-[#0066FF] font-bold mt-0.5">Book</span>
         </div>
 
         {/* Exchange */}
