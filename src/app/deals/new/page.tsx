@@ -29,22 +29,17 @@ import {
   Lock,
   Clock,
   Award,
-  GoogleIcon,
   Scan,
   CreditCard,
   Calendar,
   PackageCheck,
   Shield,
   Sliders,
-  QrCode,
-  Copy,
-  ChevronDown,
-  ChevronUp,
   AlertTriangle
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
 import { createNewDeal } from '@/lib/store';
-import { getSession, loginWithGoogle, redirectToGoogleLogin, UserSession } from '@/lib/auth';
+import { getSession, UserSession } from '@/lib/auth';
 import { ProductPhotoMatchResult } from '@/lib/geminiUnified';
 import { ItemCategory, DeliveryServiceTier, PickupSlot, FeeSplitOption } from '@/lib/types';
 import { resolvePincode, calculateRoadDistance, calculateTierPricing } from '@/lib/pincodeService';
@@ -147,12 +142,10 @@ function CreateShipmentContent() {
   const [packageWeight, setPackageWeight] = useState<string>('');
   const [openBoxEnabled, setOpenBoxEnabled] = useState<boolean>(true);
 
-  // Payment State
-  const [showUpiModal, setShowUpiModal] = useState<boolean>(false);
-  const [upiCopied, setUpiCopied] = useState<boolean>(false);
-  const [utrNumber, setUtrNumber] = useState<string>('');
-  const [utrError, setUtrError] = useState<string>('');
   const [draftRestored, setDraftRestored] = useState<boolean>(false);
+
+  // Subtle non-refundable courier shipping fee agreement
+  const [agreeTerms, setAgreeTerms] = useState<boolean>(true);
 
   // Field Validation State
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -182,13 +175,9 @@ function CreateShipmentContent() {
   const [isB2B, setIsB2B] = useState<boolean>(false);
   const [businessName, setBusinessName] = useState<string>('');
   const [gstin, setGstin] = useState<string>('');
-  const [showGstAccordion, setShowGstAccordion] = useState<boolean>(false);
-  const [showSecurityAccordion, setShowSecurityAccordion] = useState<boolean>(false);
 
-  // User Session & Google Auth State
+  // User Session State
   const [session, setSession] = useState<UserSession | null>(null);
-  const [showAuthModal, setShowAuthModal] = useState<boolean>(false);
-  const [googleEmailInput, setGoogleEmailInput] = useState<string>('');
 
   // Hardware IMEI & Serial Number + 1 Product Photo Matching State
   const [productPhoto, setProductPhoto] = useState<string | null>(null);
@@ -227,14 +216,6 @@ function CreateShipmentContent() {
     return () => window.removeEventListener('safeship_auth_changed', onAuthChange);
   }, []);
 
-  const handleGoogleAuthInModal = async (targetEmail?: string, targetName?: string) => {
-    const res = await loginWithGoogle(targetEmail, targetName);
-    if (res.success && res.user) {
-      setSession(res.user);
-      if (!senderName) setSenderName(res.user.name);
-      setShowAuthModal(false);
-    }
-  };
 
   // Verify that the single uploaded photo matches the declared product name
   const verifyPhotoMatch = async (photoData: string, nameToCheck?: string) => {
@@ -1049,9 +1030,24 @@ function CreateShipmentContent() {
     return dist <= 50 ? 2 : dist <= 350 ? 3 : dist <= 900 ? 4 : dist <= 1600 ? 5 : 7;
   };
 
-  const transitDays = getTransitDays(selectedTier, distanceKm || effectiveDistance);
-  const deliveryDateObj = new Date(pickupDateObj);
-  deliveryDateObj.setDate(pickupDateObj.getDate() + Math.max(1, transitDays));
+  // Helper to compute single exact calendar delivery date for each tier
+  const getDeliveryDateForTier = (tier: DeliveryServiceTier) => {
+    const days = getTransitDays(tier, distanceKm || effectiveDistance);
+    const d = new Date(pickupDateObj);
+    d.setDate(pickupDateObj.getDate() + Math.max(1, days));
+    return d;
+  };
+
+  const getDeliveryDateShort = (tier: DeliveryServiceTier) => {
+    const d = getDeliveryDateForTier(tier);
+    return d.toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short'
+    });
+  };
+
+  const deliveryDateObj = getDeliveryDateForTier(selectedTier);
   const deliveryDateFormatted = deliveryDateObj.toLocaleDateString('en-IN', {
     weekday: 'long',
     day: 'numeric',
@@ -1059,10 +1055,10 @@ function CreateShipmentContent() {
     year: 'numeric'
   });
   const deliveryTimeWindow = selectedTier === 'FASTEST_AIR_RUSH'
-    ? (transitDays <= 1 ? 'By 2:00 PM (Within 24 Hours Guaranteed)' : 'By 5:00 PM (2 Days Air Cargo Guaranteed)')
+    ? 'By 2:00 PM'
     : selectedTier === 'PRIORITY_EXPRESS'
-    ? `By 6:00 PM (${tierPricing.PRIORITY_EXPRESS.estimatedDays} Guaranteed)`
-    : `By 8:00 PM (${tierPricing.STANDARD_GROUND.estimatedDays} Guaranteed)`;
+    ? 'By 6:00 PM'
+    : 'By 8:00 PM';
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -1168,6 +1164,8 @@ function CreateShipmentContent() {
 
   const handleConfirmBooking = () => {
     clearRazorpayError();
+
+    if (!agreeTerms) return;
 
     // If Upfront fee is ₹0 (e.g. Seller Bears 100% Shipping): instant confirmed!
     if (upfrontPayableAmount === 0) {
@@ -2851,7 +2849,7 @@ function CreateShipmentContent() {
                     <div className="flex items-center justify-between gap-1.5 flex-wrap">
                       <span className="text-sm font-black text-slate-900">📦 Standard Ground</span>
                       <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full uppercase">
-                        {tierPricing.STANDARD_GROUND.estimatedDays}
+                        Delivers {getDeliveryDateShort('STANDARD_GROUND')}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
@@ -2885,7 +2883,7 @@ function CreateShipmentContent() {
                     <div className="flex items-center justify-between gap-1.5 flex-wrap">
                       <span className="text-sm font-black text-slate-900">🚀 Priority Express</span>
                       <span className="text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full uppercase">
-                        {tierPricing.PRIORITY_EXPRESS.estimatedDays}
+                        Delivers {getDeliveryDateShort('PRIORITY_EXPRESS')}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
@@ -2919,7 +2917,7 @@ function CreateShipmentContent() {
                     <div className="flex items-center justify-between gap-1.5 flex-wrap">
                       <span className="text-sm font-black text-slate-900">⚡ Express Air</span>
                       <span className="text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-full shadow-2xs uppercase">
-                        {tierPricing.FASTEST_AIR_RUSH.estimatedDays}
+                        Delivers {getDeliveryDateShort('FASTEST_AIR_RUSH')}
                       </span>
                     </div>
                     <p className="text-[11px] text-slate-500 leading-tight">
@@ -3021,6 +3019,16 @@ function CreateShipmentContent() {
                 </div>
 
                 <div className="flex justify-between items-center text-slate-600">
+                  <span>Guaranteed Delivery Date:</span>
+                  <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <span>{deliveryDateFormatted}</span>
+                    <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                      {deliveryTimeWindow}
+                    </span>
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center text-slate-600">
                   <span>10-Minute Doorstep Open-Box Inspection:</span>
                   <span className="font-semibold text-emerald-600">INCLUDED FREE (₹0)</span>
                 </div>
@@ -3052,102 +3060,6 @@ function CreateShipmentContent() {
               </div>
             </div>
 
-            {/* OPTIONAL COLLAPSIBLE ACCORDIONS (B2B GST & Security Specs) */}
-            <div className="space-y-2">
-              {/* Accordion 1: B2B GST Invoice */}
-              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden text-xs">
-                <button
-                  type="button"
-                  onClick={() => setShowGstAccordion(!showGstAccordion)}
-                  className="w-full p-3 flex items-center justify-between text-left hover:bg-slate-50 transition cursor-pointer"
-                >
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-[#0066FF]" />
-                    <span className="font-bold text-slate-800">
-                      Need B2B Tax Invoice with GSTIN? (Optional)
-                    </span>
-                  </div>
-                  {showGstAccordion ? (
-                    <ChevronUp className="w-4 h-4 text-slate-400" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
-                  )}
-                </button>
-
-                {showGstAccordion && (
-                  <div className="p-3.5 pt-0 border-t border-slate-100 space-y-2.5 animate-in fade-in">
-                    <p className="text-[11px] text-slate-500">
-                      SafeShip GSTIN: <strong>08AAECS2938Q1ZP</strong> &bull; SAC: <strong>996812</strong> (18% GST Included).
-                    </p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">Company / Business Name:</label>
-                        <input
-                          type="text"
-                          value={businessName}
-                          onChange={(e) => {
-                            setBusinessName(e.target.value);
-                            setIsB2B(true);
-                          }}
-                          placeholder="e.g. Apex Technologies LLP"
-                          className="w-full px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF]"
-                        />
-                      </div>
-                      <div>
-                        <label className="text-[10px] font-bold text-slate-500 uppercase block mb-1">15-Digit GSTIN:</label>
-                        <input
-                          type="text"
-                          maxLength={15}
-                          value={gstin}
-                          onChange={(e) => {
-                            setGstin(e.target.value.toUpperCase());
-                            setIsB2B(true);
-                          }}
-                          placeholder="e.g. 08AAECS2938Q1ZP"
-                          className="w-full px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono text-slate-900 outline-hidden focus:border-[#0066FF]"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Accordion 2: Verified Consignment & Insurance Details */}
-              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden text-xs">
-                <button
-                  type="button"
-                  onClick={() => setShowSecurityAccordion(!showSecurityAccordion)}
-                  className="w-full p-3 flex items-center justify-between text-left hover:bg-slate-50 transition cursor-pointer"
-                >
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-emerald-600" />
-                    <span className="font-bold text-slate-800">
-                      Consignment Security &amp; Open-Box Guarantee Policy
-                    </span>
-                  </div>
-                  {showSecurityAccordion ? (
-                    <ChevronUp className="w-4 h-4 text-slate-400" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-slate-400" />
-                  )}
-                </button>
-
-                {showSecurityAccordion && (
-                  <div className="p-3.5 pt-0 border-t border-slate-100 text-[11px] text-slate-600 space-y-2 animate-in fade-in">
-                    <p>
-                      <strong>1. Doorstep Inspection:</strong> The delivery rider unboxes the parcel in front of the recipient and waits 10 minutes for testing before OTP verification.
-                    </p>
-                    <p>
-                      <strong>2. Rejection &amp; Return:</strong> If the item fails inspection, the recipient rejects the consignment and it is returned safely to sender.
-                    </p>
-                    <p>
-                      <strong>3. Transit Insurance:</strong> Covered up to ₹10 Lakhs by ICICI Lombard against physical transit loss or damage.
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Razorpay Error Alert */}
             {razorpayError && (
               <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between animate-in fade-in">
@@ -3162,52 +3074,25 @@ function CreateShipmentContent() {
               </div>
             )}
 
-            {/* GOOGLE SIGN-IN BANNER */}
-            {!session ? (
-              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <GoogleIcon className="w-5 h-5 shrink-0" />
-                  <div>
-                    <span className="font-bold text-slate-900 block">Link to Google Account</span>
-                    <span className="text-[11px] text-slate-500">For live GPS tracking, warranty access, and SMS OTP updates.</span>
-                  </div>
-                </div>
-                <div className="flex gap-1.5 shrink-0 self-start sm:self-auto">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (typeof window !== 'undefined') {
-                        redirectToGoogleLogin(window.location.pathname + window.location.search);
-                      }
-                    }}
-                    className="py-1.5 px-3 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-xs font-bold text-slate-800 flex items-center gap-1.5 shadow-2xs transition active:scale-98 cursor-pointer"
-                  >
-                    <GoogleIcon className="w-3.5 h-3.5" />
-                    <span>Sign in with Google</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowAuthModal(true)}
-                    className="py-1.5 px-2.5 rounded-xl bg-blue-100 hover:bg-blue-200 text-[#0066FF] text-xs font-bold transition cursor-pointer"
-                  >
-                    1-Tap
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <img src={session.avatarUrl} alt={session.name} className="w-6 h-6 rounded-full ring-1 ring-emerald-300" />
-                  <span className="font-bold text-emerald-950">Linked to {session.name} ({session.email})</span>
-                </div>
-                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
-                  ✓ VERIFIED
-                </span>
-              </div>
-            )}
+            {/* Subtle Non-Refundable Shipping Fee Terms Checkbox */}
+            <div className="flex items-start gap-2 pt-1 pb-1 px-1 select-none">
+              <input
+                type="checkbox"
+                id="chk-shipping-terms"
+                checked={agreeTerms}
+                onChange={(e) => setAgreeTerms(e.target.checked)}
+                className="mt-0.5 w-3.5 h-3.5 rounded border-slate-300 text-[#0066FF] focus:ring-0 cursor-pointer opacity-70"
+              />
+              <label
+                htmlFor="chk-shipping-terms"
+                className="text-[11px] text-slate-400 hover:text-slate-500 transition cursor-pointer leading-tight"
+              >
+                I understand and agree that courier shipping charges are non-refundable once linehaul dispatch and doorstep pickup are scheduled.
+              </label>
+            </div>
 
             {/* ACTION BUTTONS */}
-            <div className="space-y-2 pt-2">
+            <div className="space-y-2 pt-1">
               <div className="flex gap-2">
                 <button
                   type="button"
@@ -3219,9 +3104,13 @@ function CreateShipmentContent() {
                 <button
                   type="button"
                   id="btn-confirm-booking"
-                  disabled={payingWithRazorpay}
+                  disabled={payingWithRazorpay || !agreeTerms}
                   onClick={handleConfirmBooking}
-                  className="flex-1 py-4 rounded-2xl text-white font-black text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer bg-[#0066FF] hover:bg-[#0052FF] shadow-blue-600/30"
+                  className={`flex-1 py-4 rounded-2xl text-white font-black text-sm shadow-md transition flex items-center justify-center gap-2 ${
+                    payingWithRazorpay || !agreeTerms
+                      ? 'bg-slate-300 cursor-not-allowed text-slate-500'
+                      : 'bg-[#0066FF] hover:bg-[#0052FF] shadow-blue-600/30 cursor-pointer active:scale-98'
+                  }`}
                 >
                   {payingWithRazorpay ? (
                     <>
@@ -3237,286 +3126,11 @@ function CreateShipmentContent() {
                   )}
                 </button>
               </div>
-
-              {/* Direct UPI Payment Option */}
-              {upfrontPayableAmount > 0 && (
-                <div className="flex items-center justify-center gap-2 pt-1 text-xs text-slate-500">
-                  <span>Prefer direct UPI payment?</span>
-                  <button
-                    type="button"
-                    onClick={() => setShowUpiModal(true)}
-                    className="text-[#0066FF] font-bold hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <QrCode className="w-3.5 h-3.5" />
-                    <span>Scan SafeShip Shipping UPI QR &rarr;</span>
-                  </button>
-                </div>
-              )}
             </div>
           </div>
         )}
 
       </main>
-
-      {/* GOOGLE SIGN-IN INTERACTIVE MODAL */}
-      {showAuthModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-200 space-y-5 animate-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <GoogleIcon className="w-5 h-5" />
-                <span className="font-bold text-sm text-slate-900">Sign in with Google</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowAuthModal(false)}
-                className="text-slate-400 hover:text-slate-700 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-500 leading-relaxed">
-              Sign in with your Google account to automatically link your consignment and tracking dashboard:
-            </p>
-
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => handleGoogleAuthInModal('aman.sharma@gmail.com', 'Aman Sharma')}
-                className="w-full p-3 rounded-2xl border border-slate-200 hover:border-[#0066FF] hover:bg-blue-50/50 flex items-center justify-between text-left transition cursor-pointer group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
-                    AS
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-slate-900 group-hover:text-[#0066FF] block">
-                      Aman Sharma
-                    </span>
-                    <span className="text-[10px] text-slate-500">aman.sharma@gmail.com</span>
-                  </div>
-                </div>
-                <span className="text-[10px] text-[#0066FF] font-bold">Select &rarr;</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleGoogleAuthInModal('user.safeship@gmail.com', 'SafeShip Trader')}
-                className="w-full p-3 rounded-2xl border border-slate-200 hover:border-[#0066FF] hover:bg-blue-50/50 flex items-center justify-between text-left transition cursor-pointer group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">
-                    ST
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-slate-900 group-hover:text-[#0066FF] block">
-                      SafeShip Trader
-                    </span>
-                    <span className="text-[10px] text-slate-500">user.safeship@gmail.com</span>
-                  </div>
-                </div>
-                <span className="text-[10px] text-[#0066FF] font-bold">Select &rarr;</span>
-              </button>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 space-y-3">
-              <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Or enter your Gmail address:
-                </label>
-                <input
-                  type="email"
-                  value={googleEmailInput}
-                  onChange={(e) => setGoogleEmailInput(e.target.value)}
-                  placeholder="yourname@gmail.com"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 outline-hidden focus:border-[#0066FF]"
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleGoogleAuthInModal(googleEmailInput)}
-                className="w-full py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-2"
-              >
-                <GoogleIcon className="w-4 h-4 text-white" />
-                <span>Continue with Google</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-
-
-
-      {/* INSTANT UPI QR SHIPPING FEE PAYMENT MODAL */}
-      {showUpiModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold">
-                  <QrCode className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-sm text-slate-900">Instant UPI Shipping Fee Payment</h3>
-                  <p className="text-[10px] text-slate-500">Scan via GPay, PhonePe, Paytm, or BHIM</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowUpiModal(false)}
-                className="text-slate-400 hover:text-slate-700 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Amount badge */}
-            <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-3 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] text-blue-700 font-bold uppercase tracking-wider block">
-                  Courier Shipping Fee
-                </span>
-                <span className="text-xs text-slate-600">
-                  {itemName || 'Consignment'} ({selectedTier === 'FASTEST_AIR_RUSH' ? 'Express Air' : selectedTier === 'PRIORITY_EXPRESS' ? 'Priority Express' : 'Standard Ground'})
-                </span>
-              </div>
-              <div className="text-right">
-                <span className="text-xl font-black font-mono text-[#0066FF] block">
-                  ₹{upfrontPayableAmount.toLocaleString('en-IN')}
-                </span>
-                <span className="text-[9px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                  ✓ Verified Transit
-                </span>
-              </div>
-            </div>
-
-            {/* QR Code display */}
-            <div className="flex flex-col items-center justify-center py-2 bg-slate-50 rounded-2xl border border-slate-200/80 p-4">
-              <div className="relative w-44 h-44 rounded-2xl shadow-xs border border-slate-200 bg-white p-3 flex items-center justify-center">
-                <svg viewBox="0 0 100 100" className="w-full h-full text-slate-900 fill-current">
-                  {/* Top-Left Finder */}
-                  <rect x="5" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" strokeWidth="4" />
-                  <rect x="11" y="11" width="14" height="14" rx="2" fill="currentColor" />
-                  {/* Top-Right Finder */}
-                  <rect x="69" y="5" width="26" height="26" rx="4" fill="none" stroke="currentColor" strokeWidth="4" />
-                  <rect x="75" y="11" width="14" height="14" rx="2" fill="currentColor" />
-                  {/* Bottom-Left Finder */}
-                  <rect x="5" y="69" width="26" height="26" rx="4" fill="none" stroke="currentColor" strokeWidth="4" />
-                  <rect x="11" y="75" width="14" height="14" rx="2" fill="currentColor" />
-                  {/* Data modules */}
-                  <rect x="36" y="8" width="5" height="5" />
-                  <rect x="45" y="8" width="5" height="5" />
-                  <rect x="56" y="8" width="5" height="5" />
-                  <rect x="36" y="18" width="5" height="5" />
-                  <rect x="50" y="18" width="5" height="5" />
-                  <rect x="56" y="24" width="5" height="5" />
-                  <rect x="8" y="36" width="5" height="5" />
-                  <rect x="16" y="36" width="5" height="5" />
-                  <rect x="24" y="42" width="5" height="5" />
-                  <rect x="8" y="48" width="5" height="5" />
-                  <rect x="20" y="52" width="5" height="5" />
-                  <rect x="36" y="36" width="5" height="5" />
-                  <rect x="58" y="36" width="5" height="5" />
-                  <rect x="68" y="36" width="5" height="5" />
-                  <rect x="78" y="42" width="5" height="5" />
-                  <rect x="86" y="36" width="5" height="5" />
-                  <rect x="36" y="56" width="5" height="5" />
-                  <rect x="48" y="56" width="5" height="5" />
-                  <rect x="58" y="56" width="5" height="5" />
-                  <rect x="70" y="52" width="5" height="5" />
-                  <rect x="82" y="56" width="5" height="5" />
-                  <rect x="36" y="70" width="5" height="5" />
-                  <rect x="44" y="76" width="5" height="5" />
-                  <rect x="54" y="70" width="5" height="5" />
-                  <rect x="64" y="76" width="5" height="5" />
-                  <rect x="74" y="70" width="5" height="5" />
-                  <rect x="84" y="76" width="5" height="5" />
-                  <rect x="40" y="86" width="5" height="5" />
-                  <rect x="52" y="86" width="5" height="5" />
-                  <rect x="66" y="86" width="5" height="5" />
-                  <rect x="80" y="86" width="5" height="5" />
-                  {/* Center Shield Badge */}
-                  <rect x="38" y="38" width="24" height="24" rx="6" fill="#0066FF" />
-                  <path d="M50 43 L56 46 V51 C56 55 50 58 50 58 C50 58 44 51 V46 Z" fill="white" />
-                </svg>
-              </div>
-              <span className="text-[11px] font-mono text-slate-500 mt-2">
-                UPI ID: <strong className="text-slate-900">safeship@icici</strong>
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  if (navigator.clipboard) {
-                    navigator.clipboard.writeText('safeship@icici');
-                    setUpiCopied(true);
-                    setTimeout(() => setUpiCopied(false), 2500);
-                  }
-                }}
-                className="mt-1 text-[11px] text-[#0066FF] font-bold hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <Copy className="w-3.5 h-3.5" />
-                <span>{upiCopied ? '✓ Copied to clipboard' : 'Copy UPI ID'}</span>
-              </button>
-            </div>
-
-            {/* Direct UTR / Transaction ID Verification */}
-            <div className="space-y-3 pt-1">
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-                  <span>Enter 12-Digit UPI Ref / UTR:</span>
-                  <span className="text-[10px] text-slate-400 font-normal">From GPay / PhonePe / Paytm</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={utrNumber}
-                    onChange={(e) => {
-                      setUtrNumber(e.target.value.replace(/[^0-9A-Za-z]/g, '').slice(0, 16));
-                      setUtrError('');
-                    }}
-                    placeholder="e.g. 425619842103"
-                    className="w-full px-3.5 py-3 rounded-xl bg-slate-50 border border-slate-300 text-xs font-mono text-slate-900 placeholder:text-slate-400 focus:outline-hidden focus:border-[#0066FF] focus:bg-white transition uppercase"
-                  />
-                  {utrNumber.length >= 10 && (
-                    <span className="absolute right-3 top-3 text-emerald-600 text-xs font-bold">
-                      ✓ Valid Format
-                    </span>
-                  )}
-                </div>
-                {utrError && (
-                  <p className="text-[11px] text-rose-600 font-medium">{utrError}</p>
-                )}
-                <p className="text-[10px] text-slate-500 leading-tight">
-                  Once transferred via your UPI app to <strong className="text-slate-700">safeship@icici</strong>, enter the 12-digit Bank Reference / UTR number from your payment receipt to confirm courier booking.
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => {
-                  const cleaned = utrNumber.trim();
-                  if (!cleaned || cleaned.length < 8) {
-                    setUtrError('Please enter the 12-digit UPI transaction UTR from your UPI app receipt.');
-                    return;
-                  }
-                  setShowUpiModal(false);
-                  completeDealCreation(
-                    `UPI_UTR_${cleaned.toUpperCase()}`,
-                    upfrontPayableAmount
-                  );
-                }}
-                className="w-full py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition cursor-pointer flex items-center justify-center gap-2 active:scale-98"
-              >
-                <Check className="w-4 h-4" />
-                <span>Verify UTR &amp; Confirm Booking</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Enterprise Footer */}
       <EnterpriseFooter />
