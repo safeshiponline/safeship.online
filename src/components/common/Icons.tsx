@@ -1308,3 +1308,21 @@ export const Sliders = ({ className = 'w-5 h-5', size, ...props }: IconProps) =>
     <line x1="17" x2="23" y1="16" y2="16" />
   </svg>
 );
+
+export const Zap = ({ className = 'w-5 h-5', size, ...props }: IconProps) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+    {...props}
+  >
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
+

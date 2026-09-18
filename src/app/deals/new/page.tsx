@@ -35,12 +35,14 @@ import {
   PackageCheck,
   Shield,
   Sliders,
-  AlertTriangle
+  AlertTriangle,
+  Zap
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
 import { createNewDeal } from '@/lib/store';
 import { getSession, UserSession } from '@/lib/auth';
-import { ProductPhotoMatchResult, validateLuhnImei } from '@/lib/geminiUnified';
+import { ProductPhotoMatchResult, validateLuhnImei, identifyBrandFromImei } from '@/lib/geminiUnified';
+import { ImeiScannerModal } from '@/components/common/ImeiScannerModal';
 import { ItemCategory, DeliveryServiceTier, PickupSlot, FeeSplitOption } from '@/lib/types';
 import { resolvePincode, calculateRoadDistance, calculateTierPricing, calculateInsuranceFee, getRealisticTransitDays } from '@/lib/pincodeService';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
@@ -181,12 +183,14 @@ function CreateShipmentContent() {
 
   // User Session State
   const [session, setSession] = useState<UserSession | null>(null);
+  const [sellerUpiId, setSellerUpiId] = useState<string>('');
 
   // Hardware IMEI & Serial Number + 1 Product Photo Matching State
   const [productPhoto, setProductPhoto] = useState<string | null>(null);
   const [backsidePhoto, setBacksidePhoto] = useState<string | null>(null);
   const [isScanningBackside, setIsScanningBackside] = useState<boolean>(false);
   const [manualImei, setManualImei] = useState<string>('');
+  const [showImeiCameraModal, setShowImeiCameraModal] = useState<boolean>(false);
   const [isMatchingPhoto, setIsMatchingPhoto] = useState<boolean>(false);
   const [photoMatchResult, setPhotoMatchResult] = useState<ProductPhotoMatchResult | null>(null);
   const [imeiAuditReport, setImeiAuditReport] = useState<{
@@ -1100,6 +1104,7 @@ function CreateShipmentContent() {
         sellerName: senderName.trim(),
         sellerEmail: session?.email || `${senderName.toLowerCase().replace(/\s+/g, '')}@safeship.online`,
         sellerPhone: senderPhone.trim().startsWith('+91') ? senderPhone.trim() : `+91 ${senderPhone.trim()}`,
+        sellerUpiId: sellerUpiId.trim() || undefined,
         pickupAddress: pickupLocation,
         city: pickupCity || 'Jaipur',
         pincode: pickupPincode,
@@ -1535,8 +1540,8 @@ function CreateShipmentContent() {
                     Doorstep Open-Box Photo Verification {itemName ? <span className="text-slate-900 font-extrabold normal-case">({itemName})</span> : ''}
                   </span>
                 </span>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  AI Match Guaranteed
+                <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                  Inspection Ready
                 </span>
               </div>
 
@@ -1581,12 +1586,11 @@ function CreateShipmentContent() {
                       />
                     </label>
 
-                    {/* Instant 1-Tap Photo Solutions */}
-                    <div className="p-2.5 rounded-2xl bg-[#EFF6FF] border border-blue-200 space-y-2">
+                    {/* Instant Photo Solutions */}
+                    <div className="p-2.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-bold text-[#0066FF] flex items-center gap-1">
-                          <Sparkles className="w-3.5 h-3.5 text-[#0066FF]" />
-                          <span>No photo handy? Instant 1-Tap Verification:</span>
+                        <span className="text-[11px] font-semibold text-slate-700 flex items-center gap-1">
+                          <span>Quick photo options:</span>
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-2">
@@ -1666,15 +1670,15 @@ function CreateShipmentContent() {
                       </label>
                     </div>
 
-                    {/* AI Match Checking Status */}
+                    {/* Photo Checking Status */}
                     {isMatchingPhoto && (
-                      <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-semibold flex items-center gap-2.5 animate-in fade-in">
+                      <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-medium flex items-center gap-2.5 animate-in fade-in">
                         <span className="w-4 h-4 rounded-full border-2 border-[#0066FF] border-t-transparent animate-spin shrink-0" />
-                        <span>SafeShip Vision AI checking that photo matches &quot;{itemName || 'your product'}&quot;...</span>
+                        <span>Checking photo for &quot;{itemName || 'product'}&quot;...</span>
                       </div>
                     )}
 
-                    {/* AI Photo Match Verified Badge */}
+                    {/* Photo Match Verified Badge */}
                     {!isMatchingPhoto && photoMatchResult && photoMatchResult.isMatch && (
                       <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-950 flex items-center justify-between gap-2 animate-in fade-in">
                         <div className="flex items-center gap-2.5">
@@ -1683,10 +1687,10 @@ function CreateShipmentContent() {
                           </div>
                           <div>
                             <span className="text-xs font-bold text-emerald-900 block">
-                              Photo Matches Declared Product: &quot;{itemName || 'Product'}&quot;
+                              Photo Verified: &quot;{itemName || 'Product'}&quot;
                             </span>
                             <span className="text-[11px] text-emerald-700">
-                              {photoMatchResult.reason} ({photoMatchResult.confidence} Confidence)
+                              {photoMatchResult.reason}
                             </span>
                           </div>
                         </div>
@@ -1696,14 +1700,14 @@ function CreateShipmentContent() {
                       </div>
                     )}
 
-                    {/* AI Photo Notice Banner (Lenient with Instant Acceptance) */}
+                    {/* Photo Notice Banner */}
                     {!isMatchingPhoto && photoMatchResult && !photoMatchResult.isMatch && (
                       <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-950 flex flex-col gap-2.5 animate-in fade-in">
                         <div className="flex items-start gap-2.5">
-                          <span className="text-base shrink-0">⚠️</span>
+                          <span className="text-base shrink-0">ℹ️</span>
                           <div>
                             <span className="text-xs font-bold text-amber-900 block">
-                              SafeShip Vision Notice: {photoMatchResult.detectedCategory || 'Visual Variance Detected'}
+                              Photo Note: {photoMatchResult.detectedCategory || 'Variance Noted'}
                             </span>
                             <span className="text-[11px] text-amber-800">
                               {photoMatchResult.reason}
@@ -1711,8 +1715,8 @@ function CreateShipmentContent() {
                           </div>
                         </div>
                         <div className="pt-2 border-t border-amber-200/70 flex items-center justify-between gap-2 flex-wrap">
-                          <span className="text-[10px] text-amber-700 font-semibold">
-                            * Bonded officer will verify physical hardware at doorstep unboxing.
+                          <span className="text-[10px] text-amber-700 font-medium">
+                            * Officer verifies physical item at doorstep unboxing.
                           </span>
                           <button
                             type="button"
@@ -1728,7 +1732,7 @@ function CreateShipmentContent() {
                             }}
                             className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold transition cursor-pointer active:scale-95 shadow-2xs"
                           >
-                            Accept Photo &amp; Proceed ✓
+                            Accept &amp; Proceed ✓
                           </button>
                         </div>
                       </div>
@@ -1744,105 +1748,138 @@ function CreateShipmentContent() {
                 )}
               </div>
 
-              {/* Hardware Backside Number & IMEI / Serial Verification */}
+              {/* IMEI / Serial Number Section */}
               <div className="pt-3 border-t border-slate-100 space-y-2.5">
                 <div className="flex items-center justify-between flex-wrap gap-1">
                   <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-[#0066FF]" />
-                    <span>Backside Number &amp; IMEI / Serial No:</span>
+                    <span>IMEI / Serial Number:</span>
                   </label>
-                  <span className="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-bold">
-                    AI OCR Scan &amp; CEIR Stolen Check
+                  <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200 font-medium">
+                    Optional • Verified at unboxing
                   </span>
                 </div>
 
                 <p className="text-[11px] text-slate-500">
-                  Provide the number printed on the back panel, SIM tray, or box barcode of {itemName ? <strong>&quot;{itemName}&quot;</strong> : 'your item'}. You can type it manually or upload a photo to auto-scan with SafeShip Vision.
+                  Provide the 15-digit IMEI or serial number printed on the back panel, SIM tray, or box barcode of {itemName ? <strong>&quot;{itemName}&quot;</strong> : 'your item'}. You can type it manually or scan it with your camera.
                 </p>
 
-                {/* Upload & Scan Backside Photo Dropzone */}
-                {!backsidePhoto ? (
-                  <div className="space-y-2">
-                    <label className="w-full py-3 px-3.5 rounded-2xl border-2 border-dashed border-indigo-200 hover:border-indigo-500 bg-indigo-50/40 hover:bg-indigo-50 flex items-center justify-between cursor-pointer transition active:scale-98 group">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:scale-105 transition">
-                          <Scan className="w-4 h-4" />
-                        </div>
-                        <div className="text-left">
-                          <span className="text-xs font-bold text-indigo-900 block">
-                            📷 Upload Backside / IMEI Photo &amp; Scan
-                          </span>
-                          <span className="text-[10px] text-indigo-600">
-                            Auto-extracts IMEI / Serial from back panel, box, or dialer screen
-                          </span>
-                        </div>
+                {/* Dual Options: Camera Scanner vs Photo Upload */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setShowImeiCameraModal(true)}
+                    className="py-2.5 px-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white flex items-center justify-between transition shadow-xs active:scale-98 cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 text-left">
+                      <div className="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center">
+                        <Camera className="w-4 h-4" />
                       </div>
-                      <span className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-[10px] font-bold shadow-2xs group-hover:bg-indigo-700 transition shrink-0">
-                        Scan Photo
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            const reader = new FileReader();
-                            reader.onload = (ev) => {
-                              if (ev.target?.result) {
-                                handleScanBacksidePhoto(ev.target.result as string);
-                              }
-                            };
-                            reader.readAsDataURL(file);
-                          }
-                        }}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                ) : (
-                  /* Attached & Scanned Backside Preview */
-                  <div className="p-3 rounded-2xl bg-indigo-50/60 border border-indigo-200 space-y-2">
+                      <div>
+                        <span className="text-xs font-bold block">
+                          Scan with Camera
+                        </span>
+                        <span className="text-[10px] text-blue-100 block">
+                          Camera with flashlight
+                        </span>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md bg-white/20 text-[9px] font-bold uppercase">
+                      Scan
+                    </span>
+                  </button>
+
+                  <label className="py-2.5 px-3.5 rounded-2xl border border-slate-300 hover:border-slate-400 bg-slate-50 hover:bg-slate-100 flex items-center justify-between cursor-pointer transition active:scale-98 group">
+                    <div className="flex items-center gap-2.5 text-left">
+                      <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-700 flex items-center justify-center">
+                        <Scan className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="text-xs font-bold text-slate-800 block">
+                          Upload Photo
+                        </span>
+                        <span className="text-[10px] text-slate-500 block">
+                          From gallery or screenshot
+                        </span>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 text-[10px] font-semibold shrink-0">
+                      Upload
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            if (ev.target?.result) {
+                              handleScanBacksidePhoto(ev.target.result as string);
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                {/* Attached & Scanned Backside Preview */}
+                {backsidePhoto && (
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <div className="w-12 h-12 rounded-xl bg-white border border-indigo-200 overflow-hidden shrink-0 flex items-center justify-center p-0.5">
+                        <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center p-0.5">
                           <img src={backsidePhoto} alt="Backside / IMEI" className="w-full h-full object-contain" />
                         </div>
                         <div className="min-w-0">
-                          <span className="text-xs font-bold text-indigo-950 block truncate">
-                            Backside / IMEI Photo Attached
+                          <span className="text-xs font-bold text-slate-900 block truncate">
+                            IMEI Photo Attached
                           </span>
-                          <span className="text-[10px] text-indigo-700 block">
-                            {isScanningBackside ? 'SafeShip AI Vision scanning barcode & text...' : 'Scanned & verified with SafeShip OCR'}
+                          <span className="text-[10px] text-slate-500 block">
+                            {isScanningBackside ? 'Scanning barcode & text...' : 'Photo attached'}
                           </span>
                         </div>
                       </div>
 
-                      <label className="px-2.5 py-1 rounded-lg bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 text-[10px] font-bold transition cursor-pointer shrink-0">
-                        <span>Rescan</span>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onload = (ev) => {
-                                if (ev.target?.result) {
-                                  handleScanBacksidePhoto(ev.target.result as string);
-                                }
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                          className="hidden"
-                        />
-                      </label>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setShowImeiCameraModal(true)}
+                          className="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
+                        >
+                          <Camera className="w-3 h-3" />
+                          <span>Camera</span>
+                        </button>
+                        <label className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold transition cursor-pointer shrink-0">
+                          <span>Change</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (ev) => {
+                                  if (ev.target?.result) {
+                                    handleScanBacksidePhoto(ev.target.result as string);
+                                  }
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
                     </div>
 
                     {isScanningBackside && (
-                      <div className="p-2 rounded-xl bg-white border border-indigo-200 flex items-center gap-2 text-[11px] font-bold text-indigo-700 animate-in fade-in">
-                        <span className="w-3.5 h-3.5 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin shrink-0" />
-                        <span>Extracting Backside Number &amp; IMEI digits...</span>
+                      <div className="p-2 rounded-xl bg-white border border-slate-200 flex items-center gap-2 text-[11px] font-medium text-slate-700 animate-in fade-in">
+                        <span className="w-3.5 h-3.5 rounded-full border-2 border-[#0066FF] border-t-transparent animate-spin shrink-0" />
+                        <span>Scanning IMEI digits...</span>
                       </div>
                     )}
 
@@ -1850,58 +1887,57 @@ function CreateShipmentContent() {
                       <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] flex items-center justify-between animate-in fade-in">
                         <div className="flex items-center gap-1.5 min-w-0">
                           <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[9px] shrink-0">✓</span>
-                          <span className="font-bold truncate">Extracted: <code className="font-mono text-emerald-950 px-1 py-0.5 bg-white rounded border border-emerald-200">{manualImei}</code></span>
+                          <span className="font-semibold truncate">Detected: <code className="font-mono text-emerald-950 px-1 py-0.5 bg-white rounded border border-emerald-200">{manualImei}</code></span>
                         </div>
                         <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded shrink-0">
-                          CEIR VALID
+                          VERIFIED
                         </span>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* Manual Text Input Field with Autofill reflection */}
+                {/* Manual Text Input Field with reflection */}
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center justify-between text-[11px] flex-wrap gap-1">
-                    <span className="font-bold text-slate-700">Backside Number / IMEI Value:</span>
+                    <span className="font-bold text-slate-700">IMEI / Serial Number:</span>
                     {manualImei && (
                       (() => {
                         const digitsOnly = manualImei.replace(/\D/g, '');
                         const is15 = digitsOnly.length === 15;
                         const isLuhn = is15 && validateLuhnImei(digitsOnly);
+                        const brandDetected = is15 ? identifyBrandFromImei(digitsOnly) : 'Device Hardware';
                         if (isLuhn) {
                           return (
-                            <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 animate-in fade-in">
+                            <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 animate-in fade-in">
                               <span>✓</span>
-                              <span>GSMA Luhn Valid • Ready for Doorstep Handshake</span>
+                              <span>{brandDetected} • 15 Digits Valid</span>
                             </span>
                           );
                         }
                         if (is15) {
                           return (
-                            <span className="text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 animate-in fade-in">
-                              <span>ℹ️</span>
-                              <span>15-Digit Format (Verify check digit via *#06#)</span>
+                            <span className="text-slate-700 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 animate-in fade-in">
+                              <span>15-Digit Format</span>
                             </span>
                           );
                         }
                         if (manualImei.trim().length >= 6) {
                           return (
-                            <span className="text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 animate-in fade-in">
-                              <span>✓</span>
-                              <span>OEM Hardware Serial Recorded</span>
+                            <span className="text-slate-700 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 animate-in fade-in">
+                              <span>Serial Number Recorded</span>
                             </span>
                           );
                         }
                         return (
                           <span className="text-emerald-600 font-bold text-[10px]">
-                            ✓ Linked for Inspection
+                            ✓ Linked
                           </span>
                         );
                       })()
                     )}
                   </div>
-                  <div className="relative">
+                  <div className="relative flex items-center">
                     <input
                       type="text"
                       value={manualImei}
@@ -1912,21 +1948,45 @@ function CreateShipmentContent() {
                         setManualImei(cleanVal);
                         clearFieldError('imei');
                       }}
-                      className="w-full px-3.5 py-2.5 pr-20 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs font-mono font-bold text-[#0F172A] outline-hidden focus:border-[#0066FF] transition"
-                      placeholder="Enter 15-digit IMEI or hardware serial number"
+                      className="w-full px-3.5 py-2.5 pr-24 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs font-mono font-bold text-[#0F172A] outline-hidden focus:border-[#0066FF] transition"
+                      placeholder="Enter 15-digit IMEI or serial number"
                     />
-                    {manualImei && (
+
+                    <div className="absolute right-1.5 flex items-center gap-1">
+                      {manualImei && (
+                        <button
+                          type="button"
+                          onClick={() => setManualImei('')}
+                          className="text-slate-400 hover:text-slate-600 text-xs font-bold p-1 cursor-pointer"
+                          title="Clear"
+                        >
+                          ✕
+                        </button>
+                      )}
                       <button
                         type="button"
-                        onClick={() => setManualImei('')}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold cursor-pointer"
-                        title="Clear"
+                        onClick={() => setShowImeiCameraModal(true)}
+                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[10px] flex items-center gap-1 border border-slate-200 transition cursor-pointer"
+                        title="Scan with Camera"
                       >
-                        ✕
+                        <Camera className="w-3 h-3 text-slate-600" />
+                        <span>Scan</span>
                       </button>
-                    )}
+                    </div>
                   </div>
                 </div>
+
+                {/* Imei Scanner Camera Modal Component */}
+                <ImeiScannerModal
+                  isOpen={showImeiCameraModal}
+                  onClose={() => setShowImeiCameraModal(false)}
+                  itemName={itemName}
+                  onImeiDetected={(scannedImei, report) => {
+                    setManualImei(scannedImei);
+                    if (report) setImeiAuditReport(report);
+                    clearFieldError('imei');
+                  }}
+                />
 
                 <p className="text-[10px] text-[#64748B]">
                   SafeShip&apos;s doorstep officer compares this against the physical chassis during the 10-minute unboxing inspection.
@@ -2453,6 +2513,25 @@ function CreateShipmentContent() {
                       <span className="text-[11px] text-[#94A3B8] italic pb-2">Enter 6-digit PIN code to auto-resolve city &amp; hub</span>
                     )}
                   </div>
+                </div>
+
+                {/* Seller Payout Bank Account / UPI ID */}
+                <div className="pt-2 border-t border-slate-100">
+                  <label className="text-[11px] font-bold text-[#475569] flex items-center justify-between mb-1">
+                    <span>Payout Bank Account / UPI ID:</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Optional • Settled upon delivery approval</span>
+                  </label>
+                  <input
+                    id="field-sellerUpiId"
+                    type="text"
+                    value={sellerUpiId}
+                    onChange={(e) => setSellerUpiId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0066FF] text-xs text-[#0F172A] font-mono outline-hidden"
+                    placeholder="e.g., yourname@upi or Account No. & IFSC"
+                  />
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Funds are deposited directly into this account once the recipient inspects and approves the item.
+                  </p>
                 </div>
 
                 {/* Chunk 3.1 Incomplete Notification */}

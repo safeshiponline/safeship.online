@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { SafeShipLogo } from '@/components/common/SafeShipLogo';
 import { MobileBottomNav } from '@/components/common/MobileBottomNav';
 import { getUserOrders } from '@/lib/store';
-import { SafeDeal, DeliveryServiceTier } from '@/lib/types';
+import { SafeDeal } from '@/lib/types';
 import { calculateRoadDistance, resolvePincode, calculateTierPricing, calculateInsuranceFee } from '@/lib/pincodeService';
 import {
   Bell,
@@ -47,54 +47,7 @@ export default function HomePage() {
   const [userOrders, setUserOrders] = useState<SafeDeal[]>([]);
   const [isMounted, setIsMounted] = useState<boolean>(false);
 
-  // Hero Tab Switcher: 'PREVIEW' (Doorstep Unboxing Card matching mockup) vs 'ESTIMATOR' (Instant Rate & Route Quote)
-  const [heroView, setHeroView] = useState<'PREVIEW' | 'ESTIMATOR'>('PREVIEW');
-
-  // Interactive Route & Instant Rate Estimator State
-  const [estFromPin, setEstFromPin] = useState<string>('302017'); // Jaipur
-  const [estToPin, setEstToPin] = useState<string>('110001'); // Delhi
-  const [estItemValue, setEstItemValue] = useState<number>(55000);
-  const [estTier, setEstTier] = useState<DeliveryServiceTier>('PRIORITY_EXPRESS');
-  const [heroTrackInput, setHeroTrackInput] = useState<string>('');
-
-  // Auto-resolved logistics for hero estimator
-  const cleanFromPin = estFromPin.replace(/\D/g, '').slice(0, 6);
-  const cleanToPin = estToPin.replace(/\D/g, '').slice(0, 6);
-  const estOrigin = resolvePincode(cleanFromPin.length === 6 ? cleanFromPin : '302017');
-  const estDest = resolvePincode(cleanToPin.length === 6 ? cleanToPin : '110001');
-  const estRoute = calculateRoadDistance(
-    cleanFromPin.length === 6 ? cleanFromPin : '302017',
-    cleanToPin.length === 6 ? cleanToPin : '110001'
-  );
-  const estDistance = estRoute.distanceKm;
-  const estPricing = calculateTierPricing(estDistance, estItemValue, 'send');
-  const estInsurance = calculateInsuranceFee(estItemValue);
-  const estShippingCost =
-    estTier === 'STANDARD_GROUND'
-      ? estPricing['STANDARD_GROUND']?.totalUpfront || 149
-      : estTier === 'PRIORITY_EXPRESS'
-      ? estPricing['PRIORITY_EXPRESS']?.totalUpfront || 299
-      : estPricing['FASTEST_AIR_RUSH']?.totalUpfront || 449;
-  const estTotalUpfront = estShippingCost + estInsurance;
-
-  const handleProceedWithEstimatedRoute = () => {
-    router.push(
-      `/in/deals/new?type=send&fromPin=${encodeURIComponent(cleanFromPin || '302017')}&toPin=${encodeURIComponent(
-        cleanToPin || '110001'
-      )}&val=${estItemValue}`
-    );
-  };
-
-  const handleHeroTrackSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (heroTrackInput.trim()) {
-      router.push(`/in/track/${encodeURIComponent(heroTrackInput.trim())}`);
-    } else {
-      router.push('/in/track');
-    }
-  };
-
-  // Interactive Detailed Fare Calculator State
+  // FAQ Accordion State
   const [calcOrigin, setCalcOrigin] = useState<string>('623526'); // Rameshwaram
   const [calcDest, setCalcDest] = useState<string>('110001'); // New Delhi
   const [calcCategory, setCalcCategory] = useState<'PHONE' | 'LAPTOP' | 'CAMERA' | 'WATCH'>('LAPTOP');
@@ -297,7 +250,7 @@ export default function HomePage() {
             <span className="text-slate-400">24/7 Support:</span>
             <span className="text-blue-400 font-bold flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[#0066FF] animate-pulse" />
-              Live AI Support Desk
+              Live 24/7 Support Desk
             </span>
           </div>
         </div>
@@ -462,19 +415,19 @@ export default function HomePage() {
             {/* Tight Punchy Headline */}
             <div className="space-y-1">
               <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-black tracking-tight text-[#0F172A] leading-[1.08]">
-                See it. Check it.
+                Open Box Delivery &amp; Safe Shipping.
                 <br />
-                <span className="text-[#0066FF]">Then pay.</span>
+                <span className="text-[#0066FF]">Verify Then Pay.</span>
               </h1>
             </div>
 
             {/* Punchy Subtitle */}
             <div className="space-y-1 text-slate-600 text-sm sm:text-base leading-relaxed max-w-xl">
               <p className="font-bold text-slate-900 text-base sm:text-lg">
-                No more scams. No more worries.
+                The safest way to ship and buy electronics across India.
               </p>
               <p className="text-slate-600 font-normal">
-                Your package is inspected at your doorstep before you pay. Safe, simple and trusted by thousands of buyers and sellers across India.
+                Guaranteed doorstep open box delivery with a 10-minute physical inspection window. Verify device boot, screen condition, and IMEI before releasing payment. If not satisfied, reject on the spot for ₹0.
               </p>
             </div>
 
@@ -546,219 +499,41 @@ export default function HomePage() {
 
           </div>
 
-          {/* Right Hero Visual Container with Tab Switcher */}
+          {/* Right Hero Visual Container: High-Converting Doorstep Escrow Card */}
           <div className="lg:col-span-6 xl:col-span-6">
             <div className="rounded-3xl bg-white border border-slate-200 shadow-sm p-3 sm:p-5 relative overflow-hidden">
-              
-              {/* Tab Selector Header: Mockup Preview vs Live Route Estimator */}
-              <div className="flex items-center justify-between bg-slate-100 p-1 rounded-2xl mb-4 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setHeroView('PREVIEW')}
-                  className={`flex-1 py-2 px-3 rounded-xl font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                    heroView === 'PREVIEW'
-                      ? 'bg-white text-[#0066FF] shadow-xs'
-                      : 'text-slate-500 hover:text-slate-900'
-                  }`}
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>Doorstep Escrow Preview</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHeroView('ESTIMATOR')}
-                  className={`flex-1 py-2 px-3 rounded-xl font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                    heroView === 'ESTIMATOR'
-                      ? 'bg-white text-[#0066FF] shadow-xs'
-                      : 'text-slate-500 hover:text-slate-900'
-                  }`}
-                >
-                  <Truck className="w-4 h-4" />
-                  <span>Instant Rate &amp; Route Estimator</span>
-                </button>
+              <div className="relative rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/60 p-2 sm:p-3 border border-slate-200/80">
+                {/* Image container using natural proportional scaling */}
+                <div className="relative w-full rounded-xl overflow-hidden bg-white shadow-2xs border border-slate-200/70 flex items-center justify-center">
+                  <img
+                    src="/images/hero_visual_full.webp?v=5"
+                    alt="SafeShip Doorstep Open Box Inspection with Apple iPhone 15 Pro Max Verification"
+                    className="w-full h-auto object-contain block select-none rounded-xl"
+                  />
+
+                  {/* Clean Brand Pill */}
+                  <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-200 text-[10px] sm:text-[11px] font-bold text-slate-800 flex items-center gap-1.5 shadow-2xs">
+                    <span className="w-2 h-2 rounded-full bg-[#0066FF] animate-pulse" />
+                    <span>Doorstep Unboxing Active</span>
+                  </div>
+                </div>
+
+                {/* Micro Footer inside Preview */}
+                <div className="pt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 font-medium">
+                  <span className="flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF]" />
+                    <span>10-Min Power-on &amp; IMEI Check</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Lock className="w-3.5 h-3.5 text-[#0066FF]" />
+                    <span>RBI Section 10A Escrow</span>
+                  </span>
+                  <span className="flex items-center gap-1 text-slate-700 font-semibold">
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>100% Insured Transit</span>
+                  </span>
+                </div>
               </div>
-
-              {/* VIEW 1: PREVIEW (100% Fully Visible on Mobile & Desktop, Zero Cutoff) */}
-              {heroView === 'PREVIEW' ? (
-                <div className="relative rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/60 p-2 sm:p-3 border border-slate-200/80">
-                  
-                  {/* Image container using natural proportional scaling - never cuts off on mobile */}
-                  <div className="relative w-full rounded-xl overflow-hidden bg-white shadow-2xs border border-slate-200/70 flex items-center justify-center">
-                    <img
-                      src="/images/hero_visual_full.webp?v=5"
-                      alt="SafeShip Doorstep Open Box Inspection with Apple iPhone 15 Pro Max Verification"
-                      className="w-full h-auto object-contain block select-none rounded-xl"
-                    />
-
-                    {/* Clean Brand Pill */}
-                    <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-200 text-[10px] sm:text-[11px] font-bold text-slate-800 flex items-center gap-1.5 shadow-2xs">
-                      <span className="w-2 h-2 rounded-full bg-[#0066FF] animate-pulse" />
-                      <span>Doorstep Unboxing Active</span>
-                    </div>
-                  </div>
-
-                  {/* Micro Footer inside Preview */}
-                  <div className="pt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 font-medium">
-                    <span className="flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF]" />
-                      <span>10-Min Power-on &amp; IMEI Check</span>
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Lock className="w-3.5 h-3.5 text-[#0066FF]" />
-                      <span>RBI Section 10A Escrow</span>
-                    </span>
-                    <Link href="/in/open-box" className="text-[#0066FF] font-bold hover:underline flex items-center gap-1">
-                      <span>Open-Box Demo</span>
-                      <span>&rarr;</span>
-                    </Link>
-                  </div>
-                </div>
-              ) : (
-                /* VIEW 2: INSTANT RATE & ROUTE ESTIMATOR */
-                <div className="space-y-4 animate-in fade-in">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-[#0066FF]" />
-                      <span>Instant National Route Quote</span>
-                    </span>
-                    <span className="text-[10px] font-bold bg-blue-50 text-[#0066FF] px-2 py-0.5 rounded-full border border-blue-200">
-                      19,240+ PINs Active
-                    </span>
-                  </div>
-
-                  {/* From & To PIN inputs */}
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        Pickup PIN:
-                      </label>
-                      <input
-                        type="text"
-                        value={estFromPin}
-                        onChange={(e) => setEstFromPin(e.target.value)}
-                        placeholder="e.g. 302017"
-                        maxLength={6}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 outline-hidden focus:border-[#0066FF]"
-                      />
-                      <span className="text-[10px] text-slate-500 font-semibold block mt-1 truncate">
-                        {estOrigin.city ? `${estOrigin.city}, ${estOrigin.state}` : 'Invalid PIN'}
-                      </span>
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        Delivery PIN:
-                      </label>
-                      <input
-                        type="text"
-                        value={estToPin}
-                        onChange={(e) => setEstToPin(e.target.value)}
-                        placeholder="e.g. 110001"
-                        maxLength={6}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 outline-hidden focus:border-[#0066FF]"
-                      />
-                      <span className="text-[10px] text-slate-500 font-semibold block mt-1 truncate">
-                        {estDest.city ? `${estDest.city}, ${estDest.state}` : 'Invalid PIN'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Route Corridor & Distance Badge */}
-                  <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200 flex items-center justify-between text-xs">
-                    <div className="min-w-0 pr-2">
-                      <span className="text-[10px] font-bold text-[#0066FF] block uppercase tracking-wider">
-                        Linehaul Route Corridor
-                      </span>
-                      <span className="font-bold text-[#0F172A] text-[11px] block truncate">
-                        {estRoute.corridorName}
-                      </span>
-                    </div>
-                    <span className="text-xs font-black text-[#0066FF] font-mono bg-white px-2 py-0.5 rounded border border-blue-200 shrink-0">
-                      {estDistance} km
-                    </span>
-                  </div>
-
-                  {/* Gadget Value & Insurance */}
-                  <div>
-                    <div className="flex items-center justify-between mb-1">
-                      <label className="text-[11px] font-bold text-slate-700">
-                        Gadget Value (₹):
-                      </label>
-                      <span className="text-[10px] text-slate-500 font-medium">
-                        Transit Insurance: <strong className="text-[#0066FF] font-bold font-mono">₹{estInsurance}</strong> (~0.5%)
-                      </span>
-                    </div>
-                    <input
-                      type="number"
-                      value={estItemValue}
-                      onChange={(e) => setEstItemValue(Math.max(0, Number(e.target.value) || 0))}
-                      step={1000}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 outline-hidden focus:border-[#0066FF]"
-                    />
-                  </div>
-
-                  {/* Speed Tier Selector */}
-                  <div>
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                      Delivery Speed Tier:
-                    </label>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      {[
-                        { id: 'STANDARD_GROUND' as const, label: 'Ground', days: '7–8d', price: estPricing['STANDARD_GROUND']?.totalUpfront || 149 },
-                        { id: 'PRIORITY_EXPRESS' as const, label: 'Priority', days: '3–4d', price: estPricing['PRIORITY_EXPRESS']?.totalUpfront || 299 },
-                        { id: 'FASTEST_AIR_RUSH' as const, label: 'Air Rush', days: '2d', price: estPricing['FASTEST_AIR_RUSH']?.totalUpfront || 449 },
-                      ].map((t) => (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => setEstTier(t.id)}
-                          className={`p-2 rounded-xl border text-center transition cursor-pointer ${
-                            estTier === t.id
-                              ? 'bg-blue-50 border-[#0066FF] text-[#0066FF] shadow-2xs'
-                              : 'bg-slate-50/60 border-slate-200 text-slate-700 hover:bg-slate-100'
-                          }`}
-                        >
-                          <div className="text-[11px] font-bold">{t.label}</div>
-                          <div className="text-[10px] text-slate-500 font-medium">{t.days}</div>
-                          <div className="text-xs font-black mt-0.5 font-mono">₹{t.price}</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Total Upfront Fee Summary */}
-                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                    <div>
-                      <span className="text-[11px] font-bold text-slate-600 block">
-                        Total Upfront Fee:
-                      </span>
-                      <span className="text-[10px] text-[#0066FF] font-semibold flex items-center gap-1">
-                        <Check className="w-3 h-3 text-[#0066FF]" />
-                        <span>10-min doorstep unboxing included</span>
-                      </span>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-lg font-black font-mono text-[#0F172A] block leading-none">
-                        ₹{estTotalUpfront}
-                      </span>
-                      <span className="text-[9px] text-slate-500">
-                        (₹{estShippingCost} ship + ₹{estInsurance} ins)
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Action CTA */}
-                  <button
-                    type="button"
-                    onClick={handleProceedWithEstimatedRoute}
-                    className="w-full py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/25 transition active:scale-98 cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    <span>Proceed to Secure Booking</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              )}
-
             </div>
           </div>
 
@@ -1248,14 +1023,14 @@ export default function HomePage() {
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-3xl mx-auto text-center space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
-              <span>⚠️ The Traditional Courier Trap</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0066FF] text-xs font-bold">
+              <span>🏆 Ranked #1 for Open Box Delivery &amp; Safe Shipping in India</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-              Why SafeShip is 10X Safer than Traditional COD
+              Why SafeShip is the Best Shipping Company for Open Box Delivery &amp; Safe Shipping
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              Standard couriers (Delhivery, BlueDart, DTDC) enforce a strict &quot;pay before opening&quot; policy. If a seller sends a dummy brick or broken gadget, the courier company cannot refund you.
+              Standard couriers (Delhivery, BlueDart, DTDC) enforce a strict &quot;pay before opening&quot; policy that leaves buyers vulnerable to scams. SafeShip mandates a 10-minute doorstep unboxing audit and RBI Section 10A nodal escrow so you verify then pay with complete peace of mind.
             </p>
           </div>
 
@@ -1264,52 +1039,60 @@ export default function HomePage() {
             <table className="w-full text-xs text-left border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
-                  <th className="py-3 px-4">Safety &amp; Delivery Feature</th>
+                  <th className="py-3 px-4">Open Box &amp; Safe Shipping Feature</th>
                   <th className="py-3 px-4 text-[#0066FF] bg-blue-50/70 rounded-t-xl font-black">SafeShip Open-Box Escrow</th>
                   <th className="py-3 px-4 text-slate-700">Traditional Courier COD</th>
-                  <th className="py-3 px-4 text-rose-600">Direct UPI / GPay</th>
+                  <th className="py-3 px-4 text-rose-600">Direct UPI / GPay Transfer</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
                 <tr>
-                  <td className="py-3.5 px-4 font-bold text-slate-900">Inspect box &amp; power-on before paying?</td>
+                  <td className="py-3.5 px-4 font-bold text-slate-900">10-Min Doorstep Open Box Inspection?</td>
                   <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
-                    ✓ YES (10-minute physical test)
+                    ✓ YES (Power-on, boot, &amp; screen test)
                   </td>
-                  <td className="py-3.5 px-4 text-rose-600">✗ NO (Pay cash / OTP first)</td>
-                  <td className="py-3.5 px-4 text-rose-600">✗ NO (Pay 100% first)</td>
+                  <td className="py-3.5 px-4 text-rose-600">✗ NO (Must pay before opening)</td>
+                  <td className="py-3.5 px-4 text-rose-600">✗ NO (Pay 100% advance)</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-bold text-slate-900">What if item is counterfeit or broken?</td>
+                  <td className="py-3.5 px-4 font-bold text-slate-900">Verify Then Pay Escrow Protection?</td>
                   <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
-                    ✓ Instant Reversal (₹0 product cost)
+                    ✓ YES (RBI Section 10A trustee account)
+                  </td>
+                  <td className="py-3.5 px-4 text-slate-500">✗ Courier cash pool (no dispute hold)</td>
+                  <td className="py-3.5 px-4 text-rose-600">✗ Zero protection (irreversible)</td>
+                </tr>
+                <tr>
+                  <td className="py-3.5 px-4 font-bold text-slate-900">What if gadget is defective or damaged?</td>
+                  <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
+                    ✓ Instant Doorstep Reversal (₹0 product cost)
                   </td>
                   <td className="py-3.5 px-4 text-rose-600">✗ Money lost (no courier refund)</td>
                   <td className="py-3.5 px-4 text-rose-600">✗ Scammer blocks phone number</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-bold text-slate-900">IMEI &amp; Serial Number verification?</td>
+                  <td className="py-3.5 px-4 font-bold text-slate-900">IMEI &amp; Serial Number Verification?</td>
                   <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
-                    ✓ Bonded officer + GSMA Luhn-10 check
+                    ✓ Bonded officer check + GSMA validation
                   </td>
-                  <td className="py-3.5 px-4 text-slate-400">✗ Not checked</td>
-                  <td className="py-3.5 px-4 text-slate-400">✗ Not checked</td>
+                  <td className="py-3.5 px-4 text-slate-400">✗ Not verified</td>
+                  <td className="py-3.5 px-4 text-slate-400">✗ Not verified</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-bold text-slate-900">Seller protected against buyer-swap fraud?</td>
+                  <td className="py-3.5 px-4 font-bold text-slate-900">Seller Protection Against Buyer Swaps?</td>
                   <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
-                    ✓ Tamper-evident barcoded seal
+                    ✓ Serialized tamper-evident security seal
                   </td>
-                  <td className="py-3.5 px-4 text-rose-600">✗ High swap scam risk</td>
+                  <td className="py-3.5 px-4 text-rose-600">✗ High return swap scam risk</td>
                   <td className="py-3.5 px-4 text-slate-400">N/A</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-bold text-slate-900">Escrow Trustee Governance?</td>
+                  <td className="py-3.5 px-4 font-bold text-slate-900">Transit Cargo Insurance Coverage?</td>
                   <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
-                    ✓ RBI Section 10A Nodal (ICICI)
+                    ✓ 100% Declared Value up to ₹10 Lakh (ICICI Lombard)
                   </td>
-                  <td className="py-3.5 px-4 text-slate-500">Commercial cash pool</td>
-                  <td className="py-3.5 px-4 text-rose-600">✗ None (Personal transfer)</td>
+                  <td className="py-3.5 px-4 text-slate-500">Standard ₹2,000 maximum limit</td>
+                  <td className="py-3.5 px-4 text-rose-600">✗ None</td>
                 </tr>
               </tbody>
             </table>
@@ -1391,24 +1174,107 @@ export default function HomePage() {
       </section>
 
       {/* ========================================================================= */}
+      {/* 10.5 NATIONWIDE OPEN BOX DELIVERY & SAFE SHIPPING CORRIDORS               */}
+      {/* ========================================================================= */}
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-6">
+        <div className="bg-gradient-to-b from-white to-slate-50/70 rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
+          <div className="max-w-3xl mx-auto text-center space-y-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider bg-blue-50 text-[#0066FF] px-3 py-1 rounded-full border border-blue-100">
+              19,000+ PIN Codes Covered Nationwide
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+              Nationwide Open Box Delivery &amp; Safe Shipping Corridors
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Real-time road linehaul and dedicated air express links calibrated for guaranteed doorstep open box inspection and safe delivery across India.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+            {[
+              {
+                corridor: 'Delhi NCR ⇄ Mumbai',
+                type: 'Air Express & Doorstep Inspection',
+                sla: 'Next-Day Delivery (24-36h)',
+                features: 'Direct air linehaul, 10-min unboxing audit, ₹10L insurance'
+              },
+              {
+                corridor: 'Bengaluru ⇄ Hyderabad',
+                type: 'Express Surface Highway',
+                sla: '1-2 Business Days',
+                features: 'NH44 corridor, bonded custody check, dynamic UPI escrow'
+              },
+              {
+                corridor: 'Jaipur ⇄ Delhi NCR',
+                type: 'Expressway Same-Day Linehaul',
+                sla: 'Same-Day / Next-Day (6-14h)',
+                features: 'NE4 Expressway link, verified tamper seals, ₹0 advance risk'
+              },
+              {
+                corridor: 'Pune ⇄ Ahmedabad',
+                type: 'Direct Intercity Route',
+                sla: '1-2 Business Days',
+                features: 'Industrial express linehaul, screen & IMEI audit at doorstep'
+              },
+              {
+                corridor: 'Chennai ⇄ Kolkata',
+                type: 'Commercial Air Freight',
+                sla: '2-3 Business Days',
+                features: 'Air linehaul transit, full valuation ICICI Lombard coverage'
+              },
+              {
+                corridor: 'All Tier 1 & Tier 2 Cities',
+                type: 'Pan-India P2P Escrow Network',
+                sla: '2-4 Business Days',
+                features: 'Doorstep open box delivery standard across 19,000+ pincodes'
+              }
+            ].map((route, i) => (
+              <div key={i} className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-2 hover:border-[#0066FF] transition">
+                <div className="flex items-center justify-between">
+                  <span className="font-black text-sm text-slate-900">{route.corridor}</span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                    {route.sla}
+                  </span>
+                </div>
+                <div className="text-[11px] font-semibold text-[#0066FF]">{route.type}</div>
+                <p className="text-[11px] text-slate-500">{route.features}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
       {/* 11. FREQUENTLY ASKED QUESTIONS (ACCORDION)                                */}
       {/* ========================================================================= */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-2xl mx-auto text-center space-y-2">
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-              Frequently Asked Questions
+              Frequently Asked Questions on Open Box Delivery &amp; Safe Shipping
             </h2>
             <p className="text-xs sm:text-sm text-slate-600">
-              Clear answers on doorstep unboxing, escrow safety, and dispute resolution.
+              Clear answers on doorstep unboxing, verify then pay escrow, and dispute resolution.
             </p>
           </div>
 
           <div className="max-w-3xl mx-auto divide-y divide-slate-200 text-xs sm:text-sm">
             {[
               {
+                q: 'Why is SafeShip the best shipping company for open box delivery in India?',
+                a: 'SafeShip is India’s premier logistics network built specifically for open box delivery and safe shipping. Unlike conventional couriers who enforce payment before opening, SafeShip delivery officers unbox the parcel and wait up to 10 minutes at your doorstep while you power on the device, test the touch screen, verify battery health, and dial *#06# for the IMEI before releasing any payment.'
+              },
+              {
+                q: 'What is verify then pay shipping and how does it protect buyers and sellers?',
+                a: 'Verify then pay shipping is SafeShip’s proprietary escrow delivery protocol. The buyer pays ₹0 product advance. Funds are safely held in an RBI Section 10A regulated trustee nodal account. The package is delivered in a tamper-evident pouch, unboxed, and physically verified at the doorstep before payment is released via dynamic UPI QR code.'
+              },
+              {
                 q: 'Can I really open the parcel and power on the device before paying?',
                 a: 'Yes, 100%. SafeShip delivery officers are legally mandated to slice open the tamper-evident pouch and wait up to 10 minutes at your doorstep while you power on the device, test the touch screen, verify battery health, and dial *#06# for the IMEI.'
+              },
+              {
+                q: 'How does SafeShip safe shipping prevent scams on OLX, Cashify, and online marketplaces?',
+                a: 'SafeShip mathematically eliminates classifieds fraud by removing blind advance payments: (1) Doorstep open-box inspection prevents dummy bricks or cracked screens, (2) GSMA IMEI validation verifies phone authenticity, (3) RBI regulated nodal escrow guarantees sellers receive verified payouts, and (4) ICICI Lombard insurance covers up to ₹10 Lakh in transit.'
               },
               {
                 q: 'What happens if the delivered gadget is fake, broken, or has defects?',

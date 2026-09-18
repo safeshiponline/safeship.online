@@ -51,10 +51,6 @@ export const Navbar: React.FC = () => {
           <Link href="/in/track" className="hover:text-[#0066FF] transition">
             Track
           </Link>
-          <Link href="/in/open-box" className="text-[#0066FF] hover:text-[#0052FF] font-bold transition flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Open-Box Demo</span>
-          </Link>
           <Link href="/in/safety" className="hover:text-[#0066FF] transition font-semibold">
             Safety &amp; Trust
           </Link>
@@ -139,14 +135,6 @@ export const Navbar: React.FC = () => {
             <span>Live GPS Courier Tracking</span>
           </Link>
           <Link
-            href="/in/open-box"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-blue-50/60 text-[#0066FF] text-xs font-bold"
-          >
-            <ShieldCheck className="w-4 h-4 text-[#0066FF]" />
-            <span>Open-Box Doorstep Verification</span>
-          </Link>
-          <Link
             href="/in/safety"
             onClick={() => setMobileMenuOpen(false)}
             className="flex items-center gap-2.5 p-2.5 rounded-xl bg-emerald-50/60 text-emerald-800 text-xs font-bold"
@@ -161,14 +149,6 @@ export const Navbar: React.FC = () => {
           >
             <User className="w-4 h-4 text-[#0066FF]" />
             <span>My Profile &amp; Consignments</span>
-          </Link>
-          <Link
-            href="/in/safety"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-slate-50 text-xs font-bold text-[#64748B]"
-          >
-            <ShieldCheck className="w-4 h-4 text-[#64748B]" />
-            <span>Safety &amp; Escrow Protection</span>
           </Link>
         </div>
       )}

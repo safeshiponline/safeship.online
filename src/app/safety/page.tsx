@@ -142,7 +142,7 @@ export default function SafetyTrustHubPage() {
                 </tr>
                 <tr>
                   <td className="py-2.5 font-semibold">IMEI &amp; Serial Verification?</td>
-                  <td className="py-2.5 text-emerald-600 font-bold">YES (Gemini OCR Match)</td>
+                  <td className="py-2.5 text-emerald-600 font-bold">YES (Verified Serial &amp; Barcode Match)</td>
                   <td className="py-2.5 text-slate-400 font-medium">Not checked</td>
                   <td className="py-2.5 text-slate-400 font-medium">Not checked</td>
                 </tr>

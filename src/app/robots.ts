@@ -5,12 +5,21 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
+        allow: ['/', '/llms.txt', '/llms-full.txt'],
         disallow: ['/api/', '/admin/'],
       },
       {
-        userAgent: ['GPTBot', 'ChatGPT-User', 'ClaudeBot', 'PerplexityBot', 'Google-Extended', 'Applebot-Extended'],
-        allow: '/',
+        userAgent: [
+          'GPTBot',
+          'ChatGPT-User',
+          'OAI-SearchBot',
+          'ClaudeBot',
+          'PerplexityBot',
+          'Google-Extended',
+          'Applebot-Extended',
+          'cohere-ai'
+        ],
+        allow: ['/', '/llms.txt', '/llms-full.txt'],
         disallow: ['/api/', '/admin/'],
       }
     ],
@@ -18,3 +27,4 @@ export default function robots(): MetadataRoute.Robots {
     host: 'https://safeship.online/in',
   };
 }
+

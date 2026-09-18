@@ -100,11 +100,11 @@ export const InspectionChecklistModal: React.FC<InspectionChecklistModalProps> =
           className="mb-4 w-full py-2.5 px-3.5 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] text-[#0066FF] font-bold text-xs flex items-center justify-between hover:bg-[#DBEAFE] transition cursor-pointer shadow-2xs"
         >
           <span className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-[#0066FF] animate-pulse" />
-            <span>Switch to SafeShip Vision™ AI Mode (Gemini 1.5 Multimodal)</span>
+            <Camera className="w-4 h-4 text-[#0066FF]" />
+            <span>Switch to Guided Camera Inspection</span>
           </span>
           <span className="text-[10px] uppercase font-bold text-[#0066FF] bg-white px-2 py-0.5 rounded border border-[#BFDBFE]">
-            Launch AI Scanner &rarr;
+            Open Scanner &rarr;
           </span>
         </button>
 

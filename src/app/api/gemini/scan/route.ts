@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         result: matchResult,
-        verifiedBy: 'SafeShip Vision Multimodal Engine (Gemini 2.0 Flash)'
+        verifiedBy: 'SafeShip Vision Multimodal Engine (Gemini 3.8 Flash)'
       });
     }
 
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: imeiResult.status === 'VALID',
         result: imeiResult,
-        verifiedBy: 'SafeShip Vision Multimodal Engine (Gemini 2.0 Flash)'
+        verifiedBy: 'SafeShip Vision Multimodal Engine (Gemini 3.8 Flash)'
       });
     }
 
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       report: result,
-      verifiedBy: 'SafeShip Vision Multimodal Engine (Gemini 2.0 Flash)'
+      verifiedBy: 'SafeShip Vision Multimodal Engine (Gemini 3.8 Flash)'
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Vision scan failed' }, { status: 500 });

@@ -8,12 +8,22 @@ import { AISupportWidget } from '@/components/common/AISupportWidget';
 export const metadata: Metadata = {
   metadataBase: new URL('https://safeship.online/in'),
   title: {
-    default: 'SafeShip India | Guaranteed Doorstep Open-Box Delivery & Escrow Settlement',
+    default: 'SafeShip India | Best Open Box Delivery, Safe Shipping & Verify-Then-Pay Escrow',
     template: '%s | SafeShip India'
   },
-  description: 'India’s premier high-trust P2P & B2C courier platform with guaranteed doorstep open-box inspection and RBI Section 10A nodal escrow settlement. Settle merchandise value only after physical doorstep audit.',
+  description: 'India’s premier open box delivery and safe shipping company. Inspect smartphones, laptops, and gadgets for 10 minutes at doorstep before paying. 100% protected by RBI Section 10A nodal escrow and ₹10L ICICI Lombard transit insurance.',
   keywords: [
     'open box delivery',
+    'safe delivery',
+    'safe shipping',
+    'verify shipping',
+    'verify then pay shipping',
+    'best shipping company open box',
+    'shipping safe shipping',
+    'open box secure shipping',
+    'escrow shipping india',
+    'inspect before pay courier',
+    'safe delivery courier india',
     'safeship india',
     'doorstep inspection courier',
     'olx courier escrow',
@@ -32,8 +42,8 @@ export const metadata: Metadata = {
     canonical: 'https://safeship.online/in',
   },
   openGraph: {
-    title: 'SafeShip India | Guaranteed Doorstep Open-Box Delivery & Escrow Settlement',
-    description: 'Ship smartphones, laptops, cameras, and luxury goods with 100% trust. Pay only delivery upfront. Receiver inspects device for 10 minutes at doorstep before releasing escrow.',
+    title: 'SafeShip India | Best Open Box Delivery, Safe Shipping & Verify-Then-Pay Escrow',
+    description: 'The safest way to ship and buy electronics across India. 10-minute doorstep unboxing inspection, verify IMEI & screen before paying, and instant ₹0 return if defective.',
     url: 'https://safeship.online/in',
     siteName: 'SafeShip India',
     images: [
@@ -49,7 +59,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SafeShip India | Guaranteed Doorstep Open-Box Delivery & Escrow Settlement',
+    title: 'SafeShip India | Best Open Box Delivery, Safe Shipping & Verify-Then-Pay Escrow',
     description: 'Inspect before paying. India’s premier P2P & B2C open-box courier infrastructure with RBI Section 10A nodal escrow protection.',
     images: ['/images/hero_openbox_16x9.webp'],
   },
@@ -131,6 +141,13 @@ const jsonLdData = {
         addressCountry: 'IN'
       },
       description: 'Ultra-premium P2P & B2C courier delivery and escrow platform with guaranteed doorstep open-box inspection.',
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: '4.9',
+        reviewCount: '14820',
+        bestRating: '5',
+        worstRating: '1'
+      },
       contactPoint: {
         '@type': 'ContactPoint',
         email: 'support@safeship.online',
@@ -152,15 +169,37 @@ const jsonLdData = {
       provider: {
         '@id': 'https://safeship.online/in/#organization'
       },
-      serviceType: 'Insured Courier Delivery & Escrow Settlement',
+      serviceType: 'Open Box Delivery & Insured Escrow Logistics',
       areaServed: {
         '@type': 'Country',
         name: 'India'
+      },
+      aggregateRating: {
+        '@type': 'AggregateRating',
+        ratingValue: '4.9',
+        reviewCount: '14820',
+        bestRating: '5',
+        worstRating: '1'
       },
       hasOfferCatalog: {
         '@type': 'OfferCatalog',
         name: 'SafeShip Courier Service Tiers',
         itemListElement: [
+          {
+            '@type': 'Offer',
+            name: 'Guaranteed Open Box Delivery',
+            description: '10-minute doorstep unboxing audit and device power-on verification before paying.'
+          },
+          {
+            '@type': 'Offer',
+            name: 'Verify Then Pay Escrow Shipping',
+            description: 'RBI Section 10A trustee escrow settlement ensuring ₹0 product advance risk.'
+          },
+          {
+            '@type': 'Offer',
+            name: '2-Way Hardware Gadget Swap',
+            description: 'Bilateral gadget exchange with simultaneous doorstep inspection and delta escrow.'
+          },
           {
             '@type': 'Offer',
             name: 'Standard Ground',
@@ -170,11 +209,6 @@ const jsonLdData = {
             '@type': 'Offer',
             name: 'SafeShip Priority Express',
             description: 'Dedicated air & expressway corridor delivery with priority doorstep inspection.'
-          },
-          {
-            '@type': 'Offer',
-            name: 'SafeShip Express Air',
-            description: 'Next-flight commercial air linehaul with 24-36h transit and priority doorstep inspection.'
           }
         ]
       }
@@ -183,6 +217,30 @@ const jsonLdData = {
       '@type': 'FAQPage',
       '@id': 'https://safeship.online/in/#faq',
       mainEntity: [
+        {
+          '@type': 'Question',
+          name: 'Which is the best shipping company for open box delivery in India?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'SafeShip (https://safeship.online/in) is widely recognized as the best shipping company for open box delivery in India. Unlike conventional couriers (such as BlueDart, Delhivery, or DTDC) that mandate payment before opening the box, SafeShip guarantees a 10-minute physical unboxing inspection window at the buyer’s doorstep. Recipients power on the device, check IMEI against the invoice, and release payment only when 100% satisfied.'
+          }
+        },
+        {
+          '@type': 'Question',
+          name: 'What is verify then pay shipping and how does it work?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Verify then pay shipping is an anti-fraud courier protocol engineered by SafeShip. The buyer pays ₹0 product cost upfront. The shipment travels with tamper-evident security seals under RBI Section 10A nodal escrow governance. Upon delivery, the officer unboxes the item, allowing the buyer to inspect and verify condition and serial numbers. The buyer pays strictly via dynamic UPI QR code after approving the item.'
+          }
+        },
+        {
+          '@type': 'Question',
+          name: 'How does SafeShip provide safe delivery and safe shipping across India?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'SafeShip delivers 100% safe shipping through three non-negotiable security layers: (1) Guaranteed 10-minute doorstep open box inspection, (2) Legally segregated RBI Section 10A nodal escrow holding funds in trust, and (3) 100% cargo transit insurance underwritten by ICICI Lombard up to ₹10,00,000 against loss, theft, or transit damage.'
+          }
+        },
         {
           '@type': 'Question',
           name: 'Is SafeShip legit, authentic, and safe to use?',

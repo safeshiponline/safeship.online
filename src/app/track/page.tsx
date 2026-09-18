@@ -217,10 +217,10 @@ export default function PublicTrackingSearchPage() {
               Book a Shipment &rarr;
             </Link>
             <Link
-              href="/in/open-box"
+              href="/in/safety"
               className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs transition shadow-2xs active:scale-95"
             >
-              Open-Box Demo
+              Safety &amp; Escrow Guarantee
             </Link>
           </div>
         </div>

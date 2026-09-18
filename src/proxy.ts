@@ -4,6 +4,11 @@ import type { NextRequest } from 'next/server';
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
+  // 0. Bypass if already internally rewritten
+  if (request.headers.get('x-internal-rewrite') === '1') {
+    return NextResponse.next();
+  }
+
   // 1. Bypass Next.js internals, static assets, and public files
   if (
     pathname.startsWith('/_next') ||
@@ -14,7 +19,8 @@ export function proxy(request: NextRequest) {
     pathname === '/apple-icon.png' ||
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
-    pathname === '/llms.txt'
+    pathname === '/llms.txt' ||
+    pathname === '/llms-full.txt'
   ) {
     return NextResponse.next();
   }
@@ -26,12 +32,17 @@ export function proxy(request: NextRequest) {
     pathname === '/in/favicon.ico' ||
     pathname === '/in/icon.svg' ||
     pathname === '/in/apple-icon.png' ||
-    pathname === '/in/llms.txt'
+    pathname === '/in/llms.txt' ||
+    pathname === '/in/llms-full.txt'
   ) {
     const assetPath = pathname.replace(/^\/in/, '');
     const url = request.nextUrl.clone();
     url.pathname = assetPath;
-    return NextResponse.rewrite(url);
+    const reqHeaders = new Headers(request.headers);
+    reqHeaders.set('x-internal-rewrite', '1');
+    return NextResponse.rewrite(url, {
+      request: { headers: reqHeaders }
+    });
   }
 
   // 3. API Routes:
@@ -40,7 +51,11 @@ export function proxy(request: NextRequest) {
     const apiPath = pathname.replace(/^\/in/, '');
     const url = request.nextUrl.clone();
     url.pathname = apiPath;
-    return NextResponse.rewrite(url);
+    const reqHeaders = new Headers(request.headers);
+    reqHeaders.set('x-internal-rewrite', '1');
+    return NextResponse.rewrite(url, {
+      request: { headers: reqHeaders }
+    });
   }
 
   // Direct /api/... calls pass through directly
@@ -53,7 +68,11 @@ export function proxy(request: NextRequest) {
     // Rewrite to root page (src/app/page.tsx) while keeping browser URL as /in
     const url = request.nextUrl.clone();
     url.pathname = '/';
-    return NextResponse.rewrite(url);
+    const reqHeaders = new Headers(request.headers);
+    reqHeaders.set('x-internal-rewrite', '1');
+    return NextResponse.rewrite(url, {
+      request: { headers: reqHeaders }
+    });
   }
 
   if (pathname.startsWith('/in/')) {
@@ -61,7 +80,11 @@ export function proxy(request: NextRequest) {
     const subpath = pathname.replace(/^\/in/, '');
     const url = request.nextUrl.clone();
     url.pathname = subpath;
-    return NextResponse.rewrite(url);
+    const reqHeaders = new Headers(request.headers);
+    reqHeaders.set('x-internal-rewrite', '1');
+    return NextResponse.rewrite(url, {
+      request: { headers: reqHeaders }
+    });
   }
 
   // 5. Any request NOT starting with /in -> REDIRECT to /in

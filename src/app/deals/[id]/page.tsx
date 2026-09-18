@@ -55,9 +55,9 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
   if (!deal) {
     return (
       <div className="min-h-screen bg-white text-zinc-900 flex flex-col items-center justify-center p-4">
-        <div className="text-sm font-semibold text-zinc-600">Retrieving certified transaction ledger...</div>
-        <Link href="/in/deals/deal_iphone_15_blr" className="mt-2 text-xs font-bold text-zinc-900 underline">
-          Open Demo Deal Room
+        <div className="text-sm font-semibold text-zinc-600">Consignment not found or still syncing with nodal ledger.</div>
+        <Link href="/in/track" className="mt-2 text-xs font-bold text-[#0066FF] hover:underline">
+          View All Active Shipments &rarr;
         </Link>
       </div>
     );
