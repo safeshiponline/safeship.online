@@ -190,7 +190,7 @@ export function createNewDeal(params: {
     isExchange: params.isExchange || false,
     exchangeItem: params.exchangeItem,
     itemPhotos: params.itemPhotos.length > 0 ? params.itemPhotos : [
-      '/images/hero_openbox_authentic.jpg',
+      '/images/hero_openbox_authentic.webp',
       '/images/openbox_macro_4x3.webp'
     ],
     seller: {

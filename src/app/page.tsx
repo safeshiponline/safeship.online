@@ -46,7 +46,6 @@ export default function HomePage() {
   const [trackQuery, setTrackQuery] = useState<string>('');
   const [userOrders, setUserOrders] = useState<SafeDeal[]>([]);
   const [isMounted, setIsMounted] = useState<boolean>(false);
-  const [paidToast, setPaidToast] = useState<boolean>(false);
 
   // Hero Tab Switcher: 'PREVIEW' (Doorstep Unboxing Card matching mockup) vs 'ESTIMATOR' (Instant Rate & Route Quote)
   const [heroView, setHeroView] = useState<'PREVIEW' | 'ESTIMATOR'>('PREVIEW');
@@ -177,11 +176,6 @@ export default function HomePage() {
     return Math.round(calcFinancedPrincipal / 6);
   }, [calcFinancedPrincipal]);
 
-  const handleSimulatePaymentRelease = () => {
-    setPaidToast(true);
-    setTimeout(() => setPaidToast(false), 4000);
-  };
-
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans antialiased selection:bg-[#0066FF] selection:text-white flex flex-col justify-between">
       {/* ========================================================================= */}
@@ -221,7 +215,7 @@ export default function HomePage() {
             </a>
           </nav>
 
-          {/* Right Header Utilities: Location Selector, Login & Send Button */}
+          {/* Right Header Utilities: Location Selector, Login & Neutral Booking CTA */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Location Selector Chip (📍 Jaipur ▾) */}
             <button
@@ -243,7 +237,7 @@ export default function HomePage() {
               aria-label="Notifications"
             >
               <Bell className="w-4 h-4" />
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
+              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#0066FF] ring-2 ring-white" />
             </button>
 
             {/* Sign in */}
@@ -254,12 +248,12 @@ export default function HomePage() {
               Login
             </Link>
 
-            {/* Main Primary CTA Button */}
+            {/* Main Primary CTA Button (Neutral for both Buyer & Seller) */}
             <Link
               href="/in/deals/new?type=send"
               className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#0066FF]/25 hover:shadow-lg transition active:scale-95 cursor-pointer whitespace-nowrap"
             >
-              <span>Send a Package</span>
+              <span>Book Safe Delivery</span>
               <span className="text-sm">&rarr;</span>
             </Link>
           </div>
@@ -273,19 +267,19 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 shrink-0">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0066FF]"></span>
             </span>
             <span className="font-bold text-white uppercase tracking-wider text-[10px]">Live Network Status:</span>
           </div>
           <div className="flex items-center gap-6 overflow-x-auto no-scrollbar scrollbar-none whitespace-nowrap text-slate-300 font-mono text-[11px]">
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <Check className="w-3 h-3" />
+            <span className="flex items-center gap-1.5 text-blue-300">
+              <Check className="w-3 h-3 text-[#0066FF]" />
               <span>19,240+ Pincodes Fully Serviceable</span>
             </span>
             <span className="text-slate-600">&bull;</span>
-            <span className="flex items-center gap-1.5 text-blue-400">
-              <Lock className="w-3 h-3" />
+            <span className="flex items-center gap-1.5 text-slate-200">
+              <Lock className="w-3 h-3 text-[#0066FF]" />
               <span>ICICI Bank Nodal Escrow: 100% Operational</span>
             </span>
             <span className="text-slate-600">&bull;</span>
@@ -294,15 +288,15 @@ export default function HomePage() {
               <span>Jaipur Hub &rarr; Delhi Airport Linehaul: Active</span>
             </span>
             <span className="text-slate-600">&bull;</span>
-            <span className="flex items-center gap-1.5 text-amber-400">
-              <ShieldCheck className="w-3 h-3" />
+            <span className="flex items-center gap-1.5 text-slate-200">
+              <ShieldCheck className="w-3 h-3 text-[#0066FF]" />
               <span>Mandatory 10-Min Doorstep Unboxing Enforced</span>
             </span>
           </div>
           <div className="hidden lg:flex items-center gap-2 shrink-0 font-sans text-[11px]">
             <span className="text-slate-400">24/7 Support:</span>
-            <span className="text-emerald-400 font-bold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-blue-400 font-bold flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#0066FF] animate-pulse" />
               Live AI Support Desk
             </span>
           </div>
@@ -446,7 +440,7 @@ export default function HomePage() {
       )}
 
       {/* ========================================================================= */}
-      {/* 3. HERO SECTION (EXACT MATCHING MOCKUP WITH PUNCHY TYPOGRAPHY & VISUALS)   */}
+      {/* 3. HERO SECTION (NEUTRAL COPY, TIGHT TYPOGRAPHY, PERFECT MOBILE VISUAL)    */}
       {/* ========================================================================= */}
       <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-12 sm:pb-16">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
@@ -458,8 +452,8 @@ export default function HomePage() {
             <div>
               <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-xs font-semibold text-slate-800">
                 <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0066FF]"></span>
                 </span>
                 <span>India&apos;s #1 Open-Box Delivery Platform</span>
               </span>
@@ -480,18 +474,18 @@ export default function HomePage() {
                 No more scams. No more worries.
               </p>
               <p className="text-slate-600 font-normal">
-                Your package is inspected at your doorstep before you pay. Safe, simple and trusted by thousands across India.
+                Your package is inspected at your doorstep before you pay. Safe, simple and trusted by thousands of buyers and sellers across India.
               </p>
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons (Neutral for both buyer & seller) */}
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <Link
                 href="/in/deals/new?type=send"
                 className="px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm sm:text-base shadow-md shadow-[#0066FF]/25 hover:shadow-lg hover:shadow-[#0066FF]/35 transition active:scale-98 flex items-center gap-2"
               >
                 <span>📦</span>
-                <span>Send a Package &rarr;</span>
+                <span>Book Safe Delivery &rarr;</span>
               </Link>
 
               <Link
@@ -530,7 +524,7 @@ export default function HomePage() {
               {/* Prop 3: Trusted by 50,000+ */}
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-900">
-                  <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
+                  <Star className="w-4 h-4 text-[#0066FF] fill-[#0066FF] shrink-0" />
                   <span>Trusted by 50,000+</span>
                 </div>
                 <p className="text-[11px] text-slate-500 leading-tight">
@@ -575,7 +569,7 @@ export default function HomePage() {
                   onClick={() => setHeroView('ESTIMATOR')}
                   className={`flex-1 py-2 px-3 rounded-xl font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
                     heroView === 'ESTIMATOR'
-                      ? 'bg-white text-emerald-700 shadow-xs'
+                      ? 'bg-white text-[#0066FF] shadow-xs'
                       : 'text-slate-500 hover:text-slate-900'
                   }`}
                 >
@@ -584,62 +578,38 @@ export default function HomePage() {
                 </button>
               </div>
 
-              {/* VIEW 1: PREVIEW (Doorstep Unboxing Box + Floating Verification Card) */}
+              {/* VIEW 1: PREVIEW (100% Fully Visible on Mobile & Desktop, Zero Cutoff) */}
               {heroView === 'PREVIEW' ? (
-                <div className="relative rounded-2xl overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/60 p-2 sm:p-4 border border-slate-200/80">
+                <div className="relative rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/60 p-2 sm:p-3 border border-slate-200/80">
                   
-                  {/* Visual Background with Doorstep Box & Doodles */}
-                  <div className="relative aspect-4/3 sm:aspect-16/10 rounded-xl overflow-hidden shadow-inner flex items-center justify-center">
+                  {/* Image container using natural proportional scaling - never cuts off on mobile */}
+                  <div className="relative w-full rounded-xl overflow-hidden bg-white shadow-2xs border border-slate-200/70 flex items-center justify-center">
                     <img
-                      src="/images/hero_visual_full.webp?v=3"
+                      src="/images/hero_visual_full.webp?v=5"
                       alt="SafeShip Doorstep Open Box Inspection with Apple iPhone 15 Pro Max Verification"
-                      className="w-full h-full object-cover object-top select-none"
+                      className="w-full h-auto object-contain block select-none rounded-xl"
                     />
 
-                    {/* Interactive Overlay Callouts & Live Status Pill */}
-                    <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200 text-[11px] font-bold text-slate-800 flex items-center gap-1.5 shadow-2xs">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>Live Doorstep Unboxing Active</span>
-                    </div>
-
-                    {/* Interactive Test Action on the Floating Card */}
-                    <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4">
-                      <button
-                        type="button"
-                        onClick={handleSimulatePaymentRelease}
-                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-600/30 transition active:scale-95 cursor-pointer flex items-center gap-1.5"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Interactive Payment Test</span>
-                      </button>
+                    {/* Clean Brand Pill */}
+                    <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-200 text-[10px] sm:text-[11px] font-bold text-slate-800 flex items-center gap-1.5 shadow-2xs">
+                      <span className="w-2 h-2 rounded-full bg-[#0066FF] animate-pulse" />
+                      <span>Doorstep Unboxing Active</span>
                     </div>
                   </div>
 
-                  {/* Payment Release Simulated Notification */}
-                  {paidToast && (
-                    <div className="absolute inset-x-4 top-14 bg-emerald-900/90 text-white backdrop-blur-md p-3 rounded-2xl border border-emerald-400 text-xs font-semibold shadow-2xl flex items-center justify-between animate-in fade-in slide-in-from-top-2">
-                      <div className="flex items-center gap-2">
-                        <Check className="w-4 h-4 text-emerald-300" />
-                        <span>Doorstep Inspection Passed! Escrow released to seller via ICICI Nodal Rail.</span>
-                      </div>
-                      <button type="button" onClick={() => setPaidToast(false)} className="text-emerald-300 hover:text-white">
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  )}
-
                   {/* Micro Footer inside Preview */}
-                  <div className="pt-3 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                  <div className="pt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 font-medium">
                     <span className="flex items-center gap-1">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF]" />
                       <span>10-Min Power-on &amp; IMEI Check</span>
                     </span>
                     <span className="flex items-center gap-1">
                       <Lock className="w-3.5 h-3.5 text-[#0066FF]" />
                       <span>RBI Section 10A Escrow</span>
                     </span>
-                    <Link href="/in/open-box" className="text-[#0066FF] font-bold hover:underline">
-                      Watch Live Demo &rarr;
+                    <Link href="/in/open-box" className="text-[#0066FF] font-bold hover:underline flex items-center gap-1">
+                      <span>Open-Box Demo</span>
+                      <span>&rarr;</span>
                     </Link>
                   </div>
                 </div>
@@ -651,7 +621,7 @@ export default function HomePage() {
                       <MapPin className="w-3.5 h-3.5 text-[#0066FF]" />
                       <span>Instant National Route Quote</span>
                     </span>
-                    <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
+                    <span className="text-[10px] font-bold bg-blue-50 text-[#0066FF] px-2 py-0.5 rounded-full border border-blue-200">
                       19,240+ PINs Active
                     </span>
                   </div>
@@ -715,7 +685,7 @@ export default function HomePage() {
                         Gadget Value (₹):
                       </label>
                       <span className="text-[10px] text-slate-500 font-medium">
-                        Transit Insurance: <strong className="text-emerald-700 font-bold font-mono">₹{estInsurance}</strong> (~0.5%)
+                        Transit Insurance: <strong className="text-[#0066FF] font-bold font-mono">₹{estInsurance}</strong> (~0.5%)
                       </span>
                     </div>
                     <input
@@ -762,8 +732,8 @@ export default function HomePage() {
                       <span className="text-[11px] font-bold text-slate-600 block">
                         Total Upfront Fee:
                       </span>
-                      <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
-                        <Check className="w-3 h-3 text-emerald-600" />
+                      <span className="text-[10px] text-[#0066FF] font-semibold flex items-center gap-1">
+                        <Check className="w-3 h-3 text-[#0066FF]" />
                         <span>10-min doorstep unboxing included</span>
                       </span>
                     </div>
@@ -783,7 +753,7 @@ export default function HomePage() {
                     onClick={handleProceedWithEstimatedRoute}
                     className="w-full py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/25 transition active:scale-98 cursor-pointer flex items-center justify-center gap-2"
                   >
-                    <span>Proceed to Consignment Booking</span>
+                    <span>Proceed to Secure Booking</span>
                     <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -835,7 +805,7 @@ export default function HomePage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 5. HOW SAFESHIP WORKS: 4-STEP PROCESS (EXACT MATCH TO MOCKUP)             */}
+      {/* 5. HOW SAFESHIP WORKS: 4-STEP PROCESS (NEUTRAL COPY FOR BUYERS & SELLERS)  */}
       {/* ========================================================================= */}
       <section id="how-it-works" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-10">
         
@@ -852,10 +822,10 @@ export default function HomePage() {
           </p>
         </div>
 
-        {/* 4 Cards Grid */}
+        {/* 4 Cards Grid with Unified SafeShip Blue Styling */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           
-          {/* Step 1: Book a Pickup */}
+          {/* Step 1: Book Safe Delivery */}
           <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition group flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -865,10 +835,10 @@ export default function HomePage() {
                 <span className="text-xs font-mono font-bold text-slate-400">01</span>
               </div>
               <h3 className="text-base sm:text-lg font-bold text-slate-900">
-                Book a Pickup
+                Book Safe Delivery
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Seller or buyer creates a shipment. Funds are safely deposited into bank escrow.
+                Buyer or seller creates an order. Payment is safely protected in bank escrow until doorstep delivery.
               </p>
             </div>
             <div className="text-[11px] font-semibold text-[#0066FF] flex items-center gap-1">
@@ -886,13 +856,13 @@ export default function HomePage() {
                 <span className="text-xs font-mono font-bold text-slate-400">02</span>
               </div>
               <h3 className="text-base sm:text-lg font-bold text-slate-900">
-                We Deliver
+                Inspected Pickup &amp; Transit
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Bonded delivery partner picks up and safely transports your package across states.
+                Bonded delivery partner collects and safely transports the item with tamper-evident barcoded seals.
               </p>
             </div>
-            <div className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+            <div className="text-[11px] font-semibold text-[#0066FF] flex items-center gap-1">
               <span>Tamper-evident sealed</span>
             </div>
           </div>
@@ -907,10 +877,10 @@ export default function HomePage() {
                 <span className="text-xs font-mono font-bold text-slate-400">03</span>
               </div>
               <h3 className="text-base sm:text-lg font-bold text-slate-900">
-                Open &amp; Check
+                Doorstep Open &amp; Check
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Inspect the package at your doorstep before paying a single rupee for the item.
+                Inspect the gadget at your doorstep (power on, test display &amp; verify IMEI) before releasing funds.
               </p>
             </div>
             <div className="text-[11px] font-semibold text-[#0066FF] flex items-center gap-1">
@@ -922,19 +892,19 @@ export default function HomePage() {
           <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition group flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#0066FF] flex items-center justify-center font-bold text-sm">
                   <Check className="w-5 h-5" />
                 </div>
                 <span className="text-xs font-mono font-bold text-slate-400">04</span>
               </div>
               <h3 className="text-base sm:text-lg font-bold text-slate-900">
-                Then Pay
+                Approve &amp; Settle
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Satisfied? Release the payment instantly. Not satisfied? Free instant return.
+                Satisfied? Release funds instantly to seller. Any defect? Free instant doorstep return &amp; full refund.
               </p>
             </div>
-            <div className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+            <div className="text-[11px] font-semibold text-[#0066FF] flex items-center gap-1">
               <span>100% money-back guarantee</span>
             </div>
           </div>
@@ -956,9 +926,9 @@ export default function HomePage() {
                 alt="Happy Indian customer safely unboxing secondhand gadget with SafeShip"
                 className="w-full h-auto object-cover select-none"
               />
-              <div className="absolute bottom-3 inset-x-3 bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-xl text-[11px] font-mono text-emerald-400 border border-white/10 flex items-center justify-between">
+              <div className="absolute bottom-3 inset-x-3 bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl text-[11px] font-mono text-white border border-white/10 flex items-center justify-between">
                 <span>DOORSTEP VERIFICATION PASSED</span>
-                <span>OTP RELEASED ✓</span>
+                <span className="text-[#0066FF] font-bold">OTP RELEASED ✓</span>
               </div>
             </div>
           </div>
@@ -976,7 +946,7 @@ export default function HomePage() {
 
             <div className="space-y-3 text-xs sm:text-sm text-slate-300 leading-relaxed">
               <p>
-                SafeShip was born from a simple belief: <strong>buying secondhand shouldn&apos;t feel like a gamble</strong>. Millions of Indians want to buy used phones, laptops, and gadgets online &mdash; but fear of scams holds them back.
+                SafeShip was born from a simple belief: <strong>buying secondhand shouldn&apos;t feel like a gamble</strong>. Millions of Indians want to buy and sell used phones, laptops, and gadgets online &mdash; but fear of scams holds them back.
               </p>
               <p>
                 We changed the rules. Every package is opened and verified before payment. Sellers get guaranteed payment; buyers get exactly what they ordered.
@@ -989,19 +959,19 @@ export default function HomePage() {
             {/* Bullet Checkpoints */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 text-xs text-slate-200">
               <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                <Check className="w-4 h-4 text-[#0066FF] shrink-0" />
                 <span>Every package inspected at doorstep</span>
               </div>
               <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                <Check className="w-4 h-4 text-[#0066FF] shrink-0" />
                 <span>RBI-compliant escrow holds funds safely</span>
               </div>
               <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                <Check className="w-4 h-4 text-[#0066FF] shrink-0" />
                 <span>Instant refund if anything isn&apos;t right</span>
               </div>
               <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                <Check className="w-4 h-4 text-[#0066FF] shrink-0" />
                 <span>Available in 1,800+ cities and towns</span>
               </div>
             </div>
@@ -1011,7 +981,7 @@ export default function HomePage() {
                 href="/in/deals/new?type=send"
                 className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-95 cursor-pointer"
               >
-                <span>Book your first shipment</span>
+                <span>Book your first safe delivery</span>
                 <span>&rarr;</span>
               </Link>
             </div>
@@ -1042,7 +1012,7 @@ export default function HomePage() {
             </div>
 
             <div className="space-y-1">
-              <div className="text-3xl sm:text-4xl font-black font-mono text-emerald-400">99.7%</div>
+              <div className="text-3xl sm:text-4xl font-black font-mono text-[#0066FF]">99.7%</div>
               <div className="text-xs text-slate-400 font-medium">Successful Deliveries</div>
             </div>
           </div>
@@ -1233,7 +1203,7 @@ export default function HomePage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span>10-Min Doorstep Unboxing:</span>
-                  <span className="font-bold text-emerald-600">Included (Free)</span>
+                  <span className="font-bold text-[#0066FF]">Included</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>ICICI Lombard Transit Insurance:</span>
@@ -1253,7 +1223,7 @@ export default function HomePage() {
                   <div className="text-2xl font-black font-mono text-slate-900">
                     ₹{calcTier === 'FAST' ? standardDeliveryCost + 149 : standardDeliveryCost}
                   </div>
-                  <div className="text-[10px] text-emerald-600 font-semibold">
+                  <div className="text-[10px] text-[#0066FF] font-semibold">
                     Product cost (₹{calcValue.toLocaleString('en-IN')}) paid at doorstep
                   </div>
                 </div>
@@ -1262,7 +1232,7 @@ export default function HomePage() {
                   href={`/in/deals/new?type=send&fromPin=${calcOrigin}&toPin=${calcDest}&val=${calcValue}`}
                   className="px-5 py-3 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition active:scale-95"
                 >
-                  Book Pickup &rarr;
+                  Book Safe Delivery &rarr;
                 </Link>
               </div>
             </div>
@@ -1303,7 +1273,7 @@ export default function HomePage() {
               <tbody className="divide-y divide-slate-100 font-medium">
                 <tr>
                   <td className="py-3.5 px-4 font-bold text-slate-900">Inspect box &amp; power-on before paying?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/50 text-emerald-700 font-bold">
+                  <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
                     ✓ YES (10-minute physical test)
                   </td>
                   <td className="py-3.5 px-4 text-rose-600">✗ NO (Pay cash / OTP first)</td>
@@ -1311,7 +1281,7 @@ export default function HomePage() {
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-bold text-slate-900">What if item is counterfeit or broken?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/50 text-emerald-700 font-bold">
+                  <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
                     ✓ Instant Reversal (₹0 product cost)
                   </td>
                   <td className="py-3.5 px-4 text-rose-600">✗ Money lost (no courier refund)</td>
@@ -1319,7 +1289,7 @@ export default function HomePage() {
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-bold text-slate-900">IMEI &amp; Serial Number verification?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/50 text-emerald-700 font-bold">
+                  <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
                     ✓ Bonded officer + GSMA Luhn-10 check
                   </td>
                   <td className="py-3.5 px-4 text-slate-400">✗ Not checked</td>
@@ -1327,7 +1297,7 @@ export default function HomePage() {
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-bold text-slate-900">Seller protected against buyer-swap fraud?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/50 text-emerald-700 font-bold">
+                  <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
                     ✓ Tamper-evident barcoded seal
                   </td>
                   <td className="py-3.5 px-4 text-rose-600">✗ High swap scam risk</td>
@@ -1335,7 +1305,7 @@ export default function HomePage() {
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-bold text-slate-900">Escrow Trustee Governance?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/50 text-emerald-700 font-bold">
+                  <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
                     ✓ RBI Section 10A Nodal (ICICI)
                   </td>
                   <td className="py-3.5 px-4 text-slate-500">Commercial cash pool</td>
@@ -1413,7 +1383,7 @@ export default function HomePage() {
                 href="/in/deals/new?type=send"
                 className="mt-4 pt-2.5 border-t border-slate-100 text-center text-xs font-bold text-[#0066FF] hover:underline"
               >
-                Ship This Category &rarr;
+                Book This Category &rarr;
               </Link>
             </div>
           ))}
@@ -1491,7 +1461,7 @@ export default function HomePage() {
               Ready to Buy or Sell Gadgets Without Fear?
             </h3>
             <p className="text-xs sm:text-sm text-blue-100 max-w-xl">
-              10-minute doorstep unboxing audit &bull; ₹0 upfront product risk &bull; RBI Section 10A trustee escrow. Join thousands of safe Indian gadget buyers.
+              10-minute doorstep unboxing audit &bull; ₹0 upfront product risk &bull; RBI Section 10A trustee escrow. Join thousands of safe Indian gadget buyers and sellers.
             </p>
           </div>
 
@@ -1500,7 +1470,7 @@ export default function HomePage() {
               href="/in/deals/new?type=send"
               className="px-6 py-3.5 rounded-full bg-white text-[#0066FF] font-black text-xs sm:text-sm shadow-lg hover:bg-blue-50 transition active:scale-95"
             >
-              Book Doorstep Delivery &rarr;
+              Book Safe Delivery &rarr;
             </Link>
             <Link
               href="/in/safety"

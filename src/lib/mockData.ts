@@ -32,7 +32,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
     city: 'Jaipur',
     pincode: '302017',
     itemPhotos: [
-      '/images/hero_openbox_authentic.jpg',
+      '/images/hero_openbox_authentic.webp',
       '/images/hero_openbox_4x3.webp',
       '/images/openbox_macro_4x3.webp'
     ],

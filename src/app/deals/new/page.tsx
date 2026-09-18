@@ -406,8 +406,8 @@ function CreateShipmentContent() {
       setCondition('Used - Mint');
       setDeclaredValue(reqVal ? Number(reqVal) : 8000);
       setPackageWeight('0.85');
-      setProductPhoto('/real_deal/product_front.png');
-      setUploadedPhotos(['/real_deal/product_front.png']);
+      setProductPhoto('/images/hero_openbox_4x3.webp');
+      setUploadedPhotos(['/images/hero_openbox_4x3.webp']);
       setPhotoMatchResult({
         isMatch: true,
         confidence: '99.4%',
