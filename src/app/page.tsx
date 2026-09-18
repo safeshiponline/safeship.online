@@ -399,7 +399,7 @@ export default function HomePage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
           
           {/* Left Hero Content */}
-          <div className="lg:col-span-6 xl:col-span-6 space-y-5 sm:space-y-6">
+          <div className="lg:col-span-6 xl:col-span-5 space-y-5 sm:space-y-6">
             
             {/* Eyebrow Pill Badge */}
             <div>
@@ -500,36 +500,36 @@ export default function HomePage() {
           </div>
 
           {/* Right Hero Visual Container: High-Converting Doorstep Escrow Card */}
-          <div className="lg:col-span-6 xl:col-span-6">
-            <div className="rounded-3xl bg-white border border-slate-200 shadow-sm p-3 sm:p-5 relative overflow-hidden">
-              <div className="relative rounded-2xl bg-gradient-to-b from-slate-50 to-slate-100/60 p-2 sm:p-3 border border-slate-200/80">
+          <div className="lg:col-span-6 xl:col-span-7 w-full">
+            <div className="rounded-3xl bg-white border border-slate-200/90 shadow-xl shadow-slate-200/40 p-2 sm:p-3 lg:p-3.5 relative overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10">
+              <div className="relative rounded-2xl overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/70 border border-slate-200/80">
                 {/* Image container using natural proportional scaling */}
-                <div className="relative w-full rounded-xl overflow-hidden bg-white shadow-2xs border border-slate-200/70 flex items-center justify-center">
+                <div className="relative w-full overflow-hidden bg-white flex items-center justify-center">
                   <img
                     src="/images/hero_visual_full.webp?v=5"
                     alt="SafeShip Doorstep Open Box Inspection with Apple iPhone 15 Pro Max Verification"
-                    className="w-full h-auto object-contain block select-none rounded-xl"
+                    className="w-full h-auto object-contain block select-none"
                   />
 
                   {/* Clean Brand Pill */}
-                  <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-200 text-[10px] sm:text-[11px] font-bold text-slate-800 flex items-center gap-1.5 shadow-2xs">
+                  <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 bg-white/95 backdrop-blur-md px-2.5 sm:px-3 py-1 rounded-full border border-slate-200 text-[10px] sm:text-xs font-bold text-slate-800 flex items-center gap-1.5 shadow-xs">
                     <span className="w-2 h-2 rounded-full bg-[#0066FF] animate-pulse" />
                     <span>Doorstep Unboxing Active</span>
                   </div>
                 </div>
 
                 {/* Micro Footer inside Preview */}
-                <div className="pt-3 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-500 font-medium">
-                  <span className="flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF]" />
+                <div className="p-2.5 sm:p-3 bg-white/90 backdrop-blur-xs border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-[11px] sm:text-xs text-slate-600 font-medium">
+                  <span className="flex items-center gap-1.5 font-semibold text-slate-800">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
                     <span>10-Min Power-on &amp; IMEI Check</span>
                   </span>
-                  <span className="flex items-center gap-1">
-                    <Lock className="w-3.5 h-3.5 text-[#0066FF]" />
+                  <span className="flex items-center gap-1.5 font-semibold text-slate-800">
+                    <Lock className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
                     <span>RBI Section 10A Escrow</span>
                   </span>
-                  <span className="flex items-center gap-1 text-slate-700 font-semibold">
-                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="flex items-center gap-1.5 text-emerald-700 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 text-[10px] sm:text-[11px]">
+                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     <span>100% Insured Transit</span>
                   </span>
                 </div>
