@@ -79,9 +79,6 @@ export const Navbar: React.FC = () => {
               <span>Sign in / Register</span>
             </Link>
           )}
-          <Link href="/in/admin" className="text-[#64748B] hover:text-[#0F172A] transition text-xs">
-            Admin
-          </Link>
         </nav>
 
         {/* Quick Actions & Mobile Toggle */}
@@ -166,20 +163,12 @@ export const Navbar: React.FC = () => {
             <span>My Profile &amp; Consignments</span>
           </Link>
           <Link
-            href="/in/courier"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-slate-50 text-xs font-bold text-[#64748B]"
-          >
-            <Truck className="w-4 h-4 text-[#64748B]" />
-            <span>Field Courier App</span>
-          </Link>
-          <Link
-            href="/in/admin"
+            href="/in/safety"
             onClick={() => setMobileMenuOpen(false)}
             className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-slate-50 text-xs font-bold text-[#64748B]"
           >
             <ShieldCheck className="w-4 h-4 text-[#64748B]" />
-            <span>Arbitration &amp; Ops Admin</span>
+            <span>Safety &amp; Escrow Protection</span>
           </Link>
         </div>
       )}

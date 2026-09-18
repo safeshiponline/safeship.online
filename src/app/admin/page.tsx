@@ -6,7 +6,6 @@ import { SafeDeal } from '@/lib/types';
 import { getStoredDeals, resolveDispute } from '@/lib/store';
 import { formatINR } from '@/lib/escrowCalculator';
 import { Navbar } from '@/components/common/Navbar';
-import { RoleSwitcher } from '@/components/common/RoleSwitcher';
 import {
   Shield,
   ShieldCheck,
@@ -15,14 +14,22 @@ import {
   DollarSign,
   AlertTriangle,
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  Truck,
+  Check,
+  Search,
+  ChevronRight
 } from '@/components/common/Icons';
 
 export default function AdminOpsPage() {
   const [deals, setDeals] = useState<SafeDeal[]>([]);
   const [selectedDisputeDeal, setSelectedDisputeDeal] = useState<SafeDeal | null>(null);
-  const [arbitrationNotes, setArbitrationNotes] = useState('Verified courier pickup log. Camera sensor had visible dust spot upon courier doorstep unboxing check.');
+  const [arbitrationNotes, setArbitrationNotes] = useState(
+    'Verified courier pickup log. Camera sensor had visible dust spot upon courier doorstep unboxing check.'
+  );
   const [resolutionSuccess, setResolutionSuccess] = useState<string | null>(null);
+  const [ledgerFilter, setLedgerFilter] = useState<'ALL' | 'IN_TRANSIT' | 'DISPUTED' | 'COMPLETED'>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     const list = getStoredDeals();
@@ -49,11 +56,30 @@ export default function AdminOpsPage() {
   const totalPlatformRevenue = deals.reduce((acc, d) => acc + d.pricing.platformEscrowFee, 0);
   const disputedDeals = deals.filter((d) => d.status === 'DISPUTED');
 
+  const filteredDeals = deals.filter((deal) => {
+    if (ledgerFilter === 'IN_TRANSIT' && deal.status !== 'IN_TRANSIT') return false;
+    if (ledgerFilter === 'DISPUTED' && deal.status !== 'DISPUTED') return false;
+    if (ledgerFilter === 'COMPLETED' && deal.status !== 'COMPLETED') return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        deal.id.toLowerCase().includes(q) ||
+        deal.title.toLowerCase().includes(q) ||
+        deal.city.toLowerCase().includes(q) ||
+        deal.seller.name.toLowerCase().includes(q) ||
+        deal.buyer.name.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
   const handleResolve = (decision: 'RESOLVED_REFUND_BUYER' | 'RESOLVED_PAY_SELLER' | 'PARTIAL_SPLIT') => {
     if (!selectedDisputeDeal) return;
     const updated = resolveDispute(selectedDisputeDeal.id, decision, arbitrationNotes);
     if (updated) {
-      setResolutionSuccess(`Dispute on ${selectedDisputeDeal.title} successfully resolved via ${decision.replace('RESOLVED_', '')}. Funds credited to beneficiary UPI.`);
+      setResolutionSuccess(
+        `Dispute on ${selectedDisputeDeal.title} successfully resolved via ${decision.replace('RESOLVED_', '')}. Funds credited to beneficiary account.`
+      );
       setDeals(getStoredDeals());
       setTimeout(() => setResolutionSuccess(null), 4000);
     }
@@ -61,7 +87,6 @@ export default function AdminOpsPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col antialiased selection:bg-[#0066FF] selection:text-white">
-      <RoleSwitcher currentRole="ADMIN" />
       <Navbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-7">
@@ -70,19 +95,23 @@ export default function AdminOpsPage() {
           <div>
             <div className="flex items-center gap-2.5">
               <span className="p-2 rounded-xl bg-[#0066FF] text-white shadow-xs">
-                <Shield className="w-4 h-4" />
+                <Shield className="w-5 h-5" />
               </span>
-              <h1 className="text-xl font-black text-[#0F172A] tracking-tight">Custody &amp; Escrow Operations Console</h1>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">
+                  Institutional Escrow &amp; Logistics Command Center
+                </h1>
+                <p className="text-xs text-[#64748B] mt-0.5">
+                  RBI Section 10A Nodal Custody &bull; ICICI Trustee Backed &bull; Multi-Corridor Clearing &amp; Dispute Desk
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-[#64748B] mt-1">
-              RBI Compliant Nodal Escrow Account &bull; ICICI Trustee Backed &bull; Multi-Corridor Settlement &amp; Dispute Desk
-            </p>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="px-3.5 py-1.5 rounded-full bg-blue-50 text-[#0066FF] border border-blue-200 text-xs font-semibold flex items-center gap-2 shadow-2xs">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#0066FF] animate-pulse" />
-              100% Trustee Backed (ICICI Bank Nodal Vault)
+            <span className="px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold flex items-center gap-2 shadow-2xs">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              Nodal Settlement Operational (ICICI #...0912)
             </span>
           </div>
         </div>
@@ -91,53 +120,115 @@ export default function AdminOpsPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="rounded-3xl border border-[#CBD5E1] bg-white p-5 sm:p-6 shadow-xs">
             <div className="flex items-center justify-between text-xs text-[#64748B] mb-1.5">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#64748B]">Nodal Vault Reserve</span>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#64748B]">
+                Nodal Vault Reserve
+              </span>
               <Lock className="w-4 h-4 text-[#0066FF]" />
             </div>
             <div className="text-2xl font-black font-mono text-[#0F172A] tracking-tight">
               {formatINR(totalVaultBalance)}
             </div>
             <div className="text-[11px] text-[#64748B] mt-1">
-              Held in segregated trustee escrow account
+              Held in segregated trustee escrow vault
             </div>
           </div>
 
-          <div className="rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-6 shadow-xs">
-            <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">Total Consignment Value</span>
-              <DollarSign className="w-4 h-4 text-zinc-700" />
+          <div className="rounded-3xl border border-[#CBD5E1] bg-white p-5 sm:p-6 shadow-xs">
+            <div className="flex items-center justify-between text-xs text-[#64748B] mb-1.5">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#64748B]">
+                Gross Consignment Value
+              </span>
+              <DollarSign className="w-4 h-4 text-[#0066FF]" />
             </div>
-            <div className="text-2xl font-black font-mono text-zinc-950 tracking-tight">
+            <div className="text-2xl font-black font-mono text-[#0F172A] tracking-tight">
               {formatINR(totalGrossVolume)}
             </div>
-            <div className="text-[11px] text-zinc-500 mt-1">
-              Across national delivery corridors
+            <div className="text-[11px] text-[#64748B] mt-1">
+              Active consignments under SafeShip custody
             </div>
           </div>
 
-          <div className="rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-6 shadow-xs">
-            <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">Platform Retained Fees</span>
-              <ShieldCheck className="w-4 h-4 text-zinc-700" />
+          <div className="rounded-3xl border border-[#CBD5E1] bg-white p-5 sm:p-6 shadow-xs">
+            <div className="flex items-center justify-between text-xs text-[#64748B] mb-1.5">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#64748B]">
+                Platform Retained Fees
+              </span>
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
             </div>
-            <div className="text-2xl font-black font-mono text-zinc-950 tracking-tight">
+            <div className="text-2xl font-black font-mono text-[#0F172A] tracking-tight">
               {formatINR(totalPlatformRevenue)}
             </div>
-            <div className="text-[11px] text-zinc-500 mt-1">
-              SafeShip fee + statutory GST
+            <div className="text-[11px] text-[#64748B] mt-1">
+              Platform fees &amp; transit insurance margin
             </div>
           </div>
 
-          <div className="rounded-3xl border border-zinc-200/90 bg-white p-5 sm:p-6 shadow-xs">
-            <div className="flex items-center justify-between text-xs text-zinc-500 mb-1.5">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400">Active Disputes</span>
+          <div className="rounded-3xl border border-[#CBD5E1] bg-white p-5 sm:p-6 shadow-xs">
+            <div className="flex items-center justify-between text-xs text-[#64748B] mb-1.5">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#64748B]">
+                Active Dispute Cases
+              </span>
               <AlertTriangle className="w-4 h-4 text-rose-500" />
             </div>
             <div className="text-2xl font-black font-mono text-rose-600 tracking-tight">
               {disputedDeals.length}
             </div>
-            <div className="text-[11px] text-zinc-500 mt-1">
-              Pending review &amp; resolution
+            <div className="text-[11px] text-[#64748B] mt-1">
+              Pending doorstep unboxing arbitration
+            </div>
+          </div>
+        </div>
+
+        {/* Live Linehaul Corridor Status Bar */}
+        <div className="rounded-3xl border border-[#CBD5E1] bg-white p-4 sm:p-5 shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Truck className="w-4 h-4 text-[#0066FF]" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                Key National High-Frequency Linehaul Corridors
+              </h3>
+            </div>
+            <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              100% Operational SLA
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center justify-between font-bold text-slate-900">
+                <span>Delhi NCR ⇄ Jaipur</span>
+                <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
+                  Same-Day Air
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">
+                274 km &bull; Linehaul #DEL-JAI-04 &bull; 99.8% On-Time Clearance
+              </p>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center justify-between font-bold text-slate-900">
+                <span>Mumbai ⇄ Bengaluru</span>
+                <span className="text-[10px] font-mono text-[#0066FF] bg-blue-100 px-2 py-0.5 rounded">
+                  24h Express Air
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">
+                984 km &bull; Linehaul #BOM-BLR-12 &bull; Bonded Tamper Pouch
+              </p>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center justify-between font-bold text-slate-900">
+                <span>Rameshwaram ⇄ Delhi</span>
+                <span className="text-[10px] font-mono text-purple-700 bg-purple-100 px-2 py-0.5 rounded">
+                  36h Air Cargo
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 mt-1">
+                2,680 km &bull; Linehaul #MAA-DEL-08 &bull; Transit Insured
+              </p>
             </div>
           </div>
         </div>
@@ -159,7 +250,7 @@ export default function AdminOpsPage() {
                 </span>
                 <div>
                   <h2 className="text-base font-black text-zinc-950 tracking-tight">
-                    Dispute Investigation: {selectedDisputeDeal.title}
+                    Dispute Adjudication: {selectedDisputeDeal.title}
                   </h2>
                   <div className="text-xs text-zinc-500 font-mono mt-0.5">
                     Case ID: {selectedDisputeDeal.dispute?.id} &bull; Escrow Lot: {formatINR(selectedDisputeDeal.declaredValue)} ({selectedDisputeDeal.city})
@@ -299,12 +390,50 @@ export default function AdminOpsPage() {
 
         {/* Transactions Ledger */}
         <div className="rounded-3xl border border-zinc-200/90 bg-white p-6 sm:p-8 shadow-xs space-y-5">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
-              <h3 className="text-base font-black text-zinc-950 tracking-tight">National Escrow Settlement Ledger</h3>
-              <p className="text-xs text-zinc-500 mt-0.5">Real-time custody tracking across active metropolitan hubs</p>
+              <h3 className="text-base font-black text-zinc-950 tracking-tight">
+                National Escrow Settlement Ledger
+              </h3>
+              <p className="text-xs text-zinc-500 mt-0.5">
+                Real-time custody tracking across active metropolitan hubs
+              </p>
             </div>
-            <span className="text-[11px] font-mono text-zinc-400">{deals.length} Active Records</span>
+
+            {/* Filter Pills & Search */}
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search docket, device, or user..."
+                  className="px-3 py-1.5 pl-8 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#0066FF]"
+                />
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+              </div>
+
+              {(['ALL', 'IN_TRANSIT', 'DISPUTED', 'COMPLETED'] as const).map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setLedgerFilter(filter)}
+                  className={`px-3 py-1.5 rounded-xl font-bold transition cursor-pointer ${
+                    ledgerFilter === filter
+                      ? 'bg-[#0066FF] text-white'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {filter === 'ALL'
+                    ? 'All'
+                    : filter === 'IN_TRANSIT'
+                    ? 'In Transit'
+                    : filter === 'DISPUTED'
+                    ? 'Disputes'
+                    : 'Completed'}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="overflow-x-auto">
@@ -312,7 +441,7 @@ export default function AdminOpsPage() {
               <thead className="border-b border-zinc-100 text-zinc-400 font-mono uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="py-3 px-3">Docket ID</th>
-                  <th className="py-3 px-3">Hardware & Corridor</th>
+                  <th className="py-3 px-3">Hardware &amp; Corridor</th>
                   <th className="py-3 px-3">Agreed Escrow</th>
                   <th className="py-3 px-3">Counterparties</th>
                   <th className="py-3 px-3">Fee Split</th>
@@ -321,14 +450,16 @@ export default function AdminOpsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100 text-zinc-700">
-                {deals.map((d) => (
+                {filteredDeals.map((d) => (
                   <tr key={d.id} className="hover:bg-zinc-50/60 transition">
                     <td className="py-3.5 px-3 font-mono font-bold text-zinc-900">
                       {d.id}
                     </td>
                     <td className="py-3.5 px-3">
                       <div className="font-bold text-zinc-950 line-clamp-1">{d.title}</div>
-                      <div className="text-[10px] text-zinc-400 font-mono">{d.city} • {d.category}</div>
+                      <div className="text-[10px] text-zinc-400 font-mono">
+                        {d.city} &bull; {d.category}
+                      </div>
                     </td>
                     <td className="py-3.5 px-3 font-mono font-bold text-zinc-950">
                       {formatINR(d.declaredValue)}

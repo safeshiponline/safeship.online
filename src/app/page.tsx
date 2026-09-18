@@ -33,9 +33,8 @@ import {
   Clock,
   ExternalLink,
   Award,
-  Scan
+  Headphones
 } from '@/components/common/Icons';
-import { ProductPhotoMatchResult } from '@/lib/geminiUnified';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
 
 export default function HomePage() {
@@ -47,34 +46,43 @@ export default function HomePage() {
   const [trackQuery, setTrackQuery] = useState<string>('');
   const [userOrders, setUserOrders] = useState<SafeDeal[]>([]);
   const [isMounted, setIsMounted] = useState<boolean>(false);
+  const [paidToast, setPaidToast] = useState<boolean>(false);
+
+  // Hero Tab Switcher: 'PREVIEW' (Doorstep Unboxing Card matching mockup) vs 'ESTIMATOR' (Instant Rate & Route Quote)
+  const [heroView, setHeroView] = useState<'PREVIEW' | 'ESTIMATOR'>('PREVIEW');
 
   // Interactive Route & Instant Rate Estimator State
-  const [heroTab, setHeroTab] = useState<'ESTIMATOR' | 'TRACK'>('ESTIMATOR');
   const [estFromPin, setEstFromPin] = useState<string>('302017'); // Jaipur
   const [estToPin, setEstToPin] = useState<string>('110001'); // Delhi
   const [estItemValue, setEstItemValue] = useState<number>(55000);
   const [estTier, setEstTier] = useState<DeliveryServiceTier>('PRIORITY_EXPRESS');
   const [heroTrackInput, setHeroTrackInput] = useState<string>('');
 
-  // Auto-resolved logistics
+  // Auto-resolved logistics for hero estimator
   const cleanFromPin = estFromPin.replace(/\D/g, '').slice(0, 6);
   const cleanToPin = estToPin.replace(/\D/g, '').slice(0, 6);
   const estOrigin = resolvePincode(cleanFromPin.length === 6 ? cleanFromPin : '302017');
   const estDest = resolvePincode(cleanToPin.length === 6 ? cleanToPin : '110001');
-  const estRoute = calculateRoadDistance(cleanFromPin.length === 6 ? cleanFromPin : '302017', cleanToPin.length === 6 ? cleanToPin : '110001');
+  const estRoute = calculateRoadDistance(
+    cleanFromPin.length === 6 ? cleanFromPin : '302017',
+    cleanToPin.length === 6 ? cleanToPin : '110001'
+  );
   const estDistance = estRoute.distanceKm;
   const estPricing = calculateTierPricing(estDistance, estItemValue, 'send');
   const estInsurance = calculateInsuranceFee(estItemValue);
-  const estShippingCost = estTier === 'STANDARD_GROUND' 
-    ? estPricing['STANDARD_GROUND']?.totalUpfront || 149 
-    : estTier === 'PRIORITY_EXPRESS' 
-    ? estPricing['PRIORITY_EXPRESS']?.totalUpfront || 299 
-    : estPricing['FASTEST_AIR_RUSH']?.totalUpfront || 449;
+  const estShippingCost =
+    estTier === 'STANDARD_GROUND'
+      ? estPricing['STANDARD_GROUND']?.totalUpfront || 149
+      : estTier === 'PRIORITY_EXPRESS'
+      ? estPricing['PRIORITY_EXPRESS']?.totalUpfront || 299
+      : estPricing['FASTEST_AIR_RUSH']?.totalUpfront || 449;
   const estTotalUpfront = estShippingCost + estInsurance;
 
   const handleProceedWithEstimatedRoute = () => {
     router.push(
-      `/in/deals/new?type=send&fromPin=${encodeURIComponent(cleanFromPin || '302017')}&toPin=${encodeURIComponent(cleanToPin || '110001')}&val=${estItemValue}`
+      `/in/deals/new?type=send&fromPin=${encodeURIComponent(cleanFromPin || '302017')}&toPin=${encodeURIComponent(
+        cleanToPin || '110001'
+      )}&val=${estItemValue}`
     );
   };
 
@@ -87,11 +95,11 @@ export default function HomePage() {
     }
   };
 
-  // Interactive Fare Calculator State
+  // Interactive Detailed Fare Calculator State
   const [calcOrigin, setCalcOrigin] = useState<string>('623526'); // Rameshwaram
   const [calcDest, setCalcDest] = useState<string>('110001'); // New Delhi
   const [calcCategory, setCalcCategory] = useState<'PHONE' | 'LAPTOP' | 'CAMERA' | 'WATCH'>('LAPTOP');
-  const [calcValue, setCalcValue] = useState<number>(10000);
+  const [calcValue, setCalcValue] = useState<number>(45000);
   const [calcPaymentMode, setCalcPaymentMode] = useState<'PREPAID' | 'COD' | 'FINANCE'>('PREPAID');
   const [calcTier, setCalcTier] = useState<'STANDARD' | 'FAST'>('STANDARD');
   const [calcDownPayment, setCalcDownPayment] = useState<number>(2499);
@@ -146,7 +154,6 @@ export default function HomePage() {
     }
   }, [calcOrigin, calcDest]);
 
-  // Standard linehaul delivery cost
   const standardDeliveryCost = React.useMemo(() => {
     const km = calcRoute.distanceKm;
     let base = 280;
@@ -155,125 +162,106 @@ export default function HomePage() {
     if (calcCategory === 'WATCH') base = 310;
 
     let distFactor = Math.round(km * 0.09);
-    if (km > 1500) distFactor = Math.min(distFactor, 240); // cap long distance flight surcharge
+    if (km > 1500) distFactor = Math.min(distFactor, 240);
 
-    // Insurance: 0.8% of value
     const ins = Math.round(calcValue * 0.008);
-    const total = Math.max(250, Math.min(1950, base + distFactor + ins));
-    return total;
+    return Math.max(250, Math.min(1950, base + distFactor + ins));
   }, [calcRoute.distanceKm, calcCategory, calcValue]);
 
-  // Down payment bounds (< ₹5,000 policy)
   const maxCalcDown = Math.min(4999, Math.max(999, Math.floor(calcValue * 0.5)));
   const minCalcDown = Math.min(999, Math.max(499, Math.floor(calcValue * 0.05)));
   const effectiveCalcDownPayment = Math.min(maxCalcDown, Math.max(minCalcDown, calcDownPayment));
   const calcFinancedPrincipal = Math.max(0, calcValue - effectiveCalcDownPayment);
 
-  // Upfront Payable calculation:
-  // - Prepaid: Full Escrow (calcValue) with Standard Free Delivery, or calcValue + 149 for Fast Air
-  // - COD: ₹500 slot reservation advance (or ₹649 for Fast Air)
-  // - Finance: effectiveCalcDownPayment (< ₹5k) with Standard Free Delivery, or + ₹149 for Fast Air
-  const estimatedFare = React.useMemo(() => {
-    const isFast = calcTier === 'FAST';
-    if (calcPaymentMode === 'PREPAID') {
-      return isFast ? calcValue + 149 : calcValue;
-    }
-    if (calcPaymentMode === 'COD') {
-      return isFast ? 649 : 500;
-    }
-    return isFast ? effectiveCalcDownPayment + 149 : effectiveCalcDownPayment;
-  }, [calcPaymentMode, calcTier, calcValue, effectiveCalcDownPayment]);
-
   const monthlyFinanceEmi = React.useMemo(() => {
     return Math.round(calcFinancedPrincipal / 6);
   }, [calcFinancedPrincipal]);
 
+  const handleSimulatePaymentRelease = () => {
+    setPaidToast(true);
+    setTimeout(() => setPaidToast(false), 4000);
+  };
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans antialiased selection:bg-[#0066FF] selection:text-white flex flex-col justify-between">
-
       {/* ========================================================================= */}
-      {/* 1. TOP HEADER: Brand Logo + Subtitle + Location Selector + Notification Bell */}
+      {/* 1. TOP HEADER: Clean, Professional, High-Trust Navigation                 */}
       {/* ========================================================================= */}
       <header className="w-full bg-white border-b border-[#E2E8F0] sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 flex items-center justify-between">
-          
-          {/* Brand Logo with Subline */}
-          <Link href="/in" className="flex items-center gap-2 sm:gap-2.5 group shrink-0">
-            <SafeShipLogo className="w-8 h-8 sm:w-9 sm:h-9 shrink-0 group-hover:scale-105 transition duration-200" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+          {/* Brand Logo */}
+          <Link href="/in" className="flex items-center gap-2.5 group shrink-0 select-none">
+            <SafeShipLogo className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 group-hover:scale-105 transition duration-200" />
             <div className="flex flex-col">
-              <span className="text-base sm:text-xl font-black tracking-tight text-[#0F172A] leading-tight">
+              <span className="text-lg sm:text-xl font-black tracking-tight text-[#0F172A] leading-tight">
                 SafeShip
               </span>
-              <span className="text-[9px] sm:text-[11px] font-medium text-[#64748B] leading-none">
+              <span className="text-[10px] sm:text-[11px] font-medium text-[#64748B] leading-none">
                 Buy &bull; Ship &bull; Verify
               </span>
             </div>
           </Link>
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-xs sm:text-sm font-semibold text-[#475569]">
-            <Link href="/in" className="text-[#0066FF] font-bold relative py-1">
-              Home
-              <span className="hidden lg:block absolute -bottom-3.5 inset-x-0 h-0.5 bg-[#0066FF] rounded-full" />
-            </Link>
-            <Link href="/in/deals/new?type=send" className="hover:text-[#0066FF] transition py-1">
-              Book Shipment
-            </Link>
+          {/* Center Navigation Links (Matching Mockup) */}
+          <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-sm font-semibold text-[#475569]">
+            <a href="#how-it-works" className="hover:text-[#0066FF] transition py-1">
+              How It Works
+            </a>
+            <a href="#features" className="hover:text-[#0066FF] transition py-1">
+              Features
+            </a>
             <Link href="/in/track" className="hover:text-[#0066FF] transition py-1">
               Track
             </Link>
-            <Link href="/in/deals/new?type=exchange" className="hover:text-[#0066FF] transition flex items-center gap-1 text-amber-700 py-1">
-              <ArrowLeftRight className="w-3.5 h-3.5 text-amber-600" />
-              <span>Exchange</span>
+            <Link href="/in/safety" className="hover:text-[#0066FF] transition py-1">
+              Safety
             </Link>
-            <Link href="/in/open-box" className="hover:text-[#0066FF] transition py-1 text-[#0066FF] font-bold">
-              Open-Box Demo
-            </Link>
-            <Link href="/in/safety" className="hover:text-[#0066FF] transition py-1 font-semibold">
-              Safety &amp; Trust
-            </Link>
-            <Link href="/in/profile" className="hover:text-[#0066FF] transition py-1">
-              Profile
-            </Link>
+            <a href="#pricing" className="hover:text-[#0066FF] transition py-1">
+              Pricing
+            </a>
           </nav>
 
-          {/* Right Header Utilities: Location Selector & Notifications */}
+          {/* Right Header Utilities: Location Selector, Login & Send Button */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            
-            {/* Quick Track Input on Large Screens */}
-            <button
-              type="button"
-              onClick={() => setShowTrackModal(true)}
-              className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-600 text-xs font-medium transition cursor-pointer border border-slate-200"
-            >
-              <Search className="w-3.5 h-3.5 text-slate-400" />
-              <span>Quick track...</span>
-              <kbd className="text-[10px] bg-white border border-slate-200 px-1.5 py-0.5 rounded text-slate-400 font-mono">SS48291</kbd>
-            </button>
-
             {/* Location Selector Chip (📍 Jaipur ▾) */}
             <button
               type="button"
               onClick={() => setShowCityModal(true)}
-              className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0F172A] text-xs font-semibold border border-[#E2E8F0] transition active:scale-95 cursor-pointer shadow-2xs"
+              className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0F172A] text-xs font-semibold border border-[#E2E8F0] transition active:scale-95 cursor-pointer shadow-2xs"
               title="Select Operational Hub"
             >
               <MapPin className="w-3 h-3 text-[#0066FF]" />
-              <span className="text-[11px] sm:text-xs font-bold">{selectedCity}</span>
+              <span className="font-bold">{selectedCity}</span>
               <span className="text-[9px] text-[#64748B]">▾</span>
             </button>
 
-            {/* Notification Bell with Red Dot */}
+            {/* Notification Bell */}
             <button
               type="button"
               onClick={() => setShowNotifications(!showNotifications)}
-              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border border-[#E2E8F0] flex items-center justify-center text-[#0F172A] hover:text-[#0066FF] hover:border-[#BFDBFE] transition relative cursor-pointer active:scale-95 shadow-2xs"
+              className="w-9 h-9 rounded-full bg-white border border-[#E2E8F0] flex items-center justify-center text-[#0F172A] hover:text-[#0066FF] hover:border-[#BFDBFE] transition relative cursor-pointer active:scale-95 shadow-2xs"
               aria-label="Notifications"
             >
-              <Bell className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
-              <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white" />
             </button>
 
+            {/* Sign in */}
+            <Link
+              href="/in/profile"
+              className="hidden sm:inline-block text-xs font-bold text-slate-700 hover:text-[#0066FF] transition px-2.5 py-1.5"
+            >
+              Login
+            </Link>
+
+            {/* Main Primary CTA Button */}
+            <Link
+              href="/in/deals/new?type=send"
+              className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#0066FF]/25 hover:shadow-lg transition active:scale-95 cursor-pointer whitespace-nowrap"
+            >
+              <span>Send a Package</span>
+              <span className="text-sm">&rarr;</span>
+            </Link>
           </div>
         </div>
       </header>
@@ -303,7 +291,7 @@ export default function HomePage() {
             <span className="text-slate-600">&bull;</span>
             <span className="flex items-center gap-1.5 text-slate-300">
               <Truck className="w-3 h-3 text-[#0066FF]" />
-              <span>Jaipur Hub #14 &rarr; Delhi Airport Linehaul: Active</span>
+              <span>Jaipur Hub &rarr; Delhi Airport Linehaul: Active</span>
             </span>
             <span className="text-slate-600">&bull;</span>
             <span className="flex items-center gap-1.5 text-amber-400">
@@ -385,31 +373,21 @@ export default function HomePage() {
           </div>
           <div className="space-y-2.5 text-xs">
             {activeShipment ? (
-              <>
-                <Link
-                  href={`/in/track/${activeShipment.id}`}
-                  onClick={() => setShowNotifications(false)}
-                  className="block p-3 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] hover:bg-[#DBEAFE] transition"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-[#0066FF]">{activeShipment.title} &bull; {activeShipment.status.replace(/_/g, ' ')}</span>
-                    <span className="text-[9px] bg-[#0066FF] text-white px-1.5 py-0.2 rounded font-bold">LIVE</span>
-                  </div>
-                  <p className="text-[#334155] text-[11px] mt-1">
-                    Order #{activeShipment.id} &bull; Assigned courier {activeShipment.assignedCourier?.name || 'SafeShip Officer'}.
-                  </p>
-                </Link>
-                <Link
-                  href={`/in/open-box?deal=${activeShipment.id}`}
-                  onClick={() => setShowNotifications(false)}
-                  className="block p-3 rounded-xl bg-slate-50 border border-[#E2E8F0] hover:bg-slate-100 transition"
-                >
-                  <span className="font-semibold text-[#0F172A]">Doorstep Open-Box Inspection Ready</span>
-                  <p className="text-[#64748B] text-[11px] mt-0.5">
-                    Inspect physical chassis, IMEI, and camera before releasing payment.
-                  </p>
-                </Link>
-              </>
+              <Link
+                href={`/in/track/${activeShipment.id}`}
+                onClick={() => setShowNotifications(false)}
+                className="block p-3 rounded-xl bg-[#EFF6FF] border border-[#BFDBFE] hover:bg-[#DBEAFE] transition"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-[#0066FF]">
+                    {activeShipment.title} &bull; {activeShipment.status.replace(/_/g, ' ')}
+                  </span>
+                  <span className="text-[9px] bg-[#0066FF] text-white px-1.5 py-0.2 rounded font-bold">LIVE</span>
+                </div>
+                <p className="text-[#334155] text-[11px] mt-1">
+                  Order #{activeShipment.id} &bull; Assigned courier {activeShipment.assignedCourier?.name || 'SafeShip Officer'}.
+                </p>
+              </Link>
             ) : (
               <div className="py-6 text-center text-xs text-[#64748B]">
                 <div className="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-2 text-[#94A3B8]">
@@ -468,953 +446,640 @@ export default function HomePage() {
       )}
 
       {/* ========================================================================= */}
-      {/* 3. MAIN VIEWPORT (Responsive Mobile + Rich, High-Trust Desktop)            */}
+      {/* 3. HERO SECTION (EXACT MATCHING MOCKUP WITH PUNCHY TYPOGRAPHY & VISUALS)   */}
       {/* ========================================================================= */}
-      <main className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6 pb-24 md:pb-28 flex-1 space-y-10 md:space-y-14">
-
-        {/* ----------------------------------------------------------------------- */}
-        {/* AVAILABILITY PILL: 🟢 Service available in Jaipur >                     */}
-        {/* ----------------------------------------------------------------------- */}
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => setShowCityModal(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-[11px] sm:text-xs font-medium text-slate-700 hover:border-slate-300 transition cursor-pointer active:scale-95"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span>Service available in <strong>{selectedCity}</strong></span>
-            <span className="text-slate-300">&bull;</span>
-            <span className="text-emerald-600 font-bold">Doorstep Open-Box Active</span>
-            <ChevronRight className="w-3 h-3 text-slate-400 ml-0.5" />
-          </button>
-
-          <div className="hidden sm:flex items-center gap-2 text-xs text-slate-500">
-            <span className="inline-block w-2 h-2 rounded-full bg-[#0066FF]" />
-            <span>Zero-Advance Escrow Rail for Indian Secondhand Commerce</span>
-          </div>
-        </div>
-
-        {/* ----------------------------------------------------------------------- */}
-        {/* HERO SECTION: Responsive Headline + 3D Courier Artwork                  */}
-        {/* ----------------------------------------------------------------------- */}
-        <section className="relative">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-10 items-center">
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-10 pb-12 sm:pb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+          
+          {/* Left Hero Content */}
+          <div className="lg:col-span-6 xl:col-span-6 space-y-5 sm:space-y-6">
             
-            {/* Left Content Area (Mobile & Desktop) */}
-            <div className="md:col-span-7 lg:col-span-7 space-y-4 sm:space-y-5">
-              
-              {/* Mobile-only Courier thumbnail flex header */}
-              <div className="flex md:hidden items-center justify-between gap-2">
-                <div className="space-y-1.5 z-10 flex-1 min-w-0 pr-1">
-                  <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#0F172A] leading-[1.12]">
-                    Buy from anywhere. <br />
-                    <span className="text-[#0066FF]">Trust what arrives.</span>
-                  </h1>
-                  <p className="text-xs text-[#64748B] font-medium leading-normal">
-                    Doorstep open-box inspection &amp; zero-advance escrow for secondhand electronics.
-                  </p>
-                </div>
-                <div className="shrink-0 w-32 relative flex items-center justify-end">
-                  <img
-                    src="/images/hero_courier.png"
-                    alt="SafeShip Open-Box Verification Officer"
-                    className="w-full h-auto object-contain drop-shadow-xs select-none pointer-events-none"
-                  />
-                </div>
-              </div>
+            {/* Eyebrow Pill Badge */}
+            <div>
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-xs font-semibold text-slate-800">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span>India&apos;s #1 Open-Box Delivery Platform</span>
+              </span>
+            </div>
 
-              {/* Desktop-only Headline & Subtitle */}
-              <div className="hidden md:block space-y-3">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0066FF] text-xs font-bold">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>India&apos;s 1st Doorstep Open-Box Inspection &amp; Escrow Rail</span>
+            {/* Tight Punchy Headline */}
+            <div className="space-y-1">
+              <h1 className="text-4xl sm:text-5xl lg:text-[54px] font-black tracking-tight text-[#0F172A] leading-[1.08]">
+                See it. Check it.
+                <br />
+                <span className="text-[#0066FF]">Then pay.</span>
+              </h1>
+            </div>
+
+            {/* Punchy Subtitle */}
+            <div className="space-y-1 text-slate-600 text-sm sm:text-base leading-relaxed max-w-xl">
+              <p className="font-bold text-slate-900 text-base sm:text-lg">
+                No more scams. No more worries.
+              </p>
+              <p className="text-slate-600 font-normal">
+                Your package is inspected at your doorstep before you pay. Safe, simple and trusted by thousands across India.
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              <Link
+                href="/in/deals/new?type=send"
+                className="px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm sm:text-base shadow-md shadow-[#0066FF]/25 hover:shadow-lg hover:shadow-[#0066FF]/35 transition active:scale-98 flex items-center gap-2"
+              >
+                <span>📦</span>
+                <span>Send a Package &rarr;</span>
+              </Link>
+
+              <Link
+                href="/in/track"
+                className="px-6 sm:px-7 py-3 sm:py-3.5 rounded-full bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-sm sm:text-base shadow-2xs hover:shadow-xs transition active:scale-98 flex items-center gap-2"
+              >
+                <Search className="w-4 h-4 text-slate-500" />
+                <span>Track Shipment</span>
+              </Link>
+            </div>
+
+            {/* 4 Value Proposition Pillars */}
+            <div className="pt-4 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 border-t border-slate-200/80">
+              {/* Prop 1: Bank-Secured Escrow */}
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-900">
+                  <ShieldCheck className="w-4 h-4 text-[#0066FF] shrink-0" />
+                  <span>Bank-Secured Escrow</span>
                 </div>
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-[#0F172A] leading-[1.08]">
-                  Buy from anywhere. <br />
-                  <span className="text-[#0066FF]">Trust what arrives.</span>
-                </h1>
-                <p className="text-sm lg:text-base text-[#64748B] font-medium leading-relaxed max-w-xl">
-                  Eliminating secondhand tech fraud across India. <br />
-                  Our bonded delivery officer unboxes your gadget at your doorstep so you can <strong>power on, test display, and verify IMEI for 10 minutes</strong> before paying a single rupee for the item.
+                <p className="text-[11px] text-slate-500 leading-tight">
+                  Funds released only when you say OK
                 </p>
               </div>
 
-              {/* DUAL HERO CTAs */}
-              <div className="pt-1 flex flex-wrap items-center gap-3">
-                <Link
-                  href="/in/deals/new?type=send"
-                  className="inline-flex items-center justify-center gap-2 py-3 px-5 sm:px-6 rounded-xl sm:rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs sm:text-sm shadow-md shadow-[#0066FF]/25 hover:shadow-lg hover:shadow-[#0066FF]/35 transition active:scale-98 cursor-pointer text-center"
-                >
-                  <Package className="w-4 h-4 shrink-0" />
-                  <span>Book a Shipment &rarr;</span>
-                </Link>
-
-                <Link
-                  href="/in/track"
-                  className="inline-flex items-center justify-center gap-2 py-3 px-5 sm:px-6 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-[#0F172A] font-bold text-xs sm:text-sm shadow-2xs hover:shadow-xs transition active:scale-98 cursor-pointer text-center"
-                >
-                  <Search className="w-4 h-4 text-slate-500 shrink-0" />
-                  <span>Track Consignment</span>
-                </Link>
-
-                <Link
-                  href="/in/safety"
-                  className="inline-flex items-center gap-1.5 px-3 py-2 text-xs text-[#0066FF] font-bold hover:underline"
-                >
-                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                  <span>₹0 Product Lock Guarantee</span>
-                </Link>
+              {/* Prop 2: PAN India Delivery */}
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-900">
+                  <Truck className="w-4 h-4 text-[#0066FF] shrink-0" />
+                  <span>PAN India Delivery</span>
+                </div>
+                <p className="text-[11px] text-slate-500 leading-tight">
+                  19,000+ pincodes served across all states
+                </p>
               </div>
 
-              {/* 3 HORIZONTAL MICRO-PILLARS */}
-              <div className="pt-3 grid grid-cols-3 gap-2 sm:gap-4">
-                
-                {/* Pillar 1: Open-box verification */}
-                <div className="p-3 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-col items-start gap-1">
-                  <div className="w-8 h-8 rounded-xl bg-[#EFF6FF] text-[#0066FF] flex items-center justify-center mb-0.5 shrink-0">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                  <div className="text-xs font-bold text-[#0F172A] leading-tight">
-                    Open-Box Audit
-                  </div>
-                  <p className="text-[10px] text-[#64748B] leading-tight">
-                    10-min test before pay
-                  </p>
+              {/* Prop 3: Trusted by 50,000+ */}
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-900">
+                  <Star className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
+                  <span>Trusted by 50,000+</span>
                 </div>
-
-                {/* Pillar 2: Verified handoffs */}
-                <div className="p-3 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-col items-start gap-1">
-                  <div className="w-8 h-8 rounded-xl bg-[#EFF6FF] text-[#0066FF] flex items-center justify-center mb-0.5 shrink-0">
-                    <Users className="w-4 h-4" />
-                  </div>
-                  <div className="text-xs font-bold text-[#0F172A] leading-tight">
-                    Verified Handoffs
-                  </div>
-                  <p className="text-[10px] text-[#64748B] leading-tight">
-                    Tamper-sealed security
-                  </p>
-                </div>
-
-                {/* Pillar 3: Live tracking */}
-                <div className="p-3 rounded-2xl bg-white border border-slate-200/90 shadow-2xs flex flex-col items-start gap-1">
-                  <div className="w-8 h-8 rounded-xl bg-[#EFF6FF] text-[#0066FF] flex items-center justify-center mb-0.5 shrink-0">
-                    <MapPin className="w-4 h-4" />
-                  </div>
-                  <div className="text-xs font-bold text-[#0F172A] leading-tight">
-                    RBI Trustee Escrow
-                  </div>
-                  <p className="text-[10px] text-[#64748B] leading-tight">
-                    ICICI Nodal Protected
-                  </p>
-                </div>
-
+                <p className="text-[11px] text-slate-500 leading-tight">
+                  4.8/5 rating from Indian buyers &amp; sellers
+                </p>
               </div>
-            </div>
 
-            {/* Desktop Right Column: Interactive Instant Rate & Corridor Estimator */}
-            <div className="hidden md:flex md:col-span-5 lg:col-span-5 items-center justify-center relative">
-              <div className="w-full max-w-md rounded-3xl bg-white border border-slate-200 p-5 shadow-sm relative overflow-hidden flex flex-col space-y-4">
-                
-                {/* Dual Mode Tabs: Rate & Corridor Estimator vs Quick Track */}
-                <div className="flex items-center justify-between bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setHeroTab('ESTIMATOR')}
-                    className={`flex-1 py-1.5 px-3 rounded-xl font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                      heroTab === 'ESTIMATOR'
-                        ? 'bg-white text-[#0066FF] shadow-xs'
-                        : 'text-slate-500 hover:text-slate-900'
-                    }`}
-                  >
-                    <Truck className="w-4 h-4" />
-                    <span>Rate &amp; Corridor Quote</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setHeroTab('TRACK')}
-                    className={`flex-1 py-1.5 px-3 rounded-xl font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-                      heroTab === 'TRACK'
-                        ? 'bg-white text-emerald-700 shadow-xs'
-                        : 'text-slate-500 hover:text-slate-900'
-                    }`}
-                  >
-                    <Search className="w-4 h-4" />
-                    <span>Quick Track</span>
-                  </button>
+              {/* Prop 4: Real People Support */}
+              <div className="space-y-1">
+                <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-900">
+                  <Headphones className="w-4 h-4 text-[#0066FF] shrink-0" />
+                  <span>Real People Support</span>
                 </div>
-
-                {heroTab === 'ESTIMATOR' ? (
-                  /* TAB 1: INSTANT RATE & ROUTE ESTIMATOR */
-                  <div className="space-y-3.5 animate-in fade-in">
-                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                      <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-[#0066FF]" />
-                        <span>Instant National Route Quote</span>
-                      </span>
-                      <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
-                        19,240+ PINs Active
-                      </span>
-                    </div>
-
-                    {/* From & To PIN inputs */}
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div>
-                        <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                          Pickup PIN:
-                        </label>
-                        <input
-                          type="text"
-                          value={estFromPin}
-                          onChange={(e) => setEstFromPin(e.target.value)}
-                          placeholder="e.g. 302017"
-                          maxLength={6}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 outline-hidden focus:border-[#0066FF]"
-                        />
-                        <span className="text-[10px] text-slate-500 font-semibold block mt-1 truncate">
-                          {estOrigin.city ? `${estOrigin.city}, ${estOrigin.state}` : 'Invalid PIN'}
-                        </span>
-                      </div>
-
-                      <div>
-                        <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                          Delivery PIN:
-                        </label>
-                        <input
-                          type="text"
-                          value={estToPin}
-                          onChange={(e) => setEstToPin(e.target.value)}
-                          placeholder="e.g. 110001"
-                          maxLength={6}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 outline-hidden focus:border-[#0066FF]"
-                        />
-                        <span className="text-[10px] text-slate-500 font-semibold block mt-1 truncate">
-                          {estDest.city ? `${estDest.city}, ${estDest.state}` : 'Invalid PIN'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Route Corridor & Distance Badge */}
-                    <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200 flex items-center justify-between text-xs">
-                      <div className="min-w-0 pr-2">
-                        <span className="text-[10px] font-bold text-[#0066FF] block uppercase tracking-wider">
-                          Linehaul Route Corridor
-                        </span>
-                        <span className="font-bold text-[#0F172A] text-[11px] block truncate">
-                          {estRoute.corridorName}
-                        </span>
-                      </div>
-                      <span className="text-xs font-black text-[#0066FF] font-mono bg-white px-2 py-0.5 rounded border border-blue-200 shrink-0">
-                        {estDistance} km
-                      </span>
-                    </div>
-
-                    {/* Gadget Value & Insurance */}
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-[11px] font-bold text-slate-700">
-                          Gadget Value (₹):
-                        </label>
-                        <span className="text-[10px] text-slate-500 font-medium">
-                          Transit Insurance: <strong className="text-emerald-700 font-bold font-mono">₹{estInsurance}</strong> (~0.5%)
-                        </span>
-                      </div>
-                      <input
-                        type="number"
-                        value={estItemValue}
-                        onChange={(e) => setEstItemValue(Math.max(0, Number(e.target.value) || 0))}
-                        step={1000}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 outline-hidden focus:border-[#0066FF]"
-                      />
-                    </div>
-
-                    {/* Speed Tier Selector */}
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
-                        Delivery Speed Tier:
-                      </label>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {[
-                          { id: 'STANDARD_GROUND' as const, label: 'Ground', days: '7–8d', price: estPricing['STANDARD_GROUND']?.totalUpfront || 149 },
-                          { id: 'PRIORITY_EXPRESS' as const, label: 'Priority', days: '3–4d', price: estPricing['PRIORITY_EXPRESS']?.totalUpfront || 299 },
-                          { id: 'FASTEST_AIR_RUSH' as const, label: 'Air Rush', days: '2d', price: estPricing['FASTEST_AIR_RUSH']?.totalUpfront || 449 },
-                        ].map((t) => (
-                          <button
-                            key={t.id}
-                            type="button"
-                            onClick={() => setEstTier(t.id)}
-                            className={`p-2 rounded-xl border text-center transition cursor-pointer ${
-                              estTier === t.id
-                                ? 'bg-blue-50 border-[#0066FF] text-[#0066FF] shadow-2xs'
-                                : 'bg-slate-50/60 border-slate-200 text-slate-700 hover:bg-slate-100'
-                            }`}
-                          >
-                            <div className="text-[11px] font-bold">{t.label}</div>
-                            <div className="text-[10px] text-slate-500 font-medium">{t.days}</div>
-                            <div className="text-xs font-black mt-0.5 font-mono">₹{t.price}</div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Total Upfront Fee Summary */}
-                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                      <div>
-                        <span className="text-[11px] font-bold text-slate-600 block">
-                          Total Upfront Fee:
-                        </span>
-                        <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
-                          <Check className="w-3 h-3 text-emerald-600" />
-                          <span>10-min doorstep unboxing included</span>
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-lg font-black font-mono text-[#0F172A] block leading-none">
-                          ₹{estTotalUpfront}
-                        </span>
-                        <span className="text-[9px] text-slate-500">
-                          (₹{estShippingCost} ship + ₹{estInsurance} ins)
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Action CTA */}
-                    <button
-                      type="button"
-                      onClick={handleProceedWithEstimatedRoute}
-                      className="w-full py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/25 transition active:scale-98 cursor-pointer flex items-center justify-center gap-2"
-                    >
-                      <span>Proceed to Consignment Booking</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ) : (
-                  /* TAB 2: QUICK TRACK CONSIGNMENT */
-                  <form onSubmit={handleHeroTrackSubmit} className="space-y-4 animate-in fade-in py-2">
-                    <div className="text-center space-y-1">
-                      <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#0066FF] border border-blue-100 flex items-center justify-center mx-auto mb-2">
-                        <Search className="w-5 h-5" />
-                      </div>
-                      <h3 className="text-sm font-bold text-[#0F172A]">Direct Consignment Lookup</h3>
-                      <p className="text-[11px] text-slate-500">
-                        Query live telemetry, chain of custody, and unboxing verification.
-                      </p>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-[11px] font-bold text-slate-700 block">
-                        Tracking ID or Consignment ID:
-                      </label>
-                      <input
-                        type="text"
-                        value={heroTrackInput}
-                        onChange={(e) => setHeroTrackInput(e.target.value)}
-                        placeholder="e.g. SS-TRK-482910 or SS48291"
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 outline-hidden focus:border-[#0066FF]"
-                      />
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/25 transition active:scale-98 cursor-pointer flex items-center justify-center gap-2"
-                    >
-                      <Search className="w-3.5 h-3.5" />
-                      <span>Track Consignment &rarr;</span>
-                    </button>
-
-                    <div className="pt-2 border-t border-slate-100 space-y-2">
-                      <div className="flex items-center gap-2 text-[11px] text-slate-600 font-medium">
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span>Officer Rahul K. (#KA-4012 Certified Custody)</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-[11px] text-slate-600 font-medium">
-                        <Lock className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                        <span>Encrypted Telephony Bridge &bull; 100% Caller Privacy</span>
-                      </div>
-                    </div>
-                  </form>
-                )}
-
+                <p className="text-[11px] text-slate-500 leading-tight">
+                  Dedicated dispute resolution team
+                </p>
               </div>
             </div>
 
           </div>
-        </section>
 
-        {/* ======================================================================= */}
-        {/* TWO-COLUMN SECTION: Shipments & Simulator + Live Ledger                  */}
-        {/* ======================================================================= */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-
-          {/* LEFT COLUMN (Shipments, Quick Actions, Live Ledger) */}
-          <div className="lg:col-span-7 xl:col-span-7 space-y-6">
-
-            {/* ------------------------------------------------------------------- */}
-            {/* YOUR SHIPMENTS: Empty State or Active Order                         */}
-            {/* ------------------------------------------------------------------- */}
-            <section className="space-y-2">
-              <div className="flex items-center justify-between">
-                <h2 className="text-sm sm:text-base font-bold text-[#0F172A]">
-                  Your Shipments
-                </h2>
-                <Link
-                  href="/in/profile"
-                  className="text-xs font-semibold text-[#0066FF] hover:underline flex items-center gap-0.5"
+          {/* Right Hero Visual Container with Tab Switcher */}
+          <div className="lg:col-span-6 xl:col-span-6">
+            <div className="rounded-3xl bg-white border border-slate-200 shadow-sm p-3 sm:p-5 relative overflow-hidden">
+              
+              {/* Tab Selector Header: Mockup Preview vs Live Route Estimator */}
+              <div className="flex items-center justify-between bg-slate-100 p-1 rounded-2xl mb-4 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setHeroView('PREVIEW')}
+                  className={`flex-1 py-2 px-3 rounded-xl font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    heroView === 'PREVIEW'
+                      ? 'bg-white text-[#0066FF] shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
                 >
-                  <span>View all</span>
-                  <ChevronRight className="w-3 h-3" />
-                </Link>
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Doorstep Escrow Preview</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHeroView('ESTIMATOR')}
+                  className={`flex-1 py-2 px-3 rounded-xl font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                    heroView === 'ESTIMATOR'
+                      ? 'bg-white text-emerald-700 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  <Truck className="w-4 h-4" />
+                  <span>Instant Rate &amp; Route Estimator</span>
+                </button>
               </div>
 
-              {activeShipment ? (
-                /* Active Shipment HUD Card */
-                <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-2xs hover:border-slate-300 transition space-y-3.5">
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      <span>{activeShipment.status === 'COMPLETED' ? 'Delivered Safely' : activeShipment.status === 'IN_TRANSIT' ? 'In Transit' : 'Active Delivery'}</span>
-                    </span>
-                    <span className="text-xs font-bold text-[#0F172A]">
-                      {activeShipment.status === 'COMPLETED' ? 'Handshake Completed' : 'ETA Today 2:40–4:10 PM'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="min-w-0 pr-2">
-                      <h3 className="text-sm sm:text-base font-bold text-[#0F172A] truncate">{activeShipment.title}</h3>
-                      <p className="text-xs text-[#64748B] truncate mt-0.5">Order #{activeShipment.id} &bull; {activeShipment.city} &rarr; {activeShipment.buyer?.city || 'Jaipur'}</p>
+              {/* VIEW 1: PREVIEW (Doorstep Unboxing Box + Floating Verification Card) */}
+              {heroView === 'PREVIEW' ? (
+                <div className="relative rounded-2xl overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/60 p-2 sm:p-4 border border-slate-200/80">
+                  
+                  {/* Visual Background with Doorstep Box & Doodles */}
+                  <div className="relative aspect-4/3 sm:aspect-16/10 rounded-xl overflow-hidden shadow-inner flex items-center justify-center">
+                    <img
+                      src="/images/hero_visual_full.webp?v=3"
+                      alt="SafeShip Doorstep Open Box Inspection with Apple iPhone 15 Pro Max Verification"
+                      className="w-full h-full object-cover object-top select-none"
+                    />
+
+                    {/* Interactive Overlay Callouts & Live Status Pill */}
+                    <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-3 py-1 rounded-full border border-slate-200 text-[11px] font-bold text-slate-800 flex items-center gap-1.5 shadow-2xs">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      <span>Live Doorstep Unboxing Active</span>
                     </div>
-                    <Link
-                      href={`/in/track/${activeShipment.id}`}
-                      className="px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-xs transition shrink-0"
-                    >
-                      Track Live &rarr;
+
+                    {/* Interactive Test Action on the Floating Card */}
+                    <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4">
+                      <button
+                        type="button"
+                        onClick={handleSimulatePaymentRelease}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black shadow-lg shadow-emerald-600/30 transition active:scale-95 cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Interactive Payment Test</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Payment Release Simulated Notification */}
+                  {paidToast && (
+                    <div className="absolute inset-x-4 top-14 bg-emerald-900/90 text-white backdrop-blur-md p-3 rounded-2xl border border-emerald-400 text-xs font-semibold shadow-2xl flex items-center justify-between animate-in fade-in slide-in-from-top-2">
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-300" />
+                        <span>Doorstep Inspection Passed! Escrow released to seller via ICICI Nodal Rail.</span>
+                      </div>
+                      <button type="button" onClick={() => setPaidToast(false)} className="text-emerald-300 hover:text-white">
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Micro Footer inside Preview */}
+                  <div className="pt-3 flex items-center justify-between text-[11px] text-slate-500 font-medium">
+                    <span className="flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>10-Min Power-on &amp; IMEI Check</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Lock className="w-3.5 h-3.5 text-[#0066FF]" />
+                      <span>RBI Section 10A Escrow</span>
+                    </span>
+                    <Link href="/in/open-box" className="text-[#0066FF] font-bold hover:underline">
+                      Watch Live Demo &rarr;
                     </Link>
                   </div>
                 </div>
               ) : (
-                /* Empty State with Action */
-                <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-2xs flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#EFF6FF] text-[#0066FF] flex items-center justify-center shrink-0">
-                      <Package className="w-5 h-5 sm:w-6 sm:h-6" />
+                /* VIEW 2: INSTANT RATE & ROUTE ESTIMATOR */
+                <div className="space-y-4 animate-in fade-in">
+                  <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-[#0066FF]" />
+                      <span>Instant National Route Quote</span>
+                    </span>
+                    <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full border border-emerald-200">
+                      19,240+ PINs Active
+                    </span>
+                  </div>
+
+                  {/* From & To PIN inputs */}
+                  <div className="grid grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                        Pickup PIN:
+                      </label>
+                      <input
+                        type="text"
+                        value={estFromPin}
+                        onChange={(e) => setEstFromPin(e.target.value)}
+                        placeholder="e.g. 302017"
+                        maxLength={6}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 outline-hidden focus:border-[#0066FF]"
+                      />
+                      <span className="text-[10px] text-slate-500 font-semibold block mt-1 truncate">
+                        {estOrigin.city ? `${estOrigin.city}, ${estOrigin.state}` : 'Invalid PIN'}
+                      </span>
                     </div>
-                    <div className="min-w-0">
-                      <h3 className="text-xs sm:text-sm font-bold text-[#0F172A] truncate">
-                        No active shipments
-                      </h3>
-                      <p className="text-[11px] text-[#64748B] mt-0.5">
-                        Track parcels or book a new doorstep open-box consignment.
-                      </p>
+
+                    <div>
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                        Delivery PIN:
+                      </label>
+                      <input
+                        type="text"
+                        value={estToPin}
+                        onChange={(e) => setEstToPin(e.target.value)}
+                        placeholder="e.g. 110001"
+                        maxLength={6}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 outline-hidden focus:border-[#0066FF]"
+                      />
+                      <span className="text-[10px] text-slate-500 font-semibold block mt-1 truncate">
+                        {estDest.city ? `${estDest.city}, ${estDest.state}` : 'Invalid PIN'}
+                      </span>
                     </div>
                   </div>
-                  <Link
-                    href="/in/deals/new?type=send"
-                    className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-2xs transition active:scale-95 shrink-0 whitespace-nowrap"
+
+                  {/* Route Corridor & Distance Badge */}
+                  <div className="p-2.5 rounded-xl bg-blue-50/70 border border-blue-200 flex items-center justify-between text-xs">
+                    <div className="min-w-0 pr-2">
+                      <span className="text-[10px] font-bold text-[#0066FF] block uppercase tracking-wider">
+                        Linehaul Route Corridor
+                      </span>
+                      <span className="font-bold text-[#0F172A] text-[11px] block truncate">
+                        {estRoute.corridorName}
+                      </span>
+                    </div>
+                    <span className="text-xs font-black text-[#0066FF] font-mono bg-white px-2 py-0.5 rounded border border-blue-200 shrink-0">
+                      {estDistance} km
+                    </span>
+                  </div>
+
+                  {/* Gadget Value & Insurance */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-slate-700">
+                        Gadget Value (₹):
+                      </label>
+                      <span className="text-[10px] text-slate-500 font-medium">
+                        Transit Insurance: <strong className="text-emerald-700 font-bold font-mono">₹{estInsurance}</strong> (~0.5%)
+                      </span>
+                    </div>
+                    <input
+                      type="number"
+                      value={estItemValue}
+                      onChange={(e) => setEstItemValue(Math.max(0, Number(e.target.value) || 0))}
+                      step={1000}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 outline-hidden focus:border-[#0066FF]"
+                    />
+                  </div>
+
+                  {/* Speed Tier Selector */}
+                  <div>
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">
+                      Delivery Speed Tier:
+                    </label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {[
+                        { id: 'STANDARD_GROUND' as const, label: 'Ground', days: '7–8d', price: estPricing['STANDARD_GROUND']?.totalUpfront || 149 },
+                        { id: 'PRIORITY_EXPRESS' as const, label: 'Priority', days: '3–4d', price: estPricing['PRIORITY_EXPRESS']?.totalUpfront || 299 },
+                        { id: 'FASTEST_AIR_RUSH' as const, label: 'Air Rush', days: '2d', price: estPricing['FASTEST_AIR_RUSH']?.totalUpfront || 449 },
+                      ].map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => setEstTier(t.id)}
+                          className={`p-2 rounded-xl border text-center transition cursor-pointer ${
+                            estTier === t.id
+                              ? 'bg-blue-50 border-[#0066FF] text-[#0066FF] shadow-2xs'
+                              : 'bg-slate-50/60 border-slate-200 text-slate-700 hover:bg-slate-100'
+                          }`}
+                        >
+                          <div className="text-[11px] font-bold">{t.label}</div>
+                          <div className="text-[10px] text-slate-500 font-medium">{t.days}</div>
+                          <div className="text-xs font-black mt-0.5 font-mono">₹{t.price}</div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Total Upfront Fee Summary */}
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-600 block">
+                        Total Upfront Fee:
+                      </span>
+                      <span className="text-[10px] text-emerald-700 font-semibold flex items-center gap-1">
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span>10-min doorstep unboxing included</span>
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-lg font-black font-mono text-[#0F172A] block leading-none">
+                        ₹{estTotalUpfront}
+                      </span>
+                      <span className="text-[9px] text-slate-500">
+                        (₹{estShippingCost} ship + ₹{estInsurance} ins)
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Action CTA */}
+                  <button
+                    type="button"
+                    onClick={handleProceedWithEstimatedRoute}
+                    className="w-full py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/25 transition active:scale-98 cursor-pointer flex items-center justify-center gap-2"
                   >
-                    <Package className="w-3.5 h-3.5" />
-                    <span>Book a Shipment</span>
-                  </Link>
+                    <span>Proceed to Consignment Booking</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               )}
-            </section>
 
-            {/* ------------------------------------------------------------------- */}
-            {/* QUICK ACTIONS: 3-Card Grid                                          */}
-            {/* ------------------------------------------------------------------- */}
-            <section className="space-y-2">
-              <h2 className="text-sm sm:text-base font-bold text-[#0F172A]">
-                Quick Actions
-              </h2>
-
-              <div className="grid grid-cols-3 gap-2 sm:gap-3.5">
-                {/* Action 1: Book Consignment */}
-                <Link
-                  href="/in/deals/new?type=send"
-                  className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 flex flex-col justify-between hover:border-[#0066FF] shadow-2xs hover:shadow-xs transition group cursor-pointer"
-                >
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#EFF6FF] text-[#0066FF] flex items-center justify-center mb-2 group-hover:scale-105 transition">
-                    <Package className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between text-xs font-bold text-[#0F172A] leading-tight">
-                      <span className="truncate">Book Shipment</span>
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition shrink-0 ml-0.5" />
-                    </div>
-                    <p className="text-[10px] text-[#64748B] mt-0.5">From ₹49 distance-based</p>
-                  </div>
-                </Link>
-
-                {/* Action 2: Verify a delivery */}
-                <Link
-                  href="/in/open-box"
-                  className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 flex flex-col justify-between hover:border-emerald-500 shadow-2xs hover:shadow-xs transition group cursor-pointer"
-                >
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#ECFDF5] text-emerald-600 flex items-center justify-center mb-2 group-hover:scale-105 transition">
-                    <Eye className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between text-xs font-bold text-[#0F172A] leading-tight">
-                      <span className="truncate">Verify delivery</span>
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition shrink-0 ml-0.5" />
-                    </div>
-                    <p className="text-[10px] text-[#64748B] mt-0.5 truncate">10-min unboxing test</p>
-                  </div>
-                </Link>
-
-                {/* Action 3: Track a shipment */}
-                <Link
-                  href="/in/track"
-                  className="bg-white rounded-2xl border border-slate-200 p-3 sm:p-4 flex flex-col justify-between hover:border-purple-500 shadow-2xs hover:shadow-xs transition group cursor-pointer text-left w-full"
-                >
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-[#FAF5FF] text-purple-600 flex items-center justify-center mb-2 group-hover:scale-105 transition">
-                    <Search className="w-4 h-4 sm:w-5 sm:h-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center justify-between text-xs font-bold text-[#0F172A] leading-tight">
-                      <span className="truncate">Track shipment</span>
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition shrink-0 ml-0.5" />
-                    </div>
-                    <p className="text-[10px] text-[#64748B] mt-0.5">Live Telemetry &amp; OTP</p>
-                  </div>
-                </Link>
-              </div>
-            </section>
-
-            {/* ------------------------------------------------------------------- */}
-            {/* LIVE VERIFIED P2P CONSIGNMENTS LEDGER (FILLS DESKTOP VOID)           */}
-            {/* ------------------------------------------------------------------- */}
-            <section className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-5 shadow-2xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                    Live Verified Doorstep Ledgers
-                  </h3>
-                </div>
-                <span className="text-[10px] text-[#0066FF] font-semibold">Real-Time Escrow Handshakes</span>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                {/* Item 1: MacBook Air M1 */}
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 hover:border-blue-200 transition flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 font-bold text-slate-900">
-                      <span>Apple MacBook Air M1 (Rose Gold)</span>
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800">
-                        INSPECTED ✓
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Rameshwaram (623526) &rarr; Delhi NCR (110001) &bull; Serial: C02G... &bull; 10-Min Audit Passed
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="font-mono font-bold text-slate-900">₹9,500</div>
-                    <span className="text-[10px] text-emerald-600 font-semibold">Escrow Released</span>
-                  </div>
-                </div>
-
-                {/* Item 2: iPhone 14 Pro */}
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 hover:border-blue-200 transition flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 font-bold text-slate-900">
-                      <span>Apple iPhone 14 Pro 128GB (Deep Purple)</span>
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-100 text-emerald-800">
-                        IMEI MATCHED ✓
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Mumbai (400001) &rarr; Bengaluru (560001) &bull; Battery 88% &bull; TrueTone OK
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="font-mono font-bold text-slate-900">₹41,000</div>
-                    <span className="text-[10px] text-emerald-600 font-semibold">Escrow Released</span>
-                  </div>
-                </div>
-
-                {/* Item 3: Sony Alpha A7 IV */}
-                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/70 hover:border-blue-200 transition flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 font-bold text-slate-900">
-                      <span>Sony Alpha A7 IV Body + 24-70mm GM</span>
-                      <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-100 text-blue-800">
-                        OUT FOR DELIVERY
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      Jaipur (302017) &rarr; Hyderabad (500001) &bull; Insured for ₹1,35,000 (ICICI Lombard)
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <div className="font-mono font-bold text-slate-900">₹1,35,000</div>
-                    <span className="text-[10px] text-[#0066FF] font-semibold">In Escrow Lock</span>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* ------------------------------------------------------------------- */}
-            {/* ESCROW PROTECTION MATRIX & ACTIVE ELECTRONIC CORRIDORS              */}
-            {/* FILLS THE EMPTY DESKTOP VOID AND BALANCES WITH THE RIGHT COLUMN      */}
-            {/* ------------------------------------------------------------------- */}
-            <section className="bg-gradient-to-br from-slate-900 via-slate-900 to-blue-950 text-white rounded-3xl p-5 sm:p-6 shadow-md border border-slate-800 space-y-4">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3 flex-wrap gap-2">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-blue-500/20 border border-blue-400/30 text-blue-400 flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-white tracking-tight">
-                      Doorstep Escrow Security Protocol
-                    </h3>
-                    <p className="text-[11px] text-slate-400">
-                      Standard operating procedure on every high-value consignment
-                    </p>
-                  </div>
-                </div>
-                <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold tracking-tight">
-                  100% RBI TRUSTEE BACKED
-                </span>
-              </div>
-
-              {/* 3 Pillars Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 hover:border-blue-400/40 transition">
-                  <div className="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center mb-2">
-                    <Lock className="w-4 h-4" />
-                  </div>
-                  <span className="text-xs font-bold text-white block">RBI Nodal Custody</span>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                    Buyer funds locked in segregated ICICI Bank trustee escrow until doorstep OTP release.
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 hover:border-emerald-400/40 transition">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2">
-                    <Clock className="w-4 h-4" />
-                  </div>
-                  <span className="text-xs font-bold text-white block">10-Min Power-On Audit</span>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                    Officer unboxes the device. Test screen, camera, IMEI, and battery before paying.
-                  </p>
-                </div>
-
-                <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 hover:border-purple-400/40 transition">
-                  <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center mb-2">
-                    <Truck className="w-4 h-4" />
-                  </div>
-                  <span className="text-xs font-bold text-white block">Zero-Risk Doorstep Return</span>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
-                    If fake or broken, officer reseals on the spot. 100% instant buyer refund.
-                  </p>
-                </div>
-              </div>
-
-              {/* Active High-Speed Corridors */}
-              <div className="pt-2 border-t border-white/10">
-                <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-300">
-                    High-Frequency Verified Corridors
-                  </span>
-                  <span className="text-[10px] text-blue-400 font-semibold">
-                    Live SLA Monitoring
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                  <Link
-                    href="/in/deals/new?type=send"
-                    className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-blue-400/60 hover:bg-white/10 transition group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-white text-[11px]">Mumbai ⇄ Bengaluru</span>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">
-                        24h Air
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5">
-                      <span>99.9% On-Time</span>
-                      <span className="text-blue-400 group-hover:translate-x-0.5 transition font-bold">Book &rarr;</span>
-                    </div>
-                  </Link>
-
-                  <Link
-                    href="/in/deals/new?type=send"
-                    className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-blue-400/60 hover:bg-white/10 transition group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-white text-[11px]">Delhi ⇄ Hyderabad</span>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 font-bold">
-                        36h Express
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5">
-                      <span>OEM Serial Audit</span>
-                      <span className="text-blue-400 group-hover:translate-x-0.5 transition font-bold">Book &rarr;</span>
-                    </div>
-                  </Link>
-
-                  <Link
-                    href="/in/deals/new?type=send"
-                    className="p-2.5 rounded-xl bg-white/5 border border-white/10 hover:border-blue-400/60 hover:bg-white/10 transition group"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-white text-[11px]">Pune ⇄ Chennai</span>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold">
-                        48h Direct
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1.5">
-                      <span>100% Escrow Guard</span>
-                      <span className="text-blue-400 group-hover:translate-x-0.5 transition font-bold">Book &rarr;</span>
-                    </div>
-                  </Link>
-                </div>
-              </div>
-            </section>
-
-          </div>
-
-          {/* RIGHT COLUMN (Protected By SafeShip + High-Res AI Demo) */}
-          <div className="lg:col-span-5 xl:col-span-5 space-y-6">
-
-            {/* ------------------------------------------------------------------- */}
-            {/* PROTECTED BY SAFESHIP CARD                                          */}
-            {/* ------------------------------------------------------------------- */}
-            <section>
-              <div className="bg-white rounded-2xl border border-slate-200 p-4 shadow-2xs flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-[#0066FF] text-white flex items-center justify-center shrink-0 shadow-xs">
-                    <ShieldCheck className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-xs sm:text-sm font-bold text-[#0F172A]">
-                      Protected by SafeShip
-                    </h3>
-                    <p className="text-[11px] text-[#64748B] truncate mt-0.5">
-                      Open-box audit &bull; RBI Nodal Escrow &bull; Live GPS tracking
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href="/in/safety"
-                  className="text-xs font-semibold text-[#0066FF] hover:underline flex items-center gap-0.5 shrink-0"
-                >
-                  <span>Learn more</span>
-                  <ChevronRight className="w-3 h-3" />
-                </Link>
-              </div>
-            </section>
-
-            {/* ------------------------------------------------------------------- */}
-            {/* REAL DOORSTEP OPEN-BOX & AI HARDWARE INSPECTION (AUTHENTIC WORKFLOW) */}
-            {/* ------------------------------------------------------------------- */}
-            <section>
-              <div className="bg-gradient-to-br from-[#EFF6FF] via-[#EEF2FF] to-white rounded-3xl border border-[#DBEAFE] p-4 sm:p-6 shadow-xs flex flex-col justify-between relative overflow-hidden group hover:border-[#BFDBFE] transition duration-200">
-                
-                {/* Header Row */}
-                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#0066FF] bg-white border border-[#BFDBFE] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 shadow-2xs">
-                      <span>★</span>
-                      <span>DOORSTEP OPEN-BOX AUDIT</span>
-                    </span>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-md flex items-center gap-1">
-                      <span>✓</span>
-                      <span>APPLE &amp; OEM DATABASE MATCHED</span>
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-mono text-slate-500 bg-white/80 px-2 py-0.5 rounded border border-slate-200">
-                    Serial: D4G7K3Y9L2
-                  </span>
-                </div>
-
-                {/* Content Copy */}
-                <div className="space-y-1 mb-3.5">
-                  <h3 className="text-base sm:text-lg font-bold text-[#0F172A] tracking-tight">
-                    See SafeShip Open-Box AI Verification in Action
-                  </h3>
-                  <p className="text-xs text-[#64748B] leading-relaxed">
-                    Watch our 5-step doorstep inspection protocol: the officer opens the package in front of you, Gemini Vision cross-checks IMEI and hardware serial against the OEM registry, and funds release only when you approve.
-                  </p>
-                </div>
-
-                {/* High-Resolution Authentic Inspection Showcase Image */}
-                <div className="relative rounded-2xl overflow-hidden border border-[#CBD5E1] shadow-md bg-slate-950 my-1 aspect-16/10 sm:aspect-21/10 group-hover:shadow-lg transition">
-                  <img
-                    src="/images/hero_openbox_authentic.jpg"
-                    alt="SafeShip Real Doorstep Open-Box Inspection with Apple Serial D4G7K3Y9L2 and Gemini Vision Audit"
-                    className="w-full h-full object-cover object-center select-none pointer-events-none transform group-hover:scale-102 transition duration-500 opacity-98"
-                  />
-                  {/* Overlay telemetry HUD */}
-                  <div className="absolute top-3 left-3 bg-[#0F172A]/85 text-white px-2.5 py-1 rounded-lg backdrop-blur-md border border-white/20 text-[10px] sm:text-[11px] font-mono font-bold flex items-center gap-1.5 shadow-sm">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>DEVICE: IPHONE 15 PRO 256GB</span>
-                    <span className="text-slate-400">|</span>
-                    <span className="text-emerald-300">SERIAL: D4G7K3Y9L2</span>
-                  </div>
-
-                  <div className="absolute bottom-3 inset-x-3 flex items-center justify-between text-[10px] sm:text-[11px] font-mono font-bold flex-wrap gap-2">
-                    <span className="bg-[#0F172A]/85 text-white px-2.5 py-1 rounded-lg backdrop-blur-md border border-white/20">
-                      BATTERY: 100% &bull; SCREEN: OEM GENUINE &bull; FACE ID: OK
-                    </span>
-                    <span className="bg-emerald-600 text-white px-2.5 py-1 rounded-lg shadow-xs flex items-center gap-1">
-                      <span>✓</span>
-                      <span>INSPECTION PASSED</span>
-                    </span>
-                  </div>
-                </div>
-
-                {/* 5-Step Doorstep Delivery Workflow */}
-                <div className="mt-4 pt-4 border-t border-blue-100/80">
-                  <div className="text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-2 flex items-center justify-between">
-                    <span>5-Step Delivery &amp; Inspection Workflow</span>
-                    <span className="text-[10px] text-[#0066FF] font-semibold lowercase">standard on every consignment</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center">
-                    {[
-                      { step: '1', title: 'Package Arrives', desc: 'Bonded officer at door' },
-                      { step: '2', title: 'Open & Inspect', desc: '10-min unboxing test' },
-                      { step: '3', title: 'AI Verifies', desc: 'IMEI & serial check' },
-                      { step: '4', title: 'Confirm & Pay', desc: 'Merchandise escrow' },
-                      { step: '5', title: 'Receive Safe', desc: '100% genuine or ₹0' }
-                    ].map((s) => (
-                      <div key={s.step} className="p-2 rounded-xl bg-white/80 border border-blue-100 space-y-0.5 shadow-2xs">
-                        <div className="w-5 h-5 mx-auto rounded-full bg-[#0066FF] text-white text-[10px] font-bold flex items-center justify-center">
-                          {s.step}
-                        </div>
-                        <div className="text-[11px] font-bold text-slate-900 leading-tight pt-0.5">
-                          {s.title}
-                        </div>
-                        <div className="text-[10px] text-slate-500 leading-tight">
-                          {s.desc}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Call to Action Link Button */}
-                <div className="pt-4 mt-2 flex items-center justify-between border-t border-slate-100">
-                  <span className="text-xs text-slate-600 font-medium hidden sm:inline">
-                    Simulated camera unboxing, optical OCR &amp; escrow handshake
-                  </span>
-                  <Link
-                    href="/in/open-box?deal=SS48291"
-                    className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-xs hover:shadow-md transition active:scale-95 whitespace-nowrap ml-auto"
-                  >
-                    <span>Launch Open-Box Simulator</span>
-                    <span>&rarr;</span>
-                  </Link>
-                </div>
-
-              </div>
-            </section>
-
+            </div>
           </div>
 
         </div>
+      </section>
 
-        {/* ======================================================================= */}
-        {/* NEW FULL-WIDTH SECTION 1: THE 4 INSTITUTIONAL TRUST PILLARS            */}
-        {/* ======================================================================= */}
-        <section className="pt-4 border-t border-slate-200">
-          <div className="text-center max-w-2xl mx-auto mb-8 space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0066FF] text-xs font-bold">
-              <ShieldCheck className="w-4 h-4 text-[#0066FF]" />
-              <span>National Doorstep Escrow Architecture</span>
+      {/* ========================================================================= */}
+      {/* 4. TRUSTED PARTNER LOGOS STRIP (ICICI, RAZORPAY, BLUE DART, DELHIVERY)    */}
+      {/* ========================================================================= */}
+      <section className="w-full bg-white border-y border-slate-200 py-6 sm:py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
+          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-slate-400">
+            Trusted by Leading Logistics &amp; Payment Partners
+          </p>
+
+          {/* Clean Branded Partner Strip */}
+          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 lg:gap-14 opacity-80 hover:opacity-100 transition">
+            <div className="flex items-center gap-2 text-slate-700 font-black text-sm sm:text-base tracking-tight">
+              <span className="w-6 h-6 rounded bg-[#F15A24] text-white flex items-center justify-center text-xs font-bold">i</span>
+              <span>ICICI Bank</span>
             </div>
+
+            <div className="flex items-center gap-1.5 text-slate-700 font-black text-sm sm:text-base tracking-tight">
+              <span className="text-[#0C2340] font-black italic">Razorpay</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-slate-700 font-black text-sm sm:text-base tracking-tight">
+              <span className="text-[#002B66] font-black">BLUE DART</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-slate-700 font-black text-sm sm:text-base tracking-tight">
+              <span className="text-red-600 font-black">DELHIVERY</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-slate-700 font-black text-sm sm:text-base tracking-tight">
+              <span className="text-[#E31B23] font-black">Ecom Express</span>
+            </div>
+
+            <div className="flex items-center gap-2 text-slate-700 font-black text-sm sm:text-base tracking-tight">
+              <span className="text-red-700 font-bold">India Post</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 5. HOW SAFESHIP WORKS: 4-STEP PROCESS (EXACT MATCH TO MOCKUP)             */}
+      {/* ========================================================================= */}
+      <section id="how-it-works" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-10">
+        
+        {/* Section Header */}
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#0066FF] bg-blue-50 border border-blue-200 px-3 py-1 rounded-full inline-block">
+            Simple 4-Step Process
+          </span>
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-slate-900">
+            How SafeShip works
+          </h2>
+          <p className="text-sm sm:text-base text-slate-600">
+            No complicated setup. No blind payments. Just open, check, and pay.
+          </p>
+        </div>
+
+        {/* 4 Cards Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          
+          {/* Step 1: Book a Pickup */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition group flex flex-col justify-between space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#0066FF] flex items-center justify-center font-bold text-sm">
+                  <Package className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-mono font-bold text-slate-400">01</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                Book a Pickup
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Seller or buyer creates a shipment. Funds are safely deposited into bank escrow.
+              </p>
+            </div>
+            <div className="text-[11px] font-semibold text-[#0066FF] flex items-center gap-1">
+              <span>₹0 upfront product risk</span>
+            </div>
+          </div>
+
+          {/* Step 2: We Deliver */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition group flex flex-col justify-between space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#0066FF] flex items-center justify-center font-bold text-sm">
+                  <Truck className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-mono font-bold text-slate-400">02</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                We Deliver
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Bonded delivery partner picks up and safely transports your package across states.
+              </p>
+            </div>
+            <div className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+              <span>Tamper-evident sealed</span>
+            </div>
+          </div>
+
+          {/* Step 3: Open & Check */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition group flex flex-col justify-between space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#0066FF] flex items-center justify-center font-bold text-sm">
+                  <Eye className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-mono font-bold text-slate-400">03</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                Open &amp; Check
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Inspect the package at your doorstep before paying a single rupee for the item.
+              </p>
+            </div>
+            <div className="text-[11px] font-semibold text-[#0066FF] flex items-center gap-1">
+              <span>10-min live audit window</span>
+            </div>
+          </div>
+
+          {/* Step 4: Then Pay */}
+          <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition group flex flex-col justify-between space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
+                  <Check className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-mono font-bold text-slate-400">04</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                Then Pay
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Satisfied? Release the payment instantly. Not satisfied? Free instant return.
+              </p>
+            </div>
+            <div className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+              <span>100% money-back guarantee</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 6. "MORE THAN DELIVERY: A safer way to trade in India" STORY BANNER         */}
+      {/* ========================================================================= */}
+      <section id="features" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-[#0F172A] to-slate-900 text-white p-6 sm:p-10 lg:p-12 border border-slate-800 shadow-xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          
+          {/* Left Photo of Customer Unboxing with SafeShip */}
+          <div className="lg:col-span-5 flex items-center justify-center">
+            <div className="rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl relative max-w-sm w-full">
+              <img
+                src="/images/story_woman_unboxing_perfect.webp"
+                alt="Happy Indian customer safely unboxing secondhand gadget with SafeShip"
+                className="w-full h-auto object-cover select-none"
+              />
+              <div className="absolute bottom-3 inset-x-3 bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-xl text-[11px] font-mono text-emerald-400 border border-white/10 flex items-center justify-between">
+                <span>DOORSTEP VERIFICATION PASSED</span>
+                <span>OTP RELEASED ✓</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Content */}
+          <div className="lg:col-span-7 space-y-5">
+            <div className="space-y-2">
+              <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#0066FF] bg-blue-500/20 border border-blue-400/30 px-3 py-1 rounded-full inline-block">
+                More Than Delivery
+              </span>
+              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white leading-tight">
+                A safer way to trade in India
+              </h3>
+            </div>
+
+            <div className="space-y-3 text-xs sm:text-sm text-slate-300 leading-relaxed">
+              <p>
+                SafeShip was born from a simple belief: <strong>buying secondhand shouldn&apos;t feel like a gamble</strong>. Millions of Indians want to buy used phones, laptops, and gadgets online &mdash; but fear of scams holds them back.
+              </p>
+              <p>
+                We changed the rules. Every package is opened and verified before payment. Sellers get guaranteed payment; buyers get exactly what they ordered.
+              </p>
+              <p className="font-bold text-white text-sm">
+                Simple. Safe. Indian.
+              </p>
+            </div>
+
+            {/* Bullet Checkpoints */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2 text-xs text-slate-200">
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Every package inspected at doorstep</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>RBI-compliant escrow holds funds safely</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Instant refund if anything isn&apos;t right</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Available in 1,800+ cities and towns</span>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <Link
+                href="/in/deals/new?type=send"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-95 cursor-pointer"
+              >
+                <span>Book your first shipment</span>
+                <span>&rarr;</span>
+              </Link>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 7. NATIONAL IMPACT STATS STRIP                                            */}
+      {/* ========================================================================= */}
+      <section className="w-full bg-slate-900 text-white py-10 border-y border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
+            <div className="space-y-1">
+              <div className="text-3xl sm:text-4xl font-black font-mono text-white">50,000+</div>
+              <div className="text-xs text-slate-400 font-medium">Happy Customers</div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-3xl sm:text-4xl font-black font-mono text-[#0066FF]">1.8M+</div>
+              <div className="text-xs text-slate-400 font-medium">Packages Delivered</div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-3xl sm:text-4xl font-black font-mono text-white">1,800+</div>
+              <div className="text-xs text-slate-400 font-medium">Cities &amp; Towns</div>
+            </div>
+
+            <div className="space-y-1">
+              <div className="text-3xl sm:text-4xl font-black font-mono text-emerald-400">99.7%</div>
+              <div className="text-xs text-slate-400 font-medium">Successful Deliveries</div>
+            </div>
+          </div>
+
+          <div className="mt-6 text-center text-xs text-slate-400 font-mono">
+            <span>&ldquo;A Safer India, One Delivery at a Time. 🇮🇳&rdquo;</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 8. DETAILED COURIER FARE & SLA ESTIMATOR (SECTION #PRICING)                */}
+      {/* ========================================================================= */}
+      <section id="pricing" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-sm space-y-8">
+          
+          <div className="max-w-2xl mx-auto text-center space-y-2">
+            <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#0066FF] bg-blue-50 border border-blue-200 px-3 py-1 rounded-full inline-block">
+              Transparent Pricing Calculator
+            </span>
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-              How SafeShip Makes Courier Fraud Impossible
+              Calculate Distance, Transit Time &amp; Verified Fare
             </h2>
             <p className="text-xs sm:text-sm text-slate-600">
-              Unlike traditional couriers where you pay before opening, SafeShip combines doorstep physical unboxing with RBI trustee escrow.
+              Zero surprises. Calculate exact courier linehaul, ICICI Lombard cargo insurance, and doorstep open-box service.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {/* Pillar 1 */}
-            <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition group">
-              <div className="w-12 h-12 rounded-2xl bg-blue-50 text-[#0066FF] flex items-center justify-center mb-4 group-hover:scale-105 transition">
-                <Eye className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 mb-1.5">
-                10-Minute Doorstep Unboxing
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                You never pay blindly for a sealed cardboard carton. The delivery officer unboxes the device at your door and lets you power on, test display, and verify serials for 10 minutes.
-              </p>
-            </div>
-
-            {/* Pillar 2 */}
-            <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition group">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 group-hover:scale-105 transition">
-                <Lock className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 mb-1.5">
-                RBI Section 10A Escrow
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Merchandise funds are protected in segregated trustee accounts under ICICI Bank Trustees. Sellers are settled only after you physically approve the device and share the 6-digit OTP.
-              </p>
-            </div>
-
-            {/* Pillar 3 */}
-            <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition group">
-              <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4 group-hover:scale-105 transition">
-                <Shield className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 mb-1.5">
-                ₹0 Product Advance
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                When booking a shipment, you only pay a nominal courier linehaul fee. The full product cost (e.g. ₹10,000 or ₹40,000) is paid strictly at your doorstep via dynamic UPI QR code.
-              </p>
-            </div>
-
-            {/* Pillar 4 */}
-            <div className="p-5 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition group">
-              <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mb-4 group-hover:scale-105 transition">
-                <Award className="w-6 h-6" />
-              </div>
-              <h3 className="text-base font-bold text-slate-900 mb-1.5">
-                ₹10 Lakh Cargo Insurance
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Every consignment is underwritten by ICICI Lombard against all-risk transit damages, theft, or tampering. Claims are settled in 48 hours with guaranteed photographic unboxing logs.
-              </p>
-            </div>
-          </div>
-        </section>
-
-        {/* ======================================================================= */}
-        {/* NEW FULL-WIDTH SECTION 2: INTERACTIVE COURIER FARE & SLA CALCULATOR     */}
-        {/* ======================================================================= */}
-        <section className="bg-gradient-to-br from-slate-900 via-[#0F172A] to-slate-900 text-white rounded-3xl p-6 sm:p-8 lg:p-10 shadow-xl border border-slate-800">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
-            {/* Left Info & Inputs */}
-            <div className="lg:col-span-7 space-y-6">
-              <div className="space-y-2">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/20 text-[#0066FF] text-xs font-bold">
-                  <Truck className="w-3.5 h-3.5" />
-                  <span>Real-Time Pincode &amp; Linehaul Engine</span>
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-                  Instant Courier Fare &amp; Delivery SLA Estimator
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-400">
-                  Enter your pickup and destination pincodes to calculate road linehaul distance, transit duration, and verified open-box delivery rates.
-                </p>
-              </div>
-
-              {/* Form Grid */}
+            {/* Form Inputs */}
+            <div className="lg:col-span-7 space-y-5">
+              
+              {/* Pincodes */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
                     Pickup Pincode (Seller):
                   </label>
                   <div className="relative">
@@ -1423,17 +1088,17 @@ export default function HomePage() {
                       maxLength={6}
                       value={calcOrigin}
                       onChange={(e) => setCalcOrigin(e.target.value.replace(/\D/g, ''))}
-                      className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-mono text-white focus:border-[#0066FF] outline-hidden transition"
-                      placeholder="e.g. 623526 (Rameshwaram)"
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 focus:border-[#0066FF] outline-hidden transition"
+                      placeholder="e.g. 623526"
                     />
-                    <span className="absolute right-3 top-2.5 text-[10px] text-slate-400 font-bold">
+                    <span className="absolute right-3 top-2.5 text-[10px] text-slate-500 font-bold">
                       {calcRoute.originInfo.city}
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
                     Delivery Pincode (Buyer):
                   </label>
                   <div className="relative">
@@ -1442,317 +1107,185 @@ export default function HomePage() {
                       maxLength={6}
                       value={calcDest}
                       onChange={(e) => setCalcDest(e.target.value.replace(/\D/g, ''))}
-                      className="w-full px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-xs font-mono text-white focus:border-[#0066FF] outline-hidden transition"
-                      placeholder="e.g. 110001 (New Delhi)"
+                      className="w-full px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-mono font-bold text-slate-900 focus:border-[#0066FF] outline-hidden transition"
+                      placeholder="e.g. 110001"
                     />
-                    <span className="absolute right-3 top-2.5 text-[10px] text-slate-400 font-bold">
+                    <span className="absolute right-3 top-2.5 text-[10px] text-slate-500 font-bold">
                       {calcRoute.destInfo.city}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Category & Declared Value */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">
-                    Gadget Category:
-                  </label>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    {[
-                      { key: 'PHONE', label: '📱 iPhone / Phone' },
-                      { key: 'LAPTOP', label: '💻 MacBook / Laptop' },
-                      { key: 'CAMERA', label: '📷 Camera / Optics' },
-                      { key: 'WATCH', label: '⌚ Luxury Watch' }
-                    ].map((cat) => (
-                      <button
-                        key={cat.key}
-                        type="button"
-                        onClick={() => setCalcCategory(cat.key as any)}
-                        className={`p-2 rounded-xl text-left font-bold transition cursor-pointer border ${
-                          calcCategory === cat.key
-                            ? 'bg-[#0066FF] text-white border-[#0066FF]'
-                            : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                        }`}
-                      >
-                        {cat.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-xs font-bold text-slate-300">
-                      Declared Gadget Value:
-                    </label>
-                    <span className="text-xs font-mono font-bold text-emerald-400">
-                      ₹{calcValue.toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={3000}
-                    max={150000}
-                    step={1000}
-                    value={calcValue}
-                    onChange={(e) => setCalcValue(Number(e.target.value))}
-                    className="w-full accent-[#0066FF] cursor-pointer mt-2"
-                  />
-                  <div className="flex items-center justify-between text-[10px] text-slate-400 mt-1 font-mono">
-                    <span>₹3,000</span>
-                    <span>₹50,000</span>
-                    <span>₹1,50,000</span>
-                  </div>
+              {/* Gadget Category */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Device Category:
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                  {[
+                    { key: 'PHONE', label: '📱 iPhone / Phone' },
+                    { key: 'LAPTOP', label: '💻 MacBook / Laptop' },
+                    { key: 'CAMERA', label: '📷 Camera' },
+                    { key: 'WATCH', label: '⌚ Luxury Watch' }
+                  ].map((cat) => (
+                    <button
+                      key={cat.key}
+                      type="button"
+                      onClick={() => setCalcCategory(cat.key as any)}
+                      className={`p-2 rounded-xl text-center font-bold transition cursor-pointer border ${
+                        calcCategory === cat.key
+                          ? 'bg-[#0066FF] text-white border-[#0066FF] shadow-2xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Delivery Speed Options (Standard vs Fast) */}
-              <div className="pt-2 border-t border-slate-700/80 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-300">
-                    Delivery Speed (2 Options):
+              {/* Declared Value Slider */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-slate-700">
+                    Declared Device Value:
                   </label>
-                  <span className="text-[10px] text-blue-400 font-bold bg-blue-500/20 px-2 py-0.5 rounded border border-blue-500/30">
-                    {calcTier === 'STANDARD' ? '2–3 Days Ground' : '⚡ 24–36h Express Air'}
+                  <span className="text-xs font-mono font-black text-[#0066FF]">
+                    ₹{calcValue.toLocaleString('en-IN')}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-xs">
+                <input
+                  type="range"
+                  min={3000}
+                  max={150000}
+                  step={1000}
+                  value={calcValue}
+                  onChange={(e) => setCalcValue(Number(e.target.value))}
+                  className="w-full accent-[#0066FF] cursor-pointer"
+                />
+                <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono mt-1">
+                  <span>₹3,000</span>
+                  <span>₹75,000</span>
+                  <span>₹1,50,000</span>
+                </div>
+              </div>
+
+              {/* Delivery Speed Options */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Delivery Speed:
+                </label>
+                <div className="grid grid-cols-2 gap-3 text-xs">
                   <button
                     type="button"
                     onClick={() => setCalcTier('STANDARD')}
-                    className={`p-2.5 rounded-xl border text-left font-bold transition cursor-pointer flex flex-col justify-between ${
+                    className={`p-3 rounded-2xl border text-left font-bold transition cursor-pointer ${
                       calcTier === 'STANDARD'
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-400/40'
-                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                        ? 'bg-blue-50 border-[#0066FF] text-[#0066FF] shadow-2xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                     }`}
                   >
-                    <span className="text-[11px] block">Standard Delivery</span>
-                    <span className="text-[9px] text-emerald-200 font-bold mt-0.5">
-                      {calcPaymentMode === 'PREPAID' ? '100% FREE (₹0)' : calcPaymentMode === 'COD' ? '₹500 COD' : '₹0 DOWN'}
-                    </span>
+                    <div className="font-bold">Standard Ground</div>
+                    <div className="text-[11px] text-slate-500 font-normal">7–8 Business Days</div>
+                    <div className="text-xs font-black text-slate-900 mt-1">Standard Linehaul</div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setCalcTier('FAST')}
-                    className={`p-2.5 rounded-xl border text-left font-bold transition cursor-pointer flex flex-col justify-between ${
+                    className={`p-3 rounded-2xl border text-left font-bold transition cursor-pointer ${
                       calcTier === 'FAST'
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-xs ring-2 ring-blue-400/40'
-                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                        ? 'bg-blue-50 border-[#0066FF] text-[#0066FF] shadow-2xs'
+                        : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                     }`}
                   >
-                    <span className="text-[11px] block">Fast Delivery (Air)</span>
-                    <span className="text-[9px] text-blue-200 font-bold mt-0.5">
-                      {calcPaymentMode === 'PREPAID' ? '+₹149 EXPRESS' : calcPaymentMode === 'COD' ? '₹649 COD (Air)' : '+₹149 AIR'}
-                    </span>
+                    <div className="font-bold">⚡ Priority Express Air</div>
+                    <div className="text-[11px] text-slate-500 font-normal">2–3 Days Priority Air</div>
+                    <div className="text-xs font-black text-[#0066FF] mt-1">+₹149 Air Freight</div>
                   </button>
                 </div>
               </div>
 
-              {/* Payment Mode Preference Selector in Fare Calculator */}
-              <div className="pt-2 border-t border-slate-700/80 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-300">
-                    Payment &amp; Settlement Preference:
-                  </label>
-                  <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30">
-                    {calcTier === 'STANDARD' ? 'Free Standard on Prepaid' : 'Fast Air Upgrade: ₹149'}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setCalcPaymentMode('PREPAID')}
-                    className={`p-2.5 rounded-xl border text-left font-bold transition cursor-pointer flex flex-col justify-between ${
-                      calcPaymentMode === 'PREPAID'
-                        ? 'bg-[#0066FF] text-white border-[#0066FF] shadow-xs ring-2 ring-blue-400/40'
-                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="text-[11px] block">Prepaid Online</span>
-                    <span className="text-[9px] text-emerald-300 font-bold mt-0.5">
-                      {calcTier === 'STANDARD' ? 'FREE DELIVERY (₹0)' : '₹149 (AIR)'}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setCalcPaymentMode('COD')}
-                    className={`p-2.5 rounded-xl border text-left font-bold transition cursor-pointer flex flex-col justify-between ${
-                      calcPaymentMode === 'COD'
-                        ? 'bg-amber-600 text-white border-amber-600 shadow-xs ring-2 ring-amber-400/40'
-                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="text-[11px] block">Pay on Delivery</span>
-                    <span className="text-[9px] text-amber-200 font-bold mt-0.5">
-                      {calcTier === 'STANDARD' ? '+₹500 COD' : '+₹649 COD'}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setCalcPaymentMode('FINANCE')}
-                    className={`p-2.5 rounded-xl border text-left font-bold transition cursor-pointer flex flex-col justify-between ${
-                      calcPaymentMode === 'FINANCE'
-                        ? 'bg-purple-600 text-white border-purple-600 shadow-xs ring-2 ring-purple-400/40'
-                        : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                    }`}
-                  >
-                    <span className="text-[11px] block">0% Finance EMI</span>
-                    <span className="text-[9px] text-purple-200 font-bold mt-0.5">
-                      ₹{monthlyFinanceEmi.toLocaleString('en-IN')}/mo • ₹{effectiveCalcDownPayment.toLocaleString('en-IN')} down
-                    </span>
-                  </button>
-                </div>
-
-                {/* CALCULATOR DOWN PAYMENT ADJUSTER (< ₹5k) */}
-                {calcPaymentMode === 'FINANCE' && (
-                  <div className="p-3 bg-slate-800/90 rounded-2xl border border-purple-500/40 space-y-2 animate-in fade-in">
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="text-purple-300 font-bold">
-                        Down Payment (<span className="text-emerald-400 font-black">&lt; ₹5,000 Policy</span>):
-                      </span>
-                      <span className="font-mono font-bold text-white bg-purple-900/60 px-2 py-0.5 rounded border border-purple-500/30">
-                        ₹{effectiveCalcDownPayment.toLocaleString('en-IN')}
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min={minCalcDown}
-                      max={maxCalcDown}
-                      step={100}
-                      value={effectiveCalcDownPayment}
-                      onChange={(e) => setCalcDownPayment(Number(e.target.value))}
-                      className="w-full accent-purple-500 h-1.5 bg-slate-700 rounded-lg cursor-pointer"
-                    />
-                    <div className="flex items-center justify-between text-[10px] text-slate-400">
-                      <span>Min: ₹{minCalcDown.toLocaleString('en-IN')}</span>
-                      <div className="flex gap-1.5">
-                        {[1499, 2499, 3499, 4999]
-                          .filter((v) => v <= maxCalcDown && v >= minCalcDown)
-                          .map((v) => (
-                            <button
-                              key={v}
-                              type="button"
-                              onClick={() => setCalcDownPayment(v)}
-                              className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold transition cursor-pointer ${
-                                effectiveCalcDownPayment === v
-                                  ? 'bg-purple-600 text-white'
-                                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                              }`}
-                            >
-                              ₹{v}
-                            </button>
-                          ))}
-                      </div>
-                      <span className="font-bold text-purple-300">Cap: ₹{maxCalcDown.toLocaleString('en-IN')}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Right Summary Card */}
-            <div className="lg:col-span-5 bg-slate-800/80 backdrop-blur-md rounded-3xl border border-slate-700 p-6 space-y-4 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-slate-700 pb-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Route Telemetry</span>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">
-                  {calcTier === 'FAST' ? 'NATIONAL AIR CARGO' : 'SURFACE GROUND NETWORK'}
+            <div className="lg:col-span-5 bg-slate-50 rounded-3xl border border-slate-200 p-6 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                  Route Telemetry
+                </span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-100 text-[#0066FF] font-bold">
+                  {calcTier === 'FAST' ? 'AIR CARGO LINEHAUL' : 'SURFACE GROUND NETWORK'}
                 </span>
               </div>
 
-              <div className="space-y-2.5 text-xs text-slate-300">
+              <div className="space-y-2.5 text-xs text-slate-600">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Corridor Road Distance:</span>
-                  <span className="font-mono font-bold text-white">{calcRoute.distanceKm.toLocaleString('en-IN')} km</span>
+                  <span>Corridor Distance:</span>
+                  <span className="font-mono font-bold text-slate-900">{calcRoute.distanceKm} km</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Estimated Transit SLA:</span>
-                  <span className="font-bold text-blue-300">
-                    {calcTier === 'FAST' ? '24–36 Hours (Next-Flight Air Cargo)' : '2–3 Business Days (Standard Ground)'}
+                  <span>Estimated Transit SLA:</span>
+                  <span className="font-bold text-[#0066FF]">
+                    {calcTier === 'FAST' ? '2–3 Days (Priority Air)' : '7–8 Days (Ground)'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Doorstep Verification:</span>
-                  <span className="font-bold text-emerald-400">10-Minute Unboxing Window</span>
+                  <span>10-Min Doorstep Unboxing:</span>
+                  <span className="font-bold text-emerald-600">Included (Free)</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-400">
-                    {calcPaymentMode === 'FINANCE' ? 'Finance Installment:' : calcTier === 'FAST' ? 'Fast Air Linehaul:' : 'Standard Delivery:'}
-                  </span>
-                  <span className="font-mono font-bold text-white">
-                    {calcPaymentMode === 'FINANCE'
-                      ? `₹${monthlyFinanceEmi.toLocaleString('en-IN')}/mo (6M 0% EMI on ₹${calcFinancedPrincipal.toLocaleString('en-IN')})`
-                      : `₹${standardDeliveryCost.toLocaleString('en-IN')}`}
-                  </span>
+                  <span>ICICI Lombard Transit Insurance:</span>
+                  <span className="font-mono font-bold text-slate-900">₹{Math.round(calcValue * 0.008)}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Estimated Courier Linehaul:</span>
+                  <span className="font-mono font-bold text-slate-900">₹{standardDeliveryCost}</span>
                 </div>
               </div>
 
-              <div className="pt-3 border-t border-slate-700 flex items-baseline justify-between">
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] uppercase font-bold text-slate-400">
-                    {calcPaymentMode === 'PREPAID'
-                      ? calcTier === 'STANDARD' ? 'Upfront Escrow (Free Standard Delivery):' : 'Upfront Escrow (+ Fast Air Upgrade):'
-                      : calcPaymentMode === 'COD'
-                      ? 'COD Doorstep Slot Lock:'
-                      : calcTier === 'STANDARD' ? 'Down Payment Today (< ₹5k):' : 'Down Payment + Fast Air Today:'}
+                  <div className="text-[10px] uppercase font-bold text-slate-500">
+                    Total Upfront Shipping &amp; Ins:
                   </div>
-                  <div className="flex items-baseline gap-2">
-                    <div className="text-2xl font-black font-mono">
-                      {calcPaymentMode === 'PREPAID' ? (
-                        calcTier === 'STANDARD' ? (
-                          <span className="text-emerald-400">₹{calcValue.toLocaleString('en-IN')}</span>
-                        ) : (
-                          <span className="text-blue-400">₹{(calcValue + 149).toLocaleString('en-IN')}</span>
-                        )
-                      ) : calcPaymentMode === 'COD' ? (
-                        calcTier === 'STANDARD' ? (
-                          <span className="text-amber-400">₹500</span>
-                        ) : (
-                          <span className="text-amber-400">₹649</span>
-                        )
-                      ) : (
-                        calcTier === 'STANDARD' ? (
-                          <span className="text-purple-400 font-mono">₹{effectiveCalcDownPayment.toLocaleString('en-IN')}</span>
-                        ) : (
-                          <span className="text-purple-400 font-mono">₹{(effectiveCalcDownPayment + 149).toLocaleString('en-IN')}</span>
-                        )
-                      )}
-                    </div>
-                    {calcPaymentMode === 'PREPAID' && (
-                      <span className="text-[10px] font-bold text-emerald-300 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-700/60">
-                        {calcTier === 'STANDARD' ? '100% FREE DELIVERY' : '+₹149 FAST AIR'}
-                      </span>
-                    )}
+                  <div className="text-2xl font-black font-mono text-slate-900">
+                    ₹{calcTier === 'FAST' ? standardDeliveryCost + 149 : standardDeliveryCost}
+                  </div>
+                  <div className="text-[10px] text-emerald-600 font-semibold">
+                    Product cost (₹{calcValue.toLocaleString('en-IN')}) paid at doorstep
                   </div>
                 </div>
+
                 <Link
-                  href={`/in/deals/new?type=send&declaredValue=${calcValue}&payMode=${calcPaymentMode}&tier=${calcTier}&downPayment=${effectiveCalcDownPayment}`}
-                  className="px-5 py-3 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-lg shadow-[#0066FF]/30 transition active:scale-95"
+                  href={`/in/deals/new?type=send&fromPin=${calcOrigin}&toPin=${calcDest}&val=${calcValue}`}
+                  className="px-5 py-3 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition active:scale-95"
                 >
-                  Book Consignment &rarr;
+                  Book Pickup &rarr;
                 </Link>
               </div>
             </div>
 
           </div>
-        </section>
 
-        {/* ======================================================================= */}
-        {/* NEW FULL-WIDTH SECTION 3: SAFESHIP VS CASH-ON-DELIVERY (COD) TABLE     */}
-        {/* ======================================================================= */}
-        <section className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 9. SAFESHIP VS TRADITIONAL CASH-ON-DELIVERY (COD) COMPARISON TABLE        */}
+      {/* ========================================================================= */}
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-3xl mx-auto text-center space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
-              <span>⚠️ The Cash-on-Delivery Trap</span>
+              <span>⚠️ The Traditional Courier Trap</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
               Why SafeShip is 10X Safer than Traditional COD
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              Standard couriers (Delhivery, BlueDart, DTDC) enforce a strict &quot;pay before opening&quot; policy. If a seller sends a fake or damaged gadget, the courier company cannot refund you.
+              Standard couriers (Delhivery, BlueDart, DTDC) enforce a strict &quot;pay before opening&quot; policy. If a seller sends a dummy brick or broken gadget, the courier company cannot refund you.
             </p>
           </div>
 
@@ -1762,15 +1295,15 @@ export default function HomePage() {
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
                   <th className="py-3 px-4">Safety &amp; Delivery Feature</th>
-                  <th className="py-3 px-4 text-[#0066FF] bg-blue-50/50 rounded-t-xl font-black">SafeShip Escrow Rail</th>
-                  <th className="py-3 px-4 text-slate-700">Traditional COD</th>
+                  <th className="py-3 px-4 text-[#0066FF] bg-blue-50/70 rounded-t-xl font-black">SafeShip Open-Box Escrow</th>
+                  <th className="py-3 px-4 text-slate-700">Traditional Courier COD</th>
                   <th className="py-3 px-4 text-rose-600">Direct UPI / GPay</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
                 <tr>
                   <td className="py-3.5 px-4 font-bold text-slate-900">Inspect box &amp; power-on before paying?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/40 text-emerald-700 font-bold">
+                  <td className="py-3.5 px-4 bg-blue-50/50 text-emerald-700 font-bold">
                     ✓ YES (10-minute physical test)
                   </td>
                   <td className="py-3.5 px-4 text-rose-600">✗ NO (Pay cash / OTP first)</td>
@@ -1778,31 +1311,31 @@ export default function HomePage() {
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-bold text-slate-900">What if item is counterfeit or broken?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/40 text-emerald-700 font-bold">
+                  <td className="py-3.5 px-4 bg-blue-50/50 text-emerald-700 font-bold">
                     ✓ Instant Reversal (₹0 product cost)
                   </td>
                   <td className="py-3.5 px-4 text-rose-600">✗ Money lost (no courier refund)</td>
                   <td className="py-3.5 px-4 text-rose-600">✗ Scammer blocks phone number</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-bold text-slate-900">IMEI &amp; Serial Number cross-check?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/40 text-emerald-700 font-bold">
-                    ✓ Bonded officer &amp; Gemini OCR
+                  <td className="py-3.5 px-4 font-bold text-slate-900">IMEI &amp; Serial Number verification?</td>
+                  <td className="py-3.5 px-4 bg-blue-50/50 text-emerald-700 font-bold">
+                    ✓ Bonded officer + GSMA Luhn-10 check
                   </td>
                   <td className="py-3.5 px-4 text-slate-400">✗ Not checked</td>
                   <td className="py-3.5 px-4 text-slate-400">✗ Not checked</td>
                 </tr>
                 <tr>
-                  <td className="py-3.5 px-4 font-bold text-slate-900">Seller protected against fake returns?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/40 text-emerald-700 font-bold">
+                  <td className="py-3.5 px-4 font-bold text-slate-900">Seller protected against buyer-swap fraud?</td>
+                  <td className="py-3.5 px-4 bg-blue-50/50 text-emerald-700 font-bold">
                     ✓ Tamper-evident barcoded seal
                   </td>
-                  <td className="py-3.5 px-4 text-rose-600">✗ High buyer-swap scam risk</td>
+                  <td className="py-3.5 px-4 text-rose-600">✗ High swap scam risk</td>
                   <td className="py-3.5 px-4 text-slate-400">N/A</td>
                 </tr>
                 <tr>
                   <td className="py-3.5 px-4 font-bold text-slate-900">Escrow Trustee Governance?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/40 text-emerald-700 font-bold">
+                  <td className="py-3.5 px-4 bg-blue-50/50 text-emerald-700 font-bold">
                     ✓ RBI Section 10A Nodal (ICICI)
                   </td>
                   <td className="py-3.5 px-4 text-slate-500">Commercial cash pool</td>
@@ -1811,85 +1344,87 @@ export default function HomePage() {
               </tbody>
             </table>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ======================================================================= */}
-        {/* NEW FULL-WIDTH SECTION 4: SUPPORTED HIGH-VALUE CATEGORIES               */}
-        {/* ======================================================================= */}
-        <section className="space-y-6">
-          <div className="text-center max-w-2xl mx-auto space-y-2">
-            <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-              Specialized Doorstep Inspection Protocols
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-600">
-              Each gadget category follows tailored diagnostic checklists before the officer asks for payment release.
-            </p>
-          </div>
+      {/* ========================================================================= */}
+      {/* 10. CATEGORY-SPECIFIC INSPECTION PROTOCOLS                                */}
+      {/* ========================================================================= */}
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-6">
+        <div className="text-center max-w-2xl mx-auto space-y-2">
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+            Specialized Doorstep Inspection Protocols
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-600">
+            Each gadget category follows tailored diagnostic checklists before the officer asks for payment release.
+          </p>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-            {[
-              {
-                icon: '📱',
-                title: 'iPhones & Phones',
-                models: 'iPhone 13/14/15/16 Pro, Galaxy S/Z Ultra',
-                checks: ['IMEI Dial (*#06#) Match', 'TrueTone & OLED Test', 'Battery Health & Charge', 'Clean iCloud Logout']
-              },
-              {
-                icon: '💻',
-                title: 'MacBooks & Laptops',
-                models: 'Apple M1/M2/M3 Silicon, ThinkPads, ROG',
-                checks: ['Screen Backlight Uniformity', 'Keyboard & Trackpad OK', 'Battery Cycle Count', 'Clean FileVault / MDM']
-              },
-              {
-                icon: '📷',
-                title: 'Cameras & Optics',
-                models: 'Sony Alpha, Canon EOS, Prime Lenses',
-                checks: ['Sensor Dust & Scratches', 'Shutter Actuation Count', 'Autofocus Motor Check', 'Lens Mount Integrity']
-              },
-              {
-                icon: '⌚',
-                title: 'Luxury Watches',
-                models: 'Apple Watch Ultra, Seiko, Tissot',
-                checks: ['Sapphire Glass Scratches', 'Crown & Chronograph Test', 'Water-Resistant Seal', 'Serial Match on Box']
-              },
-              {
-                icon: '🎮',
-                title: 'Consoles & Audio',
-                models: 'PS5, Xbox Series X, RTX GPUs, Max',
-                checks: ['HDMI Port & 4K Output', 'Cooling Fan Noise Check', 'Storage Diagnostic Pass', 'Tamper Seal Inspection']
-              }
-            ].map((cat, idx) => (
-              <div key={idx} className="p-4 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition flex flex-col justify-between">
-                <div>
-                  <div className="text-2xl mb-2">{cat.icon}</div>
-                  <h3 className="font-bold text-slate-900 text-sm">{cat.title}</h3>
-                  <p className="text-[10px] text-slate-500 mb-3">{cat.models}</p>
-                  
-                  <div className="space-y-1.5 pt-2 border-t border-slate-100 text-[10px] text-slate-600">
-                    {cat.checks.map((c, i) => (
-                      <div key={i} className="flex items-center gap-1.5">
-                        <Check className="w-3 h-3 text-[#0066FF] shrink-0" />
-                        <span>{c}</span>
-                      </div>
-                    ))}
-                  </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          {[
+            {
+              icon: '📱',
+              title: 'iPhones & Phones',
+              models: 'iPhone 13/14/15/16 Pro, Galaxy S/Z Ultra',
+              checks: ['IMEI Dial (*#06#) Match', 'TrueTone & OLED Test', 'Battery Health & Charge', 'Clean iCloud / FRP Logout']
+            },
+            {
+              icon: '💻',
+              title: 'MacBooks & Laptops',
+              models: 'Apple M1/M2/M3 Silicon, ThinkPads, ROG',
+              checks: ['Screen Backlight Uniformity', 'Keyboard & Trackpad OK', 'Battery Cycle Count', 'Clean FileVault / MDM']
+            },
+            {
+              icon: '📷',
+              title: 'Cameras & Optics',
+              models: 'Sony Alpha, Canon EOS, Prime Lenses',
+              checks: ['Sensor Dust & Scratches', 'Shutter Actuation Count', 'Autofocus Motor Check', 'Lens Mount Integrity']
+            },
+            {
+              icon: '⌚',
+              title: 'Luxury Watches',
+              models: 'Apple Watch Ultra, Seiko, Tissot',
+              checks: ['Sapphire Glass Scratches', 'Crown & Chronograph Test', 'Water-Resistant Seal', 'Serial Match on Box']
+            },
+            {
+              icon: '🎮',
+              title: 'Consoles & Audio',
+              models: 'PS5, Xbox Series X, RTX GPUs, Max',
+              checks: ['HDMI Port & 4K Output', 'Cooling Fan Noise Check', 'Storage Diagnostic Pass', 'Tamper Seal Inspection']
+            }
+          ].map((cat, idx) => (
+            <div key={idx} className="p-4 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition flex flex-col justify-between">
+              <div>
+                <div className="text-2xl mb-2">{cat.icon}</div>
+                <h3 className="font-bold text-slate-900 text-sm">{cat.title}</h3>
+                <p className="text-[10px] text-slate-500 mb-3">{cat.models}</p>
+                
+                <div className="space-y-1.5 pt-2 border-t border-slate-100 text-[10px] text-slate-600">
+                  {cat.checks.map((c, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <Check className="w-3 h-3 text-[#0066FF] shrink-0" />
+                      <span>{c}</span>
+                    </div>
+                  ))}
                 </div>
-
-                <Link
-                  href="/in/deals/new?type=send"
-                  className="mt-4 pt-2.5 border-t border-slate-100 text-center text-xs font-bold text-[#0066FF] hover:underline"
-                >
-                  Ship This Category &rarr;
-                </Link>
               </div>
-            ))}
-          </div>
-        </section>
 
-        {/* ======================================================================= */}
-        {/* NEW FULL-WIDTH SECTION 5: FREQUENTLY ASKED QUESTIONS (ACCORDION)       */}
-        {/* ======================================================================= */}
-        <section className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
+              <Link
+                href="/in/deals/new?type=send"
+                className="mt-4 pt-2.5 border-t border-slate-100 text-center text-xs font-bold text-[#0066FF] hover:underline"
+              >
+                Ship This Category &rarr;
+              </Link>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 11. FREQUENTLY ASKED QUESTIONS (ACCORDION)                                */}
+      {/* ========================================================================= */}
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-2xl mx-auto text-center space-y-2">
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
               Frequently Asked Questions
@@ -1915,7 +1450,7 @@ export default function HomePage() {
               },
               {
                 q: 'Why is there a nominal courier booking fee upfront?',
-                a: 'The nominal booking fee (~₹349 to ~₹600 depending on distance) covers the courier linehaul freight, priority air transport, and mandatory ICICI Lombard cargo transit insurance. The actual gadget price (e.g. ₹40,000) is ₹0 advance until doorstep inspection.'
+                a: 'The nominal booking fee covers courier linehaul freight, priority air transport, and mandatory ICICI Lombard cargo transit insurance. The actual gadget price (e.g. ₹40,000) is strictly ₹0 advance until doorstep inspection.'
               },
               {
                 q: 'How does the 2-Way Bilateral Gadget Exchange work?',
@@ -1943,12 +1478,14 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* ======================================================================= */}
-        {/* NEW FULL-WIDTH SECTION 6: HIGH-IMPACT CLOSING BANNER                   */}
-        {/* ======================================================================= */}
-        <section className="bg-gradient-to-r from-[#0066FF] to-blue-700 text-white rounded-3xl p-8 sm:p-10 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+      {/* ========================================================================= */}
+      {/* 12. HIGH-IMPACT CLOSING BANNER                                            */}
+      {/* ========================================================================= */}
+      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div className="bg-gradient-to-r from-[#0066FF] to-blue-700 text-white rounded-3xl p-8 sm:p-10 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 text-center md:text-left">
             <h3 className="text-2xl sm:text-3xl font-black tracking-tight">
               Ready to Buy or Sell Gadgets Without Fear?
@@ -1961,31 +1498,25 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center gap-3 shrink-0">
             <Link
               href="/in/deals/new?type=send"
-              className="px-6 py-3.5 rounded-2xl bg-white text-[#0066FF] font-black text-xs sm:text-sm shadow-lg hover:bg-blue-50 transition active:scale-95"
+              className="px-6 py-3.5 rounded-full bg-white text-[#0066FF] font-black text-xs sm:text-sm shadow-lg hover:bg-blue-50 transition active:scale-95"
             >
               Book Doorstep Delivery &rarr;
             </Link>
             <Link
               href="/in/safety"
-              className="px-5 py-3.5 rounded-2xl bg-blue-800/80 hover:bg-blue-800 text-white font-bold text-xs sm:text-sm border border-blue-400/30 transition"
+              className="px-5 py-3.5 rounded-full bg-blue-800/80 hover:bg-blue-800 text-white font-bold text-xs sm:text-sm border border-blue-400/30 transition"
             >
               Read Trust Audit
             </Link>
           </div>
-        </section>
+        </div>
+      </section>
 
-      </main>
-
-      {/* ========================================================================= */}
-      {/* 4. MOBILE BOTTOM NAVIGATION (Home, Shipments, + Send, Exchange, Profile)  */}
-      {/* ========================================================================= */}
+      {/* Mobile Bottom Navigation */}
       <MobileBottomNav />
 
-      {/* ========================================================================= */}
-      {/* 5. ENTERPRISE TRUST FOOTER (Desktop view & institutional compliance)      */}
-      {/* ========================================================================= */}
+      {/* Enterprise Trust Footer */}
       <EnterpriseFooter />
-
     </div>
   );
 }

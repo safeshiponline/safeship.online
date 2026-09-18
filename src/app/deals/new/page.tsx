@@ -40,7 +40,7 @@ import {
 import { useRazorpay } from '@/lib/useRazorpay';
 import { createNewDeal } from '@/lib/store';
 import { getSession, UserSession } from '@/lib/auth';
-import { ProductPhotoMatchResult } from '@/lib/geminiUnified';
+import { ProductPhotoMatchResult, validateLuhnImei } from '@/lib/geminiUnified';
 import { ItemCategory, DeliveryServiceTier, PickupSlot, FeeSplitOption } from '@/lib/types';
 import { resolvePincode, calculateRoadDistance, calculateTierPricing, calculateInsuranceFee, getRealisticTransitDays } from '@/lib/pincodeService';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
@@ -1861,13 +1861,44 @@ function CreateShipmentContent() {
                 )}
 
                 {/* Manual Text Input Field with Autofill reflection */}
-                <div className="space-y-1 pt-1">
-                  <div className="flex items-center justify-between text-[11px]">
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between text-[11px] flex-wrap gap-1">
                     <span className="font-bold text-slate-700">Backside Number / IMEI Value:</span>
                     {manualImei && (
-                      <span className="text-emerald-600 font-bold text-[10px]">
-                        ✓ Confirmed for Doorstep Audit
-                      </span>
+                      (() => {
+                        const digitsOnly = manualImei.replace(/\D/g, '');
+                        const is15 = digitsOnly.length === 15;
+                        const isLuhn = is15 && validateLuhnImei(digitsOnly);
+                        if (isLuhn) {
+                          return (
+                            <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-bold flex items-center gap-1 animate-in fade-in">
+                              <span>✓</span>
+                              <span>GSMA Luhn Valid • Ready for Doorstep Handshake</span>
+                            </span>
+                          );
+                        }
+                        if (is15) {
+                          return (
+                            <span className="text-amber-800 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 animate-in fade-in">
+                              <span>ℹ️</span>
+                              <span>15-Digit Format (Verify check digit via *#06#)</span>
+                            </span>
+                          );
+                        }
+                        if (manualImei.trim().length >= 6) {
+                          return (
+                            <span className="text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 animate-in fade-in">
+                              <span>✓</span>
+                              <span>OEM Hardware Serial Recorded</span>
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="text-emerald-600 font-bold text-[10px]">
+                            ✓ Linked for Inspection
+                          </span>
+                        );
+                      })()
                     )}
                   </div>
                   <div className="relative">
@@ -1875,7 +1906,10 @@ function CreateShipmentContent() {
                       type="text"
                       value={manualImei}
                       onChange={(e) => {
-                        setManualImei(e.target.value);
+                        const raw = e.target.value;
+                        const match15 = raw.match(/\b\d{15}\b/);
+                        const cleanVal = match15 ? match15[0] : raw;
+                        setManualImei(cleanVal);
                         clearFieldError('imei');
                       }}
                       className="w-full px-3.5 py-2.5 pr-20 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs font-mono font-bold text-[#0F172A] outline-hidden focus:border-[#0066FF] transition"
