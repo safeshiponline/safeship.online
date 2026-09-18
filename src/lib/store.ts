@@ -428,8 +428,8 @@ export function completeCourierPickup(
       id: `aud_${Date.now()}_ai`,
       timestamp: new Date().toISOString(),
       actor: 'SYSTEM',
-      title: `SafeShip Vision™ Multimodal AI Diagnostic Cleared (${aiReport.authenticityScore}% Score)`,
-      description: `Gemini 1.5 Pro Neural Vision verified 5-frame diagnostic: OCR IMEI match, 0 OLED dead pixels, iCloud lock disengaged.`
+      title: `SafeShip Vision™ Optical Diagnostic Cleared (${aiReport.authenticityScore}% Score)`,
+      description: `SafeShip Vision Optical Engine verified 5-frame diagnostic: OCR IMEI match, 0 OLED dead pixels, iCloud lock disengaged.`
     });
   }
 

@@ -254,7 +254,7 @@ const jsonLdData = {
           name: 'How do I contact SafeShip customer support?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'SafeShip provides 24/7 in-app customer support via our live AI Concierge and dedicated claims team at https://safeship.online/in and via email at support@safeship.online. You can track shipments in real time, view digital consignment waybills, and resolve claims instantly without waiting on telephone hold.'
+            text: 'SafeShip provides 24/7 in-app customer support via our live Customer Support Desk and dedicated claims team at https://safeship.online/in and via email at support@safeship.online. You can track shipments in real time, view digital consignment waybills, and resolve claims instantly without waiting on telephone hold.'
           }
         },
         {

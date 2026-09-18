@@ -102,8 +102,8 @@ export function generateAiDiagnosticReport(
   }));
 
   return {
-    reportId: `SVR-GEMINI-${Math.floor(100000 + Math.random() * 900000)}`,
-    modelEngine: 'Gemini 1.5 Pro Multimodal',
+    reportId: `SVR-SSV-${Math.floor(100000 + Math.random() * 900000)}`,
+    modelEngine: 'SafeShip Vision Neural v2.4',
     authenticityScore: 99.4,
     cosmeticGrade: 'A+ (Mint / Scratchless)',
     imeiOcrResult: {

@@ -243,7 +243,7 @@ export function AISupportWidget() {
       {/* Floating Trigger Button (Mobile + Desktop) */}
       {!isOpen && (
         <button
-          id="btn-open-ai-support"
+          id="btn-open-support"
           type="button"
           onClick={() => setIsOpen(true)}
           className="fixed bottom-4 md:bottom-6 right-3.5 sm:right-6 z-30 w-12 h-12 md:w-auto md:h-auto p-0 md:px-4 md:py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white shadow-xl shadow-[#0066FF]/35 flex items-center justify-center md:gap-2.5 transition active:scale-95 group cursor-pointer border-2 border-white"
@@ -277,7 +277,7 @@ export function AISupportWidget() {
             {/* Close Button */}
             <div className="flex items-center gap-1.5">
               <button
-                id="btn-close-ai-support"
+                id="btn-close-support"
                 type="button"
                 onClick={() => setIsOpen(false)}
                 className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/25 flex items-center justify-center transition cursor-pointer"
@@ -300,7 +300,7 @@ export function AISupportWidget() {
               }`}
             >
               <Headphones className="w-3.5 h-3.5" />
-              <span>Support Chat</span>
+              <span>Customer Support</span>
             </button>
             <button
               type="button"
@@ -373,7 +373,7 @@ export function AISupportWidget() {
                 {loading && (
                   <div className="flex items-center gap-1.5 text-[11px] text-[#0066FF] font-semibold p-2">
                     <Headphones className="w-3.5 h-3.5 animate-pulse" />
-                    <span>Gemini 3.8 Flash is drafting response...</span>
+                    <span>Support Desk is typing...</span>
                   </div>
                 )}
                 <div ref={messagesEndRef} />
@@ -405,7 +405,7 @@ export function AISupportWidget() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Ask Gemini 3.8 about shipments, IMEI, TC..."
+                  placeholder="Ask customer support about shipments, inspection, tickets..."
                   className="flex-1 px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#CBD5E1] text-xs text-[#0F172A] outline-hidden focus:border-[#0066FF]"
                 />
                 <button

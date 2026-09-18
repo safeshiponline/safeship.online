@@ -127,7 +127,7 @@ export const EnterpriseFooter: React.FC = () => {
                 Escrow balances held in ICICI Bank Trustee Nodal accounts. Zero product charge until inspection approval.
               </p>
               <div className="pt-1.5 border-t border-slate-800 text-[10px] space-y-0.5 text-slate-300">
-                <div>💬 24/7 Live Support: <span className="text-emerald-400 font-semibold">In-App AI Concierge &amp; Priority Desk</span></div>
+                <div>💬 24/7 Live Support: <span className="text-emerald-400 font-semibold">In-App Live Support &amp; Priority Ticket Desk</span></div>
                 <div>🏛️ GSTIN: <span className="font-mono text-slate-200">08AAECS2938Q1ZP</span> &bull; SAC: <span className="font-mono text-slate-200">996812</span></div>
               </div>
             </div>

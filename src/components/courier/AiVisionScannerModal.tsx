@@ -75,7 +75,7 @@ export const AiVisionScannerModal: React.FC<AiVisionScannerModalProps> = ({
       serialNumberVerified: true,
       accessoriesIncluded: true,
       noPhysicalLiquidDamage: true,
-      notes: `SafeShip Vision™ Gemini Multimodal AI Audit Passed (Score: ${generatedReport?.authenticityScore || 99.4}%). Dual-factor biometric & hardware OCR match authenticated.`
+      notes: `SafeShip Vision™ Optical & Hardware Verification Passed (Score: ${generatedReport?.authenticityScore || 99.4}%). Dual-factor biometric & hardware OCR match authenticated.`
     };
 
     setTimeout(() => {
