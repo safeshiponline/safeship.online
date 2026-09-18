@@ -56,6 +56,24 @@ export function validateLuhnImei(imei: string): boolean {
 }
 
 /**
+ * Calculate the 15th Luhn check digit from 14 leading digits
+ */
+export function calculateLuhnCheckDigit(digits14: string): number {
+  const clean = digits14.replace(/\D/g, '');
+  if (clean.length < 14) return 0;
+  let sum = 0;
+  for (let i = 0; i < 14; i++) {
+    let d = parseInt(clean.charAt(i), 10);
+    if (i % 2 === 1) {
+      d *= 2;
+      if (d > 9) d -= 9;
+    }
+    sum += d;
+  }
+  return (10 - (sum % 10)) % 10;
+}
+
+/**
  * TAC (Type Allocation Code - first 8 digits) Manufacturer Identification
  */
 export function identifyBrandFromImei(imei: string): string {
@@ -577,14 +595,31 @@ export async function verifyImeiWithGemini(
       const baseUrl = process.env.GEMINI_BASE_URL || process.env.OPENAI_BASE_URL;
       const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
-      const prompt = `Audit this device image for product: "${itemName || 'Hardware Device'}".
-1. Extract any visible 15-digit numeric IMEI from screen, *#06# dialer, settings, barcode, or retail box sticker.
-2. Extract any visible alphanumeric serial number (e.g. Apple D4G7K3Y9L2 or F2LL99X8MD6M).
-3. If digits are unreadable due to severe blur or glare, set status to "BLURRY_RETRY".
-4. If no IMEI or serial is visible in this frame, set status to "NOT_FOUND".
-DO NOT fabricate or hallucinate numbers.
+      const prompt = `You are a high-accuracy OCR and hardware inspection engine for SafeShip India.
+Your mission is to accurately detect and extract the 15-digit International Mobile Equipment Identity (IMEI) number or alphanumeric hardware serial number from this image.
+
+Key Instructions:
+1. Examine all visual text:
+   - Dialer screen popup (*#06#) showing "Device Info", "IMEI 1", "IMEI 2", or "IMEI / MEID".
+   - Settings screen (Settings > General > About or Settings > About Phone).
+   - Retail packaging barcode sticker (look for "IMEI", "IMEI1", or a 15-digit barcode number).
+   - Back of the device or SIM tray engravings.
+2. If dual IMEIs (e.g. IMEI 1 and IMEI 2) are visible, prioritize extracting IMEI 1 into the "imei" field.
+3. Remove all spaces, slashes, or hyphens from the IMEI. An IMEI is strictly 15 numeric digits (e.g., "354892110482910").
+4. If no 15-digit IMEI is visible, extract any alphanumeric hardware serial number (e.g. Apple 10-12 character serial like "F2LL99X8MD6M").
+5. If the digits cannot be determined due to excessive blur or blinding flash glare, return status "BLURRY_RETRY".
+6. If no device identifier or phone screen is visible in the photo, return status "NOT_FOUND".
+DO NOT guess or hallucinate digits. Only extract what is clearly readable.
+
 Respond strictly in valid JSON:
-{"status": "VALID"|"BLURRY_RETRY"|"NOT_FOUND", "imei": "string", "serial": "string", "brand": "string", "cleanImei": true, "details": "string"}`;
+{
+  "status": "VALID" | "BLURRY_RETRY" | "NOT_FOUND",
+  "imei": "<15 numeric digits or empty string>",
+  "serial": "<serial number or empty string>",
+  "brand": "<manufacturer name e.g. Apple, Samsung, OnePlus, Xiaomi, Google, etc.>",
+  "cleanImei": true,
+  "details": "<brief 1-sentence explanation of detected identifier>"
+}`;
 
       let content: string | null = null;
 
@@ -616,7 +651,7 @@ Respond strictly in valid JSON:
               ],
               temperature: 0.1
             }),
-            signal: AbortSignal.timeout(6000)
+            signal: AbortSignal.timeout(15000)
           });
           if (res.ok) {
             const data = await res.json();
@@ -630,12 +665,32 @@ Respond strictly in valid JSON:
       if (content) {
         const parsed = cleanAndParseJson<any>(content);
         let rawImei = (parsed?.imei || '').replace(/\D/g, '');
-        const rawSerial = (parsed?.serial || '').trim();
+        let rawSerial = (parsed?.serial || '').trim();
 
-        // Resilient fallback: extract 15 consecutive digits directly from content if JSON field was omitted
+        // Check if rawSerial is actually an IMEI (15 digits)
+        if (rawImei.length !== 15 && rawSerial.replace(/\D/g, '').length === 15) {
+          rawImei = rawSerial.replace(/\D/g, '');
+        }
+
+        // Resilient fallback: extract 15 consecutive digits directly from content if JSON field was omitted or formatted with spaces
+        if (rawImei.length !== 15) {
+          // Check for 15-digit sequence with spaces or dashes: e.g. 35 4892 11 048291 0
+          const spacedMatch = content.match(/\b(?:\d[\s\/-]?){14}\d\b/);
+          if (spacedMatch) {
+            const stripped = spacedMatch[0].replace(/\D/g, '');
+            if (stripped.length === 15) rawImei = stripped;
+          }
+        }
+
         if (rawImei.length !== 15) {
           const match15 = content.match(/\b\d{15}\b/);
           if (match15) rawImei = match15[0];
+        }
+
+        // If 14 digits detected, calculate 15th Luhn checksum digit
+        if (rawImei.length === 14) {
+          const checkDigit = calculateLuhnCheckDigit(rawImei);
+          rawImei = `${rawImei}${checkDigit}`;
         }
 
         const hasValidImei = rawImei.length === 15;

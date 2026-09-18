@@ -42,7 +42,6 @@ import { useRazorpay } from '@/lib/useRazorpay';
 import { createNewDeal } from '@/lib/store';
 import { getSession, UserSession } from '@/lib/auth';
 import { ProductPhotoMatchResult, validateLuhnImei, identifyBrandFromImei } from '@/lib/geminiUnified';
-import { ImeiScannerModal } from '@/components/common/ImeiScannerModal';
 import { ItemCategory, DeliveryServiceTier, PickupSlot, FeeSplitOption } from '@/lib/types';
 import { resolvePincode, calculateRoadDistance, calculateTierPricing, calculateInsuranceFee, getRealisticTransitDays } from '@/lib/pincodeService';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
@@ -190,7 +189,10 @@ function CreateShipmentContent() {
   const [backsidePhoto, setBacksidePhoto] = useState<string | null>(null);
   const [isScanningBackside, setIsScanningBackside] = useState<boolean>(false);
   const [manualImei, setManualImei] = useState<string>('');
-  const [showImeiCameraModal, setShowImeiCameraModal] = useState<boolean>(false);
+  const [imeiScanFeedback, setImeiScanFeedback] = useState<{
+    status: 'SUCCESS' | 'BLURRY' | 'NOT_FOUND' | 'ERROR';
+    message: string;
+  } | null>(null);
   const [isMatchingPhoto, setIsMatchingPhoto] = useState<boolean>(false);
   const [photoMatchResult, setPhotoMatchResult] = useState<ProductPhotoMatchResult | null>(null);
   const [imeiAuditReport, setImeiAuditReport] = useState<{
@@ -292,10 +294,48 @@ function CreateShipmentContent() {
     }
   };
 
+  // Helper to downsample / compress uploaded IMEI photos for rapid, high-accuracy OCR
+  const compressImageForOcr = (file: File, maxDimension = 1600, quality = 0.88): Promise<string> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        const img = new Image();
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxDimension || height > maxDimension) {
+            if (width > height) {
+              height = Math.round((height * maxDimension) / width);
+              width = maxDimension;
+            } else {
+              width = Math.round((width * maxDimension) / height);
+              height = maxDimension;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            resolve(dataUrl);
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', quality));
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      };
+      reader.onerror = () => resolve('');
+      reader.readAsDataURL(file);
+    });
+  };
+
   // Scan uploaded backside / IMEI photo with SafeShip Vision OCR
   const handleScanBacksidePhoto = async (photoData: string) => {
     setBacksidePhoto(photoData);
     setIsScanningBackside(true);
+    setImeiScanFeedback(null);
     try {
       const res = await fetch('/api/gemini/scan', {
         method: 'POST',
@@ -308,17 +348,48 @@ function CreateShipmentContent() {
       });
       const data = await res.json();
       if (data && data.result) {
+        setImeiAuditReport(data.result);
         const extracted = (data.result.imei || data.result.serial || '').trim();
         if (extracted) {
           setManualImei(extracted);
+          const is15 = extracted.replace(/\D/g, '').length === 15;
+          const brand = is15 ? identifyBrandFromImei(extracted) : (data.result.brand || 'Device');
+          setImeiScanFeedback({
+            status: 'SUCCESS',
+            message: is15
+              ? `Auto-detected 15-digit IMEI: ${extracted} • ${brand}`
+              : `Detected hardware serial: ${extracted}`
+          });
+        } else if (data.result.status === 'BLURRY_RETRY') {
+          setImeiScanFeedback({
+            status: 'BLURRY',
+            message: data.result.details || 'Photo was blurry or obscured by glare. Please upload a clearer photo or enter digits manually below.'
+          });
+        } else {
+          setImeiScanFeedback({
+            status: 'NOT_FOUND',
+            message: 'No 15-digit IMEI or serial found in this photo. You can type it directly into the input field below.'
+          });
         }
-        setImeiAuditReport(data.result);
       }
     } catch (err) {
       console.warn('SafeShip Vision OCR scan error:', err);
+      setImeiScanFeedback({
+        status: 'ERROR',
+        message: 'Could not process image. Please enter the IMEI manually below or upload another photo.'
+      });
     } finally {
       setIsScanningBackside(false);
       clearFieldError('imei');
+    }
+  };
+
+  const handleImeiPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const optimized = await compressImageForOcr(file);
+    if (optimized) {
+      handleScanBacksidePhoto(optimized);
     }
   };
 
@@ -1749,7 +1820,7 @@ function CreateShipmentContent() {
               </div>
 
               {/* IMEI / Serial Number Section */}
-              <div className="pt-3 border-t border-slate-100 space-y-2.5">
+              <div className="pt-3 border-t border-slate-100 space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-1">
                   <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5">
                     <ShieldCheck className="w-4 h-4 text-[#0066FF]" />
@@ -1761,146 +1832,120 @@ function CreateShipmentContent() {
                 </div>
 
                 <p className="text-[11px] text-slate-500">
-                  Provide the 15-digit IMEI or serial number printed on the back panel, SIM tray, or box barcode of {itemName ? <strong>&quot;{itemName}&quot;</strong> : 'your item'}. You can type it manually or scan it with your camera.
+                  Upload a photo of your device&apos;s <strong>*#06# dialer screen</strong>, <strong>Settings &gt; About</strong>, or <strong>retail box barcode</strong> to auto-scan the 15-digit IMEI. You can also type or edit it manually below.
                 </p>
 
-                {/* Dual Options: Camera Scanner vs Photo Upload */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={() => setShowImeiCameraModal(true)}
-                    className="py-2.5 px-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white flex items-center justify-between transition shadow-xs active:scale-98 cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-2.5 text-left">
-                      <div className="w-8 h-8 rounded-xl bg-white/20 text-white flex items-center justify-center">
-                        <Camera className="w-4 h-4" />
+                {/* Upload Photo Dropzone / Selector */}
+                {!backsidePhoto && (
+                  <label className="p-4 rounded-2xl border-2 border-dashed border-slate-200 hover:border-[#0066FF] bg-[#F8FAFC] hover:bg-blue-50/40 transition flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer group">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0066FF] flex items-center justify-center shrink-0 group-hover:scale-105 transition">
+                        <Upload className="w-5 h-5" />
                       </div>
                       <div>
-                        <span className="text-xs font-bold block">
-                          Scan with Camera
+                        <span className="text-xs font-bold text-slate-900 block">
+                          Upload Photo for Automatic IMEI Scan
                         </span>
-                        <span className="text-[10px] text-blue-100 block">
-                          Camera with flashlight
+                        <span className="text-[10px] text-slate-500 block mt-0.5">
+                          Upload photo from gallery or file &bull; Automatically scans &amp; enters 15-digit IMEI
                         </span>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 rounded-md bg-white/20 text-[9px] font-bold uppercase">
-                      Scan
-                    </span>
-                  </button>
-
-                  <label className="py-2.5 px-3.5 rounded-2xl border border-slate-300 hover:border-slate-400 bg-slate-50 hover:bg-slate-100 flex items-center justify-between cursor-pointer transition active:scale-98 group">
-                    <div className="flex items-center gap-2.5 text-left">
-                      <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 text-slate-700 flex items-center justify-center">
-                        <Scan className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-800 block">
-                          Upload Photo
-                        </span>
-                        <span className="text-[10px] text-slate-500 block">
-                          From gallery or screenshot
-                        </span>
-                      </div>
-                    </div>
-                    <span className="px-2 py-0.5 rounded-md bg-slate-200 text-slate-700 text-[10px] font-semibold shrink-0">
-                      Upload
+                    <span className="px-3.5 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-xs shrink-0 transition active:scale-95">
+                      Upload Photo
                     </span>
                     <input
                       type="file"
                       accept="image/*"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          const reader = new FileReader();
-                          reader.onload = (ev) => {
-                            if (ev.target?.result) {
-                              handleScanBacksidePhoto(ev.target.result as string);
-                            }
-                          };
-                          reader.readAsDataURL(file);
-                        }
-                      }}
+                      onChange={handleImeiPhotoUpload}
                       className="hidden"
                     />
                   </label>
-                </div>
+                )}
 
-                {/* Attached & Scanned Backside Preview */}
+                {/* Attached & Scanned Photo Preview + Status */}
                 {backsidePhoto && (
-                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
                     <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex items-center gap-3 min-w-0">
                         <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center p-0.5">
-                          <img src={backsidePhoto} alt="Backside / IMEI" className="w-full h-full object-contain" />
+                          <img src={backsidePhoto} alt="Uploaded IMEI / Barcode" className="w-full h-full object-contain" />
                         </div>
                         <div className="min-w-0">
                           <span className="text-xs font-bold text-slate-900 block truncate">
                             IMEI Photo Attached
                           </span>
                           <span className="text-[10px] text-slate-500 block">
-                            {isScanningBackside ? 'Scanning barcode & text...' : 'Photo attached'}
+                            {isScanningBackside ? 'SafeShip Vision is analyzing digits...' : 'Photo analyzed'}
                           </span>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => setShowImeiCameraModal(true)}
-                          className="px-2 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold transition cursor-pointer flex items-center gap-1"
-                        >
-                          <Camera className="w-3 h-3" />
-                          <span>Camera</span>
-                        </button>
-                        <label className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-[10px] font-bold transition cursor-pointer shrink-0">
-                          <span>Change</span>
+                        <label className="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-[11px] font-bold transition cursor-pointer shadow-2xs">
+                          <span>Change Photo</span>
                           <input
                             type="file"
                             accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                const reader = new FileReader();
-                                reader.onload = (ev) => {
-                                  if (ev.target?.result) {
-                                    handleScanBacksidePhoto(ev.target.result as string);
-                                  }
-                                };
-                                reader.readAsDataURL(file);
-                              }
-                            }}
+                            onChange={handleImeiPhotoUpload}
                             className="hidden"
                           />
                         </label>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setBacksidePhoto(null);
+                            setImeiScanFeedback(null);
+                          }}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition cursor-pointer"
+                          title="Remove photo"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
 
+                    {/* Scanning Animation State */}
                     {isScanningBackside && (
-                      <div className="p-2 rounded-xl bg-white border border-slate-200 flex items-center gap-2 text-[11px] font-medium text-slate-700 animate-in fade-in">
-                        <span className="w-3.5 h-3.5 rounded-full border-2 border-[#0066FF] border-t-transparent animate-spin shrink-0" />
-                        <span>Scanning IMEI digits...</span>
+                      <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 flex items-center gap-2.5 text-xs font-semibold text-[#0066FF] animate-in fade-in">
+                        <span className="w-4 h-4 rounded-full border-2 border-[#0066FF] border-t-transparent animate-spin shrink-0" />
+                        <div>
+                          <span>Scanning photo for 15-digit IMEI...</span>
+                        </div>
                       </div>
                     )}
 
-                    {!isScanningBackside && manualImei && (
-                      <div className="p-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-[11px] flex items-center justify-between animate-in fade-in">
-                        <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[9px] shrink-0">✓</span>
-                          <span className="font-semibold truncate">Detected: <code className="font-mono text-emerald-950 px-1 py-0.5 bg-white rounded border border-emerald-200">{manualImei}</code></span>
+                    {/* Feedback Banner */}
+                    {!isScanningBackside && imeiScanFeedback && (
+                      <div className={`p-2.5 rounded-xl text-xs flex items-center justify-between gap-2 animate-in fade-in ${
+                        imeiScanFeedback.status === 'SUCCESS'
+                          ? 'bg-emerald-50 border border-emerald-300 text-emerald-950'
+                          : imeiScanFeedback.status === 'BLURRY'
+                          ? 'bg-amber-50 border border-amber-300 text-amber-950'
+                          : 'bg-slate-100 border border-slate-200 text-slate-800'
+                      }`}>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="shrink-0">
+                            {imeiScanFeedback.status === 'SUCCESS' ? '✓' : '⚠️'}
+                          </span>
+                          <span className="font-medium text-[11px]">
+                            {imeiScanFeedback.message}
+                          </span>
                         </div>
-                        <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded shrink-0">
-                          VERIFIED
-                        </span>
+                        {imeiScanFeedback.status === 'SUCCESS' && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-200 text-emerald-900 shrink-0">
+                            AUTO-ENTERED
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* Manual Text Input Field with reflection */}
-                <div className="space-y-1.5 pt-1">
+                {/* Manual Text Input Field (Editable with live validation) */}
+                <div className="space-y-1.5 pt-0.5">
                   <div className="flex items-center justify-between text-[11px] flex-wrap gap-1">
-                    <span className="font-bold text-slate-700">IMEI / Serial Number:</span>
+                    <span className="font-bold text-slate-700">15-Digit IMEI or Serial Number:</span>
                     {manualImei && (
                       (() => {
                         const digitsOnly = manualImei.replace(/\D/g, '');
@@ -1911,7 +1956,7 @@ function CreateShipmentContent() {
                           return (
                             <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 animate-in fade-in">
                               <span>✓</span>
-                              <span>{brandDetected} • 15 Digits Valid</span>
+                              <span>{brandDetected} • GSMA Luhn Valid</span>
                             </span>
                           );
                         }
@@ -1937,6 +1982,7 @@ function CreateShipmentContent() {
                       })()
                     )}
                   </div>
+
                   <div className="relative flex items-center">
                     <input
                       type="text"
@@ -1948,45 +1994,32 @@ function CreateShipmentContent() {
                         setManualImei(cleanVal);
                         clearFieldError('imei');
                       }}
-                      className="w-full px-3.5 py-2.5 pr-24 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs font-mono font-bold text-[#0F172A] outline-hidden focus:border-[#0066FF] transition"
-                      placeholder="Enter 15-digit IMEI or serial number"
+                      className="w-full px-3.5 py-2.5 pr-20 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs font-mono font-bold text-[#0F172A] outline-hidden focus:border-[#0066FF] transition"
+                      placeholder="Enter or verify 15-digit IMEI"
                     />
 
-                    <div className="absolute right-1.5 flex items-center gap-1">
+                    <div className="absolute right-2 flex items-center gap-1.5">
                       {manualImei && (
                         <button
                           type="button"
-                          onClick={() => setManualImei('')}
-                          className="text-slate-400 hover:text-slate-600 text-xs font-bold p-1 cursor-pointer"
-                          title="Clear"
+                          onClick={() => {
+                            setManualImei('');
+                            setImeiScanFeedback(null);
+                          }}
+                          className="px-2 py-0.5 rounded-md bg-slate-200 hover:bg-slate-300 text-slate-600 text-[10px] font-bold cursor-pointer transition"
+                          title="Clear field"
                         >
-                          ✕
+                          Clear
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={() => setShowImeiCameraModal(true)}
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-[10px] flex items-center gap-1 border border-slate-200 transition cursor-pointer"
-                        title="Scan with Camera"
-                      >
-                        <Camera className="w-3 h-3 text-slate-600" />
-                        <span>Scan</span>
-                      </button>
                     </div>
                   </div>
-                </div>
 
-                {/* Imei Scanner Camera Modal Component */}
-                <ImeiScannerModal
-                  isOpen={showImeiCameraModal}
-                  onClose={() => setShowImeiCameraModal(false)}
-                  itemName={itemName}
-                  onImeiDetected={(scannedImei, report) => {
-                    setManualImei(scannedImei);
-                    if (report) setImeiAuditReport(report);
-                    clearFieldError('imei');
-                  }}
-                />
+                  <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
+                    <span>You can freely edit or type digits here if any number was misread from the photo.</span>
+                    {manualImei && <span>{manualImei.replace(/\D/g, '').length} / 15 digits</span>}
+                  </div>
+                </div>
 
                 <p className="text-[10px] text-[#64748B]">
                   SafeShip&apos;s doorstep officer compares this against the physical chassis during the 10-minute unboxing inspection.
