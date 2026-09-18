@@ -4,12 +4,12 @@ import { analyzeInspectionScanWithGemini, verifyImeiWithGemini, verifyProductPho
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { action, image, photo, imeiPhoto, itemName, category, condition, notes } = body;
+    const { action, image, photo, photos, imeiPhoto, itemName, category, condition, notes } = body;
 
-    // 0. Verify that product photo matches declared product name
+    // 0. Verify that product photo matches declared product name (supports multi-angle array)
     if (action === 'verify_match') {
       const matchResult = await verifyProductPhotoMatch(
-        photo || image || imeiPhoto || '',
+        photos || photo || image || imeiPhoto || '',
         itemName || 'Smartphone',
         category
       );

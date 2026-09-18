@@ -903,3 +903,86 @@ export function checkPincodeServiceability(pincode: string): {
       : `Regional Linehaul Active: Priority Express & Standard Ground available with doorstep verification via ${info.hubName}.`
   };
 }
+
+export interface DetectedLocationResult {
+  pincode: string;
+  city: string;
+  state: string;
+  district?: string;
+  hubName?: string;
+  formattedAddress: string;
+  locality?: string;
+}
+
+/**
+ * Reverse Geocode browser GPS coordinates (lat, lng) to Indian Pincode, City, State & Locality
+ */
+export async function reverseGeocodeToIndianLocation(
+  lat: number,
+  lng: number
+): Promise<DetectedLocationResult> {
+  // 1. Try free OpenStreetMap Nominatim for exact address/suburb/postcode
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+      {
+        headers: { 'Accept-Language': 'en' },
+        signal: AbortSignal.timeout(4000)
+      }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const rawPostcode = (data.address?.postcode || '').replace(/\D/g, '');
+      const suburb = data.address?.suburb || data.address?.neighbourhood || data.address?.road || data.address?.subdistrict || '';
+      const city = data.address?.city || data.address?.town || data.address?.village || data.address?.state_district || '';
+      const state = data.address?.state || '';
+
+      if (rawPostcode.length === 6) {
+        const resolved = resolvePincode(rawPostcode);
+        return {
+          pincode: rawPostcode,
+          city: resolved?.city || city || 'Bengaluru',
+          state: resolved?.state || state || 'Karnataka',
+          district: resolved?.district || suburb,
+          hubName: resolved?.hubName,
+          formattedAddress: suburb ? `${suburb}, ${city || resolved?.city}` : (city || resolved?.city || 'India'),
+          locality: suburb
+        };
+      }
+    }
+  } catch (e) {
+    console.warn('Online reverse geocode notice (using internal registry fallback):', e);
+  }
+
+  // 2. High-precision fallback: Find closest Indian hub in PINCODE_REGISTRY via Haversine
+  let nearest: PincodeInfo = PINCODE_REGISTRY['560001'];
+  let minDist = Infinity;
+  for (const info of Object.values(PINCODE_REGISTRY)) {
+    if (info.lat && info.lng) {
+      const dLat = ((info.lat - lat) * Math.PI) / 180;
+      const dLng = ((info.lng - lng) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos((lat * Math.PI) / 180) *
+          Math.cos((info.lat * Math.PI) / 180) *
+          Math.sin(dLng / 2) *
+          Math.sin(dLng / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      const dist = 6371 * c;
+      if (dist < minDist) {
+        minDist = dist;
+        nearest = info;
+      }
+    }
+  }
+
+  return {
+    pincode: nearest.pincode,
+    city: nearest.city,
+    state: nearest.state,
+    district: nearest.district,
+    hubName: nearest.hubName,
+    formattedAddress: `${nearest.district}, ${nearest.city}`,
+    locality: nearest.district
+  };
+}
