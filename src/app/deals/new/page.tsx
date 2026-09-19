@@ -278,15 +278,74 @@ function CreateShipmentContent() {
       }
     };
 
+    const applySavedLocation = () => {
+      try {
+        const savedLocStr = localStorage.getItem('safeship_user_location');
+        if (savedLocStr) {
+          const savedLoc = JSON.parse(savedLocStr);
+          if (savedLoc?.pincode) {
+            setPickupPincode((prev) => {
+              if (!prev) {
+                const info = resolvePincode(savedLoc.pincode);
+                if (info && info.city) {
+                  setPickupCity(`${info.city}, ${info.state}`);
+                  setPickupDistrict(info.district || '');
+                  setPickupState(info.state || '');
+                  setPickupHub(info.hubName || '');
+                }
+                return savedLoc.pincode;
+              }
+              return prev;
+            });
+            if (savedLoc.formattedAddress) {
+              setPickupLocation((prev) => (!prev ? savedLoc.formattedAddress : prev));
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Could not restore saved location:', err);
+      }
+    };
+
     const current = getSession();
     applyUserSession(current);
+    if (!current?.pickupPincode) {
+      applySavedLocation();
+    }
 
     const onAuthChange = () => {
       const updated = getSession();
       applyUserSession(updated);
     };
+
+    const onLocationChange = (e: any) => {
+      const loc = e.detail;
+      if (loc?.pincode) {
+        setPickupPincode((prev) => {
+          if (!prev || prev === loc.pincode) {
+            const info = resolvePincode(loc.pincode);
+            if (info && info.city) {
+              setPickupCity(`${info.city}, ${info.state}`);
+              setPickupDistrict(info.district || '');
+              setPickupState(info.state || '');
+              setPickupHub(info.hubName || '');
+            }
+            return loc.pincode;
+          }
+          return prev;
+        });
+        if (loc.formattedAddress) {
+          setPickupLocation((prev) => (!prev ? loc.formattedAddress : prev));
+        }
+      }
+    };
+
     window.addEventListener('safeship_auth_changed', onAuthChange);
-    return () => window.removeEventListener('safeship_auth_changed', onAuthChange);
+    window.addEventListener('safeship_location_updated', onLocationChange);
+    return () => {
+      window.removeEventListener('safeship_auth_changed', onAuthChange);
+      window.removeEventListener('safeship_location_updated', onLocationChange);
+    };
   }, []);
 
 
@@ -463,6 +522,21 @@ function CreateShipmentContent() {
             handlePickupPincodeChange(loc.pincode);
             clearFieldError('pickupLocation');
             clearFieldError('pickupPincode');
+
+            try {
+              const locData = {
+                pincode: loc.pincode,
+                city: loc.city,
+                state: loc.state,
+                district: loc.district,
+                hubName: loc.hubName,
+                formattedAddress: loc.formattedAddress || `${loc.district || loc.city}, ${loc.city}`
+              };
+              localStorage.setItem('safeship_user_location', JSON.stringify(locData));
+              window.dispatchEvent(new CustomEvent('safeship_location_updated', { detail: locData }));
+            } catch (e) {
+              // ignore
+            }
           } else {
             if (loc.formattedAddress) {
               setDropLocation(loc.formattedAddress);
@@ -630,6 +704,21 @@ function CreateShipmentContent() {
       setPickupDistrict(info.district);
       setPickupState(info.state);
       setPickupHub(info.hubName);
+
+      try {
+        const locData = {
+          pincode: digits,
+          city: info.city,
+          state: info.state,
+          district: info.district,
+          hubName: info.hubName,
+          formattedAddress: `${info.district}, ${info.city}`
+        };
+        localStorage.setItem('safeship_user_location', JSON.stringify(locData));
+        window.dispatchEvent(new CustomEvent('safeship_location_updated', { detail: locData }));
+      } catch (e) {
+        // ignore
+      }
 
       if (dropPincode.length === 6) {
         const route = calculateRoadDistance(digits, dropPincode);
@@ -2897,6 +2986,18 @@ function CreateShipmentContent() {
                     )}
                   </button>
                 </div>
+
+                {pickupPincode && (
+                  <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-blue-50/70 border border-blue-100 text-[11px] text-blue-900">
+                    <div className="flex items-center gap-1.5 truncate">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                      <span className="truncate">
+                        Pickup Location: <strong>{pickupCity || pickupPincode}</strong> {pickupHub ? `• ${pickupHub}` : ''}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-blue-600 font-bold shrink-0 ml-2">Auto-filled ✓</span>
+                  </div>
+                )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>

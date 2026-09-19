@@ -7,7 +7,7 @@ import { SafeShipLogo } from '@/components/common/SafeShipLogo';
 import { MobileBottomNav } from '@/components/common/MobileBottomNav';
 import { getUserOrders } from '@/lib/store';
 import { SafeDeal } from '@/lib/types';
-import { calculateRoadDistance, resolvePincode, calculateTierPricing, calculateInsuranceFee } from '@/lib/pincodeService';
+import { calculateRoadDistance, resolvePincode, calculateTierPricing, calculateInsuranceFee, reverseGeocodeToIndianLocation, PincodeInfo } from '@/lib/pincodeService';
 import {
   Bell,
   Search,
@@ -24,6 +24,8 @@ import {
   ChevronDown,
   ArrowLeftRight,
   Check,
+  CheckCircle2,
+  AlertTriangle,
   Star,
   Sparkles,
   Phone,
@@ -33,14 +35,30 @@ import {
   Clock,
   ExternalLink,
   Award,
-  Headphones
+  Headphones,
+  Navigation,
+  Compass,
+  RefreshCw
 } from '@/components/common/Icons';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
 
 export default function HomePage() {
   const router = useRouter();
   const [selectedCity, setSelectedCity] = useState<string>('Jaipur');
-  const [showCityModal, setShowCityModal] = useState<boolean>(false);
+  const [userLocation, setUserLocation] = useState<{
+    pincode: string;
+    city: string;
+    district?: string;
+    state?: string;
+    hubName?: string;
+    formattedAddress?: string;
+  } | null>(null);
+  const [showAvailabilityModal, setShowAvailabilityModal] = useState<boolean>(false);
+  const [isDetectingLocation, setIsDetectingLocation] = useState<boolean>(false);
+  const [locationDetectError, setLocationDetectError] = useState<string | null>(null);
+  const [pincodeQuery, setPincodeQuery] = useState<string>('');
+  const [pincodeCheckResult, setPincodeCheckResult] = useState<PincodeInfo | null>(null);
+  const [availabilityToast, setAvailabilityToast] = useState<string | null>(null);
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
   const [showTrackModal, setShowTrackModal] = useState<boolean>(false);
   const [trackQuery, setTrackQuery] = useState<string>('');
@@ -63,25 +81,143 @@ export default function HomePage() {
     setIsMounted(true);
     setUserOrders(getUserOrders());
 
-    const handleUpdate = () => {
+    // Restore saved user location from localStorage
+    try {
+      const saved = localStorage.getItem('safeship_user_location');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && (parsed.city || parsed.pincode)) {
+          setUserLocation(parsed);
+          if (parsed.city) setSelectedCity(parsed.city);
+        }
+      }
+    } catch (e) {
+      console.warn('Could not read saved location:', e);
+    }
+
+    const handleOrdersUpdate = () => {
       setUserOrders(getUserOrders());
     };
 
-    window.addEventListener('safeship_user_orders_updated', handleUpdate);
-    return () => window.removeEventListener('safeship_user_orders_updated', handleUpdate);
+    const handleLocationUpdate = (e: any) => {
+      const loc = e.detail;
+      if (loc && (loc.city || loc.pincode)) {
+        setUserLocation(loc);
+        if (loc.city) setSelectedCity(loc.city);
+      }
+    };
+
+    window.addEventListener('safeship_user_orders_updated', handleOrdersUpdate);
+    window.addEventListener('safeship_location_updated', handleLocationUpdate);
+    return () => {
+      window.removeEventListener('safeship_user_orders_updated', handleOrdersUpdate);
+      window.removeEventListener('safeship_location_updated', handleLocationUpdate);
+    };
   }, []);
+
+  const handleAutoDetectLocation = () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      setLocationDetectError('Geolocation is not supported by your browser. Please enter your 6-digit PIN code below.');
+      return;
+    }
+
+    setIsDetectingLocation(true);
+    setLocationDetectError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const loc = await reverseGeocodeToIndianLocation(latitude, longitude);
+
+          const locData = {
+            pincode: loc.pincode,
+            city: loc.city,
+            state: loc.state,
+            district: loc.district,
+            hubName: loc.hubName,
+            formattedAddress: loc.formattedAddress || `${loc.district || loc.city}, ${loc.city}`
+          };
+
+          localStorage.setItem('safeship_user_location', JSON.stringify(locData));
+          window.dispatchEvent(new CustomEvent('safeship_location_updated', { detail: locData }));
+
+          setUserLocation(locData);
+          setSelectedCity(loc.city);
+          setPincodeCheckResult(resolvePincode(loc.pincode));
+          setAvailabilityToast(`✓ Location verified: ${loc.city} (${loc.pincode}) — SafeShip Hub Active!`);
+          setTimeout(() => {
+            setShowAvailabilityModal(false);
+            setAvailabilityToast(null);
+          }, 1600);
+        } catch (err) {
+          console.warn('Geolocation reverse geocoding error:', err);
+          setLocationDetectError('Could not pinpoint postal PIN code from GPS. Enter your 6-digit PIN code below.');
+        } finally {
+          setIsDetectingLocation(false);
+        }
+      },
+      (err) => {
+        setIsDetectingLocation(false);
+        let msg = 'Could not access GPS location. Please enter your 6-digit PIN code below.';
+        if (err.code === err.PERMISSION_DENIED) {
+          msg = 'Location permission was denied. Enter your 6-digit PIN code below to check instant serviceability.';
+        } else if (err.code === err.TIMEOUT) {
+          msg = 'Location request timed out. Enter your 6-digit PIN code below.';
+        }
+        setLocationDetectError(msg);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  };
+
+  const handleCheckPincode = (pin: string) => {
+    const clean = pin.replace(/\D/g, '').slice(0, 6);
+    setPincodeQuery(clean);
+    if (clean.length === 6) {
+      const resolved = resolvePincode(clean);
+      setPincodeCheckResult(resolved);
+      setLocationDetectError(null);
+    } else {
+      setPincodeCheckResult(null);
+    }
+  };
+
+  const handleConfirmLocation = (info: PincodeInfo) => {
+    const locData = {
+      pincode: info.pincode,
+      city: info.city,
+      state: info.state,
+      district: info.district,
+      hubName: info.hubName,
+      formattedAddress: `${info.district}, ${info.city}`
+    };
+
+    localStorage.setItem('safeship_user_location', JSON.stringify(locData));
+    window.dispatchEvent(new CustomEvent('safeship_location_updated', { detail: locData }));
+
+    setUserLocation(locData);
+    setSelectedCity(info.city);
+    setAvailabilityToast(`✓ Delivering to: ${info.city} (${info.pincode})`);
+    setTimeout(() => {
+      setShowAvailabilityModal(false);
+      setAvailabilityToast(null);
+    }, 1100);
+  };
 
   const activeShipment = userOrders.length > 0 ? userOrders[0] : null;
 
   const indianCities = [
-    { name: 'Jaipur', state: 'Rajasthan', activeOrders: 1420 },
-    { name: 'Delhi NCR', state: 'National Capital', activeOrders: 4890 },
-    { name: 'Bengaluru', state: 'Karnataka', activeOrders: 3740 },
-    { name: 'Mumbai', state: 'Maharashtra', activeOrders: 4120 },
-    { name: 'Pune', state: 'Maharashtra', activeOrders: 1980 },
-    { name: 'Hyderabad', state: 'Telangana', activeOrders: 2310 },
-    { name: 'Chennai', state: 'Tamil Nadu', activeOrders: 1850 },
-    { name: 'Ahmedabad', state: 'Gujarat', activeOrders: 1240 },
+    { name: 'Jaipur', state: 'Rajasthan', pincode: '302017', hub: 'SafeShip JAI-Airport Hub', activeOrders: 1420 },
+    { name: 'Delhi NCR', state: 'National Capital', pincode: '110001', hub: 'SafeShip DEL-Central Hub', activeOrders: 4890 },
+    { name: 'Bengaluru', state: 'Karnataka', pincode: '560001', hub: 'SafeShip BLR-Central Hub', activeOrders: 3740 },
+    { name: 'Mumbai', state: 'Maharashtra', pincode: '400001', hub: 'SafeShip BOM-South Hub', activeOrders: 4120 },
+    { name: 'Pune', state: 'Maharashtra', pincode: '411001', hub: 'SafeShip PNQ-Central Hub', activeOrders: 1980 },
+    { name: 'Hyderabad', state: 'Telangana', pincode: '500001', hub: 'SafeShip HYD-Central Hub', activeOrders: 2310 },
+    { name: 'Chennai', state: 'Tamil Nadu', pincode: '600001', hub: 'SafeShip MAA-Port Hub', activeOrders: 1850 },
+    { name: 'Ahmedabad', state: 'Gujarat', pincode: '380001', hub: 'SafeShip AMD-Central Hub', activeOrders: 1240 },
+    { name: 'Chandigarh', state: 'Punjab & Haryana', pincode: '160017', hub: 'SafeShip IXC-Hub', activeOrders: 940 },
+    { name: 'Kolkata', state: 'West Bengal', pincode: '700001', hub: 'SafeShip CCU-Central Hub', activeOrders: 1620 },
   ];
 
   const handleTrackSubmit = (e: React.FormEvent) => {
@@ -170,16 +306,32 @@ export default function HomePage() {
 
           {/* Right Header Utilities: Location Selector, Login & Neutral Booking CTA */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {/* Location Selector Chip (📍 Jaipur ▾) */}
+            {/* Check Availability / Location Selector Chip */}
             <button
               type="button"
-              onClick={() => setShowCityModal(true)}
-              className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-[#F1F5F9] hover:bg-[#E2E8F0] text-[#0F172A] text-xs font-semibold border border-[#E2E8F0] transition active:scale-95 cursor-pointer shadow-2xs"
-              title="Select Operational Hub"
+              onClick={() => {
+                setLocationDetectError(null);
+                setShowAvailabilityModal(true);
+              }}
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-blue-50/90 hover:bg-blue-100/90 text-[#0F172A] text-[11px] sm:text-xs font-semibold border border-blue-200/80 transition active:scale-95 cursor-pointer shadow-2xs group"
+              title="Check Delivery Availability & Pincode"
             >
-              <MapPin className="w-3 h-3 text-[#0066FF]" />
-              <span className="font-bold">{selectedCity}</span>
-              <span className="text-[9px] text-[#64748B]">▾</span>
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <MapPin className="w-3.5 h-3.5 text-[#0066FF] group-hover:scale-110 transition-transform shrink-0" />
+              <div className="flex items-center gap-1 truncate max-w-[95px] sm:max-w-[170px]">
+                <span className="text-[11px] text-slate-500 font-normal hidden lg:inline">Deliver to:</span>
+                <span className="font-bold text-slate-900 truncate">
+                  {userLocation ? (
+                    userLocation.pincode ? `${userLocation.city} (${userLocation.pincode})` : userLocation.city
+                  ) : (
+                    'Check Availability'
+                  )}
+                </span>
+              </div>
+              <span className="text-[9px] text-slate-400 font-bold group-hover:text-blue-600 transition-colors">▾</span>
             </button>
 
             {/* Notification Bell */}
@@ -256,48 +408,232 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* CITY SELECTION MODAL */}
-      {showCityModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-sm w-full p-5 shadow-2xl border border-[#E2E8F0] animate-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0]">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4.5 h-4.5 text-[#0066FF]" />
-                <span className="font-bold text-sm text-[#0F172A]">Select Operational Hub</span>
+      {/* CHECK DELIVERY AVAILABILITY & PINCODE SERVICEABILITY MODAL */}
+      {showAvailabilityModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-[#E2E8F0] animate-in zoom-in-95 max-h-[90vh] overflow-y-auto space-y-4">
+            
+            {/* Modal Header */}
+            <div className="flex items-start justify-between pb-3 border-b border-[#F1F5F9]">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0 text-[#0066FF] mt-0.5">
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-[#0F172A]">Check Delivery Availability</h3>
+                  <p className="text-xs text-[#64748B] mt-0.5">
+                    SafeShip 10-Minute Doorstep Open-Box Inspection &amp; Escrow serviceability across India.
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
-                onClick={() => setShowCityModal(false)}
-                className="text-[#94A3B8] hover:text-[#0F172A] cursor-pointer"
+                onClick={() => {
+                  setShowAvailabilityModal(false);
+                  setLocationDetectError(null);
+                }}
+                className="text-[#94A3B8] hover:text-[#0F172A] p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+                aria-label="Close"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="py-2 max-h-72 overflow-y-auto divide-y divide-[#F1F5F9]">
-              {indianCities.map((city) => (
-                <button
-                  key={city.name}
-                  type="button"
-                  onClick={() => {
-                    setSelectedCity(city.name);
-                    setShowCityModal(false);
-                  }}
-                  className={`w-full py-2.5 px-3 flex items-center justify-between rounded-xl text-left text-xs transition cursor-pointer ${
-                    selectedCity === city.name
-                      ? 'bg-[#EFF6FF] text-[#0066FF] font-bold'
-                      : 'hover:bg-[#F8FAFC] text-[#334155]'
-                  }`}
-                >
-                  <div>
-                    <span className="block font-semibold">{city.name}</span>
-                    <span className="text-[10px] text-[#94A3B8]">{city.state}</span>
+
+            {/* Notification / Success Toast */}
+            {availabilityToast && (
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold px-3.5 py-2.5 rounded-2xl flex items-center gap-2 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{availabilityToast}</span>
+              </div>
+            )}
+
+            {/* Current Active Location Info if set */}
+            {userLocation && (
+              <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  <div className="truncate text-xs">
+                    <span className="text-slate-500">Current Hub: </span>
+                    <strong className="text-slate-900">{userLocation.city} {userLocation.pincode ? `(${userLocation.pincode})` : ''}</strong>
+                    {userLocation.hubName && <span className="text-blue-600 ml-1 hidden sm:inline">• {userLocation.hubName}</span>}
                   </div>
-                  <span className="text-[10px] text-[#64748B] bg-white px-2 py-0.5 rounded-md border border-[#E2E8F0]">
-                    {city.activeOrders} active
-                  </span>
-                </button>
-              ))}
+                </div>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md shrink-0">
+                  Active
+                </span>
+              </div>
+            )}
+
+            {/* Option 1: One-Click GPS Auto-Detection */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={handleAutoDetectLocation}
+                disabled={isDetectingLocation}
+                className="w-full py-3 px-4 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] active:scale-[0.99] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#0066FF]/20 hover:shadow-lg transition flex items-center justify-center gap-2.5 cursor-pointer disabled:opacity-60"
+              >
+                {isDetectingLocation ? (
+                  <>
+                    <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                    <span>Detecting GPS Location &amp; Postal Hub...</span>
+                  </>
+                ) : (
+                  <>
+                    <Navigation className="w-4 h-4" />
+                    <span>📍 Auto-Detect My Current Location</span>
+                  </>
+                )}
+              </button>
+              <p className="text-[11px] text-slate-500 text-center">
+                Uses GPS &amp; high-precision postal reverse-geocoding to detect your PIN code instantly.
+              </p>
             </div>
+
+            {/* Location Access Error Alert Banner */}
+            {locationDetectError && (
+              <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-3.5 text-xs flex items-start gap-2.5 animate-in fade-in">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <span className="font-bold block">Location Permission / Access Notice</span>
+                  <p className="text-amber-800 leading-relaxed">{locationDetectError}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Divider */}
+            <div className="relative flex py-1 items-center">
+              <div className="grow border-t border-slate-200"></div>
+              <span className="shrink mx-3 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Or Check 6-Digit PIN Code
+              </span>
+              <div className="grow border-t border-slate-200"></div>
+            </div>
+
+            {/* Option 2: 6-Digit PIN Code Input Box */}
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 block">
+                Enter Indian Postal PIN Code:
+              </label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    value={pincodeQuery}
+                    onChange={(e) => handleCheckPincode(e.target.value)}
+                    placeholder="e.g. 560001, 110001, 302017"
+                    className="w-full px-3.5 py-2.5 rounded-2xl bg-[#F8FAFC] border border-[#CBD5E1] focus:border-[#0066FF] focus:bg-white text-sm font-mono font-bold text-slate-900 placeholder:text-slate-400 placeholder:font-sans outline-hidden transition tracking-wider"
+                  />
+                  {pincodeQuery.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPincodeQuery('');
+                        setPincodeCheckResult(null);
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCheckPincode(pincodeQuery)}
+                  className="px-4 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-bold transition cursor-pointer shrink-0 shadow-xs"
+                >
+                  Check
+                </button>
+              </div>
+            </div>
+
+            {/* Verified Pincode Serviceability Result Card */}
+            {pincodeCheckResult && (
+              <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 space-y-3 animate-in fade-in">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold tracking-wide uppercase mb-1">
+                      <Check className="w-3 h-3 text-emerald-600" />
+                      100% Serviceable Hub
+                    </span>
+                    <h4 className="text-sm font-bold text-slate-900">
+                      {pincodeCheckResult.city}, {pincodeCheckResult.state} ({pincodeCheckResult.pincode})
+                    </h4>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      Assigned Gateway: <span className="font-semibold text-[#0066FF]">{pincodeCheckResult.hubName}</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-700 pt-1 border-t border-emerald-200/60">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-emerald-600">✓</span>
+                    <span>10-Min Open-Box Unboxing</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-emerald-600">✓</span>
+                    <span>Doorstep Escrow Payout</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-emerald-600">✓</span>
+                    <span>Tamper-Evident Packaging</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-emerald-600">✓</span>
+                    <span>Full Transit Insurance</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleConfirmLocation(pincodeCheckResult)}
+                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Deliver to {pincodeCheckResult.city} ({pincodeCheckResult.pincode}) &amp; Auto-Fill</span>
+                </button>
+              </div>
+            )}
+
+            {/* Popular Operational Hubs Quick Selector */}
+            <div className="space-y-2 pt-1 border-t border-slate-100">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                Popular Logistics Hubs:
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 max-h-48 overflow-y-auto pr-1">
+                {indianCities.map((city) => {
+                  const isCurrent = (userLocation?.city || selectedCity) === city.name;
+                  return (
+                    <button
+                      key={city.name}
+                      type="button"
+                      onClick={() => {
+                        const cityInfo = resolvePincode((city as any).pincode || '302017');
+                        handleConfirmLocation({
+                          ...cityInfo,
+                          city: city.name,
+                          state: city.state
+                        });
+                      }}
+                      className={`p-2 rounded-xl text-left text-xs transition border cursor-pointer flex flex-col justify-between ${
+                        isCurrent
+                          ? 'bg-blue-50 border-blue-300 text-[#0066FF] font-bold shadow-2xs'
+                          : 'bg-slate-50/80 hover:bg-slate-100 border-slate-200 text-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <span className="font-semibold truncate">{city.name}</span>
+                        {isCurrent && <span className="w-1.5 h-1.5 rounded-full bg-[#0066FF]" />}
+                      </div>
+                      <span className="text-[10px] text-slate-400 mt-0.5">{city.state}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
           </div>
         </div>
       )}
