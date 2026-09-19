@@ -703,19 +703,19 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 3. HERO SECTION (LUXURY FINTECH AESTHETICS, AMBIENT DEPTH, PERFECT SCALING) */}
       {/* ========================================================================= */}
-      <section className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-10 pb-6 sm:pb-14 overflow-hidden">
+      <section className="relative w-full max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-2.5 sm:pt-10 pb-4 sm:pb-14 overflow-hidden">
         {/* Subtle Ambient Radial Glows */}
         <div className="absolute -top-24 -right-16 w-80 sm:w-96 h-80 sm:h-96 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute top-1/2 -left-20 w-72 h-72 bg-emerald-400/5 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 lg:gap-12 items-center relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-8 lg:gap-12 items-center relative z-10">
           
           {/* Left Hero Content */}
-          <div className="lg:col-span-6 xl:col-span-5 space-y-3.5 sm:space-y-6">
+          <div className="lg:col-span-6 xl:col-span-5 space-y-2.5 sm:space-y-6">
             
             {/* Eyebrow Pill Badge */}
             <div>
-              <span className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-full bg-blue-50/90 border border-blue-200/80 shadow-2xs text-xs font-semibold text-[#0066FF] tracking-tight">
+              <span className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-blue-50/90 border border-blue-200/80 shadow-2xs text-[11px] sm:text-xs font-semibold text-[#0066FF] tracking-tight">
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0066FF]"></span>
@@ -725,8 +725,8 @@ export default function HomePage() {
             </div>
 
             {/* Premium Punchy Headline with Vibrant Gradient Accent */}
-            <div className="space-y-1">
-              <h1 className="text-[28px] xs:text-[34px] sm:text-5xl lg:text-[54px] font-black tracking-[-0.03em] text-[#0F172A] leading-[1.12]">
+            <div className="space-y-0.5 sm:space-y-1">
+              <h1 className="text-[25px] xs:text-[29px] sm:text-5xl lg:text-[54px] font-black tracking-[-0.03em] text-[#0F172A] leading-[1.12]">
                 <span className="block">Open Box Delivery</span>
                 <span className="block">&amp; Safe Shipping.</span>
                 <span className="block bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
@@ -736,7 +736,7 @@ export default function HomePage() {
             </div>
 
             {/* Subtitle */}
-            <div className="space-y-1 text-slate-600 text-xs xs:text-sm sm:text-base leading-relaxed max-w-xl">
+            <div className="space-y-1 text-slate-600 text-[11.5px] xs:text-[13px] sm:text-base leading-snug sm:leading-relaxed max-w-xl">
               <p className="font-semibold text-slate-900">
                 The safest way to ship and buy electronics across India.
               </p>
@@ -746,10 +746,10 @@ export default function HomePage() {
             </div>
 
             {/* Action Buttons (High-Converting Squircles, Side-by-Side on Mobile) */}
-            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3.5 pt-0.5">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3.5 pt-0.5">
               <Link
                 href="/in/deals/new?type=send"
-                className="py-3 px-3.5 sm:px-7 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-xs xs:text-sm sm:text-base shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2 text-center truncate cursor-pointer"
+                className="py-2.5 sm:py-3.5 px-3 sm:px-7 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-xs xs:text-sm sm:text-base shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2 text-center truncate cursor-pointer"
               >
                 <span className="shrink-0 text-sm sm:text-base">📦</span>
                 <span className="truncate hidden sm:inline">Book Safe Delivery &rarr;</span>
@@ -758,19 +758,43 @@ export default function HomePage() {
 
               <Link
                 href="/in/track"
-                className="py-3 px-3.5 sm:px-7 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs xs:text-sm sm:text-base shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center truncate cursor-pointer"
+                className="py-2.5 sm:py-3.5 px-3 sm:px-7 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs xs:text-sm sm:text-base shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center truncate cursor-pointer"
               >
-                <Search className="w-4 h-4 text-slate-500 shrink-0" />
+                <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 shrink-0" />
                 <span className="truncate">Track Shipment</span>
               </Link>
             </div>
 
-            {/* 4 Value Propositions: Upgraded to Structured Micro-Cards */}
-            <div className="pt-2 sm:pt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
+            {/* Mobile: Ultra-Clean 1-Row 4-Column Trust Strip (Saves ~80px vertical space) */}
+            <div className="grid grid-cols-4 gap-1.5 sm:hidden pt-0.5">
+              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-slate-50/90 border border-slate-200/80 shadow-2xs">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF] mb-0.5 shrink-0" />
+                <span className="text-[10px] font-bold text-slate-900 leading-tight">Bank Escrow</span>
+                <span className="text-[8px] text-slate-500 leading-none mt-0.5">100% Locked</span>
+              </div>
+              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-slate-50/90 border border-slate-200/80 shadow-2xs">
+                <Truck className="w-3.5 h-3.5 text-indigo-600 mb-0.5 shrink-0" />
+                <span className="text-[10px] font-bold text-slate-900 leading-tight">PAN India</span>
+                <span className="text-[8px] text-slate-500 leading-none mt-0.5">19k+ PINs</span>
+              </div>
+              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-slate-50/90 border border-slate-200/80 shadow-2xs">
+                <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400 mb-0.5 shrink-0" />
+                <span className="text-[10px] font-bold text-slate-900 leading-tight">4.9★ Rating</span>
+                <span className="text-[8px] text-slate-500 leading-none mt-0.5">50k+ Verified</span>
+              </div>
+              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-slate-50/90 border border-slate-200/80 shadow-2xs">
+                <Headphones className="w-3.5 h-3.5 text-emerald-600 mb-0.5 shrink-0" />
+                <span className="text-[10px] font-bold text-slate-900 leading-tight">24/7 Desk</span>
+                <span className="text-[8px] text-slate-500 leading-none mt-0.5">Live Support</span>
+              </div>
+            </div>
+
+            {/* Desktop: Spacious 4-Card Trust Grid */}
+            <div className="hidden sm:grid sm:grid-cols-4 gap-2.5 pt-4">
               {/* Prop 1: Bank-Secured Escrow */}
-              <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2 sm:gap-2.5 shadow-2xs">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-100/70 text-[#0066FF] flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <div className="p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2.5 shadow-2xs">
+                <div className="w-8 h-8 rounded-lg bg-blue-100/70 text-[#0066FF] flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-900 truncate">Bank Escrow</div>
@@ -779,9 +803,9 @@ export default function HomePage() {
               </div>
 
               {/* Prop 2: PAN India Delivery */}
-              <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2 sm:gap-2.5 shadow-2xs">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-100/70 text-indigo-600 flex items-center justify-center shrink-0">
-                  <Truck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <div className="p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2.5 shadow-2xs">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100/70 text-indigo-600 flex items-center justify-center shrink-0">
+                  <Truck className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-900 truncate">PAN India</div>
@@ -790,9 +814,9 @@ export default function HomePage() {
               </div>
 
               {/* Prop 3: Trusted by 50,000+ */}
-              <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2 sm:gap-2.5 shadow-2xs">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-100/70 text-amber-500 flex items-center justify-center shrink-0">
-                  <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-amber-400" />
+              <div className="p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2.5 shadow-2xs">
+                <div className="w-8 h-8 rounded-lg bg-amber-100/70 text-amber-500 flex items-center justify-center shrink-0">
+                  <Star className="w-4 h-4 fill-amber-400" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-900 truncate">4.9★ Rating</div>
@@ -801,9 +825,9 @@ export default function HomePage() {
               </div>
 
               {/* Prop 4: Real People Support */}
-              <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2 sm:gap-2.5 shadow-2xs">
-                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-100/70 text-emerald-600 flex items-center justify-center shrink-0">
-                  <Headphones className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <div className="p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2.5 shadow-2xs">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100/70 text-emerald-600 flex items-center justify-center shrink-0">
+                  <Headphones className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
                   <div className="text-xs font-bold text-slate-900 truncate">24/7 Support</div>
@@ -816,25 +840,25 @@ export default function HomePage() {
 
           {/* Right Hero Visual Container: High-Converting Doorstep Escrow Card */}
           <div className="lg:col-span-6 xl:col-span-7 w-full max-w-lg lg:max-w-none mx-auto">
-            <div className="rounded-2xl sm:rounded-3xl bg-white border border-slate-200/90 shadow-xl shadow-slate-200/50 p-2 sm:p-3 relative overflow-hidden transition-all duration-300 hover:shadow-2xl">
+            <div className="rounded-2xl sm:rounded-3xl bg-white border border-slate-200/90 shadow-xl shadow-slate-200/50 p-1.5 sm:p-3 relative overflow-hidden transition-all duration-300 hover:shadow-2xl">
               <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/70 border border-slate-200/80">
                 {/* Image container using natural proportional scaling */}
                 <div className="relative w-full overflow-hidden bg-white flex items-center justify-center">
                   <img
                     src="/images/hero_visual_full.webp?v=5"
                     alt="SafeShip Doorstep Open Box Inspection with Apple iPhone 15 Pro Max Verification"
-                    className="w-full h-auto max-h-[350px] xs:max-h-[390px] sm:max-h-none object-contain block select-none"
+                    className="w-full h-auto max-h-[265px] xs:max-h-[300px] sm:max-h-none object-contain block select-none"
                   />
 
                   {/* Clean Brand Pill */}
-                  <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 bg-white/95 backdrop-blur-md px-2.5 sm:px-3 py-1 rounded-full border border-slate-200/90 text-[10px] sm:text-xs font-bold text-slate-800 flex items-center gap-1.5 shadow-xs">
+                  <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white/95 backdrop-blur-md px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-slate-200/90 text-[10px] sm:text-xs font-bold text-slate-800 flex items-center gap-1.5 shadow-xs">
                     <span className="w-2 h-2 rounded-full bg-[#0066FF] animate-pulse" />
                     <span>Doorstep Unboxing Active</span>
                   </div>
                 </div>
 
                 {/* Micro Footer inside Preview */}
-                <div className="p-2 sm:p-3 bg-white/95 backdrop-blur-xs border-t border-slate-200/80 flex items-center justify-between gap-1 sm:gap-2 text-[10px] sm:text-xs text-slate-600 font-medium">
+                <div className="p-1.5 sm:p-3 bg-white/95 backdrop-blur-xs border-t border-slate-200/80 flex items-center justify-between gap-1 sm:gap-2 text-[10px] sm:text-xs text-slate-600 font-medium">
                   <span className="flex items-center gap-1 font-semibold text-slate-800">
                     <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
                     <span className="truncate">10-Min Check</span>
