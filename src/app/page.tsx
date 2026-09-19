@@ -715,7 +715,7 @@ export default function HomePage() {
             
             {/* Eyebrow Pill Badge */}
             <div>
-              <span className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-blue-50/90 border border-blue-200/80 shadow-2xs text-[11px] sm:text-xs font-semibold text-[#0066FF] tracking-tight">
+              <span className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-blue-50/90 border border-blue-200/90 shadow-2xs text-xs sm:text-xs font-bold text-[#0066FF] tracking-tight">
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0066FF]"></span>
@@ -728,7 +728,7 @@ export default function HomePage() {
             <div className="flex sm:hidden items-stretch justify-between gap-3 pt-0.5">
               {/* Left: Punchy 3-Line Headline with Impactful Typography & Matched Height */}
               <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <h1 className="text-[23.5px] xs:text-[27.5px] font-black tracking-[-0.035em] text-[#0F172A] leading-[1.12]">
+                <h1 className="text-[24px] xs:text-[28.5px] font-black tracking-[-0.035em] text-[#0F172A] leading-[1.1]">
                   <span className="block">Open Box Delivery</span>
                   <span className="block">&amp; Safe Shipping.</span>
                   <span className="block bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent drop-shadow-2xs">
@@ -737,12 +737,12 @@ export default function HomePage() {
                 </h1>
               </div>
 
-              {/* Right: Action Buttons in Empty Section on Top with Premium Squircle Styling */}
-              <div className="w-[138px] xs:w-[155px] shrink-0 flex flex-col justify-center gap-2">
+              {/* Right: Action Buttons in Empty Section on Top with User-Friendly Tap Targets */}
+              <div className="w-[140px] xs:w-[158px] shrink-0 flex flex-col justify-center gap-2">
                 {/* Track Shipment on Top */}
                 <Link
                   href="/in/track"
-                  className="w-full py-2.5 xs:py-2.5 px-3 rounded-xl xs:rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-slate-300 text-slate-800 font-bold text-xs xs:text-[13px] shadow-2xs hover:shadow-xs transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                  className="w-full py-2.5 xs:py-3 px-3 rounded-xl xs:rounded-2xl bg-white hover:bg-slate-50 border border-slate-200/90 hover:border-slate-300 text-slate-800 font-extrabold text-[12px] xs:text-[13.5px] shadow-2xs hover:shadow-xs transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
                 >
                   <Search className="w-3.5 h-3.5 text-slate-600 shrink-0" />
                   <span className="truncate">Track Shipment</span>
@@ -751,7 +751,7 @@ export default function HomePage() {
                 {/* Book Delivery Under It */}
                 <Link
                   href="/in/deals/new?type=send"
-                  className="w-full py-2.5 xs:py-2.5 px-3 rounded-xl xs:rounded-2xl bg-gradient-to-r from-[#0066FF] via-[#0055FF] to-[#0048E5] hover:from-[#0052FF] hover:to-[#0038CC] text-white font-bold text-xs xs:text-[13px] shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                  className="w-full py-2.5 xs:py-3 px-3 rounded-xl xs:rounded-2xl bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#0040CC] hover:from-[#0052FF] hover:to-[#0038B8] text-white font-extrabold text-[12px] xs:text-[13.5px] shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
                 >
                   <span className="shrink-0 text-xs xs:text-sm">📦</span>
                   <span className="truncate">Book Delivery &rarr;</span>
@@ -760,13 +760,13 @@ export default function HomePage() {
             </div>
 
             {/* Mobile View: Hero Subtext Full-Width Under Headline & Buttons with Emerald Trust Accent (sm:hidden) */}
-            <div className="block sm:hidden space-y-0.5 text-slate-600 text-xs xs:text-[12.5px] leading-snug pt-1">
-              <p className="font-bold text-slate-900 flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+            <div className="block sm:hidden space-y-1 text-slate-600 text-xs xs:text-[13.5px] leading-snug pt-1">
+              <p className="font-extrabold text-slate-900 flex items-center gap-2 text-[12px] xs:text-[13.5px]">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs shadow-emerald-500/50"></span>
                 <span>The safest way to ship &amp; buy electronics across India.</span>
               </p>
-              <p className="text-slate-600 text-[11px] xs:text-xs leading-normal font-normal pl-3">
-                10-min doorstep unboxing. Verify screen &amp; IMEI before payment &mdash; or reject on the spot for ₹0.
+              <p className="text-slate-600 text-[11px] xs:text-xs leading-normal font-normal pl-3.5">
+                Guaranteed 10-minute doorstep unboxing. Verify screen &amp; IMEI before payment &mdash; or reject on the spot for ₹0.
               </p>
             </div>
 
@@ -812,25 +812,25 @@ export default function HomePage() {
 
             {/* Mobile: Ultra-Clean 1-Row 4-Column Trust Strip (Saves ~80px vertical space) */}
             <div className="grid grid-cols-4 gap-1.5 sm:hidden pt-0.5">
-              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-slate-50/90 border border-slate-200/80 shadow-2xs">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF] mb-0.5 shrink-0" />
-                <span className="text-[10px] font-bold text-slate-900 leading-tight">Bank Escrow</span>
-                <span className="text-[8px] text-slate-500 leading-none mt-0.5">100% Locked</span>
+              <div className="flex flex-col items-center text-center p-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
+                <ShieldCheck className="w-4 h-4 text-[#0066FF] mb-0.5 shrink-0" />
+                <span className="text-[11px] xs:text-[12px] font-bold text-slate-900 leading-tight">Bank Escrow</span>
+                <span className="text-[9px] xs:text-[9.5px] text-slate-500 font-medium leading-none mt-0.5">100% Locked</span>
               </div>
-              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-slate-50/90 border border-slate-200/80 shadow-2xs">
-                <Truck className="w-3.5 h-3.5 text-indigo-600 mb-0.5 shrink-0" />
-                <span className="text-[10px] font-bold text-slate-900 leading-tight">PAN India</span>
-                <span className="text-[8px] text-slate-500 leading-none mt-0.5">19k+ PINs</span>
+              <div className="flex flex-col items-center text-center p-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
+                <Truck className="w-4 h-4 text-indigo-600 mb-0.5 shrink-0" />
+                <span className="text-[11px] xs:text-[12px] font-bold text-slate-900 leading-tight">PAN India</span>
+                <span className="text-[9px] xs:text-[9.5px] text-slate-500 font-medium leading-none mt-0.5">19k+ PINs</span>
               </div>
-              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-slate-50/90 border border-slate-200/80 shadow-2xs">
-                <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-400 mb-0.5 shrink-0" />
-                <span className="text-[10px] font-bold text-slate-900 leading-tight">4.9★ Rating</span>
-                <span className="text-[8px] text-slate-500 leading-none mt-0.5">50k+ Verified</span>
+              <div className="flex flex-col items-center text-center p-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
+                <Star className="w-4 h-4 text-amber-500 fill-amber-400 mb-0.5 shrink-0" />
+                <span className="text-[11px] xs:text-[12px] font-bold text-slate-900 leading-tight">4.9★ Rating</span>
+                <span className="text-[9px] xs:text-[9.5px] text-slate-500 font-medium leading-none mt-0.5">50k+ Verified</span>
               </div>
-              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-slate-50/90 border border-slate-200/80 shadow-2xs">
-                <Headphones className="w-3.5 h-3.5 text-emerald-600 mb-0.5 shrink-0" />
-                <span className="text-[10px] font-bold text-slate-900 leading-tight">24/7 Desk</span>
-                <span className="text-[8px] text-slate-500 leading-none mt-0.5">Live Support</span>
+              <div className="flex flex-col items-center text-center p-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
+                <Headphones className="w-4 h-4 text-emerald-600 mb-0.5 shrink-0" />
+                <span className="text-[11px] xs:text-[12px] font-bold text-slate-900 leading-tight">24/7 Desk</span>
+                <span className="text-[9px] xs:text-[9.5px] text-slate-500 font-medium leading-none mt-0.5">Live Support</span>
               </div>
             </div>
 
