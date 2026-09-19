@@ -31,7 +31,7 @@ export const EnterpriseFooter: React.FC = () => {
   };
 
   return (
-    <footer className="w-full bg-[#0F172A] text-white border-t border-slate-800 mt-16 selection:bg-[#0066FF] selection:text-white">
+    <footer className="w-full bg-[#0F172A] text-white border-t border-slate-800 mt-16 pb-28 sm:pb-12 selection:bg-[#0066FF] selection:text-white">
       {/* 1. PINCODE SERVICEABILITY & TRUST BANNER */}
       <div className="border-b border-slate-800 bg-slate-900/70 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">

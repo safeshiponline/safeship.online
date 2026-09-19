@@ -60,13 +60,13 @@ export const LiveTickerBar: React.FC = () => {
   }, []);
 
   return (
-    <div className="w-full bg-[#0F172A] text-slate-300 border-b border-slate-800 text-[11px] py-1.5 px-3 sm:px-4 select-none">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
-        {/* Static Live Prefix with Emerald Pulse */}
+    <div className="w-full bg-slate-950/95 backdrop-blur-md text-slate-300 border-b border-slate-800/70 text-[11px] py-1.5 px-3 sm:px-6 select-none shadow-xs">
+      <div className="max-w-7xl mx-auto flex items-center justify-between gap-2.5 sm:gap-4">
+        {/* Static Live Prefix with Emerald Radar Beacon */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-80"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-xs shadow-emerald-500/50"></span>
           </span>
           <span className="font-bold text-white uppercase tracking-wider text-[9px] sm:text-[10px] whitespace-nowrap">
             <span className="hidden sm:inline">Live Network Status:</span>
@@ -82,17 +82,17 @@ export const LiveTickerBar: React.FC = () => {
             return (
               <div
                 key={idx}
-                className={`absolute inset-0 flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px] transition-all duration-500 ease-in-out ${
+                className={`absolute inset-0 flex items-center gap-1.5 text-[10px] sm:text-[11px] font-medium tracking-tight transition-all duration-500 ease-in-out ${
                   isActive
                     ? 'opacity-100 translate-y-0 pointer-events-auto'
                     : 'opacity-0 -translate-y-3 pointer-events-none'
                 }`}
               >
-                <Icon className={`w-3 h-3 ${item.color} shrink-0`} />
-                <span className="text-slate-200 truncate hidden xs:inline">
+                <Icon className={`w-3.5 h-3.5 ${item.color} shrink-0`} />
+                <span className="text-slate-200 truncate hidden xs:inline font-mono">
                   {item.full}
                 </span>
-                <span className="text-slate-200 truncate xs:hidden">
+                <span className="text-slate-200 truncate xs:hidden font-mono">
                   {item.short}
                 </span>
               </div>
@@ -103,9 +103,9 @@ export const LiveTickerBar: React.FC = () => {
         {/* Desktop Right Desk Status */}
         <div className="hidden md:flex items-center gap-2 shrink-0 font-sans text-[11px]">
           <span className="text-slate-400">24/7 Support:</span>
-          <span className="text-blue-400 font-bold flex items-center gap-1">
+          <span className="text-blue-400 font-bold flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-[#0066FF] animate-pulse" />
-            Live 24/7 Desk
+            Live Support Desk
           </span>
         </div>
       </div>

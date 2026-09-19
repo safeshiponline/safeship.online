@@ -41,50 +41,11 @@ import {
   RefreshCw
 } from '@/components/common/Icons';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
-
-export const LIVE_TICKER_ITEMS = [
-  {
-    icon: Check,
-    color: 'text-emerald-400',
-    full: '19,240+ PIN Codes Fully Serviceable Across All States',
-    short: '19,240+ PIN Codes Serviceable',
-  },
-  {
-    icon: Lock,
-    color: 'text-blue-400',
-    full: 'RBI Section 10A Trustee Escrow: 100% Operational',
-    short: 'RBI Escrow: 100% Operational',
-  },
-  {
-    icon: ShieldCheck,
-    color: 'text-emerald-400',
-    full: 'Mandatory 10-Min Doorstep Unboxing Enforced',
-    short: '10-Min Doorstep Unboxing Active',
-  },
-  {
-    icon: Truck,
-    color: 'text-amber-400',
-    full: 'National Air & Expressway Corridors: Linehaul Active',
-    short: 'Express Corridors Active',
-  },
-  {
-    icon: Sparkles,
-    color: 'text-sky-400',
-    full: 'Best COD & Safe Shipping: ₹0 Advance Risk',
-    short: 'Best Open Box & COD Delivery',
-  },
-  {
-    icon: Star,
-    color: 'text-amber-300',
-    full: '50,000+ Verified Gadget Deliveries Completed',
-    short: '50,000+ Verified Deliveries',
-  },
-];
+import { LiveTickerBar } from '@/components/common/LiveTickerBar';
 
 export default function HomePage() {
   const router = useRouter();
   const [selectedCity, setSelectedCity] = useState<string>('Jaipur');
-  const [tickerIndex, setTickerIndex] = useState<number>(0);
   const [userLocation, setUserLocation] = useState<{
     pincode: string;
     city: string;
@@ -104,13 +65,6 @@ export default function HomePage() {
   const [trackQuery, setTrackQuery] = useState<string>('');
   const [userOrders, setUserOrders] = useState<SafeDeal[]>([]);
   const [isMounted, setIsMounted] = useState<boolean>(false);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTickerIndex((prev) => (prev + 1) % LIVE_TICKER_ITEMS.length);
-    }, 3500);
-    return () => clearInterval(timer);
-  }, []);
 
   // FAQ Accordion State
   const [calcOrigin, setCalcOrigin] = useState<string>('623526'); // Rameshwaram
@@ -408,13 +362,12 @@ export default function HomePage() {
               Login
             </Link>
 
-            {/* Main Primary CTA Button (Neutral for both Buyer & Seller) */}
+            {/* Main Primary CTA Button - Visible on Desktop/Tablet, Hidden on Mobile where bottom nav has center Book button */}
             <Link
               href="/in/deals/new?type=send"
-              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#0066FF]/25 hover:shadow-lg transition active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
+              className="hidden sm:inline-flex items-center gap-1.5 px-4 lg:px-5 py-2 rounded-full bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#0066FF]/25 hover:shadow-lg transition active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
             >
-              <span className="hidden sm:inline">Book Safe Delivery</span>
-              <span className="sm:hidden">Book</span>
+              <span>Book Safe Delivery</span>
               <span className="text-xs sm:text-sm">&rarr;</span>
             </Link>
           </div>
@@ -422,59 +375,9 @@ export default function HomePage() {
       </header>
 
       {/* ========================================================================= */}
-      {/* 2. REAL-TIME NATIONAL LOGISTICS TICKER RIBBON (ONE-BY-ONE ROTATING)       */}
+      {/* 2. REAL-TIME NATIONAL LOGISTICS TICKER RIBBON                             */}
       {/* ========================================================================= */}
-      <div className="w-full bg-[#0F172A] text-slate-300 border-b border-slate-800 text-[11px] py-1.5 px-3 sm:px-4 select-none">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 sm:gap-4">
-          
-          {/* Static Live Prefix with Emerald Pulse */}
-          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="font-bold text-white uppercase tracking-wider text-[9px] sm:text-[10px] whitespace-nowrap">
-              <span className="hidden sm:inline">Live Network Status:</span>
-              <span className="sm:hidden">Live Status:</span>
-            </span>
-          </div>
-
-          {/* One-by-One Rotating Item Viewport */}
-          <div className="relative flex-1 h-5 overflow-hidden flex items-center min-w-0">
-            {LIVE_TICKER_ITEMS.map((item, idx) => {
-              const Icon = item.icon;
-              const isActive = idx === tickerIndex;
-              return (
-                <div
-                  key={idx}
-                  className={`absolute inset-0 flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px] transition-all duration-500 ease-in-out ${
-                    isActive
-                      ? 'opacity-100 translate-y-0 pointer-events-auto'
-                      : 'opacity-0 -translate-y-3 pointer-events-none'
-                  }`}
-                >
-                  <Icon className={`w-3 h-3 ${item.color} shrink-0`} />
-                  <span className="text-slate-200 truncate hidden xs:inline">
-                    {item.full}
-                  </span>
-                  <span className="text-slate-200 truncate xs:hidden">
-                    {item.short}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Desktop Right Desk Status */}
-          <div className="hidden md:flex items-center gap-2 shrink-0 font-sans text-[11px]">
-            <span className="text-slate-400">24/7 Support:</span>
-            <span className="text-blue-400 font-bold flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#0066FF] animate-pulse" />
-              Live 24/7 Desk
-            </span>
-          </div>
-        </div>
-      </div>
+      <LiveTickerBar />
 
       {/* CHECK DELIVERY AVAILABILITY & PINCODE SERVICEABILITY MODAL */}
       {showAvailabilityModal && (
@@ -797,147 +700,150 @@ export default function HomePage() {
       )}
 
       {/* ========================================================================= */}
-      {/* 3. HERO SECTION (NEUTRAL COPY, TIGHT TYPOGRAPHY, PERFECT MOBILE VISUAL)    */}
+      {/* 3. HERO SECTION (LUXURY FINTECH AESTHETICS, AMBIENT DEPTH, PERFECT SCALING) */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-2.5 sm:pt-10 pb-6 sm:pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-8 lg:gap-12 items-center">
+      <section className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-10 pb-6 sm:pb-14 overflow-hidden">
+        {/* Subtle Ambient Radial Glows */}
+        <div className="absolute -top-24 -right-16 w-80 sm:w-96 h-80 sm:h-96 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 -left-20 w-72 h-72 bg-emerald-400/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-8 lg:gap-12 items-center relative z-10">
           
           {/* Left Hero Content */}
-          <div className="lg:col-span-6 xl:col-span-5 space-y-2.5 sm:space-y-6">
+          <div className="lg:col-span-6 xl:col-span-5 space-y-3.5 sm:space-y-6">
             
             {/* Eyebrow Pill Badge */}
             <div>
-              <span className="inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-white border border-slate-200 shadow-2xs text-[10px] sm:text-xs font-semibold text-slate-800">
-                <span className="relative flex h-2 w-2">
+              <span className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1.5 rounded-full bg-blue-50/90 border border-blue-200/80 shadow-2xs text-xs font-semibold text-[#0066FF] tracking-tight">
+                <span className="relative flex h-2 w-2 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0066FF]"></span>
                 </span>
-                <span>India&apos;s #1 Open-Box Delivery Platform</span>
+                <span>India&apos;s #1 Open-Box &amp; Escrow Platform</span>
               </span>
             </div>
 
-            {/* Tight Punchy Headline */}
-            <div className="space-y-0.5 sm:space-y-1">
-              <h1 className="text-2xl xs:text-3xl sm:text-5xl lg:text-[54px] font-black tracking-tight text-[#0F172A] leading-[1.12] sm:leading-[1.08]">
+            {/* Premium Punchy Headline with Vibrant Gradient Accent */}
+            <div className="space-y-1">
+              <h1 className="text-[28px] xs:text-[34px] sm:text-5xl lg:text-[54px] font-black tracking-[-0.03em] text-[#0F172A] leading-[1.12]">
                 Open Box Delivery &amp; Safe Shipping.
                 <br />
-                <span className="text-[#0066FF]">Verify Then Pay.</span>
+                <span className="bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
+                  Verify Then Pay.
+                </span>
               </h1>
             </div>
 
-            {/* Punchy Subtitle */}
-            <div className="space-y-0.5 sm:space-y-1 text-slate-600 text-xs sm:text-base leading-relaxed max-w-xl">
-              <p className="font-bold text-slate-900 text-sm sm:text-lg">
+            {/* Subtitle */}
+            <div className="space-y-1 text-slate-600 text-xs xs:text-sm sm:text-base leading-relaxed max-w-xl">
+              <p className="font-semibold text-slate-900">
                 The safest way to ship and buy electronics across India.
               </p>
-              <p className="text-slate-600 font-normal hidden sm:block">
-                Guaranteed doorstep open box delivery with a 10-minute physical inspection window. Verify device boot, screen condition, and IMEI before releasing payment. If not satisfied, reject on the spot for ₹0.
-              </p>
-              <p className="text-slate-600 font-normal sm:hidden text-xs">
+              <p className="text-slate-600 font-normal">
                 Guaranteed 10-minute doorstep unboxing. Verify boot, screen &amp; IMEI before releasing payment &mdash; or reject on the spot for ₹0.
               </p>
             </div>
 
-            {/* Action Buttons (In SAME LINE on Mobile via 2-column grid, flex on desktop) */}
-            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3 pt-0.5 sm:pt-1">
+            {/* Action Buttons (High-Converting Squircles, Side-by-Side on Mobile) */}
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3.5 pt-0.5">
               <Link
                 href="/in/deals/new?type=send"
-                className="py-2.5 sm:py-3.5 px-2.5 sm:px-7 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs sm:text-base shadow-md shadow-[#0066FF]/25 hover:shadow-lg hover:shadow-[#0066FF]/35 transition active:scale-98 flex items-center justify-center gap-1.5 sm:gap-2 text-center truncate cursor-pointer"
+                className="py-3 px-3.5 sm:px-7 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-xs xs:text-sm sm:text-base shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2 text-center truncate cursor-pointer"
               >
-                <span className="shrink-0">📦</span>
+                <span className="shrink-0 text-sm sm:text-base">📦</span>
                 <span className="truncate hidden sm:inline">Book Safe Delivery &rarr;</span>
                 <span className="truncate sm:hidden">Book Delivery</span>
               </Link>
 
               <Link
                 href="/in/track"
-                className="py-2.5 sm:py-3.5 px-2.5 sm:px-7 rounded-full bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs sm:text-base shadow-2xs hover:shadow-xs transition active:scale-98 flex items-center justify-center gap-1.5 sm:gap-2 text-center truncate cursor-pointer"
+                className="py-3 px-3.5 sm:px-7 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs xs:text-sm sm:text-base shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center truncate cursor-pointer"
               >
-                <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 shrink-0" />
+                <Search className="w-4 h-4 text-slate-500 shrink-0" />
                 <span className="truncate">Track Shipment</span>
               </Link>
             </div>
 
-            {/* 4 Value Proposition Pillars */}
-            <div className="pt-2 sm:pt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 border-t border-slate-200/80">
+            {/* 4 Value Propositions: Upgraded to Structured Micro-Cards */}
+            <div className="pt-2 sm:pt-4 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
               {/* Prop 1: Bank-Secured Escrow */}
-              <div className="space-y-0.5 sm:space-y-1">
-                <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-900">
-                  <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#0066FF] shrink-0" />
-                  <span className="truncate">Bank Escrow</span>
+              <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2 sm:gap-2.5 shadow-2xs">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-100/70 text-[#0066FF] flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 leading-tight">
-                  Funds released on OK
-                </p>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-900 truncate">Bank Escrow</div>
+                  <div className="text-[10px] text-slate-500 truncate">Funds 100% locked</div>
+                </div>
               </div>
 
               {/* Prop 2: PAN India Delivery */}
-              <div className="space-y-0.5 sm:space-y-1">
-                <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-900">
-                  <Truck className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#0066FF] shrink-0" />
-                  <span className="truncate">PAN India</span>
+              <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2 sm:gap-2.5 shadow-2xs">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-100/70 text-indigo-600 flex items-center justify-center shrink-0">
+                  <Truck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 leading-tight">
-                  19,000+ pincodes
-                </p>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-900 truncate">PAN India</div>
+                  <div className="text-[10px] text-slate-500 truncate">19,000+ PINs</div>
+                </div>
               </div>
 
               {/* Prop 3: Trusted by 50,000+ */}
-              <div className="space-y-0.5 sm:space-y-1">
-                <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-900">
-                  <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#0066FF] fill-[#0066FF] shrink-0" />
-                  <span className="truncate">4.8/5 Rating</span>
+              <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2 sm:gap-2.5 shadow-2xs">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-amber-100/70 text-amber-500 flex items-center justify-center shrink-0">
+                  <Star className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-amber-400" />
                 </div>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 leading-tight">
-                  50,000+ verified
-                </p>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-900 truncate">4.9★ Rating</div>
+                  <div className="text-[10px] text-slate-500 truncate">50k+ verified</div>
+                </div>
               </div>
 
               {/* Prop 4: Real People Support */}
-              <div className="space-y-0.5 sm:space-y-1">
-                <div className="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-900">
-                  <Headphones className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#0066FF] shrink-0" />
-                  <span className="truncate">24/7 Support</span>
+              <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2 sm:gap-2.5 shadow-2xs">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-100/70 text-emerald-600 flex items-center justify-center shrink-0">
+                  <Headphones className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 </div>
-                <p className="text-[10px] sm:text-[11px] text-slate-500 leading-tight">
-                  Dedicated desk
-                </p>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold text-slate-900 truncate">24/7 Support</div>
+                  <div className="text-[10px] text-slate-500 truncate">Live desk</div>
+                </div>
               </div>
             </div>
 
           </div>
 
           {/* Right Hero Visual Container: High-Converting Doorstep Escrow Card */}
-          <div className="lg:col-span-6 xl:col-span-7 w-full">
-            <div className="rounded-2xl sm:rounded-3xl bg-white border border-slate-200/90 shadow-lg sm:shadow-xl p-1.5 sm:p-3 lg:p-3.5 relative overflow-hidden transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/10">
+          <div className="lg:col-span-6 xl:col-span-7 w-full max-w-lg lg:max-w-none mx-auto">
+            <div className="rounded-2xl sm:rounded-3xl bg-white border border-slate-200/90 shadow-xl shadow-slate-200/50 p-2 sm:p-3 relative overflow-hidden transition-all duration-300 hover:shadow-2xl">
               <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/70 border border-slate-200/80">
                 {/* Image container using natural proportional scaling */}
                 <div className="relative w-full overflow-hidden bg-white flex items-center justify-center">
                   <img
                     src="/images/hero_visual_full.webp?v=5"
                     alt="SafeShip Doorstep Open Box Inspection with Apple iPhone 15 Pro Max Verification"
-                    className="w-full h-auto object-contain block select-none"
+                    className="w-full h-auto max-h-[300px] sm:max-h-none object-contain block select-none"
                   />
 
                   {/* Clean Brand Pill */}
-                  <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white/95 backdrop-blur-md px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border border-slate-200 text-[9px] sm:text-xs font-bold text-slate-800 flex items-center gap-1 sm:gap-1.5 shadow-xs">
-                    <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#0066FF] animate-pulse" />
+                  <div className="absolute top-2.5 left-2.5 sm:top-3 sm:left-3 bg-white/95 backdrop-blur-md px-2.5 sm:px-3 py-1 rounded-full border border-slate-200/90 text-[10px] sm:text-xs font-bold text-slate-800 flex items-center gap-1.5 shadow-xs">
+                    <span className="w-2 h-2 rounded-full bg-[#0066FF] animate-pulse" />
                     <span>Doorstep Unboxing Active</span>
                   </div>
                 </div>
 
                 {/* Micro Footer inside Preview */}
-                <div className="p-2 sm:p-3 bg-white/90 backdrop-blur-xs border-t border-slate-200/80 flex items-center justify-between gap-1 sm:gap-2 text-[10px] sm:text-xs text-slate-600 font-medium">
+                <div className="p-2 sm:p-3 bg-white/95 backdrop-blur-xs border-t border-slate-200/80 flex items-center justify-between gap-1 sm:gap-2 text-[10px] sm:text-xs text-slate-600 font-medium">
                   <span className="flex items-center gap-1 font-semibold text-slate-800">
-                    <ShieldCheck className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#0066FF] shrink-0" />
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
                     <span className="truncate">10-Min Check</span>
                   </span>
                   <span className="flex items-center gap-1 font-semibold text-slate-800">
-                    <Lock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#0066FF] shrink-0" />
+                    <Lock className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
                     <span className="truncate">RBI Escrow</span>
                   </span>
                   <span className="flex items-center gap-1 text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[9px] sm:text-[11px] shrink-0">
-                    <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-emerald-600 shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     <span>100% Insured</span>
                   </span>
                 </div>
@@ -951,36 +857,36 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 4. TRUSTED PARTNER LOGOS STRIP (ICICI, RAZORPAY, BLUE DART, DELHIVERY)    */}
       {/* ========================================================================= */}
-      <section className="w-full bg-white border-y border-slate-200 py-6 sm:py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
-          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-slate-400">
-            Trusted by Leading Logistics &amp; Payment Partners
+      <section className="w-full bg-white/90 backdrop-blur-xs border-y border-slate-200/80 py-5 sm:py-7 mt-2 sm:mt-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3.5">
+          <p className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-slate-400">
+            Trusted by India&apos;s Leading Logistics &amp; Payment Networks
           </p>
 
-          {/* Clean Branded Partner Strip */}
-          <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 lg:gap-14 opacity-80 hover:opacity-100 transition">
-            <div className="flex items-center gap-2 text-slate-700 font-black text-sm sm:text-base tracking-tight">
-              <span className="w-6 h-6 rounded bg-[#F15A24] text-white flex items-center justify-center text-xs font-bold">i</span>
+          {/* Clean Branded Partner Chip Strip */}
+          <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 lg:gap-6">
+            <div className="flex items-center gap-2 text-slate-800 font-black text-xs sm:text-sm tracking-tight px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/60 shadow-2xs hover:bg-white transition">
+              <span className="w-5 h-5 rounded-md bg-[#F15A24] text-white flex items-center justify-center text-[11px] font-bold">i</span>
               <span>ICICI Bank</span>
             </div>
 
-            <div className="flex items-center gap-1.5 text-slate-700 font-black text-sm sm:text-base tracking-tight">
+            <div className="flex items-center gap-1.5 text-slate-800 font-black text-xs sm:text-sm tracking-tight px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/60 shadow-2xs hover:bg-white transition">
               <span className="text-[#0C2340] font-black italic">Razorpay</span>
             </div>
 
-            <div className="flex items-center gap-1.5 text-slate-700 font-black text-sm sm:text-base tracking-tight">
+            <div className="flex items-center gap-1.5 text-slate-800 font-black text-xs sm:text-sm tracking-tight px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/60 shadow-2xs hover:bg-white transition">
               <span className="text-[#002B66] font-black">BLUE DART</span>
             </div>
 
-            <div className="flex items-center gap-1.5 text-slate-700 font-black text-sm sm:text-base tracking-tight">
+            <div className="flex items-center gap-1.5 text-slate-800 font-black text-xs sm:text-sm tracking-tight px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/60 shadow-2xs hover:bg-white transition">
               <span className="text-red-600 font-black">DELHIVERY</span>
             </div>
 
-            <div className="flex items-center gap-1.5 text-slate-700 font-black text-sm sm:text-base tracking-tight">
+            <div className="flex items-center gap-1.5 text-slate-800 font-black text-xs sm:text-sm tracking-tight px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/60 shadow-2xs hover:bg-white transition">
               <span className="text-[#E31B23] font-black">Ecom Express</span>
             </div>
 
-            <div className="flex items-center gap-2 text-slate-700 font-black text-sm sm:text-base tracking-tight">
+            <div className="flex items-center gap-2 text-slate-800 font-black text-xs sm:text-sm tracking-tight px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/60 shadow-2xs hover:bg-white transition">
               <span className="text-red-700 font-bold">India Post</span>
             </div>
           </div>
@@ -1009,85 +915,97 @@ export default function HomePage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           
           {/* Step 1: Book Safe Delivery */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition group flex flex-col justify-between space-y-4">
+          <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-[#0066FF]/70 transition-all duration-300 group flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#0066FF] flex items-center justify-center font-bold text-sm">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100/60 border border-blue-200/80 text-[#0066FF] shadow-xs flex items-center justify-center font-bold text-sm">
                   <Package className="w-5 h-5" />
                 </div>
-                <span className="text-xs font-mono font-bold text-slate-400">01</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-slate-100 font-mono text-[11px] font-extrabold text-slate-500 border border-slate-200">
+                  STEP 01
+                </span>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-[#0066FF] transition-colors">
                 Book Safe Delivery
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
                 Buyer or seller creates an order. Payment is safely protected in bank escrow until doorstep delivery.
               </p>
             </div>
-            <div className="text-[11px] font-semibold text-[#0066FF] flex items-center gap-1">
+            <div className="text-[11px] font-bold text-[#0066FF] bg-blue-50/90 border border-blue-100/80 px-2.5 py-1 rounded-xl w-fit flex items-center gap-1">
+              <Check className="w-3.5 h-3.5" />
               <span>₹0 upfront product risk</span>
             </div>
           </div>
 
           {/* Step 2: We Deliver */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition group flex flex-col justify-between space-y-4">
+          <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-[#0066FF]/70 transition-all duration-300 group flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#0066FF] flex items-center justify-center font-bold text-sm">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100/60 border border-blue-200/80 text-[#0066FF] shadow-xs flex items-center justify-center font-bold text-sm">
                   <Truck className="w-5 h-5" />
                 </div>
-                <span className="text-xs font-mono font-bold text-slate-400">02</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-slate-100 font-mono text-[11px] font-extrabold text-slate-500 border border-slate-200">
+                  STEP 02
+                </span>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-[#0066FF] transition-colors">
                 Inspected Pickup &amp; Transit
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
                 Bonded delivery partner collects and safely transports the item with tamper-evident barcoded seals.
               </p>
             </div>
-            <div className="text-[11px] font-semibold text-[#0066FF] flex items-center gap-1">
+            <div className="text-[11px] font-bold text-[#0066FF] bg-blue-50/90 border border-blue-100/80 px-2.5 py-1 rounded-xl w-fit flex items-center gap-1">
+              <Check className="w-3.5 h-3.5" />
               <span>Tamper-evident sealed</span>
             </div>
           </div>
 
           {/* Step 3: Open & Check */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition group flex flex-col justify-between space-y-4">
+          <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-[#0066FF]/70 transition-all duration-300 group flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#0066FF] flex items-center justify-center font-bold text-sm">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100/60 border border-blue-200/80 text-[#0066FF] shadow-xs flex items-center justify-center font-bold text-sm">
                   <Eye className="w-5 h-5" />
                 </div>
-                <span className="text-xs font-mono font-bold text-slate-400">03</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-slate-100 font-mono text-[11px] font-extrabold text-slate-500 border border-slate-200">
+                  STEP 03
+                </span>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-[#0066FF] transition-colors">
                 Doorstep Open &amp; Check
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
                 Inspect the gadget at your doorstep (power on, test display &amp; verify IMEI) before releasing funds.
               </p>
             </div>
-            <div className="text-[11px] font-semibold text-[#0066FF] flex items-center gap-1">
+            <div className="text-[11px] font-bold text-[#0066FF] bg-blue-50/90 border border-blue-100/80 px-2.5 py-1 rounded-xl w-fit flex items-center gap-1">
+              <Check className="w-3.5 h-3.5" />
               <span>10-min live audit window</span>
             </div>
           </div>
 
           {/* Step 4: Then Pay */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200 shadow-2xs hover:border-[#0066FF] transition group flex flex-col justify-between space-y-4">
+          <div className="p-5 sm:p-6 rounded-3xl bg-white border border-slate-200/90 shadow-sm hover:shadow-md hover:border-[#0066FF]/70 transition-all duration-300 group flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#0066FF] flex items-center justify-center font-bold text-sm">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-blue-50 to-blue-100/60 border border-blue-200/80 text-[#0066FF] shadow-xs flex items-center justify-center font-bold text-sm">
                   <Check className="w-5 h-5" />
                 </div>
-                <span className="text-xs font-mono font-bold text-slate-400">04</span>
+                <span className="px-2.5 py-0.5 rounded-full bg-slate-100 font-mono text-[11px] font-extrabold text-slate-500 border border-slate-200">
+                  STEP 04
+                </span>
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-[#0066FF] transition-colors">
                 Approve &amp; Settle
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
                 Satisfied? Release funds instantly to seller. Any defect? Free instant doorstep return &amp; full refund.
               </p>
             </div>
-            <div className="text-[11px] font-semibold text-[#0066FF] flex items-center gap-1">
+            <div className="text-[11px] font-bold text-[#0066FF] bg-blue-50/90 border border-blue-100/80 px-2.5 py-1 rounded-xl w-fit flex items-center gap-1">
+              <Check className="w-3.5 h-3.5" />
               <span>100% money-back guarantee</span>
             </div>
           </div>
@@ -1442,64 +1360,93 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Comparison Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse">
+          {/* Mobile Swipe Hint */}
+          <div className="flex sm:hidden items-center justify-between text-[11px] text-slate-600 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200/80">
+            <span className="flex items-center gap-1.5 font-medium">
+              <span>👉 Swipe sideways to compare all methods</span>
+            </span>
+            <span className="text-[10px] font-black text-[#0066FF] uppercase bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
+              SafeShip vs others
+            </span>
+          </div>
+
+          {/* Comparison Table with Guaranteed Min-Width */}
+          <div className="overflow-x-auto -mx-2 sm:mx-0 pb-2 rounded-2xl border border-slate-200/90 shadow-2xs">
+            <table className="w-full min-w-[680px] text-xs text-left border-collapse bg-white">
               <thead>
                 <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
-                  <th className="py-3 px-4">Open Box &amp; Safe Shipping Feature</th>
-                  <th className="py-3 px-4 text-[#0066FF] bg-blue-50/70 rounded-t-xl font-black">SafeShip Open-Box Escrow</th>
-                  <th className="py-3 px-4 text-slate-700">Traditional Courier COD</th>
-                  <th className="py-3 px-4 text-rose-600">Direct UPI / GPay Transfer</th>
+                  <th className="py-4 px-4 bg-slate-50/80 w-[230px]">Open Box &amp; Safe Shipping Feature</th>
+                  <th className="py-4 px-4 text-[#0066FF] bg-blue-50/90 border-x-2 border-t-2 border-[#0066FF]/40 font-black w-[210px]">
+                    <div className="flex items-center justify-between gap-1.5">
+                      <span>SafeShip Open-Box</span>
+                      <span className="text-[9px] font-extrabold bg-[#0066FF] text-white px-2 py-0.5 rounded-full uppercase tracking-wider">
+                        ★ Best
+                      </span>
+                    </div>
+                  </th>
+                  <th className="py-4 px-4 text-slate-700 bg-slate-50/80 w-[140px]">Traditional COD</th>
+                  <th className="py-4 px-4 text-rose-600 bg-slate-50/80 w-[140px]">Direct UPI / GPay</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
-                <tr>
+                <tr className="hover:bg-slate-50/50 transition">
                   <td className="py-3.5 px-4 font-bold text-slate-900">10-Min Doorstep Open Box Inspection?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
-                    ✓ YES (Power-on, boot, &amp; screen test)
+                  <td className="py-3.5 px-4 bg-blue-50/40 border-x-2 border-[#0066FF]/30 text-[#0066FF] font-bold">
+                    <span className="inline-flex items-center gap-1 bg-blue-100/70 text-[#0066FF] px-2 py-0.5 rounded-md text-[11px]">
+                      ✓ YES (Power-on, boot, &amp; screen)
+                    </span>
                   </td>
-                  <td className="py-3.5 px-4 text-rose-600">✗ NO (Must pay before opening)</td>
-                  <td className="py-3.5 px-4 text-rose-600">✗ NO (Pay 100% advance)</td>
+                  <td className="py-3.5 px-4 text-rose-600 font-semibold">✗ NO (Pay before open)</td>
+                  <td className="py-3.5 px-4 text-rose-600 font-semibold">✗ NO (100% advance)</td>
                 </tr>
-                <tr>
+                <tr className="hover:bg-slate-50/50 transition">
                   <td className="py-3.5 px-4 font-bold text-slate-900">Verify Then Pay Escrow Protection?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
-                    ✓ YES (RBI Section 10A trustee account)
+                  <td className="py-3.5 px-4 bg-blue-50/40 border-x-2 border-[#0066FF]/30 text-[#0066FF] font-bold">
+                    <span className="inline-flex items-center gap-1 bg-blue-100/70 text-[#0066FF] px-2 py-0.5 rounded-md text-[11px]">
+                      ✓ YES (RBI Section 10A trustee)
+                    </span>
                   </td>
-                  <td className="py-3.5 px-4 text-slate-500">✗ Courier cash pool (no dispute hold)</td>
-                  <td className="py-3.5 px-4 text-rose-600">✗ Zero protection (irreversible)</td>
+                  <td className="py-3.5 px-4 text-slate-500">✗ Courier pool (no hold)</td>
+                  <td className="py-3.5 px-4 text-rose-600 font-semibold">✗ Zero protection</td>
                 </tr>
-                <tr>
-                  <td className="py-3.5 px-4 font-bold text-slate-900">What if gadget is defective or damaged?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
-                    ✓ Instant Doorstep Reversal (₹0 product cost)
+                <tr className="hover:bg-slate-50/50 transition">
+                  <td className="py-3.5 px-4 font-bold text-slate-900">What if gadget is defective or fake?</td>
+                  <td className="py-3.5 px-4 bg-blue-50/40 border-x-2 border-[#0066FF]/30 text-[#0066FF] font-bold">
+                    <span className="inline-flex items-center gap-1 bg-emerald-100/80 text-emerald-800 px-2 py-0.5 rounded-md text-[11px]">
+                      ✓ Instant Reversal (₹0 cost)
+                    </span>
                   </td>
-                  <td className="py-3.5 px-4 text-rose-600">✗ Money lost (no courier refund)</td>
-                  <td className="py-3.5 px-4 text-rose-600">✗ Scammer blocks phone number</td>
+                  <td className="py-3.5 px-4 text-rose-600">✗ Money lost (no refund)</td>
+                  <td className="py-3.5 px-4 text-rose-600">✗ Blocked by scammer</td>
                 </tr>
-                <tr>
+                <tr className="hover:bg-slate-50/50 transition">
                   <td className="py-3.5 px-4 font-bold text-slate-900">IMEI &amp; Serial Number Verification?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
-                    ✓ Bonded officer check + GSMA validation
+                  <td className="py-3.5 px-4 bg-blue-50/40 border-x-2 border-[#0066FF]/30 text-[#0066FF] font-bold">
+                    <span className="inline-flex items-center gap-1 bg-blue-100/70 text-[#0066FF] px-2 py-0.5 rounded-md text-[11px]">
+                      ✓ GSMA validation + audit
+                    </span>
                   </td>
                   <td className="py-3.5 px-4 text-slate-400">✗ Not verified</td>
                   <td className="py-3.5 px-4 text-slate-400">✗ Not verified</td>
                 </tr>
-                <tr>
+                <tr className="hover:bg-slate-50/50 transition">
                   <td className="py-3.5 px-4 font-bold text-slate-900">Seller Protection Against Buyer Swaps?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
-                    ✓ Serialized tamper-evident security seal
+                  <td className="py-3.5 px-4 bg-blue-50/40 border-x-2 border-[#0066FF]/30 text-[#0066FF] font-bold">
+                    <span className="inline-flex items-center gap-1 bg-blue-100/70 text-[#0066FF] px-2 py-0.5 rounded-md text-[11px]">
+                      ✓ Serialized tamper seal
+                    </span>
                   </td>
-                  <td className="py-3.5 px-4 text-rose-600">✗ High return swap scam risk</td>
+                  <td className="py-3.5 px-4 text-rose-600">✗ High return swap risk</td>
                   <td className="py-3.5 px-4 text-slate-400">N/A</td>
                 </tr>
-                <tr>
+                <tr className="hover:bg-slate-50/50 transition">
                   <td className="py-3.5 px-4 font-bold text-slate-900">Transit Cargo Insurance Coverage?</td>
-                  <td className="py-3.5 px-4 bg-blue-50/50 text-[#0066FF] font-bold">
-                    ✓ 100% Declared Value up to ₹10 Lakh (ICICI Lombard)
+                  <td className="py-3.5 px-4 bg-blue-50/40 border-x-2 border-[#0066FF]/30 text-[#0066FF] font-bold">
+                    <span className="inline-flex items-center gap-1 bg-blue-100/70 text-[#0066FF] px-2 py-0.5 rounded-md text-[11px]">
+                      ✓ 100% Value up to ₹10L
+                    </span>
                   </td>
-                  <td className="py-3.5 px-4 text-slate-500">Standard ₹2,000 maximum limit</td>
+                  <td className="py-3.5 px-4 text-slate-500">₹2,000 standard cap</td>
                   <td className="py-3.5 px-4 text-rose-600">✗ None</td>
                 </tr>
               </tbody>
