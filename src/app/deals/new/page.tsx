@@ -1627,7 +1627,7 @@ function CreateShipmentContent() {
 
           <div className="text-center">
             <span className="text-[11px] font-bold text-[#0066FF] uppercase tracking-wider">
-              {mode === 'exchange' ? '2-Way Item Exchange' : '1-Way Safe Delivery'} &bull; Step {currentStep} of 4
+              {mode === 'exchange' ? '2-Way Item Exchange' : 'Safe Delivery'} &bull; Step {currentStep} of 4
             </span>
             <h1 className="text-sm font-bold text-[#0F172A] mt-0.5">
               {currentStep === 1 && (mode === 'exchange' ? 'Choose Swap Category' : 'Select Item Category')}
@@ -1643,36 +1643,24 @@ function CreateShipmentContent() {
         </div>
       </header>
 
-      {/* MODE SEGMENTED TOGGLE (1-Way Delivery vs 2-Way Item Exchange) */}
-      <div className="bg-white border-b border-[#E2E8F0] py-2 px-3 sm:px-4">
-        <div className="max-w-md mx-auto flex items-center bg-[#F1F5F9] p-1 rounded-2xl border border-[#E2E8F0]">
-          <button
-            type="button"
-            onClick={() => setMode('send')}
-            className={`flex-1 py-1.5 sm:py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-              mode === 'send'
-                ? 'bg-white text-[#0066FF] shadow-xs border border-blue-100'
-                : 'text-[#64748B] hover:text-[#0F172A]'
-            }`}
-          >
-            <Package className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">1-Way Delivery</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setMode('exchange')}
-            className={`flex-1 py-1.5 sm:py-2 px-2 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
-              mode === 'exchange'
-                ? 'bg-amber-50 text-amber-700 shadow-xs border border-amber-200'
-                : 'text-[#64748B] hover:text-[#0F172A]'
-            }`}
-          >
-            <ArrowLeftRight className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-            <span className="truncate">2-Way Swap</span>
-          </button>
+      {/* 2-WAY SWAP ACTIVE BANNER (Only visible when explicitly in exchange mode) */}
+      {mode === 'exchange' && (
+        <div className="bg-amber-50/95 border-b border-amber-200 py-2 px-3 sm:px-4 animate-in fade-in">
+          <div className="max-w-md mx-auto flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 text-xs text-amber-900 font-bold">
+              <ArrowLeftRight className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+              <span>2-Way Gadget Swap Active</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setMode('send')}
+              className="text-amber-800 hover:text-amber-950 font-bold text-[11px] underline cursor-pointer shrink-0"
+            >
+              Switch to Standard Delivery &rarr;
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Progress Dots */}
       <div className="bg-white border-b border-[#E2E8F0] py-2">
@@ -1837,6 +1825,20 @@ function CreateShipmentContent() {
               <span>Next: {mode === 'exchange' ? 'Dual Item Details' : 'Item Specifications'}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
+
+            {/* Subtle option to switch to 2-way swap if desired (hidden from main header) */}
+            {mode === 'send' && (
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => setMode('exchange')}
+                  className="text-[11px] text-slate-400 hover:text-slate-600 font-medium inline-flex items-center gap-1.5 transition cursor-pointer py-1"
+                >
+                  <ArrowLeftRight className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Looking for 2-Way Device Swap? Enable here</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
 
