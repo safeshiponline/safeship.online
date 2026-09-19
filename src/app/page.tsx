@@ -725,10 +725,10 @@ export default function HomePage() {
             </div>
 
             {/* Mobile View: Headline on Left, Action Buttons in Empty Top Section on Right (sm:hidden) */}
-            <div className="flex sm:hidden items-center justify-between gap-2.5 pt-0.5">
-              {/* Left: Punchy 3-Line Headline */}
+            <div className="flex sm:hidden items-center justify-between gap-3 pt-0.5">
+              {/* Left: Punchy 3-Line Headline with Bigger Impactful Typography */}
               <div className="flex-1 min-w-0">
-                <h1 className="text-[20px] xs:text-[24px] font-black tracking-[-0.03em] text-[#0F172A] leading-[1.14]">
+                <h1 className="text-[23px] xs:text-[27px] font-black tracking-[-0.03em] text-[#0F172A] leading-[1.1]">
                   <span className="block">Open Box Delivery</span>
                   <span className="block">&amp; Safe Shipping.</span>
                   <span className="block bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
@@ -737,35 +737,35 @@ export default function HomePage() {
                 </h1>
               </div>
 
-              {/* Right: Action Buttons in Empty Section on Top with Increased Height */}
-              <div className="w-[132px] xs:w-[148px] shrink-0 flex flex-col gap-2">
-                {/* Track Shipment on Top - Increased Height */}
+              {/* Right: Action Buttons in Empty Section on Top with Polished Sizing */}
+              <div className="w-[136px] xs:w-[152px] shrink-0 flex flex-col gap-2">
+                {/* Track Shipment on Top */}
                 <Link
                   href="/in/track"
-                  className="w-full py-2.5 xs:py-3 px-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-800 font-bold text-[11.5px] xs:text-xs shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                  className="w-full py-2.5 xs:py-3 px-2.5 rounded-xl xs:rounded-2xl bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-800 font-bold text-xs xs:text-[13px] shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
                 >
                   <Search className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                   <span className="truncate">Track Shipment</span>
                 </Link>
 
-                {/* Book Delivery Under It - Increased Height */}
+                {/* Book Delivery Under It */}
                 <Link
                   href="/in/deals/new?type=send"
-                  className="w-full py-2.5 xs:py-3 px-2 rounded-xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-[11.5px] xs:text-xs shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                  className="w-full py-2.5 xs:py-3 px-2.5 rounded-xl xs:rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-xs xs:text-[13px] shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
                 >
-                  <span className="shrink-0 text-xs">📦</span>
+                  <span className="shrink-0 text-xs xs:text-sm">📦</span>
                   <span className="truncate">Book Delivery &rarr;</span>
                 </Link>
               </div>
             </div>
 
             {/* Mobile View: Hero Subtext Full-Width Under Headline & Buttons (sm:hidden) */}
-            <div className="block sm:hidden space-y-0.5 text-slate-600 text-[11px] xs:text-[12px] leading-snug">
-              <p className="font-bold text-slate-900 leading-tight">
+            <div className="block sm:hidden space-y-0.5 text-slate-600 text-xs xs:text-[13px] leading-snug pt-0.5">
+              <p className="font-semibold text-slate-900 leading-snug">
                 The safest way to ship &amp; buy electronics across India.
               </p>
-              <p className="text-slate-600 text-[10.5px] xs:text-[11px] leading-tight font-normal">
-                10-min doorstep unboxing. Verify screen &amp; IMEI before payment &mdash; or reject for ₹0.
+              <p className="text-slate-600 text-[11px] xs:text-xs leading-normal font-normal">
+                10-min doorstep unboxing. Verify screen &amp; IMEI before payment &mdash; or reject on the spot for ₹0.
               </p>
             </div>
 
