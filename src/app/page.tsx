@@ -735,8 +735,42 @@ export default function HomePage() {
               </h1>
             </div>
 
-            {/* Subtitle */}
-            <div className="space-y-1 text-slate-600 text-[11.5px] xs:text-[13px] sm:text-base leading-snug sm:leading-relaxed max-w-xl">
+            {/* Mobile View: Hero Subtext on the left, Vertically Stacked Buttons on the right (sm:hidden) */}
+            <div className="flex sm:hidden items-center justify-between gap-2.5 pt-0.5">
+              {/* Left Side: Hero Subtext */}
+              <div className="flex-1 min-w-0 space-y-1 text-slate-600 text-[11px] xs:text-[12px] leading-snug">
+                <p className="font-bold text-slate-900 leading-tight">
+                  The safest way to ship &amp; buy electronics across India.
+                </p>
+                <p className="text-slate-600 text-[10.5px] xs:text-[11px] leading-tight font-normal">
+                  10-min doorstep unboxing. Verify screen &amp; IMEI before payment &mdash; or reject for ₹0.
+                </p>
+              </div>
+
+              {/* Right Side (Empty Space beside Text): Vertically Stacked Action Buttons */}
+              <div className="w-[140px] xs:w-[148px] shrink-0 flex flex-col gap-1.5">
+                {/* Track Shipment on Top */}
+                <Link
+                  href="/in/track"
+                  className="w-full py-2 px-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-800 font-bold text-[11.5px] xs:text-xs shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                >
+                  <Search className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <span className="truncate">Track Shipment</span>
+                </Link>
+
+                {/* Book Delivery Under It */}
+                <Link
+                  href="/in/deals/new?type=send"
+                  className="w-full py-2 px-2.5 rounded-xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-[11.5px] xs:text-xs shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                >
+                  <span className="shrink-0 text-xs">📦</span>
+                  <span className="truncate">Book Delivery &rarr;</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Desktop View: Subtitle (hidden sm:block) */}
+            <div className="hidden sm:block space-y-1 text-slate-600 text-sm sm:text-base leading-relaxed max-w-xl">
               <p className="font-semibold text-slate-900">
                 The safest way to ship and buy electronics across India.
               </p>
@@ -745,23 +779,22 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Action Buttons (High-Converting Squircles, Side-by-Side on Mobile) */}
-            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-3.5 pt-0.5">
+            {/* Desktop Action Buttons: Track Shipment on top / first, Book Delivery next (hidden sm:flex) */}
+            <div className="hidden sm:flex items-center gap-3.5 pt-0.5">
               <Link
-                href="/in/deals/new?type=send"
-                className="py-2.5 sm:py-3.5 px-3 sm:px-7 rounded-xl sm:rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-xs xs:text-sm sm:text-base shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2 text-center truncate cursor-pointer"
+                href="/in/track"
+                className="py-3 sm:py-3.5 px-6 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-sm sm:text-base shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
               >
-                <span className="shrink-0 text-sm sm:text-base">📦</span>
-                <span className="truncate hidden sm:inline">Book Safe Delivery &rarr;</span>
-                <span className="truncate sm:hidden">Book Delivery</span>
+                <Search className="w-4 h-4 text-slate-500 shrink-0" />
+                <span>Track Shipment</span>
               </Link>
 
               <Link
-                href="/in/track"
-                className="py-2.5 sm:py-3.5 px-3 sm:px-7 rounded-xl sm:rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs xs:text-sm sm:text-base shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center truncate cursor-pointer"
+                href="/in/deals/new?type=send"
+                className="py-3 sm:py-3.5 px-7 rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-sm sm:text-base shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
               >
-                <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-500 shrink-0" />
-                <span className="truncate">Track Shipment</span>
+                <span className="shrink-0 text-base">📦</span>
+                <span>Book Safe Delivery &rarr;</span>
               </Link>
             </div>
 
