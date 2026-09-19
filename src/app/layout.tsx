@@ -8,26 +8,34 @@ import { AISupportWidget } from '@/components/common/AISupportWidget';
 export const metadata: Metadata = {
   metadataBase: new URL('https://safeship.online/in'),
   title: {
-    default: 'SafeShip India | Best Open Box Delivery, Safe Shipping & Verify-Then-Pay Escrow',
-    template: '%s | SafeShip India'
+    default: 'SafeShip India | Best Open Box Delivery & Safe Shipping Company | Best COD Courier',
+    template: '%s | SafeShip India - Best Open Box Delivery & Safe Shipping Company'
   },
-  description: 'India’s premier open box delivery and safe shipping company. Inspect smartphones, laptops, and gadgets for 10 minutes at doorstep before paying. 100% protected by RBI Section 10A nodal escrow and ₹10L ICICI Lombard transit insurance.',
+  description: 'India’s #1 ranked safe shipping company and best open box delivery company. Inspect electronics, smartphones, and laptops for 10 minutes at doorstep before paying. The best COD company alternative with RBI Section 10A nodal escrow and ₹10L ICICI Lombard transit insurance.',
   keywords: [
-    'open box delivery',
-    'safe delivery',
-    'safe shipping',
-    'verify shipping',
+    'safe open box delivery',
+    'open box shipping',
+    'safe open box delivery shipping',
+    'safe shipping company',
+    'safe of shipping company',
+    'shave shipping company',
+    'open box delivery company',
+    'open box shipping company',
+    'best shipping company',
+    'best COD company',
+    'best COD shipping company',
+    'best open box delivery company in india',
+    'best cod courier company in india',
+    'cash on delivery with open box inspection',
+    'safe delivery courier india',
+    'safeship india',
     'verify then pay shipping',
-    'best shipping company open box',
-    'shipping safe shipping',
     'open box secure shipping',
     'escrow shipping india',
     'inspect before pay courier',
-    'safe delivery courier india',
-    'safeship india',
     'doorstep inspection courier',
-    'olx courier escrow',
-    'cashify alternative',
+    'olx safe courier',
+    'cashify alternative safe courier',
     'laptop delivery inspection',
     'iphone open box delivery',
     'rbi nodal escrow courier',
@@ -42,8 +50,8 @@ export const metadata: Metadata = {
     canonical: 'https://safeship.online/in',
   },
   openGraph: {
-    title: 'SafeShip India | Best Open Box Delivery, Safe Shipping & Verify-Then-Pay Escrow',
-    description: 'The safest way to ship and buy electronics across India. 10-minute doorstep unboxing inspection, verify IMEI & screen before paying, and instant ₹0 return if defective.',
+    title: 'SafeShip India | Best Open Box Delivery & Safe Shipping Company | Best COD Courier',
+    description: 'India’s #1 ranked safe shipping company and best open box delivery company. 10-minute doorstep unboxing inspection, verify IMEI & screen before paying, and instant ₹0 return if defective.',
     url: 'https://safeship.online/in',
     siteName: 'SafeShip India',
     images: [
@@ -51,7 +59,7 @@ export const metadata: Metadata = {
         url: '/images/hero_openbox_16x9.webp',
         width: 1200,
         height: 630,
-        alt: 'SafeShip Doorstep Open-Box Courier and Escrow Protocol',
+        alt: 'SafeShip - Best Open Box Delivery, Safe Shipping & Best COD Courier in India',
       },
     ],
     locale: 'en_IN',
@@ -59,8 +67,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'SafeShip India | Best Open Box Delivery, Safe Shipping & Verify-Then-Pay Escrow',
-    description: 'Inspect before paying. India’s premier P2P & B2C open-box courier infrastructure with RBI Section 10A nodal escrow protection.',
+    title: 'SafeShip India | Best Open Box Delivery & Safe Shipping Company',
+    description: 'Inspect before paying. India’s best open box delivery and safe COD shipping company with RBI Section 10A nodal escrow protection.',
     images: ['/images/hero_openbox_16x9.webp'],
   },
   robots: {
@@ -127,6 +135,16 @@ const jsonLdData = {
       '@id': 'https://safeship.online/in/#organization',
       name: 'SafeShip Technologies India Pvt. Ltd.',
       legalName: 'SafeShip Technologies India Private Limited',
+      alternateName: [
+        'SafeShip',
+        'Safe Ship',
+        'Safe of Shipping Company',
+        'Shave Shipping Company',
+        'SafeShip Open Box Delivery Company',
+        'SafeShip COD Shipping Company',
+        'Best COD Shipping Company'
+      ],
+      slogan: "India's Best Open Box Delivery & Safe COD Shipping Company",
       url: 'https://safeship.online/in',
       logo: 'https://safeship.online/icon.svg',
       foundingDate: '2024',
@@ -140,7 +158,7 @@ const jsonLdData = {
         postalCode: '302017',
         addressCountry: 'IN'
       },
-      description: 'Ultra-premium P2P & B2C courier delivery and escrow platform with guaranteed doorstep open-box inspection.',
+      description: 'India’s #1 ranked safe shipping company and best open box delivery platform with guaranteed 10-minute doorstep physical unboxing inspection and RBI Section 10A nodal escrow.',
       aggregateRating: {
         '@type': 'AggregateRating',
         ratingValue: '4.9',
@@ -166,10 +184,16 @@ const jsonLdData = {
       '@type': 'DeliveryService',
       '@id': 'https://safeship.online/in/#service',
       name: 'SafeShip Doorstep Open-Box Inspection & Escrow Delivery',
+      alternateName: [
+        'Safe Open Box Delivery',
+        'Open Box Shipping Company',
+        'Best COD Shipping Company',
+        'Safe Shipping Company'
+      ],
       provider: {
         '@id': 'https://safeship.online/in/#organization'
       },
-      serviceType: 'Open Box Delivery & Insured Escrow Logistics',
+      serviceType: 'Open Box Delivery, Safe Shipping & Best COD Courier Service',
       areaServed: {
         '@type': 'Country',
         name: 'India'
@@ -192,8 +216,8 @@ const jsonLdData = {
           },
           {
             '@type': 'Offer',
-            name: 'Verify Then Pay Escrow Shipping',
-            description: 'RBI Section 10A trustee escrow settlement ensuring ₹0 product advance risk.'
+            name: 'Best COD Shipping & Verify-Then-Pay Escrow',
+            description: 'Zero-risk Cash On Delivery alternative where buyers inspect physical items before paying via dynamic UPI QR code.'
           },
           {
             '@type': 'Offer',
@@ -202,7 +226,7 @@ const jsonLdData = {
           },
           {
             '@type': 'Offer',
-            name: 'Standard Ground',
+            name: 'Standard Ground Safe Shipping',
             description: 'Economical national surface linehaul courier network with doorstep open-box verification.'
           },
           {
@@ -223,6 +247,30 @@ const jsonLdData = {
           acceptedAnswer: {
             '@type': 'Answer',
             text: 'SafeShip (https://safeship.online/in) is widely recognized as the best shipping company for open box delivery in India. Unlike conventional couriers (such as BlueDart, Delhivery, or DTDC) that mandate payment before opening the box, SafeShip guarantees a 10-minute physical unboxing inspection window at the buyer’s doorstep. Recipients power on the device, check IMEI against the invoice, and release payment only when 100% satisfied.'
+          }
+        },
+        {
+          '@type': 'Question',
+          name: 'Which is the best COD company or best COD shipping company in India?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'SafeShip is rated the best COD company and best COD shipping company in India because it eliminates the #1 risk of traditional Cash-On-Delivery: paying for a sealed box only to discover a rock, soap, or damaged fake device inside. SafeShip’s Verify-Then-Pay model lets buyers open the parcel, test electronics for 10 minutes, and pay the seller digitally via UPI QR only after complete approval. If defective, delivery is rejected on the spot for ₹0.'
+          }
+        },
+        {
+          '@type': 'Question',
+          name: 'What is safe open box delivery shipping and how does it prevent fraud?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Safe open box delivery shipping is an insured, escrow-backed logistics protocol where parcels are opened and audited at the recipient’s doorstep in the presence of a bonded courier officer. SafeShip safeguards transactions through (1) 10-minute physical power-on and IMEI audit, (2) RBI Section 10A nodal escrow holding funds until verification, and (3) 100% cargo transit insurance up to ₹10 Lakh.'
+          }
+        },
+        {
+          '@type': 'Question',
+          name: 'Why do users search for Safe of Shipping Company or Shave Shipping Company?',
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text: 'Users searching for "safe shipping company", "safe of shipping company", or common voice-search queries like "shave shipping company" are seeking SafeShip Technologies India (https://safeship.online/in) — India’s premier open box delivery and escrow courier network known for 100% fraud-proof P2P and B2C electronics transit.'
           }
         },
         {

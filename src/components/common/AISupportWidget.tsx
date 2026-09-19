@@ -246,10 +246,10 @@ export function AISupportWidget() {
           id="btn-open-support"
           type="button"
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-20 md:bottom-6 right-3.5 sm:right-6 z-50 w-12 h-12 md:w-auto md:h-auto p-0 md:px-4 md:py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white shadow-xl shadow-[#0066FF]/35 flex items-center justify-center md:gap-2.5 transition active:scale-95 group cursor-pointer border-2 border-white"
+          className="fixed bottom-20 md:bottom-6 right-3 sm:right-6 z-50 w-11 h-11 md:w-auto md:h-auto p-0 md:px-4 md:py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white shadow-lg shadow-[#0066FF]/30 flex items-center justify-center md:gap-2.5 transition active:scale-95 group cursor-pointer border-2 border-white"
           aria-label="Open SafeShip Customer Support & Ticket Center"
         >
-          <Headphones className="w-5 h-5 text-white" />
+          <Headphones className="w-4.5 h-4.5 text-white" />
           <span className="hidden md:inline text-xs font-bold tracking-tight">Support &amp; TC Desk</span>
         </button>
       )}

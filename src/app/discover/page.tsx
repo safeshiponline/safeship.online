@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Navbar } from '@/components/common/Navbar';
+import { LiveTickerBar } from '@/components/common/LiveTickerBar';
 import { MobileBottomNav } from '@/components/common/MobileBottomNav';
 import { RoleSwitcher } from '@/components/common/RoleSwitcher';
 import { SafeShipLogo } from '@/components/common/SafeShipLogo';
@@ -111,6 +112,7 @@ export default function DiscoverMarketplacePage() {
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col antialiased selection:bg-[#0066FF] selection:text-white">
       <RoleSwitcher currentRole="BUYER" />
       <Navbar />
+      <LiveTickerBar />
 
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10 space-y-8">
         
