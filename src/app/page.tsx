@@ -724,49 +724,60 @@ export default function HomePage() {
               </span>
             </div>
 
-            {/* Premium Punchy Headline with Vibrant Gradient Accent */}
-            <div className="space-y-0.5 sm:space-y-1">
-              <h1 className="text-[25px] xs:text-[29px] sm:text-5xl lg:text-[54px] font-black tracking-[-0.03em] text-[#0F172A] leading-[1.12]">
+            {/* Mobile View: Headline on Left, Action Buttons in Empty Top Section on Right (sm:hidden) */}
+            <div className="flex sm:hidden items-center justify-between gap-2.5 pt-0.5">
+              {/* Left: Punchy 3-Line Headline */}
+              <div className="flex-1 min-w-0">
+                <h1 className="text-[20px] xs:text-[24px] font-black tracking-[-0.03em] text-[#0F172A] leading-[1.14]">
+                  <span className="block">Open Box Delivery</span>
+                  <span className="block">&amp; Safe Shipping.</span>
+                  <span className="block bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
+                    Verify Then Pay.
+                  </span>
+                </h1>
+              </div>
+
+              {/* Right: Action Buttons in Empty Section on Top with Increased Height */}
+              <div className="w-[132px] xs:w-[148px] shrink-0 flex flex-col gap-2">
+                {/* Track Shipment on Top - Increased Height */}
+                <Link
+                  href="/in/track"
+                  className="w-full py-2.5 xs:py-3 px-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-800 font-bold text-[11.5px] xs:text-xs shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                >
+                  <Search className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                  <span className="truncate">Track Shipment</span>
+                </Link>
+
+                {/* Book Delivery Under It - Increased Height */}
+                <Link
+                  href="/in/deals/new?type=send"
+                  className="w-full py-2.5 xs:py-3 px-2 rounded-xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-[11.5px] xs:text-xs shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                >
+                  <span className="shrink-0 text-xs">📦</span>
+                  <span className="truncate">Book Delivery &rarr;</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Mobile View: Hero Subtext Full-Width Under Headline & Buttons (sm:hidden) */}
+            <div className="block sm:hidden space-y-0.5 text-slate-600 text-[11px] xs:text-[12px] leading-snug">
+              <p className="font-bold text-slate-900 leading-tight">
+                The safest way to ship &amp; buy electronics across India.
+              </p>
+              <p className="text-slate-600 text-[10.5px] xs:text-[11px] leading-tight font-normal">
+                10-min doorstep unboxing. Verify screen &amp; IMEI before payment &mdash; or reject for ₹0.
+              </p>
+            </div>
+
+            {/* Desktop View: Full Headline (hidden sm:block) */}
+            <div className="hidden sm:block space-y-0.5 sm:space-y-1">
+              <h1 className="text-5xl lg:text-[54px] font-black tracking-[-0.03em] text-[#0F172A] leading-[1.12]">
                 <span className="block">Open Box Delivery</span>
                 <span className="block">&amp; Safe Shipping.</span>
                 <span className="block bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
                   Verify Then Pay.
                 </span>
               </h1>
-            </div>
-
-            {/* Mobile View: Hero Subtext on the left, Vertically Stacked Buttons on the right (sm:hidden) */}
-            <div className="flex sm:hidden items-center justify-between gap-2.5 pt-0.5">
-              {/* Left Side: Hero Subtext */}
-              <div className="flex-1 min-w-0 space-y-1 text-slate-600 text-[11px] xs:text-[12px] leading-snug">
-                <p className="font-bold text-slate-900 leading-tight">
-                  The safest way to ship &amp; buy electronics across India.
-                </p>
-                <p className="text-slate-600 text-[10.5px] xs:text-[11px] leading-tight font-normal">
-                  10-min doorstep unboxing. Verify screen &amp; IMEI before payment &mdash; or reject for ₹0.
-                </p>
-              </div>
-
-              {/* Right Side (Empty Space beside Text): Vertically Stacked Action Buttons */}
-              <div className="w-[140px] xs:w-[148px] shrink-0 flex flex-col gap-1.5">
-                {/* Track Shipment on Top */}
-                <Link
-                  href="/in/track"
-                  className="w-full py-2 px-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-800 font-bold text-[11.5px] xs:text-xs shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
-                >
-                  <Search className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                  <span className="truncate">Track Shipment</span>
-                </Link>
-
-                {/* Book Delivery Under It */}
-                <Link
-                  href="/in/deals/new?type=send"
-                  className="w-full py-2 px-2.5 rounded-xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-[11.5px] xs:text-xs shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
-                >
-                  <span className="shrink-0 text-xs">📦</span>
-                  <span className="truncate">Book Delivery &rarr;</span>
-                </Link>
-              </div>
             </div>
 
             {/* Desktop View: Subtitle (hidden sm:block) */}
