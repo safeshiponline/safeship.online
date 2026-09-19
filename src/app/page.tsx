@@ -727,9 +727,9 @@ export default function HomePage() {
             {/* Premium Punchy Headline with Vibrant Gradient Accent */}
             <div className="space-y-1">
               <h1 className="text-[28px] xs:text-[34px] sm:text-5xl lg:text-[54px] font-black tracking-[-0.03em] text-[#0F172A] leading-[1.12]">
-                Open Box Delivery &amp; Safe Shipping.
-                <br />
-                <span className="bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
+                <span className="block">Open Box Delivery</span>
+                <span className="block">&amp; Safe Shipping.</span>
+                <span className="block bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
                   Verify Then Pay.
                 </span>
               </h1>
