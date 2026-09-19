@@ -271,15 +271,15 @@ export default function HomePage() {
       {/* 1. TOP HEADER: Clean, Professional, High-Trust Navigation                 */}
       {/* ========================================================================= */}
       <header className="w-full bg-white border-b border-[#E2E8F0] sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2">
           {/* Brand Logo */}
-          <Link href="/in" className="flex items-center gap-2.5 group shrink-0 select-none">
-            <SafeShipLogo className="w-9 h-9 sm:w-10 sm:h-10 shrink-0 group-hover:scale-105 transition duration-200" />
+          <Link href="/in" className="flex items-center gap-2 sm:gap-2.5 group shrink-0 select-none">
+            <SafeShipLogo className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 group-hover:scale-105 transition duration-200" />
             <div className="flex flex-col">
-              <span className="text-lg sm:text-xl font-black tracking-tight text-[#0F172A] leading-tight">
+              <span className="text-base sm:text-xl font-black tracking-tight text-[#0F172A] leading-tight">
                 SafeShip
               </span>
-              <span className="text-[10px] sm:text-[11px] font-medium text-[#64748B] leading-none">
+              <span className="text-[9px] sm:text-[11px] font-medium text-[#64748B] leading-none hidden min-[400px]:inline-block">
                 Buy &bull; Ship &bull; Verify
               </span>
             </div>
@@ -305,7 +305,7 @@ export default function HomePage() {
           </nav>
 
           {/* Right Header Utilities: Location Selector, Login & Neutral Booking CTA */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             {/* Check Availability / Location Selector Chip */}
             <button
               type="button"
@@ -313,21 +313,29 @@ export default function HomePage() {
                 setLocationDetectError(null);
                 setShowAvailabilityModal(true);
               }}
-              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full bg-blue-50/90 hover:bg-blue-100/90 text-[#0F172A] text-[11px] sm:text-xs font-semibold border border-blue-200/80 transition active:scale-95 cursor-pointer shadow-2xs group"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-blue-50/90 hover:bg-blue-100/90 text-[#0F172A] text-[11px] sm:text-xs font-semibold border border-blue-200/80 transition active:scale-95 cursor-pointer shadow-2xs group shrink-0"
               title="Check Delivery Availability & Pincode"
             >
               <span className="relative flex h-2 w-2 shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
-              <MapPin className="w-3.5 h-3.5 text-[#0066FF] group-hover:scale-110 transition-transform shrink-0" />
-              <div className="flex items-center gap-1 truncate max-w-[95px] sm:max-w-[170px]">
+              <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#0066FF] group-hover:scale-110 transition-transform shrink-0" />
+              <div className="flex items-center gap-1">
                 <span className="text-[11px] text-slate-500 font-normal hidden lg:inline">Deliver to:</span>
-                <span className="font-bold text-slate-900 truncate">
+                <span className="font-bold text-slate-900 truncate max-w-[85px] sm:max-w-[170px]">
                   {userLocation ? (
-                    userLocation.pincode ? `${userLocation.city} (${userLocation.pincode})` : userLocation.city
+                    <>
+                      <span>{userLocation.city}</span>
+                      {userLocation.pincode && (
+                        <span className="hidden sm:inline font-normal text-slate-600"> ({userLocation.pincode})</span>
+                      )}
+                    </>
                   ) : (
-                    'Check Availability'
+                    <>
+                      <span className="sm:hidden">Check PIN</span>
+                      <span className="hidden sm:inline">Check Availability</span>
+                    </>
                   )}
                 </span>
               </div>
@@ -338,11 +346,11 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => setShowNotifications(!showNotifications)}
-              className="w-9 h-9 rounded-full bg-white border border-[#E2E8F0] flex items-center justify-center text-[#0F172A] hover:text-[#0066FF] hover:border-[#BFDBFE] transition relative cursor-pointer active:scale-95 shadow-2xs"
+              className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white border border-[#E2E8F0] flex items-center justify-center text-[#0F172A] hover:text-[#0066FF] hover:border-[#BFDBFE] transition relative cursor-pointer active:scale-95 shadow-2xs shrink-0"
               aria-label="Notifications"
             >
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-[#0066FF] ring-2 ring-white" />
+              <Bell className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 rounded-full bg-[#0066FF] ring-2 ring-white" />
             </button>
 
             {/* Sign in */}
@@ -356,10 +364,11 @@ export default function HomePage() {
             {/* Main Primary CTA Button (Neutral for both Buyer & Seller) */}
             <Link
               href="/in/deals/new?type=send"
-              className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#0066FF]/25 hover:shadow-lg transition active:scale-95 cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs sm:text-sm font-bold shadow-md shadow-[#0066FF]/25 hover:shadow-lg transition active:scale-95 cursor-pointer whitespace-nowrap shrink-0"
             >
-              <span>Book Safe Delivery</span>
-              <span className="text-sm">&rarr;</span>
+              <span className="hidden sm:inline">Book Safe Delivery</span>
+              <span className="sm:hidden">Book</span>
+              <span className="text-xs sm:text-sm">&rarr;</span>
             </Link>
           </div>
         </div>
