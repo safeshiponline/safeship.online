@@ -32,7 +32,7 @@ export interface GeminiScanResult {
 
 const GEMINI_BASE_URL = process.env.GEMINI_BASE_URL || process.env.OPENAI_BASE_URL || '';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 
 /**
  * Standard GSMA Luhn-10 Algorithm Checksum Validator for 15-Digit IMEIs
@@ -131,7 +131,7 @@ export function cleanAndParseJson<T = any>(content: string): T | null {
 async function callGoogleGeminiNative(
   messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
   apiKey: string,
-  model = 'gemini-3.8-flash',
+  model = 'gemini-1.5-flash',
   temperature = 0.2
 ): Promise<string | null> {
   if (!apiKey) return null;
@@ -186,7 +186,7 @@ async function callGoogleGeminiMultimodal(
   prompt: string,
   imageDataUrl: string | string[],
   apiKey: string,
-  model = 'gemini-3.8-flash',
+  model = 'gemini-1.5-flash',
   systemInstruction?: string
 ): Promise<string | null> {
   if (!apiKey) return null;
@@ -252,7 +252,7 @@ export async function callGeminiChat(
 ): Promise<string | null> {
   const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
   const baseUrl = process.env.GEMINI_BASE_URL || process.env.OPENAI_BASE_URL;
-  const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+  const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 
   // 1. If an official Google Gemini API Key is present, use Google native endpoint directly
   if (apiKey && (apiKey.startsWith('AIza') || !baseUrl || baseUrl.includes('generativelanguage.googleapis.com'))) {
@@ -598,7 +598,7 @@ export async function verifyImeiWithGemini(
     try {
       const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || '';
       const baseUrl = process.env.GEMINI_BASE_URL || process.env.OPENAI_BASE_URL;
-      const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+      const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 
       const prompt = `You are a high-accuracy OCR and hardware inspection engine for SafeShip India.
 Your mission is to accurately detect and extract the 15-digit International Mobile Equipment Identity (IMEI) number or alphanumeric hardware serial number from this image.
@@ -766,7 +766,7 @@ export async function verifyProductPhotoMatch(
     try {
       const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || '';
       const baseUrl = process.env.GEMINI_BASE_URL || process.env.OPENAI_BASE_URL;
-      const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+      const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
 
       const prompt = `You are SafeShip India's Senior Hardware Optical Verification Specialist.
 Declared Product Name: "${declaredItemName}"

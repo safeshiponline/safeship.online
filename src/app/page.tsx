@@ -42,6 +42,7 @@ import {
 } from '@/components/common/Icons';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
 import { LiveTickerBar } from '@/components/common/LiveTickerBar';
+import { PartnerMarquee } from '@/components/common/PartnerMarquee';
 
 export default function HomePage() {
   const router = useRouter();
@@ -822,7 +823,7 @@ export default function HomePage() {
                   <img
                     src="/images/hero_visual_full.webp?v=5"
                     alt="SafeShip Doorstep Open Box Inspection with Apple iPhone 15 Pro Max Verification"
-                    className="w-full h-auto max-h-[300px] sm:max-h-none object-contain block select-none"
+                    className="w-full h-auto max-h-[350px] xs:max-h-[390px] sm:max-h-none object-contain block select-none"
                   />
 
                   {/* Clean Brand Pill */}
@@ -855,43 +856,9 @@ export default function HomePage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4. TRUSTED PARTNER LOGOS STRIP (ICICI, RAZORPAY, BLUE DART, DELHIVERY)    */}
+      {/* 4. TRUSTED PARTNER LOGOS STRIP - CONTINUOUS LOOPING MOVING MARQUEE         */}
       {/* ========================================================================= */}
-      <section className="w-full bg-white/90 backdrop-blur-xs border-y border-slate-200/80 py-5 sm:py-7 mt-2 sm:mt-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-3.5">
-          <p className="text-[10px] sm:text-xs font-extrabold uppercase tracking-widest text-slate-400">
-            Trusted by India&apos;s Leading Logistics &amp; Payment Networks
-          </p>
-
-          {/* Clean Branded Partner Chip Strip */}
-          <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 lg:gap-6">
-            <div className="flex items-center gap-2 text-slate-800 font-black text-xs sm:text-sm tracking-tight px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/60 shadow-2xs hover:bg-white transition">
-              <span className="w-5 h-5 rounded-md bg-[#F15A24] text-white flex items-center justify-center text-[11px] font-bold">i</span>
-              <span>ICICI Bank</span>
-            </div>
-
-            <div className="flex items-center gap-1.5 text-slate-800 font-black text-xs sm:text-sm tracking-tight px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/60 shadow-2xs hover:bg-white transition">
-              <span className="text-[#0C2340] font-black italic">Razorpay</span>
-            </div>
-
-            <div className="flex items-center gap-1.5 text-slate-800 font-black text-xs sm:text-sm tracking-tight px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/60 shadow-2xs hover:bg-white transition">
-              <span className="text-[#002B66] font-black">BLUE DART</span>
-            </div>
-
-            <div className="flex items-center gap-1.5 text-slate-800 font-black text-xs sm:text-sm tracking-tight px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/60 shadow-2xs hover:bg-white transition">
-              <span className="text-red-600 font-black">DELHIVERY</span>
-            </div>
-
-            <div className="flex items-center gap-1.5 text-slate-800 font-black text-xs sm:text-sm tracking-tight px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/60 shadow-2xs hover:bg-white transition">
-              <span className="text-[#E31B23] font-black">Ecom Express</span>
-            </div>
-
-            <div className="flex items-center gap-2 text-slate-800 font-black text-xs sm:text-sm tracking-tight px-3 py-1.5 rounded-xl bg-slate-50 border border-slate-200/60 shadow-2xs hover:bg-white transition">
-              <span className="text-red-700 font-bold">India Post</span>
-            </div>
-          </div>
-        </div>
-      </section>
+      <PartnerMarquee />
 
       {/* ========================================================================= */}
       {/* 5. HOW SAFESHIP WORKS: 4-STEP PROCESS (NEUTRAL COPY FOR BUYERS & SELLERS)  */}
