@@ -703,19 +703,19 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 3. HERO SECTION (LUXURY FINTECH AESTHETICS, AMBIENT DEPTH, PERFECT SCALING) */}
       {/* ========================================================================= */}
-      <section className="relative w-full max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-2.5 sm:pt-10 pb-4 sm:pb-14 overflow-hidden">
+      <section className="relative w-full max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-2 sm:pt-10 pb-3.5 sm:pb-14 overflow-hidden">
         {/* Subtle Ambient Radial Glows */}
         <div className="absolute -top-24 -right-16 w-80 sm:w-96 h-80 sm:h-96 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute top-1/2 -left-20 w-72 h-72 bg-emerald-400/5 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-8 lg:gap-12 items-center relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-8 lg:gap-12 items-center relative z-10">
           
           {/* Left Hero Content */}
-          <div className="lg:col-span-6 xl:col-span-5 space-y-2.5 sm:space-y-6">
+          <div className="lg:col-span-6 xl:col-span-5 space-y-2 sm:space-y-6">
             
             {/* Eyebrow Pill Badge */}
             <div>
-              <span className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-blue-50/90 border border-blue-200/90 shadow-2xs text-xs sm:text-xs font-bold text-[#0066FF] tracking-tight">
+              <span className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-blue-50/90 border border-blue-200/90 shadow-2xs text-[11px] sm:text-xs font-extrabold text-[#0066FF] tracking-tight">
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0066FF]"></span>
@@ -724,48 +724,48 @@ export default function HomePage() {
               </span>
             </div>
 
-            {/* Mobile View: Headline on Left, Action Buttons in Empty Top Section on Right (sm:hidden) */}
-            <div className="flex sm:hidden items-stretch justify-between gap-3 pt-0.5">
-              {/* Left: Punchy 3-Line Headline with Impactful Typography & Matched Height */}
+            {/* Mobile View: Bigger Headline on Left, Bigger Action Buttons in Empty Top Section on Right (sm:hidden) */}
+            <div className="flex sm:hidden items-stretch justify-between gap-2.5 xs:gap-3 pt-0.5">
+              {/* Left: Punchy 3-Line Headline with Impactful Bigger Typography & Matched Height */}
               <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <h1 className="text-[24px] xs:text-[28.5px] font-black tracking-[-0.035em] text-[#0F172A] leading-[1.1]">
-                  <span className="block">Open Box Delivery</span>
-                  <span className="block">&amp; Safe Shipping.</span>
-                  <span className="block bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent drop-shadow-2xs">
+                <h1 className="text-[25px] xs:text-[30.5px] font-black tracking-[-0.038em] text-[#0F172A] leading-[1.08]">
+                  <span className="block whitespace-nowrap">Open Box Delivery</span>
+                  <span className="block whitespace-nowrap">&amp; Safe Shipping.</span>
+                  <span className="block whitespace-nowrap bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent drop-shadow-2xs">
                     Verify Then Pay.
                   </span>
                 </h1>
               </div>
 
-              {/* Right: Action Buttons in Empty Section on Top with User-Friendly Tap Targets */}
-              <div className="w-[140px] xs:w-[158px] shrink-0 flex flex-col justify-center gap-2">
+              {/* Right: Enlarged Action Buttons in Empty Section on Top with Premium Thumb-Friendly Tap Targets */}
+              <div className="w-[146px] xs:w-[172px] shrink-0 flex flex-col justify-center gap-2 xs:gap-2.5">
                 {/* Track Shipment on Top */}
                 <Link
                   href="/in/track"
-                  className="w-full py-2.5 xs:py-3 px-3 rounded-xl xs:rounded-2xl bg-white hover:bg-slate-50 border border-slate-200/90 hover:border-slate-300 text-slate-800 font-extrabold text-[12px] xs:text-[13.5px] shadow-2xs hover:shadow-xs transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                  className="w-full py-2.5 xs:py-3.5 px-3 rounded-xl xs:rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-slate-300 text-slate-900 font-black text-[12.5px] xs:text-[14px] shadow-2xs hover:shadow-xs transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer min-h-[44px] xs:min-h-[48px]"
                 >
-                  <Search className="w-3.5 h-3.5 text-slate-600 shrink-0" />
+                  <Search className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-slate-700 shrink-0 stroke-[2.5]" />
                   <span className="truncate">Track Shipment</span>
                 </Link>
 
                 {/* Book Delivery Under It */}
                 <Link
                   href="/in/deals/new?type=send"
-                  className="w-full py-2.5 xs:py-3 px-3 rounded-xl xs:rounded-2xl bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#0040CC] hover:from-[#0052FF] hover:to-[#0038B8] text-white font-extrabold text-[12px] xs:text-[13.5px] shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                  className="w-full py-2.5 xs:py-3.5 px-3 rounded-xl xs:rounded-2xl bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#0038CC] hover:from-[#0052FF] hover:to-[#002FA7] text-white font-black text-[12.5px] xs:text-[14px] shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer min-h-[44px] xs:min-h-[48px]"
                 >
-                  <span className="shrink-0 text-xs xs:text-sm">📦</span>
+                  <span className="shrink-0 text-xs xs:text-base">📦</span>
                   <span className="truncate">Book Delivery &rarr;</span>
                 </Link>
               </div>
             </div>
 
             {/* Mobile View: Hero Subtext Full-Width Under Headline & Buttons with Emerald Trust Accent (sm:hidden) */}
-            <div className="block sm:hidden space-y-1 text-slate-600 text-xs xs:text-[13.5px] leading-snug pt-1">
-              <p className="font-extrabold text-slate-900 flex items-center gap-2 text-[12px] xs:text-[13.5px]">
+            <div className="block sm:hidden space-y-1 text-slate-600 leading-snug pt-0.5">
+              <p className="font-extrabold text-slate-900 flex items-center gap-1.5 text-[12.5px] xs:text-[13.5px]">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs shadow-emerald-500/50"></span>
                 <span>The safest way to ship &amp; buy electronics across India.</span>
               </p>
-              <p className="text-slate-600 text-[11px] xs:text-xs leading-normal font-normal pl-3.5">
+              <p className="text-slate-600 text-[11px] xs:text-[12px] leading-normal font-normal pl-3.5">
                 Guaranteed 10-minute doorstep unboxing. Verify screen &amp; IMEI before payment &mdash; or reject on the spot for ₹0.
               </p>
             </div>
@@ -932,7 +932,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 5. HOW SAFESHIP WORKS: 4-STEP PROCESS (NEUTRAL COPY FOR BUYERS & SELLERS)  */}
       {/* ========================================================================= */}
-      <section id="how-it-works" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 space-y-10">
+      <section id="how-it-works" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-7 sm:py-16 space-y-6 sm:space-y-10">
         
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto space-y-2">

@@ -82,8 +82,8 @@ export const PARTNERS: PartnerItem[] = [
 
 export const PartnerMarquee: React.FC = () => {
   return (
-    <section className="w-full bg-white/95 backdrop-blur-xs border-y border-slate-200/80 py-3.5 sm:py-5 overflow-hidden select-none">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-2 sm:mb-2.5 text-center">
+    <section className="w-full bg-white/95 backdrop-blur-xs border-y border-slate-200/80 py-2 sm:py-5 overflow-hidden select-none">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-1.5 sm:mb-2.5 text-center">
         <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
           Trusted by India&apos;s Leading Logistics &amp; Payment Networks
         </p>

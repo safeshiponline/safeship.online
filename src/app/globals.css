@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+@theme {
+  --breakpoint-xs: 420px;
+}
+
 :root {
   --background: #ffffff;
   --surface: #f9fafb;
