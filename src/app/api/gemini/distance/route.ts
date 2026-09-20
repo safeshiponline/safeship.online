@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       data: result,
-      source: process.env.GEMINI_API_KEY ? 'gemini-1.5-flash-live' : 'gemini-intelligent-simulation'
+      source: process.env.GEMINI_API_KEY ? 'gemini-3.8-flash-live' : 'gemini-intelligent-simulation'
     });
   } catch (err: any) {
     return NextResponse.json({ error: err.message || 'Error computing route' }, { status: 500 });
