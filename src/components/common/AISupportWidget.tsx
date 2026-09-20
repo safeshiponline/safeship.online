@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Headphones, X, Send, ShieldCheck, Check, AlertTriangle, FileText, Sparkles, Clock, ArrowRight } from '@/components/common/Icons';
+import { analytics } from '@/lib/analytics';
 
 interface Message {
   id: string;
@@ -168,6 +169,10 @@ export function AISupportWidget() {
     setLoading(true);
 
     const isDisputeIntent = /dispute|fake|stolen|scam|damage|broken|reject|officer problem|refund/i.test(query);
+    analytics.capture('support_chat_query', {
+      query_length: query.length,
+      is_dispute_intent: isDisputeIntent,
+    });
 
     try {
       const res = await fetch('/api/gemini/support', {

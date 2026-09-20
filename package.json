@@ -12,6 +12,7 @@
   "dependencies": {
     "jspdf": "^4.2.1",
     "next": "16.3.5",
+    "posthog-js": "^1.434.2",
     "razorpay": "^2.9.8",
     "react": "19.2.8",
     "react-dom": "19.2.8"

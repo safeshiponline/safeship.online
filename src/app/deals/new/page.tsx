@@ -44,6 +44,7 @@ import {
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
 import { createNewDeal } from '@/lib/store';
+import { analytics } from '@/lib/analytics';
 import { getSession, UserSession } from '@/lib/auth';
 import { ProductPhotoMatchResult, validateLuhnImei, identifyBrandFromImei } from '@/lib/geminiUnified';
 import { ItemCategory, DeliveryServiceTier, PickupSlot, FeeSplitOption } from '@/lib/types';
@@ -478,6 +479,7 @@ function CreateShipmentContent() {
     setAnglePhotos(current);
     const allList = Object.values(current).filter(Boolean) as string[];
     verifyMultiAnglePhotos(allList, itemName);
+    analytics.trackPhotosUploaded('draft', files.length);
   };
 
   // Remove photo from specific angle slot
@@ -1551,6 +1553,14 @@ function CreateShipmentContent() {
           invoiceDate: new Date().toISOString()
         }
       });
+
+      analytics.trackDealCreated(created.id, {
+        category: selectedCategory || 'SMARTPHONES_TABLETS',
+        value: declaredValue,
+        split: 'BUYER_PAYS_ALL',
+        cityPair: `${pickupCity || 'Jaipur'}-${dropCity || 'Delhi'}`,
+      });
+      analytics.trackEscrowPaymentSuccess(created.id, paymentId, upfrontAmountPaid);
 
       try {
         localStorage.removeItem('safeship_deal_draft_v2');

@@ -38,6 +38,7 @@ import {
 } from '@/components/common/Icons';
 import { downloadConsignmentNotePDF } from '@/lib/pdfGenerator';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
+import { analytics } from '@/lib/analytics';
 
 export default function StandaloneTrackingPage({
   params,
@@ -172,6 +173,12 @@ function TrackingContent({
       setBuyerInfoSavedToast(true);
       setTimeout(() => setBuyerInfoSavedToast(false), 4000);
       setShowBuyerInfoModal(false);
+
+      analytics.trackBuyerDetailsLinked(deal.id, {
+        hasAddress: Boolean(buyerFormAddress.trim()),
+        hasRefundUpi: Boolean(buyerFormUpi.trim()),
+        hasBank: false,
+      });
     }
   };
 
@@ -198,6 +205,7 @@ function TrackingContent({
       setBuyerFormPincode(loaded.buyer?.pincode || '');
       setBuyerFormCity(loaded.buyer?.city || '');
       setBuyerFormUpi(loaded.buyer?.upiId || '');
+      analytics.trackTrackingViewed(loaded.id, loaded.status);
     } else {
       setDeal(null);
     }

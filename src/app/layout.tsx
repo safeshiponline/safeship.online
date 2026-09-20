@@ -4,6 +4,7 @@ import Script from 'next/script';
 import './globals.css';
 
 import { AISupportWidget } from '@/components/common/AISupportWidget';
+import { PostHogProvider } from '@/components/providers/PostHogProvider';
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://safeship.online/in'),
@@ -381,8 +382,10 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-[#F8FAFC] text-[#0F172A] selection:bg-[#0066FF] selection:text-white" suppressHydrationWarning>
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
-        {children}
-        <AISupportWidget />
+        <PostHogProvider>
+          {children}
+          <AISupportWidget />
+        </PostHogProvider>
       </body>
     </html>
   );
