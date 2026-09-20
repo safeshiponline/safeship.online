@@ -3,9 +3,8 @@
 import React, { use, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getDealById, getStoredDeals, requestSellerCallback, advanceDealMilestone, updateDealDetails } from '@/lib/store';
+import { getDealById, requestSellerCallback, advanceDealMilestone, updateDealDetails } from '@/lib/store';
 import { reverseGeocodeToIndianLocation } from '@/lib/pincodeService';
-import { INITIAL_DEALS } from '@/lib/mockData';
 import { SafeDeal } from '@/lib/types';
 import { formatINR } from '@/lib/escrowCalculator';
 import { Navbar } from '@/components/common/Navbar';
@@ -69,7 +68,6 @@ function TrackingContent({
   const [copied, setCopied] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [showPostPaymentModal, setShowPostPaymentModal] = useState(isNewlyBooked);
-  const [allDeals, setAllDeals] = useState<SafeDeal[]>([]);
   const [callbackRequested, setCallbackRequested] = useState(false);
   const [callbackToast, setCallbackToast] = useState(false);
 
@@ -209,16 +207,6 @@ function TrackingContent({
     } else {
       setDeal(null);
     }
-
-    // Load all local and demo shipments for the switcher
-    const stored = getStoredDeals();
-    const combined = [...stored];
-    INITIAL_DEALS.forEach((d) => {
-      if (!combined.some((c) => c.id.toLowerCase() === d.id.toLowerCase())) {
-        combined.push(d);
-      }
-    });
-    setAllDeals(combined);
     setIsLoading(false);
   }, [resolvedParams.id]);
 
@@ -292,12 +280,6 @@ function TrackingContent({
             >
               Book a New Shipment
             </Link>
-            <Link
-              href="/in/track/SS48291"
-              className="text-[11px] text-[#0066FF] hover:underline font-semibold"
-            >
-              Want to see a live sample? View Demo Order SS48291 &rarr;
-            </Link>
           </div>
         </main>
       </div>
@@ -345,36 +327,7 @@ function TrackingContent({
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-6 sm:py-9 space-y-6">
         
-        {/* Quick Shipment Switcher (Direct Tracking by ID - Zero Forced Auth Friction) */}
-        {allDeals.length > 0 && (
-          <div className="flex items-center justify-between gap-2 overflow-x-auto py-1 scrollbar-none text-xs">
-            <div className="flex items-center gap-1.5 flex-nowrap">
-              <span className="text-[11px] font-bold text-[#64748B] shrink-0">Tracked Consignments:</span>
-              {allDeals.slice(0, 6).map((d) => {
-                const isActive = d.id.toLowerCase() === deal.id.toLowerCase();
-                return (
-                  <Link
-                    key={d.id}
-                    href={`/in/track/${d.id}`}
-                    className={`px-3 py-1 rounded-full font-mono text-[11px] font-bold transition whitespace-nowrap shrink-0 cursor-pointer ${
-                      isActive
-                        ? 'bg-[#0066FF] text-white shadow-xs'
-                        : 'bg-white border border-slate-200 text-slate-700 hover:border-blue-300'
-                    }`}
-                  >
-                    #{d.id} {d.isExchange ? '(Swap)' : ''}
-                  </Link>
-                );
-              })}
-            </div>
-            <Link
-              href="/in/deals/new"
-              className="text-[11px] font-bold text-[#0066FF] hover:underline whitespace-nowrap shrink-0 pl-2"
-            >
-              + Book New
-            </Link>
-          </div>
-        )}
+
 
         {/* Top Header Card */}
         <div className="rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-7 shadow-xs flex flex-wrap items-center justify-between gap-4">

@@ -100,18 +100,6 @@ export default function PublicTrackingSearchPage() {
                 {errorMsg}
               </p>
             )}
-
-            {/* Quick Demo Links */}
-            <div className="mt-3 flex items-center justify-center gap-2 flex-wrap text-xs text-slate-500 font-medium">
-              <span>Quick Sample:</span>
-              <button
-                type="button"
-                onClick={() => handleQuickLookup('SS48291')}
-                className="px-2.5 py-1 rounded-lg bg-white hover:bg-blue-50 border border-slate-200 text-[#0066FF] font-mono font-bold text-[11px] transition shadow-2xs cursor-pointer"
-              >
-                Order #SS48291 (iPhone 15 Pro)
-              </button>
-            </div>
           </form>
         </div>
 

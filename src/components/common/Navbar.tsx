@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowRight, ArrowLeftRight, Package, ShieldCheck, MapPin, Menu, X, Home, Truck, User, GoogleIcon } from './Icons';
+import { ArrowRight, ArrowLeftRight, Package, ShieldCheck, MapPin, Menu, X, Home, Truck, User } from './Icons';
 import { SafeShipLogo } from './SafeShipLogo';
 import { getSession, UserSession } from '@/lib/auth';
 

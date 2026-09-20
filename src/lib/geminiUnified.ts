@@ -656,7 +656,7 @@ Respond strictly in valid JSON:
               ],
               temperature: 0.1
             }),
-            signal: AbortSignal.timeout(15000)
+            signal: AbortSignal.timeout(30000)
           });
           if (res.ok) {
             const data = await res.json();
@@ -826,7 +826,7 @@ Respond strictly in valid JSON:
               ],
               temperature: 0.1
             }),
-            signal: AbortSignal.timeout(15000)
+            signal: AbortSignal.timeout(30000)
           });
           if (res.ok) {
             const data = await res.json();

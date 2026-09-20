@@ -440,6 +440,55 @@ function CreateShipmentContent() {
     await verifyMultiAnglePhotos([photoData], nameToCheck);
   };
 
+  // Simple photo upload handler (supports single or multiple file selection up to 6 photos)
+  const handleSimplePhotoUpload = async (fileList: FileList | null) => {
+    if (!fileList || fileList.length === 0) return;
+    const newFiles = Array.from(fileList);
+    const compressedList: string[] = [];
+    for (const f of newFiles) {
+      const comp = await compressImageForOcr(f, 1600, 0.88);
+      if (comp) compressedList.push(comp);
+    }
+    if (compressedList.length === 0) return;
+
+    const combined = [...uploadedPhotos, ...compressedList].slice(0, 6);
+    setUploadedPhotos(combined);
+    setProductPhoto(combined[0] || null);
+
+    const updatedAngle: Record<ProductAngleKey, string | undefined> = {
+      front: combined[0] || undefined,
+      back: combined[1] || undefined,
+      sides: combined[2] || undefined,
+      box: combined[3] || undefined,
+    };
+    setAnglePhotos(updatedAngle);
+
+    clearFieldError('photos');
+    await verifyMultiAnglePhotos(combined, itemName);
+    analytics.trackPhotosUploaded('draft', combined.length);
+  };
+
+  // Remove photo by index from simple gallery
+  const handleRemovePhoto = (indexToRemove: number) => {
+    const next = uploadedPhotos.filter((_, idx) => idx !== indexToRemove);
+    setUploadedPhotos(next);
+    setProductPhoto(next.length > 0 ? next[0] : null);
+
+    const updatedAngle: Record<ProductAngleKey, string | undefined> = {
+      front: next[0] || undefined,
+      back: next[1] || undefined,
+      sides: next[2] || undefined,
+      box: next[3] || undefined,
+    };
+    setAnglePhotos(updatedAngle);
+
+    if (next.length > 0) {
+      verifyMultiAnglePhotos(next, itemName);
+    } else {
+      setPhotoMatchResult(null);
+    }
+  };
+
   // Handle single angle slot upload
   const handleAnglePhotoUpload = async (angleKey: ProductAngleKey, file: File) => {
     const optimized = await compressImageForOcr(file, 1600, 0.88);
@@ -1569,10 +1618,11 @@ function CreateShipmentContent() {
       router.push(`/in/track/${created.id}?booked=true&payment_id=${paymentId}`);
     } catch (e) {
       console.error('Error creating deal record in store:', e);
+      const fallbackId = `SS${Math.floor(10000 + Math.random() * 90000)}`;
       try {
         localStorage.removeItem('safeship_deal_draft_v2');
       } catch {}
-      router.push(`/in/track/SS48291?booked=true&payment_id=${paymentId}`);
+      router.push(`/in/track/${fallbackId}?booked=true&payment_id=${paymentId}`);
     }
   };
 
@@ -2025,212 +2075,126 @@ function CreateShipmentContent() {
                 </button>
               </div>
 
-              {/* Multi-Angle Photo Grid Section */}
+              {/* Simple Item Photo Upload Section */}
               <div id="field-photos" className="space-y-3 rounded-2xl p-1">
                 <div className="flex items-center justify-between flex-wrap gap-1">
                   <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5 flex-wrap">
                     <span>
-                      Upload Photos from Different Angles {itemName ? <span className="text-[#0066FF] font-black underline decoration-blue-200 underline-offset-2">&quot;{itemName}&quot;</span> : ''}
+                      Upload Item Photos {itemName ? <span className="text-[#0066FF] font-black underline decoration-blue-200 underline-offset-2">&quot;{itemName}&quot;</span> : ''}
                     </span>
                     <span className="text-rose-500">*</span>
                   </label>
-                  <span className="text-[10px] text-[#64748B]">Audited at 10-min doorstep unboxing</span>
+                  <span className="text-[10px] text-[#64748B]">Audited at doorstep unboxing</span>
                 </div>
 
                 <p className="text-[11px] text-slate-500">
-                  Upload photos across visible angles to verify hardware authenticity, display condition, and camera cluster against the declared model.
+                  Upload 1 to 6 clear photos of your item (front, back, or condition). Photos are used by the SafeShip agent to verify item condition upon doorstep delivery.
                 </p>
 
-                {/* ⚡ Prominent Batch Multi-Photo Drop Zone (1-Tap to Upload All Photos at Once) */}
-                <div className="relative rounded-2xl border-2 border-dashed border-[#0066FF]/60 bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-blue-50/80 p-4 sm:p-5 text-center transition hover:border-[#0066FF] hover:bg-blue-50/90 group shadow-2xs">
-                  <label className="flex flex-col items-center justify-center cursor-pointer space-y-2">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0066FF] to-[#0052FF] text-white flex items-center justify-center shadow-md shadow-blue-500/25 group-hover:scale-105 transition-transform">
-                      <Upload className="w-6 h-6 animate-pulse" />
+                {/* Upload Box / Photo Gallery */}
+                {uploadedPhotos.length === 0 ? (
+                  <label className="flex flex-col items-center justify-center p-6 sm:p-8 rounded-2xl border-2 border-dashed border-blue-300 hover:border-[#0066FF] bg-blue-50/40 hover:bg-blue-50/70 transition cursor-pointer group text-center shadow-2xs">
+                    <div className="w-12 h-12 rounded-2xl bg-white border border-blue-200 text-[#0066FF] flex items-center justify-center mb-3 shadow-xs group-hover:scale-105 transition-transform">
+                      <Camera className="w-6 h-6" />
                     </div>
-                    <div>
-                      <h4 className="text-sm font-black text-slate-900 flex items-center justify-center gap-1.5 flex-wrap">
-                        <span>⚡ Upload All Photos at Once</span>
-                        <span className="text-[10px] uppercase font-black bg-emerald-500 text-white px-2 py-0.5 rounded-full shadow-xs">
-                          1-Tap Gallery Pick
-                        </span>
-                      </h4>
-                      <p className="text-xs text-slate-600 mt-1 max-w-md mx-auto leading-relaxed">
-                        Select all 1 to 4 device photos together from your gallery. SafeShip AI will automatically assign and verify Front, Back, Sides &amp; Box!
-                      </p>
-                    </div>
-                    <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-blue-200 text-[#0066FF] font-bold text-xs shadow-xs hover:bg-blue-50 transition active:scale-95">
-                      <Camera className="w-4 h-4" />
-                      <span>Tap to Select All Photos from Gallery</span>
+                    <span className="text-sm font-bold text-slate-900 block">
+                      Tap or drag photos to upload
+                    </span>
+                    <span className="text-xs text-slate-500 mt-1 max-w-sm block">
+                      PNG, JPG or WebP up to 10MB &bull; Select 1 to 6 photos from your gallery
+                    </span>
+                    <span className="mt-3.5 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-xs transition active:scale-95">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Choose Photos</span>
                     </span>
                     <input
                       type="file"
                       multiple
                       accept="image/*"
-                      onChange={(e) => handleBatchAngleUpload(e.target.files)}
+                      onChange={(e) => handleSimplePhotoUpload(e.target.files)}
                       className="hidden"
                     />
                   </label>
-                </div>
-
-                {/* 4 Angle Slots Grid */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {PRODUCT_ANGLES.map((slot) => {
-                    const photoUrl = anglePhotos[slot.key];
-                    return (
-                      <div
-                        key={slot.key}
-                        className={`relative rounded-2xl border transition flex flex-col items-center justify-between p-2.5 text-center min-h-[140px] ${
-                          photoUrl
-                            ? 'bg-emerald-50/40 border-emerald-300 ring-1 ring-emerald-200'
-                            : 'bg-[#F8FAFC] border-dashed border-slate-300 hover:border-[#0066FF] hover:bg-blue-50/30'
-                        }`}
-                      >
-                        {photoUrl ? (
-                          <div className="w-full flex flex-col items-center justify-between h-full space-y-1.5">
-                            <div className="w-full h-20 rounded-xl bg-white border border-slate-200 overflow-hidden flex items-center justify-center p-0.5 relative group">
-                              <img
-                                src={photoUrl}
-                                alt={slot.label}
-                                className="w-full h-full object-contain"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveAnglePhoto(slot.key)}
-                                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-slate-900/80 text-white flex items-center justify-center text-xs opacity-80 hover:opacity-100 transition cursor-pointer"
-                                title="Remove photo"
-                              >
-                                &times;
-                              </button>
-                            </div>
-                            <div className="w-full text-center">
-                              <span className="text-[11px] font-bold text-emerald-900 block truncate flex items-center justify-center gap-1">
-                                <span>✓</span>
-                                <span>{slot.label}</span>
-                              </span>
-                              <label className="text-[10px] text-[#0066FF] hover:underline cursor-pointer font-semibold block mt-0.5">
-                                <span>Change</span>
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={(e) => {
-                                    const f = e.target.files?.[0];
-                                    if (f) handleAnglePhotoUpload(slot.key, f);
-                                  }}
-                                  className="hidden"
-                                />
-                              </label>
-                            </div>
-                          </div>
-                        ) : (
-                          <label className="w-full h-full flex flex-col items-center justify-center cursor-pointer p-1">
-                            <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#0066FF] flex items-center justify-center mb-1.5 shadow-2xs">
-                              <Camera className="w-4 h-4" />
-                            </div>
-                            <span className="text-[11px] font-bold text-slate-800 block leading-tight">
-                              + {slot.label}
-                            </span>
-                            <span className="text-[9px] text-slate-400 mt-1 block leading-tight px-1">
-                              {slot.shortDesc}
-                            </span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const f = e.target.files?.[0];
-                                if (f) handleAnglePhotoUpload(slot.key, f);
-                              }}
-                              className="hidden"
+                ) : (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {uploadedPhotos.map((photoUrl, idx) => (
+                        <div
+                          key={idx}
+                          className="relative rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xs group flex flex-col items-center"
+                        >
+                          <div className="w-full aspect-square rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center relative">
+                            <img
+                              src={photoUrl}
+                              alt={`Item photo ${idx + 1}`}
+                              className="w-full h-full object-cover"
                             />
-                          </label>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                            {idx === 0 && (
+                              <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md bg-emerald-600/90 text-white font-bold text-[9px] shadow-xs">
+                                Cover Photo
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePhoto(idx)}
+                              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-slate-900/80 hover:bg-rose-600 text-white flex items-center justify-center text-xs transition cursor-pointer shadow-xs"
+                              title="Remove photo"
+                            >
+                              &times;
+                            </button>
+                          </div>
+                          <span className="text-[10px] text-slate-500 font-medium mt-1">
+                            Photo #{idx + 1}
+                          </span>
+                        </div>
+                      ))}
 
-                {/* Instant Solutions & Batch Upload Action Bar */}
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between flex-wrap gap-1">
-                    <span className="text-[11px] font-semibold text-slate-700">
-                      Quick upload &amp; verification options:
-                    </span>
-                    {uploadedPhotos.length > 0 && (
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                        {uploadedPhotos.length} Angle(s) Attached
-                      </span>
-                    )}
+                      {uploadedPhotos.length < 6 && (
+                        <label className="flex flex-col items-center justify-center aspect-square rounded-2xl border-2 border-dashed border-slate-300 hover:border-[#0066FF] bg-slate-50 hover:bg-blue-50/50 transition cursor-pointer text-center p-2 group">
+                          <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 text-[#0066FF] flex items-center justify-center mb-1 group-hover:scale-105 transition-transform shadow-2xs">
+                            <Camera className="w-4 h-4" />
+                          </div>
+                          <span className="text-xs font-bold text-slate-700">
+                            + Add Photo
+                          </span>
+                          <span className="text-[10px] text-slate-400">
+                            ({6 - uploadedPhotos.length} remaining)
+                          </span>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={(e) => handleSimplePhotoUpload(e.target.files)}
+                            className="hidden"
+                          />
+                        </label>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+                      <span>{uploadedPhotos.length} of 6 photos attached</span>
+                      <label className="text-[#0066FF] hover:underline font-semibold cursor-pointer">
+                        <span>+ Add more photos</span>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => handleSimplePhotoUpload(e.target.files)}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
                   </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {/* Batch Multi-Photo Selector */}
-                    <label className="px-3 py-1.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95">
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Batch Upload Multiple Angles</span>
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => handleBatchAngleUpload(e.target.files)}
-                        className="hidden"
-                      />
-                    </label>
-
-                    {/* Official Catalog Photo Preset */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const catalogFront = getCatalogPhotoForDevice(itemName, selectedCategory);
-                        setAnglePhotos({
-                          front: catalogFront,
-                          back: '/images/openbox_macro_4x3.webp',
-                          sides: '/images/camera_gear_4x3.webp',
-                          box: undefined
-                        });
-                        verifyMultiAnglePhotos([catalogFront, '/images/openbox_macro_4x3.webp'], itemName);
-                      }}
-                      className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-800 border border-slate-300 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
-                    >
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      <span>Use Verified Catalog Photos</span>
-                    </button>
-
-                    {/* Doorstep Photograph Option */}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const doorstepAsset = '/images/hero_openbox_4x3.webp';
-                        setAnglePhotos((prev) => ({ ...prev, front: doorstepAsset }));
-                        setProductPhoto(doorstepAsset);
-                        setUploadedPhotos([doorstepAsset]);
-                        setPhotoMatchResult({
-                          isMatch: true,
-                          confidence: '100%',
-                          detectedCategory: 'Certified Doorstep Inspection',
-                          detectedModel: itemName || 'Declared Device',
-                          featuresVerified: ['Doorstep custody handshake', 'Physical multi-angle camera audit'],
-                          cosmeticAssessment: 'Physical condition audited by SafeShip officer at doorstep unboxing',
-                          reason: 'SafeShip certified custody officer Rahul K. will photograph device angles during doorstep pickup',
-                          suggestedImei: manualImei || undefined,
-                          anglesAudited: 1
-                        });
-                        clearFieldError('photos');
-                      }}
-                      className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shadow-2xs active:scale-95"
-                    >
-                      <Camera className="w-3.5 h-3.5 text-slate-600" />
-                      <span>Photograph at Doorstep Pickup</span>
-                    </button>
-                  </div>
-                </div>
+                )}
 
                 {/* Multimodal Verification Status Feedback */}
                 {isMatchingPhoto && (
                   <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-medium flex items-center gap-2.5 animate-in fade-in">
                     <span className="w-4 h-4 rounded-full border-2 border-[#0066FF] border-t-transparent animate-spin shrink-0" />
                     <div>
-                      <span className="font-bold block">Analyzing device across visible angles...</span>
+                      <span className="font-bold block">Analyzing item photos...</span>
                       <span className="text-[11px] text-blue-700">
-                        SafeShip Optical Engine is verifying model geometry, display condition, and camera module for &quot;{itemName || 'Product'}&quot;.
+                        SafeShip Optical Engine is verifying model geometry, display condition, and features for &quot;{itemName || 'Product'}&quot;.
                       </span>
                     </div>
                   </div>
@@ -2259,7 +2223,7 @@ function CreateShipmentContent() {
                         </span>
                         {uploadedPhotos.length > 0 && (
                           <span className="text-[9px] font-bold text-emerald-700">
-                            {uploadedPhotos.length} Angle(s) Audited
+                            {uploadedPhotos.length} Photo(s) Verified
                           </span>
                         )}
                       </div>
