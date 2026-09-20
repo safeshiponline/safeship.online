@@ -2,33 +2,42 @@ import posthog from 'posthog-js';
 
 type EventProperties = Record<string, string | number | boolean | null | undefined | object>;
 
+const isPostHogReady = () => {
+  if (typeof window === 'undefined') return false;
+  return Boolean(
+    process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN ||
+    process.env.NEXT_PUBLIC_POSTHOG_KEY ||
+    posthog.__loaded
+  );
+};
+
 export const analytics = {
   capture: (eventName: string, properties?: EventProperties) => {
-    if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    if (isPostHogReady()) {
       try {
         posthog.capture(eventName, properties);
       } catch (err) {
-        console.debug('[PostHog] Event capture bypassed:', eventName, err);
+        console.debug('[PostHog] Event capture error:', eventName, err);
       }
     }
   },
 
   identify: (distinctId: string, userProperties?: EventProperties) => {
-    if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    if (isPostHogReady()) {
       try {
         posthog.identify(distinctId, userProperties);
       } catch (err) {
-        console.debug('[PostHog] Identify bypassed:', distinctId, err);
+        console.debug('[PostHog] Identify error:', distinctId, err);
       }
     }
   },
 
   reset: () => {
-    if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
+    if (isPostHogReady()) {
       try {
         posthog.reset();
       } catch (err) {
-        console.debug('[PostHog] Reset bypassed:', err);
+        console.debug('[PostHog] Reset error:', err);
       }
     }
   },
