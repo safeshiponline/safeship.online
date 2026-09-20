@@ -724,11 +724,11 @@ export default function HomePage() {
               </span>
             </div>
 
-            {/* Mobile View: Bigger Headline on Left, Bigger Action Buttons in Empty Top Section on Right (sm:hidden) */}
-            <div className="flex sm:hidden items-stretch justify-between gap-2.5 xs:gap-3 pt-0.5">
-              {/* Left: Punchy 3-Line Headline with Impactful Bigger Typography & Matched Height */}
-              <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <h1 className="text-[25px] xs:text-[30.5px] font-black tracking-[-0.038em] text-[#0F172A] leading-[1.08]">
+            {/* Mobile View: Calibrated Bold Headline on Left, Action Buttons in Empty Top Section on Right with Zero Collision (sm:hidden) */}
+            <div className="flex sm:hidden items-stretch justify-between gap-2.5 min-[440px]:gap-3 pt-0.5">
+              {/* Left: Punchy 3-Line Headline with Impactful Typography, Breathing Room & Matched Height */}
+              <div className="flex-1 min-w-0 pr-1 flex flex-col justify-center">
+                <h1 className="text-[21.5px] min-[380px]:text-[23px] min-[440px]:text-[26px] min-[480px]:text-[27.5px] font-black tracking-[-0.038em] text-[#0F172A] leading-[1.09]">
                   <span className="block whitespace-nowrap">Open Box Delivery</span>
                   <span className="block whitespace-nowrap">&amp; Safe Shipping.</span>
                   <span className="block whitespace-nowrap bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent drop-shadow-2xs">
@@ -737,24 +737,24 @@ export default function HomePage() {
                 </h1>
               </div>
 
-              {/* Right: Enlarged Action Buttons in Empty Section on Top with Premium Thumb-Friendly Tap Targets */}
-              <div className="w-[146px] xs:w-[172px] shrink-0 flex flex-col justify-center gap-2 xs:gap-2.5">
+              {/* Right: Action Buttons in Empty Section on Top with Premium Thumb-Friendly Tap Targets */}
+              <div className="w-[142px] min-[440px]:w-[154px] shrink-0 flex flex-col justify-center gap-2 min-[440px]:gap-2.5">
                 {/* Track Shipment on Top */}
                 <Link
                   href="/in/track"
-                  className="w-full py-2.5 xs:py-3.5 px-3 rounded-xl xs:rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-slate-300 text-slate-900 font-black text-[12.5px] xs:text-[14px] shadow-2xs hover:shadow-xs transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer min-h-[44px] xs:min-h-[48px]"
+                  className="w-full py-2.5 min-[440px]:py-3 px-2 min-[440px]:px-2.5 rounded-xl min-[440px]:rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200/90 hover:border-slate-300 text-slate-900 font-black text-[11.5px] min-[440px]:text-[12.5px] shadow-xs hover:shadow-sm transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer min-h-[44px] min-[440px]:min-h-[48px]"
                 >
-                  <Search className="w-3.5 h-3.5 xs:w-4 xs:h-4 text-slate-700 shrink-0 stroke-[2.5]" />
-                  <span className="truncate">Track Shipment</span>
+                  <Search className="w-3.5 h-3.5 min-[440px]:w-4 min-[440px]:h-4 text-slate-700 shrink-0 stroke-[2.5]" />
+                  <span className="whitespace-nowrap">Track Shipment</span>
                 </Link>
 
                 {/* Book Delivery Under It */}
                 <Link
                   href="/in/deals/new?type=send"
-                  className="w-full py-2.5 xs:py-3.5 px-3 rounded-xl xs:rounded-2xl bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#0038CC] hover:from-[#0052FF] hover:to-[#002FA7] text-white font-black text-[12.5px] xs:text-[14px] shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer min-h-[44px] xs:min-h-[48px]"
+                  className="w-full py-2.5 min-[440px]:py-3 px-2 min-[440px]:px-2.5 rounded-xl min-[440px]:rounded-2xl bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#0038CC] hover:from-[#0052FF] hover:to-[#002FA7] text-white font-black text-[11.5px] min-[440px]:text-[12.5px] shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer min-h-[44px] min-[440px]:min-h-[48px]"
                 >
-                  <span className="shrink-0 text-xs xs:text-base">📦</span>
-                  <span className="truncate">Book Delivery &rarr;</span>
+                  <span className="shrink-0 text-xs min-[440px]:text-sm">📦</span>
+                  <span className="whitespace-nowrap">Book Delivery &rarr;</span>
                 </Link>
               </div>
             </div>
