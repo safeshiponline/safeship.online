@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { SafeDeal } from '@/lib/types';
 import { completeDeliveryHandshake } from '@/lib/store';
+import { notifyMilestoneEmail } from '@/lib/emailClient';
 import { formatINR } from '@/lib/escrowCalculator';
 import { ShieldCheck, CheckCircle2, Lock, X, AlertTriangle } from '../common/Icons';
 
@@ -40,6 +41,7 @@ export const DeliveryPinModal: React.FC<DeliveryPinModalProps> = ({
       }
 
       if (res.deal) {
+        notifyMilestoneEmail(res.deal, 'COMPLETED');
         onSuccess(res.deal);
         onClose();
       }

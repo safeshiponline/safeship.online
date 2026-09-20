@@ -45,6 +45,7 @@ import {
 import { useRazorpay } from '@/lib/useRazorpay';
 import { createNewDeal } from '@/lib/store';
 import { analytics } from '@/lib/analytics';
+import { notifyMilestoneEmail } from '@/lib/emailClient';
 import { getSession, UserSession } from '@/lib/auth';
 import { ProductPhotoMatchResult, validateLuhnImei, identifyBrandFromImei } from '@/lib/geminiUnified';
 import { ItemCategory, DeliveryServiceTier, PickupSlot, FeeSplitOption } from '@/lib/types';
@@ -1610,6 +1611,7 @@ function CreateShipmentContent() {
         cityPair: `${pickupCity || 'Jaipur'}-${dropCity || 'Delhi'}`,
       });
       analytics.trackEscrowPaymentSuccess(created.id, paymentId, upfrontAmountPaid);
+      notifyMilestoneEmail(created, 'BOOKING_CONFIRMED');
 
       try {
         localStorage.removeItem('safeship_deal_draft_v2');

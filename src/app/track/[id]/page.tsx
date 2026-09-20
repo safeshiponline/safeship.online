@@ -4,6 +4,7 @@ import React, { use, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getDealById, requestSellerCallback, advanceDealMilestone, updateDealDetails } from '@/lib/store';
+import { notifyMilestoneEmail } from '@/lib/emailClient';
 import { reverseGeocodeToIndianLocation } from '@/lib/pincodeService';
 import { SafeDeal } from '@/lib/types';
 import { formatINR } from '@/lib/escrowCalculator';
@@ -656,7 +657,10 @@ function TrackingContent({
               type="button"
               onClick={() => {
                 const updated = advanceDealMilestone(deal.id, 'COURIER_ASSIGNED');
-                if (updated) setDeal(updated);
+                if (updated) {
+                  setDeal(updated);
+                  notifyMilestoneEmail(updated, 'COURIER_ASSIGNED');
+                }
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                 deal.status === 'COURIER_ASSIGNED'
@@ -670,7 +674,10 @@ function TrackingContent({
               type="button"
               onClick={() => {
                 const updated = advanceDealMilestone(deal.id, 'PICKUP_INSPECTION');
-                if (updated) setDeal(updated);
+                if (updated) {
+                  setDeal(updated);
+                  notifyMilestoneEmail(updated, 'PICKUP_VERIFIED');
+                }
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                 deal.status === 'PICKUP_INSPECTION'
@@ -684,7 +691,10 @@ function TrackingContent({
               type="button"
               onClick={() => {
                 const updated = advanceDealMilestone(deal.id, 'IN_TRANSIT');
-                if (updated) setDeal(updated);
+                if (updated) {
+                  setDeal(updated);
+                  notifyMilestoneEmail(updated, 'PICKUP_VERIFIED');
+                }
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                 deal.status === 'IN_TRANSIT'
@@ -698,7 +708,10 @@ function TrackingContent({
               type="button"
               onClick={() => {
                 const updated = advanceDealMilestone(deal.id, 'OUT_FOR_DELIVERY');
-                if (updated) setDeal(updated);
+                if (updated) {
+                  setDeal(updated);
+                  notifyMilestoneEmail(updated, 'OUT_FOR_DELIVERY');
+                }
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                 deal.status === 'OUT_FOR_DELIVERY'
@@ -712,7 +725,10 @@ function TrackingContent({
               type="button"
               onClick={() => {
                 const updated = advanceDealMilestone(deal.id, 'COMPLETED');
-                if (updated) setDeal(updated);
+                if (updated) {
+                  setDeal(updated);
+                  notifyMilestoneEmail(updated, 'COMPLETED');
+                }
               }}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                 deal.status === 'COMPLETED'
