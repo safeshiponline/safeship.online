@@ -7,8 +7,7 @@ import { PostHogProvider as PHProvider } from 'posthog-js/react';
 
 const POSTHOG_KEY =
   process.env.NEXT_PUBLIC_POSTHOG_PROJECT_TOKEN ||
-  process.env.NEXT_PUBLIC_POSTHOG_KEY ||
-  'phc_A3cf8iWsDhapmnk6GxgTHzY2rznVczMaVBJNq5N9H9zy';
+  process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
 const POSTHOG_HOST =
   process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com';
@@ -25,7 +24,7 @@ if (typeof window !== 'undefined') {
         autocapture: true,
         loaded: (ph) => {
           if (process.env.NODE_ENV === 'development') {
-            console.log('[SafeShip Analytics] PostHog initialized successfully for project 618588');
+            console.log('[SafeShip Analytics] PostHog initialized successfully via environment variables');
           }
           // Send an initial event so PostHog immediately detects the project is live
           ph.capture('app_initialized', {
