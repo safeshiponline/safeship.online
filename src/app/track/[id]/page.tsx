@@ -3,7 +3,8 @@
 import React, { use, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getDealById, getStoredDeals, requestSellerCallback, advanceDealMilestone } from '@/lib/store';
+import { getDealById, getStoredDeals, requestSellerCallback, advanceDealMilestone, updateDealDetails } from '@/lib/store';
+import { reverseGeocodeToIndianLocation } from '@/lib/pincodeService';
 import { INITIAL_DEALS } from '@/lib/mockData';
 import { SafeDeal } from '@/lib/types';
 import { formatINR } from '@/lib/escrowCalculator';
@@ -71,6 +72,19 @@ function TrackingContent({
   const [callbackRequested, setCallbackRequested] = useState(false);
   const [callbackToast, setCallbackToast] = useState(false);
 
+  // Buyer Info & Account Linking State
+  const isFillBuyer = searchParams.get('fill') === 'buyer';
+  const [showBuyerInfoModal, setShowBuyerInfoModal] = useState(isFillBuyer);
+  const [buyerFormName, setBuyerFormName] = useState('');
+  const [buyerFormPhone, setBuyerFormPhone] = useState('');
+  const [buyerFormAddress, setBuyerFormAddress] = useState('');
+  const [buyerFormPincode, setBuyerFormPincode] = useState('');
+  const [buyerFormCity, setBuyerFormCity] = useState('');
+  const [buyerFormUpi, setBuyerFormUpi] = useState('');
+  const [isDetectingBuyerGps, setIsDetectingBuyerGps] = useState(false);
+  const [buyerInfoSavedToast, setBuyerInfoSavedToast] = useState(false);
+  const [copiedBuyerLink, setCopiedBuyerLink] = useState(false);
+
   const handleDownloadAWB = () => {
     if (!deal) return;
     setDownloadingPdf(true);
@@ -113,11 +127,77 @@ function TrackingContent({
     setTimeout(() => setCallbackToast(false), 6000);
   };
 
+  const handleDetectBuyerLocation = () => {
+    if (typeof window === 'undefined' || !navigator.geolocation) {
+      alert('Geolocation is not supported by your browser. Please enter your address manually.');
+      return;
+    }
+    setIsDetectingBuyerGps(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const loc = await reverseGeocodeToIndianLocation(latitude, longitude);
+          setBuyerFormAddress(loc.formattedAddress || `${loc.district || loc.city}, ${loc.state}`);
+          setBuyerFormPincode(loc.pincode || '');
+          setBuyerFormCity(loc.city || '');
+        } catch (err) {
+          console.error('GPS reverse geocode error:', err);
+        } finally {
+          setIsDetectingBuyerGps(false);
+        }
+      },
+      (err) => {
+        console.warn('GPS denied or timed out:', err);
+        setIsDetectingBuyerGps(false);
+      },
+      { timeout: 8000 }
+    );
+  };
+
+  const handleSaveBuyerInfo = () => {
+    if (!deal) return;
+    const updated = updateDealDetails(deal.id, {
+      buyer: {
+        name: buyerFormName.trim() || deal.buyer.name,
+        phone: buyerFormPhone.trim() || deal.buyer.phone,
+        deliveryAddress: buyerFormAddress.trim() || deal.buyer.deliveryAddress,
+        pincode: buyerFormPincode.trim() || deal.buyer.pincode,
+        city: buyerFormCity.trim() || deal.buyer.city,
+        upiId: buyerFormUpi.trim() || deal.buyer.upiId,
+      }
+    });
+    if (updated) {
+      setDeal({ ...updated });
+      setBuyerInfoSavedToast(true);
+      setTimeout(() => setBuyerInfoSavedToast(false), 4000);
+      setShowBuyerInfoModal(false);
+    }
+  };
+
+  const buyerFillShareUrl = typeof window !== 'undefined'
+    ? `${window.location.origin}/in/track/${deal?.id || resolvedParams.id}?fill=buyer`
+    : `https://safeship.online/in/track/${deal?.id || resolvedParams.id}?fill=buyer`;
+
+  const handleCopyBuyerFillLink = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(buyerFillShareUrl);
+      setCopiedBuyerLink(true);
+      setTimeout(() => setCopiedBuyerLink(false), 2500);
+    }
+  };
+
   useEffect(() => {
     setIsLoading(true);
     const loaded = getDealById(resolvedParams.id);
     if (loaded) {
       setDeal(loaded);
+      setBuyerFormName(loaded.buyer?.name || '');
+      setBuyerFormPhone(loaded.buyer?.phone || '');
+      setBuyerFormAddress(loaded.buyer?.deliveryAddress || '');
+      setBuyerFormPincode(loaded.buyer?.pincode || '');
+      setBuyerFormCity(loaded.buyer?.city || '');
+      setBuyerFormUpi(loaded.buyer?.upiId || '');
     } else {
       setDeal(null);
     }
@@ -684,6 +764,83 @@ function TrackingContent({
           </div>
         </div>
 
+        {/* BUYER DELIVERY & INSTANT REFUND ACCOUNT (ESCROW LINKED) */}
+        <div id="buyer-details-section" className="rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-2xl bg-blue-50 text-[#0066FF] flex items-center justify-center font-bold text-sm shadow-2xs">
+                <MapPin className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-[#0F172A] flex items-center gap-2">
+                  <span>Buyer Delivery &amp; Escrow Refund Details</span>
+                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                    Protected
+                  </span>
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Doorstep unboxing address &amp; instant ₹0-risk refund account
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowBuyerInfoModal(true)}
+                className="px-3 py-1.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold transition shadow-2xs active:scale-95 flex items-center gap-1.5 cursor-pointer"
+              >
+                <span>✏️ Fill / Update Details</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleCopyBuyerFillLink}
+                className="px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold transition shadow-2xs active:scale-95 flex items-center gap-1.5 cursor-pointer"
+                title="Copy shareable link for buyer"
+              >
+                {copiedBuyerLink ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-slate-500" />}
+                <span>{copiedBuyerLink ? 'Link Copied!' : 'Share Link'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+            {/* Delivery Destination */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
+                Doorstep Delivery Destination
+              </span>
+              <p className="text-xs font-bold text-slate-900 leading-snug">
+                {deal.buyer.deliveryAddress || 'Address pending fill'}
+              </p>
+              <div className="flex items-center gap-2 text-[11px] text-slate-600 pt-0.5">
+                <span>PIN: <strong className="font-mono text-slate-800">{deal.buyer.pincode || '6-digit PIN'}</strong></span>
+                {deal.buyer.city && <span>&bull; {deal.buyer.city}</span>}
+                {deal.buyer.phone && <span>&bull; 📞 {deal.buyer.phone}</span>}
+              </div>
+            </div>
+
+            {/* Instant Refund Account */}
+            <div className="p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-200/80 space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 block">
+                  Instant ₹0-Liability Escrow Refund Account
+                </span>
+                <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100/80 px-1.5 py-0.2 rounded">
+                  0s UPI Reversal
+                </span>
+              </div>
+              <p className="text-xs font-mono font-bold text-slate-900">
+                {deal.buyer.upiId || `${deal.buyer.name?.toLowerCase().replace(/\s+/g, '') || 'buyer'}@okaxis`}
+              </p>
+              <p className="text-[11px] text-emerald-800 leading-relaxed">
+                If the item is rejected during the 10-minute doorstep unboxing, ₹{deal.declaredValue.toLocaleString('en-IN')} returns here instantly via RBI Nodal Escrow.
+              </p>
+            </div>
+          </div>
+        </div>
+
         {/* Live Vector Telemetry Map */}
         <LiveTrackingMap
           courier={deal.assignedCourier}
@@ -930,6 +1087,51 @@ function TrackingContent({
                 </div>
               </div>
 
+              {/* MAGIC LINK: LINK BUYER INFO & ESCROW REFUND DETAILS */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50 via-indigo-50/40 to-blue-50 border border-blue-200 space-y-2.5 shadow-2xs">
+                <div className="flex items-center justify-between flex-wrap gap-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base">🔗</span>
+                    <span className="font-black text-xs text-blue-900">
+                      Buyer Info &amp; Escrow Refund Account
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold bg-blue-100 text-[#0066FF] px-2 py-0.5 rounded-full">
+                    Magic Link
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-snug">
+                  Need the buyer to link their delivery address or refund UPI ID? Share this link or enter it now so the courier knows where to deliver.
+                </p>
+                <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPostPaymentModal(false);
+                      setShowBuyerInfoModal(true);
+                    }}
+                    className="flex-1 py-2 px-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold transition shadow-xs active:scale-95 text-center cursor-pointer min-w-[140px]"
+                  >
+                    ✏️ Enter / Link Info Now
+                  </button>
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(`Hi! Here is our SafeShip verified order #${deal.id} for ${deal.title}. Please open this link to fill your delivery address and instant escrow refund account: ${buyerFillShareUrl}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs active:scale-95 text-center cursor-pointer flex items-center gap-1"
+                  >
+                    <span>WhatsApp</span>
+                  </a>
+                  <button
+                    type="button"
+                    onClick={handleCopyBuyerFillLink}
+                    className="py-2 px-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition shadow-2xs active:scale-95 text-center cursor-pointer"
+                  >
+                    {copiedBuyerLink ? 'Copied!' : 'Copy Link'}
+                  </button>
+                </div>
+              </div>
+
               <div className="space-y-3">
                 <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full bg-[#0066FF] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</div>
@@ -994,6 +1196,164 @@ function TrackingContent({
           </div>
         </div>
       )}
+
+      {/* BUYER DETAILS & ACCOUNT INFO MODAL */}
+      {showBuyerInfoModal && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white text-[#0F172A] rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-blue-100 text-[#0066FF] flex items-center justify-center font-bold text-sm">
+                  📍
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900">
+                    Buyer &amp; Escrow Account Details
+                  </h3>
+                  <span className="text-[11px] text-slate-500">
+                    Order #{deal.id} &bull; 100% Encrypted &amp; Insured
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowBuyerInfoModal(false)}
+                className="text-slate-400 hover:text-slate-900 p-1 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              {/* Full Name */}
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">Buyer Full Name</label>
+                <input
+                  type="text"
+                  value={buyerFormName}
+                  onChange={(e) => setBuyerFormName(e.target.value)}
+                  placeholder="Enter your name"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none text-xs"
+                />
+              </div>
+
+              {/* Phone Number */}
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">Mobile Number (for Delivery OTP)</label>
+                <input
+                  type="tel"
+                  value={buyerFormPhone}
+                  onChange={(e) => setBuyerFormPhone(e.target.value)}
+                  placeholder="+91 98765 43210"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none text-xs font-mono"
+                />
+              </div>
+
+              {/* Delivery Address with GPS */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-700">Delivery Address</label>
+                  <button
+                    type="button"
+                    onClick={handleDetectBuyerLocation}
+                    disabled={isDetectingBuyerGps}
+                    className="text-[11px] text-[#0066FF] font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <MapPin className="w-3 h-3" />
+                    <span>{isDetectingBuyerGps ? 'Detecting GPS...' : '📍 Auto-Detect'}</span>
+                  </button>
+                </div>
+                <textarea
+                  rows={2}
+                  value={buyerFormAddress}
+                  onChange={(e) => setBuyerFormAddress(e.target.value)}
+                  placeholder="House/Flat No., Street, Locality"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none text-xs resize-none"
+                />
+              </div>
+
+              {/* PIN Code & City */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">PIN Code</label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={buyerFormPincode}
+                    onChange={(e) => setBuyerFormPincode(e.target.value)}
+                    placeholder="e.g. 560034"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none text-xs font-mono"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">City</label>
+                  <input
+                    type="text"
+                    value={buyerFormCity}
+                    onChange={(e) => setBuyerFormCity(e.target.value)}
+                    placeholder="e.g. Bengaluru"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:border-[#0066FF] focus:ring-1 focus:ring-[#0066FF] outline-none text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Refund Account / UPI ID */}
+              <div className="space-y-1 pt-1">
+                <div className="flex items-center justify-between">
+                  <label className="font-bold text-slate-900 flex items-center gap-1">
+                    <span>Instant Refund Account (UPI ID / VPA)</span>
+                    <span className="text-rose-500">*</span>
+                  </label>
+                  <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-50 px-1.5 py-0.5 rounded">
+                    Instant Reversal
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={buyerFormUpi}
+                  onChange={(e) => setBuyerFormUpi(e.target.value)}
+                  placeholder="e.g. yourname@okhdfcbank or 9876543210@paytm"
+                  className="w-full px-3 py-2 rounded-xl border border-emerald-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-xs font-mono bg-emerald-50/30"
+                />
+                <p className="text-[10px] text-slate-500 leading-normal">
+                  If the device fails inspection during 10-minute doorstep unboxing, your ₹{deal.declaredValue.toLocaleString('en-IN')} escrow payment is refunded to this account within 0 seconds.
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSaveBuyerInfo}
+                className="flex-1 py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold transition shadow-md shadow-blue-500/25 active:scale-95 cursor-pointer text-center"
+              >
+                Save &amp; Link to Order
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowBuyerInfoModal(false)}
+                className="px-3.5 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TOAST NOTIFICATION: BUYER INFO SAVED */}
+      {buyerInfoSavedToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 max-w-sm w-full bg-emerald-900 text-white p-3.5 rounded-2xl shadow-2xl border border-emerald-700 flex items-center gap-2.5 animate-in slide-in-from-bottom-4">
+          <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center font-bold text-xs shrink-0">
+            ✓
+          </div>
+          <p className="text-xs font-semibold flex-1">
+            Buyer delivery address and refund account successfully linked to Order #{deal.id}!
+          </p>
+        </div>
+      )}
+
 
       {/* PRIORITY IVR CALLBACK TOAST NOTIFICATION */}
       {callbackToast && (

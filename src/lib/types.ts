@@ -191,6 +191,12 @@ export interface SafeDeal {
     deliveryAddress: string;
     city: string;
     pincode: string;
+    upiId?: string;
+    bankAccount?: {
+      accountNumber: string;
+      ifsc: string;
+      holderName: string;
+    };
     rating: number;
     dealsCompleted: number;
   };

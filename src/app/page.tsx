@@ -728,7 +728,7 @@ export default function HomePage() {
             <div className="flex sm:hidden items-stretch justify-between gap-2.5 min-[440px]:gap-3 pt-0.5">
               {/* Left: Punchy 3-Line Headline with Impactful Typography, Breathing Room & Matched Height */}
               <div className="flex-1 min-w-0 pr-1 flex flex-col justify-center">
-                <h1 className="text-[21.5px] min-[380px]:text-[23px] min-[440px]:text-[26px] min-[480px]:text-[27.5px] font-black tracking-[-0.038em] text-[#0F172A] leading-[1.09]">
+                <h1 className="text-[21px] min-[380px]:text-[22.5px] min-[440px]:text-[25px] min-[480px]:text-[26.5px] font-black tracking-[-0.038em] text-[#0F172A] leading-[1.09]">
                   <span className="block whitespace-nowrap">Open Box Delivery</span>
                   <span className="block whitespace-nowrap">&amp; Safe Shipping.</span>
                   <span className="block whitespace-nowrap bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent drop-shadow-2xs">
@@ -738,7 +738,7 @@ export default function HomePage() {
               </div>
 
               {/* Right: Action Buttons in Empty Section on Top with Premium Thumb-Friendly Tap Targets */}
-              <div className="w-[142px] min-[440px]:w-[154px] shrink-0 flex flex-col justify-center gap-2 min-[440px]:gap-2.5">
+              <div className="w-[144px] min-[400px]:w-[150px] min-[460px]:w-[160px] shrink-0 flex flex-col justify-center gap-2 min-[440px]:gap-2.5">
                 {/* Track Shipment on Top */}
                 <Link
                   href="/in/track"

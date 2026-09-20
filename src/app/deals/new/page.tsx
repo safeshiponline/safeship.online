@@ -2031,6 +2031,37 @@ function CreateShipmentContent() {
                   Upload photos across visible angles to verify hardware authenticity, display condition, and camera cluster against the declared model.
                 </p>
 
+                {/* ⚡ Prominent Batch Multi-Photo Drop Zone (1-Tap to Upload All Photos at Once) */}
+                <div className="relative rounded-2xl border-2 border-dashed border-[#0066FF]/60 bg-gradient-to-r from-blue-50/80 via-indigo-50/50 to-blue-50/80 p-4 sm:p-5 text-center transition hover:border-[#0066FF] hover:bg-blue-50/90 group shadow-2xs">
+                  <label className="flex flex-col items-center justify-center cursor-pointer space-y-2">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0066FF] to-[#0052FF] text-white flex items-center justify-center shadow-md shadow-blue-500/25 group-hover:scale-105 transition-transform">
+                      <Upload className="w-6 h-6 animate-pulse" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-slate-900 flex items-center justify-center gap-1.5 flex-wrap">
+                        <span>⚡ Upload All Photos at Once</span>
+                        <span className="text-[10px] uppercase font-black bg-emerald-500 text-white px-2 py-0.5 rounded-full shadow-xs">
+                          1-Tap Gallery Pick
+                        </span>
+                      </h4>
+                      <p className="text-xs text-slate-600 mt-1 max-w-md mx-auto leading-relaxed">
+                        Select all 1 to 4 device photos together from your gallery. SafeShip AI will automatically assign and verify Front, Back, Sides &amp; Box!
+                      </p>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white border border-blue-200 text-[#0066FF] font-bold text-xs shadow-xs hover:bg-blue-50 transition active:scale-95">
+                      <Camera className="w-4 h-4" />
+                      <span>Tap to Select All Photos from Gallery</span>
+                    </span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={(e) => handleBatchAngleUpload(e.target.files)}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
                 {/* 4 Angle Slots Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {PRODUCT_ANGLES.map((slot) => {

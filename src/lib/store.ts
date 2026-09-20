@@ -685,6 +685,60 @@ export function advanceDealMilestone(dealId: string, nextStatus: DealStatus): Sa
   return deal;
 }
 
+export function updateDealDetails(
+  dealId: string,
+  updates: {
+    buyer?: Partial<SafeDeal['buyer']>;
+    seller?: Partial<SafeDeal['seller']>;
+    itemPhotos?: string[];
+  }
+): SafeDeal | undefined {
+  const deals = getStoredDeals();
+  const index = deals.findIndex(
+    (d) => d.id.toLowerCase() === dealId.toLowerCase() || d.trackingId?.toLowerCase() === dealId.toLowerCase()
+  );
+
+  let targetDeal: SafeDeal | null = null;
+
+  if (index !== -1) {
+    targetDeal = deals[index];
+    if (updates.buyer) {
+      targetDeal.buyer = { ...targetDeal.buyer, ...updates.buyer };
+    }
+    if (updates.seller) {
+      targetDeal.seller = { ...targetDeal.seller, ...updates.seller };
+    }
+    if (updates.itemPhotos) {
+      targetDeal.itemPhotos = updates.itemPhotos;
+    }
+    targetDeal.updatedAt = new Date().toISOString();
+    deals[index] = targetDeal;
+    saveStoredDeals(deals);
+    syncDealToUserOrders(targetDeal);
+  } else {
+    const userOrders = getUserOrders();
+    const uIndex = userOrders.findIndex(
+      (d) => d.id.toLowerCase() === dealId.toLowerCase() || d.trackingId?.toLowerCase() === dealId.toLowerCase()
+    );
+    if (uIndex === -1) return undefined;
+    targetDeal = userOrders[uIndex];
+    if (updates.buyer) {
+      targetDeal.buyer = { ...targetDeal.buyer, ...updates.buyer };
+    }
+    if (updates.seller) {
+      targetDeal.seller = { ...targetDeal.seller, ...updates.seller };
+    }
+    if (updates.itemPhotos) {
+      targetDeal.itemPhotos = updates.itemPhotos;
+    }
+    targetDeal.updatedAt = new Date().toISOString();
+    userOrders[uIndex] = targetDeal;
+    saveUserOrders(userOrders);
+  }
+
+  return targetDeal;
+}
+
 export function resetDealsToDefault(): SafeDeal[] {
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_DEALS));
