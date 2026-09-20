@@ -728,7 +728,7 @@ export default function HomePage() {
             <div className="flex sm:hidden items-stretch justify-between gap-2 min-[400px]:gap-2.5 min-[450px]:gap-3 pt-0.5">
               {/* Left: Punchy 3-Line Headline with Impactful Typography & Matched Height */}
               <div className="flex-1 min-w-0 pr-0.5 flex flex-col justify-center">
-                <h1 className="text-[20px] min-[370px]:text-[21px] min-[410px]:text-[22.5px] min-[460px]:text-[24.5px] font-black tracking-[-0.038em] text-[#0F172A] leading-[1.08]">
+                <h1 className="text-[22.5px] min-[370px]:text-[24px] min-[410px]:text-[26px] min-[460px]:text-[28.5px] font-black tracking-[-0.04em] text-[#0F172A] leading-[1.06]">
                   <span className="block whitespace-nowrap">Open Box Delivery</span>
                   <span className="block whitespace-nowrap">&amp; Safe Shipping.</span>
                   <span className="block whitespace-nowrap bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent drop-shadow-2xs">
@@ -738,7 +738,7 @@ export default function HomePage() {
               </div>
 
               {/* Right: Elongated, Sleek Action Buttons (Less Tall, More Long, Bigger Text) */}
-              <div className="w-[156px] min-[380px]:w-[164px] min-[420px]:w-[176px] min-[460px]:w-[188px] shrink-0 flex flex-col justify-center gap-1.5 min-[400px]:gap-2">
+              <div className="w-[148px] min-[380px]:w-[156px] min-[420px]:w-[168px] min-[460px]:w-[180px] shrink-0 flex flex-col justify-center gap-1.5 min-[400px]:gap-2">
                 {/* Track Shipment on Top */}
                 <Link
                   href="/in/track"
@@ -772,7 +772,7 @@ export default function HomePage() {
 
             {/* Desktop View: Full Headline (hidden sm:block) */}
             <div className="hidden sm:block space-y-0.5 sm:space-y-1">
-              <h1 className="text-5xl lg:text-[54px] font-black tracking-[-0.03em] text-[#0F172A] leading-[1.12]">
+              <h1 className="text-5xl lg:text-[58px] font-black tracking-[-0.035em] text-[#0F172A] leading-[1.10]">
                 <span className="block">Open Box Delivery</span>
                 <span className="block">&amp; Safe Shipping.</span>
                 <span className="block bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
