@@ -724,11 +724,11 @@ export default function HomePage() {
               </span>
             </div>
 
-            {/* Mobile View: Calibrated Bold Headline on Left, Action Buttons in Empty Top Section on Right with Zero Collision (sm:hidden) */}
-            <div className="flex sm:hidden items-stretch justify-between gap-2.5 min-[440px]:gap-3 pt-0.5">
-              {/* Left: Punchy 3-Line Headline with Impactful Typography, Breathing Room & Matched Height */}
-              <div className="flex-1 min-w-0 pr-1 flex flex-col justify-center">
-                <h1 className="text-[21px] min-[380px]:text-[22.5px] min-[440px]:text-[25px] min-[480px]:text-[26.5px] font-black tracking-[-0.038em] text-[#0F172A] leading-[1.09]">
+            {/* Mobile View: Calibrated Bold Headline on Left, Elongated Action Buttons on Right with Zero Collision (sm:hidden) */}
+            <div className="flex sm:hidden items-stretch justify-between gap-2 min-[400px]:gap-2.5 min-[450px]:gap-3 pt-0.5">
+              {/* Left: Punchy 3-Line Headline with Impactful Typography & Matched Height */}
+              <div className="flex-1 min-w-0 pr-0.5 flex flex-col justify-center">
+                <h1 className="text-[20px] min-[370px]:text-[21px] min-[410px]:text-[22.5px] min-[460px]:text-[24.5px] font-black tracking-[-0.038em] text-[#0F172A] leading-[1.08]">
                   <span className="block whitespace-nowrap">Open Box Delivery</span>
                   <span className="block whitespace-nowrap">&amp; Safe Shipping.</span>
                   <span className="block whitespace-nowrap bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent drop-shadow-2xs">
@@ -737,23 +737,23 @@ export default function HomePage() {
                 </h1>
               </div>
 
-              {/* Right: Action Buttons in Empty Section on Top with Premium Thumb-Friendly Tap Targets */}
-              <div className="w-[144px] min-[400px]:w-[150px] min-[460px]:w-[160px] shrink-0 flex flex-col justify-center gap-2 min-[440px]:gap-2.5">
+              {/* Right: Elongated, Sleek Action Buttons (Less Tall, More Long, Bigger Text) */}
+              <div className="w-[156px] min-[380px]:w-[164px] min-[420px]:w-[176px] min-[460px]:w-[188px] shrink-0 flex flex-col justify-center gap-1.5 min-[400px]:gap-2">
                 {/* Track Shipment on Top */}
                 <Link
                   href="/in/track"
-                  className="w-full py-2.5 min-[440px]:py-3 px-2 min-[440px]:px-2.5 rounded-xl min-[440px]:rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200/90 hover:border-slate-300 text-slate-900 font-black text-[11.5px] min-[440px]:text-[12.5px] shadow-xs hover:shadow-sm transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer min-h-[44px] min-[440px]:min-h-[48px]"
+                  className="w-full h-[37px] min-[400px]:h-[39px] px-2.5 min-[400px]:px-3 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200/90 hover:border-slate-300 text-slate-900 font-black text-[13px] min-[400px]:text-[13.5px] min-[460px]:text-[14px] shadow-2xs hover:shadow-xs transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
                 >
-                  <Search className="w-3.5 h-3.5 min-[440px]:w-4 min-[440px]:h-4 text-slate-700 shrink-0 stroke-[2.5]" />
+                  <Search className="w-4 h-4 text-slate-700 shrink-0 stroke-[2.5]" />
                   <span className="whitespace-nowrap">Track Shipment</span>
                 </Link>
 
                 {/* Book Delivery Under It */}
                 <Link
                   href="/in/deals/new?type=send"
-                  className="w-full py-2.5 min-[440px]:py-3 px-2 min-[440px]:px-2.5 rounded-xl min-[440px]:rounded-2xl bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#0038CC] hover:from-[#0052FF] hover:to-[#002FA7] text-white font-black text-[11.5px] min-[440px]:text-[12.5px] shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer min-h-[44px] min-[440px]:min-h-[48px]"
+                  className="w-full h-[37px] min-[400px]:h-[39px] px-2.5 min-[400px]:px-3 rounded-2xl bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#0038CC] hover:from-[#0052FF] hover:to-[#002FA7] text-white font-black text-[13px] min-[400px]:text-[13.5px] min-[460px]:text-[14px] shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
                 >
-                  <span className="shrink-0 text-xs min-[440px]:text-sm">📦</span>
+                  <span className="shrink-0 text-xs min-[400px]:text-sm">📦</span>
                   <span className="whitespace-nowrap">Book Delivery &rarr;</span>
                 </Link>
               </div>
