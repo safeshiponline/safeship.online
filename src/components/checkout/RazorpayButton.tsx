@@ -79,3 +79,5 @@ export function RazorpayButton({
     </div>
   );
 }
+
+export const PaymentButton = RazorpayButton;

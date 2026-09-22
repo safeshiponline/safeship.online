@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { createCashfreeOrder } from '@/lib/cashfreeServer';
 import { getRazorpayClient, DEFAULT_RAZORPAY_KEY_ID, DEFAULT_RAZORPAY_KEY_SECRET } from '@/lib/razorpayServer';
 
 export async function POST(request: Request) {
@@ -10,7 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
 
-    let { amount, currency, receipt, notes } = body;
+    let { amount, currency, receipt, notes, customerName, customerEmail, customerPhone } = body;
 
     // Validate amount presence
     if (amount === undefined || amount === null) {
@@ -29,29 +30,72 @@ export async function POST(request: Request) {
       );
     }
 
-    // Handle amounts provided in Rupees (float/int) vs Paise (integer)
+    // Calculate rupee and paise values
+    let amountInRupees: number;
     let amountInPaise: number;
     if (body.isRupees) {
+      amountInRupees = numericAmount;
       amountInPaise = Math.round(numericAmount * 100);
     } else {
       amountInPaise = Math.round(numericAmount);
+      amountInRupees = Number((numericAmount / 100).toFixed(2));
     }
 
-    // Minimum amount check: 100 paise (₹1)
+    // Minimum amount check: ₹1.00
     if (amountInPaise < 100) {
       return NextResponse.json(
-        { error: 'Amount must be at least 100 paise (₹1.00)' },
+        { error: 'Amount must be at least ₹1.00 (100 paise)' },
         { status: 400 }
       );
     }
 
+    // Primary Gateway: Cashfree PG v3
+    const cashfreeAppId = process.env.CASHFREE_APP_ID;
+    const cashfreeSecret = process.env.CASHFREE_SECRET_KEY;
+
+    if (cashfreeAppId && cashfreeSecret) {
+      try {
+        const cleanPhone = (customerPhone || notes?.customerPhone || '9876543210').replace(/\D/g, '').slice(-10);
+        const orderId = receipt || `order_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 6)}`;
+
+        const cfOrder = await createCashfreeOrder({
+          orderId,
+          orderAmount: amountInRupees,
+          orderCurrency: currency || 'INR',
+          customerId: `cust_${cleanPhone || Date.now()}`,
+          customerName: customerName || notes?.customerName || 'SafeShip Customer',
+          customerEmail: customerEmail || notes?.customerEmail || 'support@safeship.online',
+          customerPhone: cleanPhone || '9876543210',
+          orderNote: notes?.description || notes?.platform || 'SafeShip Escrow Payment',
+        });
+
+        return NextResponse.json({
+          success: true,
+          gateway: 'cashfree',
+          order_id: cfOrder.order_id,
+          id: cfOrder.order_id,
+          cf_order_id: cfOrder.cf_order_id,
+          payment_session_id: cfOrder.payment_session_id,
+          amount: amountInPaise,
+          amountInRupees,
+          currency: cfOrder.order_currency,
+          receipt: orderId,
+          status: cfOrder.order_status,
+        });
+      } catch (cfErr: any) {
+        console.error('Cashfree order creation error in /api/create-order:', cfErr);
+        // If Cashfree failed, fall through to Razorpay only if explicitly requested
+      }
+    }
+
+    // Fallback: Razorpay (if configured)
     const key_id = process.env.RAZORPAY_KEY_ID || DEFAULT_RAZORPAY_KEY_ID;
     const key_secret = process.env.RAZORPAY_KEY_SECRET || DEFAULT_RAZORPAY_KEY_SECRET;
 
     if (!key_id || !key_secret) {
       return NextResponse.json(
         {
-          error: 'Razorpay keys (RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET) are missing on the server. Please set them in your environment variables.',
+          error: 'Payment gateway credentials are not configured.',
         },
         { status: 500 }
       );
@@ -79,6 +123,7 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
+        gateway: 'razorpay',
         order_id: order.id,
         id: order.id,
         amount: order.amount,
@@ -97,8 +142,8 @@ export async function POST(request: Request) {
 
       return NextResponse.json(
         {
-          error: `Razorpay API Error (${statusCode}): ${description}. Please verify your RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in the Razorpay Dashboard (Settings → API Keys).`,
-          code: apiErr?.error?.code || 'RAZORPAY_API_ERROR',
+          error: `Payment Gateway Error (${statusCode}): ${description}.`,
+          code: apiErr?.error?.code || 'GATEWAY_ERROR',
         },
         { status: statusCode }
       );

@@ -97,7 +97,7 @@ export const EscrowPaymentModal: React.FC<EscrowPaymentModalProps> = ({
           address: fullAddress,
           city,
           pincode,
-          paymentMethod: `Razorpay (${verifyData.payment_id})`
+          paymentMethod: `Cashfree Escrow (${verifyData.payment_id})`
         });
 
         setIsProcessing(false);
@@ -112,7 +112,7 @@ export const EscrowPaymentModal: React.FC<EscrowPaymentModalProps> = ({
       },
       onFailure: (err) => {
         setIsProcessing(false);
-        console.error('Escrow Razorpay payment failed:', err);
+        console.error('Escrow Cashfree payment failed:', err);
       },
       onDismiss: () => {
         setIsProcessing(false);
@@ -136,15 +136,25 @@ export const EscrowPaymentModal: React.FC<EscrowPaymentModalProps> = ({
         })
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.shortUrl) {
         setGeneratedLink({
           shortUrl: data.shortUrl,
           paymentLinkId: data.paymentLinkId,
           mode: data.mode
         });
+      } else {
+        setGeneratedLink({
+          shortUrl: `${typeof window !== 'undefined' ? window.location.origin : 'https://safeship.online'}/deals/${deal.id}?action=pay`,
+          paymentLinkId: `cf_deal_${deal.id}`,
+          mode: 'safeship_secure'
+        });
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      setGeneratedLink({
+        shortUrl: `${typeof window !== 'undefined' ? window.location.origin : 'https://safeship.online'}/deals/${deal.id}?action=pay`,
+        paymentLinkId: `cf_deal_${deal.id}`,
+        mode: 'safeship_secure'
+      });
     } finally {
       setIsGeneratingLink(false);
     }

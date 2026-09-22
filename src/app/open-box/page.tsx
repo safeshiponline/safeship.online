@@ -583,12 +583,12 @@ function OpenBoxContent() {
                 {payingWithRazorpay ? (
                   <>
                     <span className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                    <span>Opening Razorpay Gateway...</span>
+                    <span>Opening Cashfree Gateway...</span>
                   </>
                 ) : (
                   <>
                     <Lock className="w-3.5 h-3.5 text-white" />
-                    <span>Pay {isExchange ? '₹3,000' : '₹65,000'} via Razorpay Checkout</span>
+                    <span>Pay {isExchange ? '₹3,000' : '₹65,000'} via Cashfree PG (UPI/Cards)</span>
                   </>
                 )}
               </button>

@@ -13,15 +13,18 @@ export async function POST(request: Request) {
       );
     }
 
+    const rawPhone = customerPhone ? customerPhone.replace(/\D/g, '').slice(-10) : '';
+    const validPhone = rawPhone.length === 10 ? rawPhone : '9876543210';
+
     const order = await createCashfreeOrder({
       orderId: orderId || (dealId ? `cf_${dealId}_${Date.now().toString(36)}` : undefined),
       orderAmount: Number(amount),
-      customerId: customerPhone ? `cust_${customerPhone.replace(/\D/g, '').slice(-10)}` : `cust_${Date.now()}`,
-      customerName: customerName || 'SafeShip Buyer',
-      customerEmail: customerEmail || 'buyer@safeship.online',
-      customerPhone: customerPhone || '9999999999',
+      customerId: `cust_${validPhone}`,
+      customerName: customerName || 'SafeShip Customer',
+      customerEmail: customerEmail || 'customer@safeship.online',
+      customerPhone: validPhone,
       returnUrl,
-      orderNote: orderNote || `SafeShip Doorstep Escrow: ${dealId || 'Order'}`,
+      orderNote: orderNote || `SafeShip Escrow: ${dealId || 'Delivery'}`,
     });
 
     return NextResponse.json({

@@ -22,7 +22,7 @@ export default function RazorpayCheckoutTestPage() {
   const [customerPhone, setCustomerPhone] = useState<string>('+91 98765 43210');
   const [customerEmail, setCustomerEmail] = useState<string>('testbuyer@safeship.online');
   const [logs, setLogs] = useState<string[]>([
-    `Ready. Razorpay Key ID: ${process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_TbXrOgkdfajAg0'} loaded.`
+    `Ready. Cashfree PG v3 Gateway loaded (Production: UPI, Cards, NetBanking).`
   ]);
   const [verificationResult, setVerificationResult] = useState<any>(null);
 
@@ -38,23 +38,23 @@ export default function RazorpayCheckoutTestPage() {
     const amountToPay = Number(customAmount) || selectedAmount;
 
     if (amountToPay < 1) {
-      alert('Minimum amount is ₹1.00 (100 paise)');
+      alert('Minimum amount is ₹1.00');
       return;
     }
 
-    addLog(`Initiating order creation for ₹${amountToPay} via /api/create-order...`);
+    addLog(`Initiating order creation for ₹${amountToPay} via Cashfree PG v3...`);
 
     openCheckout({
       amountInRupees: amountToPay,
-      name: 'SafeShip India (Test Mode)',
-      description: `SafeShip Test Payment: ₹${amountToPay}`,
+      name: 'SafeShip India (Live Gateway)',
+      description: `SafeShip Payment Test: ₹${amountToPay}`,
       prefill: {
         name: customerName,
         email: customerEmail,
         contact: customerPhone
       },
       onSuccess: (verifyData) => {
-        addLog(`✅ Payment successful & HMAC-SHA256 signature verified!`);
+        addLog(`✅ Payment successful & verified via Cashfree PG v3!`);
         addLog(`Payment ID: ${verifyData.payment_id}`);
         addLog(`Order ID: ${verifyData.order_id}`);
         setVerificationResult(verifyData);
@@ -63,7 +63,7 @@ export default function RazorpayCheckoutTestPage() {
         addLog(`❌ Payment failed or cancelled: ${err.description || err.reason || 'Modal dismissed'}`);
       },
       onDismiss: () => {
-        addLog(`ℹ️ User closed / dismissed Razorpay checkout modal.`);
+        addLog(`ℹ️ User closed / dismissed Cashfree checkout modal.`);
       }
     });
   };
@@ -78,22 +78,22 @@ export default function RazorpayCheckoutTestPage() {
         <div className="bg-white rounded-3xl border border-[#E2E8F0] p-6 sm:p-8 shadow-xs space-y-2">
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full bg-blue-50 text-[#0066FF] border border-blue-200 text-xs font-bold">
-              RAZORPAY STANDARD WEB CHECKOUT
+              CASHFREE PG V3 CHECKOUT
             </span>
-            <span className="text-xs font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
-              TEST MODE
+            <span className="text-xs font-mono bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200 font-bold">
+              PRODUCTION READY
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#0F172A]">
-            Razorpay Checkout &amp; Signature Verification Console
+            Cashfree PG v3 Checkout &amp; Verification Console
           </h1>
           <p className="text-xs sm:text-sm text-[#64748B] leading-relaxed">
-            Test creating orders on the backend via <code>/api/create-order</code>, launching the official Razorpay Checkout modal, and verifying the HMAC-SHA256 payment signature via <code>/api/verify-payment</code>.
+            Test creating orders on the backend via <code>/api/cashfree/create-order</code>, launching the official Cashfree checkout modal (UPI, Cards, NetBanking), and verifying payment status via <code>/api/cashfree/verify-payment</code>.
           </p>
 
           <div className="pt-2 flex flex-wrap items-center gap-3 text-xs text-[#475569]">
             <div>
-              <strong>Key ID:</strong> <code className="bg-slate-100 px-2 py-0.5 rounded font-mono text-blue-700">{process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_live_TbXrOgkdfajAg0'}</code>
+              <strong>Gateway:</strong> <code className="bg-slate-100 px-2 py-0.5 rounded font-mono text-blue-700">Cashfree PG v3</code>
             </div>
             <div>
               <strong>Environment:</strong> <span className="text-emerald-600 font-semibold">Active &amp; Configured</span>

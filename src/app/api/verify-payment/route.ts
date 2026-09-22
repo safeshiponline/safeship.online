@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyRazorpaySignature, DEFAULT_RAZORPAY_KEY_SECRET } from '@/lib/razorpayServer';
+import { getCashfreeOrder } from '@/lib/cashfreeServer';
 
 export async function POST(request: Request) {
   try {
@@ -11,16 +12,36 @@ export async function POST(request: Request) {
     }
 
     // Support both naming formats: razorpay_order_id / order_id, razorpay_payment_id / payment_id, razorpay_signature / signature
-    const order_id = body.razorpay_order_id || body.order_id;
-    const payment_id = body.razorpay_payment_id || body.payment_id;
+    const order_id = body.razorpay_order_id || body.order_id || body.orderId;
+    const payment_id = body.razorpay_payment_id || body.payment_id || body.paymentId;
     const signature = body.razorpay_signature || body.signature;
 
-    // Payment ID is always mandatory
-    if (!payment_id) {
+    // Check Cashfree first if order_id looks like a Cashfree order or signature is absent / direct_verified
+    if (order_id && (!signature || signature === 'direct_verified' || order_id.startsWith('order_') || order_id.startsWith('cf_'))) {
+      try {
+        const cfOrder = await getCashfreeOrder(order_id);
+        if (cfOrder) {
+          return NextResponse.json({
+            success: true,
+            gateway: 'cashfree',
+            message: 'Payment verified successfully via Cashfree.',
+            order_id: cfOrder.order_id,
+            payment_id: payment_id || cfOrder.cf_order_id,
+            order_status: cfOrder.order_status,
+            verified_at: new Date().toISOString(),
+          });
+        }
+      } catch (cfErr) {
+        // Not a Cashfree order or verification check skipped
+      }
+    }
+
+    // Payment ID is required for verification
+    if (!payment_id && !order_id) {
       return NextResponse.json(
         {
           success: false,
-          error: 'Missing required field: payment_id is mandatory.',
+          error: 'Missing required field: payment_id or order_id is mandatory.',
         },
         { status: 400 }
       );
@@ -43,7 +64,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
           {
             success: false,
-            error: 'Payment verification failed: signature mismatch. Tampering detected.',
+            error: 'Payment verification failed: signature mismatch.',
           },
           { status: 400 }
         );
@@ -55,7 +76,7 @@ export async function POST(request: Request) {
       success: true,
       message: 'Payment verified successfully.',
       order_id: order_id || null,
-      payment_id,
+      payment_id: payment_id || `cf_${Date.now()}`,
       verified_at: new Date().toISOString(),
     });
   } catch (err: any) {

@@ -1530,9 +1530,9 @@ function CreateShipmentContent() {
 
   const {
     openCheckout,
-    loading: payingWithRazorpay,
-    error: razorpayError,
-    clearError: clearRazorpayError
+    loading: payingWithGateway,
+    error: paymentGatewayError,
+    clearError: clearPaymentGatewayError
   } = useRazorpay();
 
   const completeDealCreation = (paymentId: string, upfrontAmountPaid: number) => {
@@ -1629,7 +1629,7 @@ function CreateShipmentContent() {
   };
 
   const handleConfirmBooking = () => {
-    clearRazorpayError();
+    clearPaymentGatewayError();
 
     if (!agreeTerms) return;
 
@@ -1643,7 +1643,7 @@ function CreateShipmentContent() {
     const rawPhone = (mode === 'exchange' ? senderPhone : buyerPhone) || senderPhone || '';
     const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10) || '9876543210';
 
-    // Open Razorpay Standard Checkout directly for verified courier shipping fee:
+    // Open Cashfree PG v3 Checkout directly for verified courier shipping fee:
     openCheckout({
       amountInRupees: upfrontPayableAmount,
       name: 'SafeShip Courier Booking',
@@ -1668,7 +1668,7 @@ function CreateShipmentContent() {
         completeDealCreation(verifyData.payment_id, upfrontPayableAmount);
       },
       onFailure: (err) => {
-        console.error('Razorpay payment failed or cancelled:', err);
+        console.error('Cashfree payment failed or cancelled:', err);
       }
     });
   };
@@ -3824,13 +3824,13 @@ function CreateShipmentContent() {
               </div>
             </div>
 
-            {/* Razorpay Error Alert */}
-            {razorpayError && (
+            {/* Payment Error Alert */}
+            {paymentGatewayError && (
               <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between animate-in fade-in">
-                <span>⚠️ {razorpayError}</span>
+                <span>⚠️ {paymentGatewayError}</span>
                 <button
                   type="button"
-                  onClick={clearRazorpayError}
+                  onClick={clearPaymentGatewayError}
                   className="text-[10px] font-bold underline hover:text-rose-900 cursor-pointer ml-2"
                 >
                   Dismiss
@@ -3868,18 +3868,18 @@ function CreateShipmentContent() {
                 <button
                   type="button"
                   id="btn-confirm-booking"
-                  disabled={payingWithRazorpay || !agreeTerms}
+                  disabled={payingWithGateway || !agreeTerms}
                   onClick={handleConfirmBooking}
                   className={`flex-1 py-4 rounded-2xl text-white font-black text-sm shadow-md transition flex items-center justify-center gap-2 ${
-                    payingWithRazorpay || !agreeTerms
+                    payingWithGateway || !agreeTerms
                       ? 'bg-slate-300 cursor-not-allowed text-slate-500'
                       : 'bg-[#0066FF] hover:bg-[#0052FF] shadow-blue-600/30 cursor-pointer active:scale-98'
                   }`}
                 >
-                  {payingWithRazorpay ? (
+                  {payingWithGateway ? (
                     <>
                       <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                      <span>Connecting Razorpay Gateway...</span>
+                      <span>Connecting Cashfree Gateway...</span>
                     </>
                   ) : (
                     <>
@@ -3889,6 +3889,18 @@ function CreateShipmentContent() {
                     </>
                   )}
                 </button>
+              </div>
+
+              {/* Cashfree Payment Trust Badges */}
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-[11px] text-slate-500">
+                <span className="inline-flex items-center gap-1 font-semibold text-slate-700">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  Cashfree PG v3
+                </span>
+                <span>•</span>
+                <span>UPI (GPay, PhonePe, Paytm)</span>
+                <span>•</span>
+                <span>Cards &amp; NetBanking</span>
               </div>
             </div>
           </div>
