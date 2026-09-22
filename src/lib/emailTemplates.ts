@@ -1,6 +1,7 @@
 import { SafeDeal } from './types';
 
 export type EmailEvent =
+  | 'WELCOME'
   | 'BOOKING_CONFIRMED'
   | 'COURIER_ASSIGNED'
   | 'PICKUP_VERIFIED'
@@ -481,3 +482,105 @@ export function renderCompletedBuyerEmail(deal: SafeDeal): { subject: string; ht
 
   return { subject, html };
 }
+
+/**
+ * Generates a warm welcome email for a new member upon registration.
+ */
+export function renderWelcomeUserEmail(name: string, email: string): { subject: string; html: string } {
+  const newDealUrl = `${APP_URL}/in/deals/new`;
+  const openBoxUrl = `${APP_URL}/in/open-box`;
+  const firstName = name.trim().split(' ')[0] || 'Friend';
+
+  const subject = `Welcome to SafeShip India, ${firstName}! Your ₹500 First-Shipment Credit is Active 🎉`;
+  const preheader = `Your account is active. Enjoy ₹500 off your first delivery + 10-minute doorstep open-box inspection.`;
+
+  const html = getBaseEmailLayout(
+    subject,
+    preheader,
+    `
+    <div style="text-align: center; margin-bottom: 24px;">
+      <span style="display: inline-block; padding: 6px 14px; background: #EFF6FF; color: #0066FF; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
+        ✦ Account Activated &bull; ₹500 Welcome Benefit ✦
+      </span>
+      <h2 style="font-size: 22px; font-weight: 900; color: #0F172A; margin: 14px 0 8px 0; letter-spacing: -0.5px;">
+        Welcome to SafeShip, ${firstName}!
+      </h2>
+      <p style="font-size: 14px; line-height: 1.6; color: #475569; max-width: 480px; margin: 0 auto;">
+        You've joined India's #1 verified open-box delivery &amp; escrow platform. Say goodbye to courier fraud, transit damage, and counterfeit electronics.
+      </p>
+    </div>
+
+    <!-- Welcome Credit Voucher Card -->
+    <div class="code-box" style="background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); border: 2px dashed #0066FF; border-radius: 16px; padding: 20px; text-align: center; margin: 20px 0;">
+      <div style="font-size: 11px; font-weight: 800; color: #0066FF; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px;">
+        Your Exclusive Welcome Voucher
+      </div>
+      <div class="code-text" style="color: #0066FF; font-size: 26px; font-weight: 900; letter-spacing: 5px;">
+        SAFESTART500
+      </div>
+      <p style="margin: 8px 0 0 0; font-size: 12px; font-weight: 600; color: #1E40AF;">
+        Get ₹500 off shipping or ₹0 platform fee on your first transaction
+      </p>
+    </div>
+
+    <!-- 4 SafeShip Core Guarantees -->
+    <div class="card" style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 16px; padding: 20px; margin: 24px 0;">
+      <h3 style="margin: 0 0 16px 0; font-size: 14px; font-weight: 800; color: #0F172A; text-transform: uppercase; letter-spacing: 0.5px;">
+        How SafeShip Protects Every Deal
+      </h3>
+      
+      <div style="margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid #E2E8F0;">
+        <div style="font-size: 13px; font-weight: 700; color: #0F172A; margin-bottom: 3px;">
+          📦 1. 10-Minute Doorstep Open-Box Inspection
+        </div>
+        <div style="font-size: 12px; color: #64748B; line-height: 1.5;">
+          The recipient has 10 minutes to unbox the parcel, test screen integrity, verify IMEI/serial numbers, and confirm authenticity before paying.
+        </div>
+      </div>
+
+      <div style="margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid #E2E8F0;">
+        <div style="font-size: 13px; font-weight: 700; color: #0F172A; margin-bottom: 3px;">
+          🛡️ 2. RBI Section 10A Nodal Escrow
+        </div>
+        <div style="font-size: 12px; color: #64748B; line-height: 1.5;">
+          Buyer funds remain safely in an ICICI Bank Nodal Escrow vault. Money is released to the seller only after open-box approval.
+        </div>
+      </div>
+
+      <div style="margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid #E2E8F0;">
+        <div style="font-size: 13px; font-weight: 700; color: #0F172A; margin-bottom: 3px;">
+          🔒 3. Tamper-Evident Security Seals
+        </div>
+        <div style="font-size: 12px; color: #64748B; line-height: 1.5;">
+          Every package is sealed inside an irreversible serial-tracked tamper pouch (SSP-TAMPER-SAFE) with holographic chain of custody.
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 13px; font-weight: 700; color: #0F172A; margin-bottom: 3px;">
+          🚚 4. ₹10 Lakh Cargo Insurance
+        </div>
+        <div style="font-size: 12px; color: #64748B; line-height: 1.5;">
+          Underwritten by ICICI Lombard General Insurance Co. Ltd. Full replacement coverage during road and air transit.
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="text-align: center; margin: 28px 0 16px 0;">
+      <a href="${newDealUrl}" class="btn" style="background-color: #0066FF; color: #FFFFFF; font-weight: 800; font-size: 14px; padding: 14px 32px; border-radius: 12px; text-decoration: none; display: inline-block;">
+        Book Your First Shipment with ₹500 Off &rarr;
+      </a>
+    </div>
+
+    <div style="text-align: center; margin-bottom: 8px;">
+      <a href="${openBoxUrl}" style="color: #0066FF; font-size: 12px; font-weight: 600; text-decoration: none;">
+        Learn how 10-Minute Doorstep Unboxing works &rarr;
+      </a>
+    </div>
+    `
+  );
+
+  return { subject, html };
+}
+

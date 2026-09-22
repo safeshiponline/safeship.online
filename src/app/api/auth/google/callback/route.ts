@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { authenticateGoogleUser, createSessionToken } from '@/lib/serverAuth';
+import { authenticateGoogleUser, createSessionToken, findUserByEmail } from '@/lib/serverAuth';
+import { sendTransactionalEmail } from '@/lib/resend';
+import { renderWelcomeUserEmail } from '@/lib/emailTemplates';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -57,9 +59,25 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}/profile?error=Could+not+retrieve+Google+email`, 302);
     }
 
-    // 3. Upsert real Google User in local database & issue signed session token
+    // 3. Upsert Google User in local database & issue signed session token
+    const existing = findUserByEmail(userInfo.email);
+    const isNewUser = !existing;
     const user = authenticateGoogleUser(userInfo.email, userInfo.name, userInfo.picture);
     const sessionToken = createSessionToken(user);
+
+    // Dispatch Welcome Email for new Google signups (non-blocking)
+    if (isNewUser) {
+      try {
+        const welcome = renderWelcomeUserEmail(user.name, user.email);
+        sendTransactionalEmail({
+          to: user.email,
+          subject: welcome.subject,
+          html: welcome.html
+        }).catch((emailErr) => console.error('Google welcome email dispatch warning:', emailErr));
+      } catch (e) {
+        console.warn('Could not compose Google welcome email:', e);
+      }
+    }
 
     // 4. Redirect with session cookie set
     const destUrl = state.startsWith('/') ? `${origin}${state}` : `${origin}/profile`;

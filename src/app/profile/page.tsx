@@ -63,6 +63,7 @@ export default function ProfilePage() {
   const [profileSaving, setProfileSaving] = useState<boolean>(false);
   const [profileSuccessMessage, setProfileSuccessMessage] = useState<string>('');
   const [profileErrorMessage, setProfileErrorMessage] = useState<string>('');
+  const [showWelcomeBonus, setShowWelcomeBonus] = useState<boolean>(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -78,6 +79,9 @@ export default function ProfilePage() {
       if (err) setAuthError(decodeURIComponent(err));
       const modeParam = params.get('mode');
       if (modeParam === 'register' || modeParam === 'signup') setAuthMode('register');
+      if (params.get('welcome') === 'true' || params.get('new') === 'true') {
+        setShowWelcomeBonus(true);
+      }
     }
 
     const handleAuthUpdate = () => {
@@ -177,6 +181,7 @@ export default function ProfilePage() {
     if (res.success && res.user) {
       setSession(res.user);
       populateEditFields(res.user);
+      setShowWelcomeBonus(true);
     } else {
       setAuthError(res.error || 'Failed to create account.');
     }
@@ -457,6 +462,55 @@ export default function ProfilePage() {
         ) : (
           /* 2. LOGGED IN STATE - COMPREHENSIVE CUSTOMER DASHBOARD */
           <>
+            {/* Welcome Member Perk Banner */}
+            {showWelcomeBonus && (
+              <section className="bg-gradient-to-r from-[#0066FF] to-blue-800 rounded-3xl p-6 sm:p-7 text-white shadow-lg space-y-4 animate-in fade-in slide-in-from-top-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-white/15 backdrop-blur-md flex items-center justify-center text-xl shrink-0">
+                      🎉
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-extrabold uppercase tracking-wider text-blue-200">
+                        Welcome Member Benefit Unlocked
+                      </div>
+                      <h2 className="text-lg sm:text-xl font-black text-white">
+                        ₹500 First-Shipment Credit Activated!
+                      </h2>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowWelcomeBonus(false)}
+                    className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white text-xs font-bold transition cursor-pointer"
+                    title="Dismiss"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <p className="text-xs sm:text-sm text-blue-100 leading-relaxed max-w-2xl">
+                  Welcome to SafeShip India, <strong>{session.name}</strong>! Use promo code <code className="bg-white/25 px-2 py-0.5 rounded font-mono font-bold text-white">SAFESTART500</code> at checkout to get ₹500 off courier charges on your first verified consignment. A welcome kit has also been dispatched to <strong>{session.email}</strong>.
+                </p>
+
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  <Link
+                    href="/in/deals/new"
+                    className="px-4 py-2.5 rounded-xl bg-white text-[#0066FF] font-black text-xs hover:bg-blue-50 transition shadow-sm inline-flex items-center gap-1.5"
+                  >
+                    <span>Book Your First Shipment with ₹500 Off</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <Link
+                    href="/in/open-box"
+                    className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs transition"
+                  >
+                    Learn How 10-Min Open-Box Works
+                  </Link>
+                </div>
+              </section>
+            )}
+
             {/* Account Identity Banner */}
             <section className="bg-white rounded-3xl border border-[#E2E8F0] p-6 sm:p-8 shadow-xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5">

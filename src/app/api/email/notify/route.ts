@@ -11,15 +11,19 @@ import {
   renderOutForDeliveryBuyerEmail,
   renderCompletedSellerEmail,
   renderCompletedBuyerEmail,
+  renderWelcomeUserEmail,
 } from '@/lib/emailTemplates';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { dealId, event, deal: clientDeal } = body as {
+    const { dealId, event, deal: clientDeal, user, email: directEmail, name: directName } = body as {
       dealId?: string;
       event: EmailEvent;
       deal?: SafeDeal;
+      user?: { name: string; email: string };
+      email?: string;
+      name?: string;
     };
 
     if (!event) {
@@ -27,6 +31,29 @@ export async function POST(request: Request) {
         { error: 'Missing required field: event' },
         { status: 400 }
       );
+    }
+
+    // Handle WELCOME event directly (doesn't require a deal record)
+    if (event === 'WELCOME') {
+      const targetEmail = (user?.email || directEmail)?.trim();
+      const targetName = (user?.name || directName)?.trim() || 'SafeShip Member';
+
+      if (!targetEmail) {
+        return NextResponse.json(
+          { error: 'Missing recipient email for WELCOME event' },
+          { status: 400 }
+        );
+      }
+
+      const { subject, html } = renderWelcomeUserEmail(targetName, targetEmail);
+      const res = await sendTransactionalEmail({ to: targetEmail, subject, html });
+
+      return NextResponse.json({
+        success: true,
+        event: 'WELCOME',
+        recipient: targetEmail,
+        result: res
+      });
     }
 
     // Resolve deal from client payload or server INITIAL_DEALS

@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { registerUserServer, createSessionToken, sanitizeUser } from '@/lib/serverAuth';
+import { sendTransactionalEmail } from '@/lib/resend';
+import { renderWelcomeUserEmail } from '@/lib/emailTemplates';
 
 export async function POST(request: Request) {
   try {
@@ -57,11 +59,27 @@ export async function POST(request: Request) {
     const token = createSessionToken(user);
     const sanitized = sanitizeUser(user);
 
+    // Dispatch Welcome Email with ₹500 First Shipment Benefit (non-blocking)
+    try {
+      const welcome = renderWelcomeUserEmail(user.name, user.email);
+      sendTransactionalEmail({
+        to: user.email,
+        subject: welcome.subject,
+        html: welcome.html
+      }).catch((emailErr) => console.error('Welcome email dispatch warning:', emailErr));
+    } catch (e) {
+      console.warn('Could not compose welcome email:', e);
+    }
+
     const response = NextResponse.json({
       success: true,
-      user: sanitized,
+      user: {
+        ...sanitized,
+        welcomeVoucher: 'SAFESTART500',
+        welcomeBonus: 500
+      },
       token,
-      message: 'Account created successfully.'
+      message: 'Account created successfully! Your ₹500 welcome credit has been activated.'
     }, { status: 201 });
 
     // Set HTTP-only secure cookie for persistent server-side auth
