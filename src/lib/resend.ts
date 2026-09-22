@@ -1,16 +1,30 @@
 import { Resend } from 'resend';
 
-const resendApiKey = process.env.RESEND_API_KEY?.trim();
-const isLiveResend = Boolean(
-  resendApiKey &&
-  resendApiKey.startsWith('re_') &&
-  !resendApiKey.includes('YourResendApiKeyHere')
-);
+export function getResendClient(): { client: Resend | null; isLive: boolean } {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const isLive = Boolean(
+    apiKey &&
+    apiKey.startsWith('re_') &&
+    !apiKey.includes('YourResendApiKeyHere')
+  );
 
-export const resend = isLiveResend ? new Resend(resendApiKey) : null;
+  return {
+    client: isLive && apiKey ? new Resend(apiKey) : null,
+    isLive,
+  };
+}
 
-export const DEFAULT_FROM_EMAIL =
-  process.env.RESEND_FROM_EMAIL?.trim() || 'SafeShip India <onboarding@resend.dev>';
+export function isResendActive(): boolean {
+  return getResendClient().isLive;
+}
+
+export const resend = getResendClient().client;
+
+export function getDefaultFromEmail(): string {
+  return process.env.RESEND_FROM_EMAIL?.trim() || 'SafeShip India <onboarding@resend.dev>';
+}
+
+export const DEFAULT_FROM_EMAIL = 'SafeShip India <onboarding@resend.dev>';
 
 export interface SendEmailParams {
   to: string | string[];
@@ -48,10 +62,11 @@ export async function sendTransactionalEmail(
     };
   }
 
-  const sender = params.from || DEFAULT_FROM_EMAIL;
+  const { client, isLive } = getResendClient();
+  const sender = params.from || getDefaultFromEmail();
 
   // Simulation / Offline Mode when API key is not yet configured
-  if (!resend || !isLiveResend) {
+  if (!client || !isLive) {
     console.log('\n----------------------------------------');
     console.log('📧 [RESEND EMAIL SIMULATION MODE]');
     console.log(`From:    ${sender}`);
@@ -68,7 +83,7 @@ export async function sendTransactionalEmail(
   }
 
   try {
-    const { data, error } = await resend.emails.send({
+    const { data, error } = await client.emails.send({
       from: sender,
       to: validRecipients,
       subject: params.subject,
@@ -85,6 +100,8 @@ export async function sendTransactionalEmail(
       };
     }
 
+    console.log(`✅ [RESEND EMAIL DELIVERED] ID: ${data?.id} -> ${validRecipients.join(', ')} ("${params.subject}")`);
+
     return {
       success: true,
       id: data?.id,
@@ -97,8 +114,4 @@ export async function sendTransactionalEmail(
       error: err?.message || 'Unexpected email dispatch failure'
     };
   }
-}
-
-export function isResendActive(): boolean {
-  return isLiveResend;
 }
