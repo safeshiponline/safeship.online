@@ -491,8 +491,8 @@ export function renderWelcomeUserEmail(name: string, email: string): { subject: 
   const openBoxUrl = `${APP_URL}/in/open-box`;
   const firstName = name.trim().split(' ')[0] || 'Friend';
 
-  const subject = `Welcome to SafeShip India, ${firstName}! Your ₹500 First-Shipment Credit is Active 🎉`;
-  const preheader = `Your account is active. Enjoy ₹500 off your first delivery + 10-minute doorstep open-box inspection.`;
+  const subject = `Welcome to SafeShip India, ${firstName}! Flat ₹99 Off Your First Shipment 🎉`;
+  const preheader = `Your account is active. Enjoy flat ₹99 off your first order automatically applied + 10-minute doorstep open-box inspection.`;
 
   const html = getBaseEmailLayout(
     subject,
@@ -500,7 +500,7 @@ export function renderWelcomeUserEmail(name: string, email: string): { subject: 
     `
     <div style="text-align: center; margin-bottom: 24px;">
       <span style="display: inline-block; padding: 6px 14px; background: #EFF6FF; color: #0066FF; border-radius: 9999px; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
-        ✦ Account Activated &bull; ₹500 Welcome Benefit ✦
+        ✦ Account Activated &bull; Flat ₹99 First-Order Discount ✦
       </span>
       <h2 style="font-size: 22px; font-weight: 900; color: #0F172A; margin: 14px 0 8px 0; letter-spacing: -0.5px;">
         Welcome to SafeShip, ${firstName}!
@@ -510,16 +510,16 @@ export function renderWelcomeUserEmail(name: string, email: string): { subject: 
       </p>
     </div>
 
-    <!-- Welcome Credit Voucher Card -->
+    <!-- Automatic First-Order Perk Card -->
     <div class="code-box" style="background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); border: 2px dashed #0066FF; border-radius: 16px; padding: 20px; text-align: center; margin: 20px 0;">
       <div style="font-size: 11px; font-weight: 800; color: #0066FF; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 4px;">
-        Your Exclusive Welcome Voucher
+        Automatic First-Order Perk
       </div>
-      <div class="code-text" style="color: #0066FF; font-size: 26px; font-weight: 900; letter-spacing: 5px;">
-        SAFESTART500
+      <div class="code-text" style="color: #0066FF; font-size: 28px; font-weight: 900; letter-spacing: 1px;">
+        FLAT ₹99 OFF
       </div>
       <p style="margin: 8px 0 0 0; font-size: 12px; font-weight: 600; color: #1E40AF;">
-        Get ₹500 off shipping or ₹0 platform fee on your first transaction
+        ✓ Automatically applied to your first consignment checkout &bull; No coupon code needed
       </p>
     </div>
 
@@ -569,7 +569,7 @@ export function renderWelcomeUserEmail(name: string, email: string): { subject: 
     <!-- Actions -->
     <div style="text-align: center; margin: 28px 0 16px 0;">
       <a href="${newDealUrl}" class="btn" style="background-color: #0066FF; color: #FFFFFF; font-weight: 800; font-size: 14px; padding: 14px 32px; border-radius: 12px; text-decoration: none; display: inline-block;">
-        Book Your First Shipment with ₹500 Off &rarr;
+        Book Your First Shipment with ₹99 Off &rarr;
       </a>
     </div>
 

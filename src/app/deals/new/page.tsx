@@ -43,7 +43,7 @@ import {
   Compass
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
-import { createNewDeal } from '@/lib/store';
+import { createNewDeal, getUserOrders } from '@/lib/store';
 import { analytics } from '@/lib/analytics';
 import { notifyMilestoneEmail } from '@/lib/emailClient';
 import { getSession, UserSession } from '@/lib/auth';
@@ -132,6 +132,18 @@ function CreateShipmentContent() {
   const [exchangeIncluded, setExchangeIncluded] = useState<string>('');
   const [cashDifference, setCashDifference] = useState<number>(0);
   const [cashPayer, setCashPayer] = useState<'YOU_PAY' | 'THEY_PAY' | 'EVEN_TRADE'>('EVEN_TRADE');
+
+  // First-Time Customer Auto Discount (No Coupon Code Needed)
+  const [isFirstOrder, setIsFirstOrder] = useState<boolean>(true);
+
+  useEffect(() => {
+    try {
+      const orders = getUserOrders();
+      setIsFirstOrder(orders.length === 0);
+    } catch {
+      setIsFirstOrder(true);
+    }
+  }, []);
 
   // Counterparty Contacts
   const [senderName, setSenderName] = useState<string>('');
@@ -1463,11 +1475,14 @@ function CreateShipmentContent() {
   const activeInsuranceFee = includeInsurance ? calculatedInsuranceFee : 0;
 
   // Upfront Booking Payable Amount:
-  // Strictly the verified courier shipping fee + optional cargo transit insurance! Zero item escrow deposit, zero loans, direct shipping fee.
-  const upfrontPayableAmount = fullDeliveryFee + activeInsuranceFee;
+  // Strictly the verified courier shipping fee + optional cargo transit insurance!
+  // First-order customers automatically receive flat ₹99 off their courier charges (no coupon code required).
+  const FIRST_ORDER_DISCOUNT = 99;
+  const firstOrderDiscount = isFirstOrder ? Math.min(FIRST_ORDER_DISCOUNT, fullDeliveryFee) : 0;
+  const upfrontPayableAmount = Math.max(0, (fullDeliveryFee - firstOrderDiscount) + activeInsuranceFee);
   const buyerDeliveryFee = upfrontPayableAmount;
   const sellerDeliveryFee = 0;
-  const freeDeliveryDiscount = 0;
+  const freeDeliveryDiscount = firstOrderDiscount;
   const codCharge = 0;
 
   // Dynamic Pickup and Delivery Dates
@@ -3536,6 +3551,14 @@ function CreateShipmentContent() {
                   Calculated for {(distanceKm || effectiveDistance).toLocaleString('en-IN')} km
                 </span>
               </div>
+
+              {isFirstOrder && (
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-gradient-to-r from-blue-50 to-emerald-50 border border-blue-200 text-slate-800 text-xs font-medium animate-in fade-in">
+                  <span className="text-base shrink-0">🎁</span>
+                  <span><strong>First Order Perk:</strong> Flat ₹99 discount automatically applied below — no coupon code required!</span>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {/* Tier 1: Standard Ground */}
                 <div
@@ -3562,10 +3585,17 @@ function CreateShipmentContent() {
                     <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
                     <div className="text-right shrink-0">
                       <div className="flex items-baseline gap-1.5 justify-end">
-                        <span className="text-base font-black text-slate-900 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
+                        {isFirstOrder ? (
+                          <>
+                            <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
+                            <span className="text-base font-black text-slate-900 font-mono">₹{Math.max(1, tierPricing.STANDARD_GROUND.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
+                          </>
+                        ) : (
+                          <span className="text-base font-black text-slate-900 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
+                        )}
                       </div>
                       <span className="text-[10px] text-emerald-700 font-semibold block">
-                        Surface Linehaul
+                        {isFirstOrder ? '₹99 First Order Off' : 'Surface Linehaul'}
                       </span>
                     </div>
                   </div>
@@ -3596,10 +3626,17 @@ function CreateShipmentContent() {
                     <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
                     <div className="text-right shrink-0">
                       <div className="flex items-baseline gap-1.5 justify-end">
-                        <span className="text-base font-black text-blue-700 font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
+                        {isFirstOrder ? (
+                          <>
+                            <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
+                            <span className="text-base font-black text-blue-700 font-mono">₹{Math.max(1, tierPricing.PRIORITY_EXPRESS.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
+                          </>
+                        ) : (
+                          <span className="text-base font-black text-blue-700 font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
+                        )}
                       </div>
                       <span className="text-[10px] text-blue-700 font-semibold block">
-                        Express Linehaul
+                        {isFirstOrder ? '₹99 First Order Off' : 'Express Linehaul'}
                       </span>
                     </div>
                   </div>
@@ -3630,10 +3667,17 @@ function CreateShipmentContent() {
                     <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
                     <div className="text-right shrink-0">
                       <div className="flex items-baseline gap-1.5 justify-end">
-                        <span className="text-base font-black text-amber-700 font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
+                        {isFirstOrder ? (
+                          <>
+                            <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
+                            <span className="text-base font-black text-amber-700 font-mono">₹{Math.max(1, tierPricing.FASTEST_AIR_RUSH.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
+                          </>
+                        ) : (
+                          <span className="text-base font-black text-amber-700 font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
+                        )}
                       </div>
                       <span className="text-[10px] text-amber-700 font-semibold block">
-                        Air Linehaul
+                        {isFirstOrder ? '₹99 First Order Off' : 'Air Linehaul'}
                       </span>
                     </div>
                   </div>
@@ -3775,6 +3819,25 @@ function CreateShipmentContent() {
                 </div>
 
                 <div className="flex justify-between items-center text-slate-600">
+                  <span>Courier Shipping Fee ({activeTierBreakdown.tierLabel}):</span>
+                  <span className="font-mono font-semibold text-slate-900">
+                    ₹{fullDeliveryFee}
+                  </span>
+                </div>
+
+                {isFirstOrder && firstOrderDiscount > 0 && (
+                  <div className="flex justify-between items-center text-emerald-700 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200 animate-in fade-in">
+                    <span className="flex items-center gap-1.5 font-bold text-xs">
+                      <span>🎉</span>
+                      <span>First-Order Auto Discount (No Coupon Needed):</span>
+                    </span>
+                    <span className="font-mono font-black text-xs text-emerald-700">
+                      -₹{firstOrderDiscount}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center text-slate-600">
                   <span>Guaranteed Delivery Date:</span>
                   <span className="font-bold text-slate-900 flex items-center gap-1.5">
                     <span>{deliveryDateFormatted}</span>
@@ -3807,9 +3870,11 @@ function CreateShipmentContent() {
                       Total Payable Today:
                     </span>
                     <span className="text-[11px] text-slate-500 block">
-                      {includeInsurance
-                        ? `Courier shipping fee (₹${fullDeliveryFee}) + Transit insurance (₹${calculatedInsuranceFee})`
-                        : `Courier shipping fee only (₹${fullDeliveryFee}) • Insurance opted out`}
+                      {isFirstOrder && firstOrderDiscount > 0
+                        ? `₹${fullDeliveryFee} courier fee - ₹${firstOrderDiscount} first-order auto discount${includeInsurance ? ` + ₹${calculatedInsuranceFee} insurance` : ''}`
+                        : (includeInsurance
+                            ? `Courier shipping fee (₹${fullDeliveryFee}) + Transit insurance (₹${calculatedInsuranceFee})`
+                            : `Courier shipping fee only (₹${fullDeliveryFee}) • Insurance opted out`)}
                     </span>
                   </div>
                   <div className="text-left sm:text-right shrink-0">
@@ -3817,7 +3882,7 @@ function CreateShipmentContent() {
                       ₹{upfrontPayableAmount.toLocaleString('en-IN')}
                     </span>
                     <span className="text-[10px] text-emerald-600 font-bold">
-                      ✓ Zero Platform Fee
+                      {isFirstOrder && firstOrderDiscount > 0 ? '✓ ₹99 First-Order Discount Applied' : '✓ Zero Platform Fee'}
                     </span>
                   </div>
                 </div>

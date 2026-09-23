@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     const token = createSessionToken(user);
     const sanitized = sanitizeUser(user);
 
-    // Dispatch Welcome Email with ₹500 First Shipment Benefit (non-blocking)
+    // Dispatch Welcome Email with flat ₹99 first-order benefit (non-blocking)
     try {
       const welcome = renderWelcomeUserEmail(user.name, user.email);
       sendTransactionalEmail({
@@ -75,11 +75,10 @@ export async function POST(request: Request) {
       success: true,
       user: {
         ...sanitized,
-        welcomeVoucher: 'SAFESTART500',
-        welcomeBonus: 500
+        firstOrderDiscount: 99
       },
       token,
-      message: 'Account created successfully! Your ₹500 welcome credit has been activated.'
+      message: 'Account created successfully! Your flat ₹99 first-order discount is automatically active.'
     }, { status: 201 });
 
     // Set HTTP-only secure cookie for persistent server-side auth

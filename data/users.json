@@ -79,5 +79,15 @@
     "deliveryAddress": "",
     "businessName": "Deshmukh Innovations Private Limited",
     "gstin": "29AAECD9876Q1Z9"
+  },
+  "safeshiponline@gmail.com": {
+    "id": "usr_g_mue2qki6",
+    "name": "safe ship",
+    "email": "safeshiponline@gmail.com",
+    "provider": "google",
+    "avatarUrl": "https://lh3.googleusercontent.com/a/ACg8ocLIi4NEIHFft707Fgn0wSu_OUReoKjKxSmQNboi9Tdz2wRyFg=s96-c",
+    "createdAt": "2026-09-23T12:23:25.519Z",
+    "kycVerified": true,
+    "memberCode": "USR-7480"
   }
 }

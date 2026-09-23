@@ -518,7 +518,7 @@ export default function ProfilePage() {
                         Welcome Member Benefit Unlocked
                       </div>
                       <h2 className="text-lg sm:text-xl font-black text-white">
-                        ₹500 First-Shipment Credit Activated!
+                        Flat ₹99 First-Shipment Discount Activated!
                       </h2>
                     </div>
                   </div>
@@ -533,7 +533,7 @@ export default function ProfilePage() {
                 </div>
 
                 <p className="text-xs sm:text-sm text-blue-100 leading-relaxed max-w-2xl">
-                  Welcome to SafeShip India, <strong>{session.name}</strong>! Use promo code <code className="bg-white/25 px-2 py-0.5 rounded font-mono font-bold text-white">SAFESTART500</code> at checkout to get ₹500 off courier charges on your first verified consignment. A welcome kit has also been dispatched to <strong>{session.email}</strong>.
+                  Welcome to SafeShip India, <strong>{session.name}</strong>! A flat <strong>₹99 discount</strong> is automatically applied at checkout on your first verified consignment — no coupon code required. A welcome confirmation has also been dispatched to <strong>{session.email}</strong>.
                 </p>
 
                 <div className="flex flex-wrap items-center gap-3 pt-1">
@@ -541,7 +541,7 @@ export default function ProfilePage() {
                     href="/in/deals/new"
                     className="px-4 py-2.5 rounded-xl bg-white text-[#0066FF] font-black text-xs hover:bg-blue-50 transition shadow-sm inline-flex items-center gap-1.5"
                   >
-                    <span>Book Your First Shipment with ₹500 Off</span>
+                    <span>Book Your First Shipment with ₹99 Off</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                   <Link
