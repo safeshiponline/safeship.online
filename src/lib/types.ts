@@ -11,7 +11,9 @@ export type DealStatus =
   | 'DELIVERED_INSPECTION'
   | 'COMPLETED'
   | 'DISPUTED'
-  | 'REFUNDED';
+  | 'REFUNDED'
+  | 'PICKUP_DELAYED_SELLER'
+  | 'PICKUP_FAILED';
 
 export type FeeSplitOption = 'SPLIT_50_50' | 'BUYER_PAYS_ALL' | 'SELLER_PAYS_ALL';
 
@@ -271,6 +273,8 @@ export interface SafeDeal {
   // Operational Pickup Attempt Telemetry (Realistic Seller Unreachable Call Logs)
   pickupAttemptStatus?: {
     isDelayed: boolean;
+    isFailed?: boolean;
+    stage?: 'SCHEDULED' | 'SELLER_NOT_PICKED_UP' | 'PICKUP_FAILED' | 'RESCHEDULED';
     reason: string;
     callAttempts?: {
       attemptNumber?: number;
@@ -301,6 +305,11 @@ export interface SafeDeal {
     callbackRequestedAt?: string;
     actionRequiredBuyer?: string;
     escrowStatusNote?: string;
+    canReschedule?: boolean;
+    rescheduleFee?: number;
+    rescheduledAt?: string;
+    rescheduledDate?: string;
+    rescheduledSlot?: string;
   };
   
   // Courier & Inspection

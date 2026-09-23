@@ -9,6 +9,11 @@ export async function notifyMilestoneEmail(
   deal: SafeDeal,
   event: EmailEvent
 ): Promise<void> {
+  // Policy: Only BOOKING_CONFIRMED and WELCOME emails are dispatched
+  if (event !== 'BOOKING_CONFIRMED' && event !== 'WELCOME') {
+    return;
+  }
+
   try {
     const res = await fetch('/api/email/notify', {
       method: 'POST',

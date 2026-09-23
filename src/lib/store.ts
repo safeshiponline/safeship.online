@@ -1,6 +1,6 @@
 'use client';
 
-import { SafeDeal, DealStatus, InspectionChecklist, TamperSeal, FeeSplitOption, ItemCategory, AiDiagnosticReport, DeliveryServiceTier } from './types';
+import { SafeDeal, DealStatus, InspectionChecklist, TamperSeal, FeeSplitOption, ItemCategory, AiDiagnosticReport, DeliveryServiceTier, PickupSlot } from './types';
 import { INITIAL_DEALS } from './mockData';
 import { calculateEscrowBreakdown } from './escrowCalculator';
 
@@ -737,6 +737,139 @@ export function updateDealDetails(
   }
 
   return targetDeal;
+}
+
+export function rescheduleDealPickup(
+  dealId: string,
+  newDate: string,
+  newSlot: PickupSlot,
+  rescheduleFee: number
+): SafeDeal | null {
+  const deals = getStoredDeals();
+  const index = deals.findIndex(
+    (d) => d.id.toLowerCase() === dealId.toLowerCase() || d.trackingId?.toLowerCase() === dealId.toLowerCase()
+  );
+
+  let deal: SafeDeal | null = null;
+  let isFromUserOrders = false;
+  let uIndex = -1;
+  const userOrders = getUserOrders();
+
+  if (index !== -1) {
+    deal = deals[index];
+  } else {
+    uIndex = userOrders.findIndex(
+      (d) => d.id.toLowerCase() === dealId.toLowerCase() || d.trackingId?.toLowerCase() === dealId.toLowerCase()
+    );
+    if (uIndex !== -1) {
+      deal = userOrders[uIndex];
+      isFromUserOrders = true;
+    }
+  }
+
+  if (!deal) return null;
+
+  deal.status = 'COURIER_ASSIGNED';
+  deal.pickupSlot = newSlot;
+  deal.pickupAttemptStatus = {
+    isDelayed: false,
+    isFailed: false,
+    stage: 'RESCHEDULED',
+    reason: `Pickup rescheduled for ${newDate} (${newSlot === 'MORNING_10_1' ? '10:00 AM – 01:00 PM' : '02:00 PM – 05:00 PM'}) at 50% discount (₹${rescheduleFee} paid).`,
+    nextAttemptScheduled: `Rescheduled for ${newDate} (${newSlot === 'MORNING_10_1' ? '10:00 AM – 01:00 PM' : '02:00 PM – 05:00 PM'})`,
+    nextAttemptTime: `${newDate} • ${newSlot === 'MORNING_10_1' ? '10:00 AM – 01:00 PM' : '02:00 PM – 05:00 PM'}`,
+    canReschedule: false,
+    rescheduleFee: rescheduleFee,
+    rescheduledAt: new Date().toISOString(),
+    rescheduledDate: newDate,
+    rescheduledSlot: newSlot,
+    escrowStatusNote: '100% Escrow deposit is safely held in SafeShip nodal vault while pickup is re-attempted.'
+  };
+
+  deal.auditTrail.push({
+    id: `aud_${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    actor: 'BUYER',
+    title: `Pickup Rescheduled at 50% Off (₹${rescheduleFee})`,
+    description: `Pickup successfully rescheduled for ${newDate} (${newSlot === 'MORNING_10_1' ? '10:00 AM – 01:00 PM' : '02:00 PM – 05:00 PM'}). Field officer re-assigned.`
+  });
+
+  deal.updatedAt = new Date().toISOString();
+
+  if (!isFromUserOrders) {
+    deals[index] = deal;
+    saveStoredDeals(deals);
+    syncDealToUserOrders(deal);
+  } else {
+    userOrders[uIndex] = deal;
+    saveUserOrders(userOrders);
+  }
+
+  return deal;
+}
+
+export function updateDealPickupAttempt(
+  dealId: string,
+  updates: {
+    status?: DealStatus;
+    isDelayed?: boolean;
+    isFailed?: boolean;
+    stage?: 'SCHEDULED' | 'SELLER_NOT_PICKED_UP' | 'PICKUP_FAILED' | 'RESCHEDULED';
+    reason?: string;
+    nextAttemptScheduled?: string;
+    nextAttemptTime?: string;
+  }
+): SafeDeal | null {
+  const deals = getStoredDeals();
+  const index = deals.findIndex(
+    (d) => d.id.toLowerCase() === dealId.toLowerCase() || d.trackingId?.toLowerCase() === dealId.toLowerCase()
+  );
+
+  let deal: SafeDeal | null = null;
+  let isFromUserOrders = false;
+  let uIndex = -1;
+  const userOrders = getUserOrders();
+
+  if (index !== -1) {
+    deal = deals[index];
+  } else {
+    uIndex = userOrders.findIndex(
+      (d) => d.id.toLowerCase() === dealId.toLowerCase() || d.trackingId?.toLowerCase() === dealId.toLowerCase()
+    );
+    if (uIndex !== -1) {
+      deal = userOrders[uIndex];
+      isFromUserOrders = true;
+    }
+  }
+
+  if (!deal) return null;
+
+  if (updates.status) {
+    deal.status = updates.status;
+  }
+
+  deal.pickupAttemptStatus = {
+    ...deal.pickupAttemptStatus,
+    isDelayed: updates.isDelayed !== undefined ? updates.isDelayed : Boolean(deal.pickupAttemptStatus?.isDelayed),
+    isFailed: updates.isFailed !== undefined ? updates.isFailed : Boolean(deal.pickupAttemptStatus?.isFailed),
+    stage: updates.stage || deal.pickupAttemptStatus?.stage,
+    reason: updates.reason !== undefined ? updates.reason : (deal.pickupAttemptStatus?.reason || ''),
+    nextAttemptScheduled: updates.nextAttemptScheduled || deal.pickupAttemptStatus?.nextAttemptScheduled,
+    nextAttemptTime: updates.nextAttemptTime || deal.pickupAttemptStatus?.nextAttemptTime,
+  };
+
+  deal.updatedAt = new Date().toISOString();
+
+  if (!isFromUserOrders) {
+    deals[index] = deal;
+    saveStoredDeals(deals);
+    syncDealToUserOrders(deal);
+  } else {
+    userOrders[uIndex] = deal;
+    saveUserOrders(userOrders);
+  }
+
+  return deal;
 }
 
 export function resetDealsToDefault(): SafeDeal[] {

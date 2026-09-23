@@ -39,8 +39,7 @@ import {
   Zap,
   Copy,
   Share2,
-  Link2,
-  Compass
+  Link2
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
 import { createNewDeal, getUserOrders } from '@/lib/store';
@@ -247,10 +246,6 @@ function CreateShipmentContent() {
     verifiedAt?: string;
   } | null>(null);
 
-  // Auto-Location GPS Detection State
-  const [detectingLocationTarget, setDetectingLocationTarget] = useState<'pickup' | 'drop' | null>(null);
-  const [locationDetectToast, setLocationDetectToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
   // Collaborative Booking Link State (Invite Counterparty to Fill Details)
   const [showCollabModal, setShowCollabModal] = useState<boolean>(false);
   const [collabRoleTarget, setCollabRoleTarget] = useState<'seller' | 'buyer'>('seller');
@@ -323,9 +318,6 @@ function CreateShipmentContent() {
 
     const current = getSession();
     applyUserSession(current);
-    if (!current?.pickupPincode) {
-      applySavedLocation();
-    }
 
     const onAuthChange = () => {
       const updated = getSession();
@@ -560,82 +552,6 @@ function CreateShipmentContent() {
       }
       return next;
     });
-  };
-
-  // Auto-Detect Location using GPS Geolocation + Indian Pincode Reverse Geocoding
-  const handleAutoDetectLocation = (target: 'pickup' | 'drop') => {
-    if (typeof window === 'undefined' || !navigator.geolocation) {
-      setLocationDetectToast({ type: 'error', message: 'Geolocation is not supported by your browser.' });
-      setTimeout(() => setLocationDetectToast(null), 5000);
-      return;
-    }
-
-    setDetectingLocationTarget(target);
-    setLocationDetectToast(null);
-
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const { latitude, longitude } = pos.coords;
-          const loc = await reverseGeocodeToIndianLocation(latitude, longitude);
-
-          if (target === 'pickup') {
-            if (loc.formattedAddress) {
-              setPickupLocation(loc.formattedAddress);
-            }
-            handlePickupPincodeChange(loc.pincode);
-            clearFieldError('pickupLocation');
-            clearFieldError('pickupPincode');
-
-            try {
-              const locData = {
-                pincode: loc.pincode,
-                city: loc.city,
-                state: loc.state,
-                district: loc.district,
-                hubName: loc.hubName,
-                formattedAddress: loc.formattedAddress || `${loc.district || loc.city}, ${loc.city}`
-              };
-              localStorage.setItem('safeship_user_location', JSON.stringify(locData));
-              window.dispatchEvent(new CustomEvent('safeship_location_updated', { detail: locData }));
-            } catch (e) {
-              // ignore
-            }
-          } else {
-            if (loc.formattedAddress) {
-              setDropLocation(loc.formattedAddress);
-            }
-            handleDropPincodeChange(loc.pincode);
-            clearFieldError('dropLocation');
-            clearFieldError('dropPincode');
-          }
-
-          setLocationDetectToast({
-            type: 'success',
-            message: `📍 Auto-detected location: ${loc.locality ? loc.locality + ', ' : ''}${loc.city} (${loc.pincode}) ✓`
-          });
-        } catch (err) {
-          console.warn('Geolocation reverse geocode error:', err);
-          setLocationDetectToast({
-            type: 'error',
-            message: 'Could not resolve PIN code from GPS. Please enter your 6-digit PIN manually.'
-          });
-        } finally {
-          setDetectingLocationTarget(null);
-          setTimeout(() => setLocationDetectToast(null), 5000);
-        }
-      },
-      (err) => {
-        setDetectingLocationTarget(null);
-        let msg = 'Could not access GPS. Please enter your 6-digit PIN code manually.';
-        if (err.code === err.PERMISSION_DENIED) {
-          msg = 'Location access was declined. You can type your 6-digit PIN code manually below.';
-        }
-        setLocationDetectToast({ type: 'error', message: msg });
-        setTimeout(() => setLocationDetectToast(null), 5000);
-      },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
-    );
   };
 
   // Generate secure prefilled link for counterparty
@@ -1798,26 +1714,7 @@ function CreateShipmentContent() {
           </div>
         )}
 
-        {/* Location Detection Feedback Toast */}
-        {locationDetectToast && (
-          <div className={`mb-4 p-3 rounded-2xl text-xs font-semibold flex items-center justify-between gap-2 animate-in fade-in ${
-            locationDetectToast.type === 'success'
-              ? 'bg-emerald-50 border border-emerald-300 text-emerald-950'
-              : 'bg-amber-50 border border-amber-300 text-amber-950'
-          }`}>
-            <div className="flex items-center gap-2">
-              <span>{locationDetectToast.type === 'success' ? '✓' : '⚠️'}</span>
-              <span>{locationDetectToast.message}</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setLocationDetectToast(null)}
-              className="p-1 text-slate-400 hover:text-slate-600 cursor-pointer"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
+
         
         {/* =================================================================== */}
         {/* STEP 1: CATEGORY SELECTION (8 Realistic High-Value Categories)      */}
@@ -2989,26 +2886,9 @@ function CreateShipmentContent() {
                 <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9] flex-wrap gap-2">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A]">
                     <span className="w-2 h-2 rounded-full bg-[#0066FF]" />
-                    <span>Sender / Pickup Contact Details</span>
+                    <span>Sender / Pickup Details</span>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => handleAutoDetectLocation('pickup')}
-                    disabled={detectingLocationTarget === 'pickup'}
-                    className="px-2.5 py-1 rounded-xl bg-blue-50 hover:bg-blue-100 text-[#0066FF] text-[11px] font-bold transition flex items-center gap-1.5 cursor-pointer border border-blue-200/80 active:scale-95 disabled:opacity-50"
-                  >
-                    {detectingLocationTarget === 'pickup' ? (
-                      <>
-                        <span className="w-3 h-3 rounded-full border-2 border-[#0066FF] border-t-transparent animate-spin" />
-                        <span>Detecting GPS...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Compass className="w-3.5 h-3.5" />
-                        <span>📍 Auto-Detect Location</span>
-                      </>
-                    )}
-                  </button>
+                  <span className="text-[11px] text-slate-400 font-medium">Origin Address</span>
                 </div>
 
                 {pickupPincode && (
@@ -3193,26 +3073,9 @@ function CreateShipmentContent() {
                   <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9] flex-wrap gap-2">
                     <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A]">
                       <span className="w-2 h-2 rounded-full bg-[#10B981]" />
-                      <span>Receiver / Drop Contact Details</span>
+                      <span>Receiver / Delivery Details</span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => handleAutoDetectLocation('drop')}
-                      disabled={detectingLocationTarget === 'drop'}
-                      className="px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-[11px] font-bold transition flex items-center gap-1.5 cursor-pointer border border-emerald-200 active:scale-95 disabled:opacity-50"
-                    >
-                      {detectingLocationTarget === 'drop' ? (
-                        <>
-                          <span className="w-3 h-3 rounded-full border-2 border-emerald-600 border-t-transparent animate-spin" />
-                          <span>Detecting GPS...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Compass className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>📍 Auto-Detect Location</span>
-                        </>
-                      )}
-                    </button>
+                    <span className="text-[11px] text-slate-400 font-medium">Destination Address</span>
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -3,10 +3,10 @@
 import React, { use, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getDealById, requestSellerCallback, advanceDealMilestone, updateDealDetails } from '@/lib/store';
+import { getDealById, requestSellerCallback, advanceDealMilestone, updateDealDetails, rescheduleDealPickup } from '@/lib/store';
 import { notifyMilestoneEmail } from '@/lib/emailClient';
 import { reverseGeocodeToIndianLocation } from '@/lib/pincodeService';
-import { SafeDeal } from '@/lib/types';
+import { SafeDeal, PickupSlot } from '@/lib/types';
 import { formatINR } from '@/lib/escrowCalculator';
 import { Navbar } from '@/components/common/Navbar';
 import { LiveTrackingMap } from '@/components/courier/LiveTrackingMap';
@@ -34,7 +34,8 @@ import {
   Phone,
   AlertTriangle,
   RefreshCw,
-  Scan
+  Scan,
+  Calendar
 } from '@/components/common/Icons';
 import { downloadConsignmentNotePDF } from '@/lib/pdfGenerator';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
@@ -84,6 +85,85 @@ function TrackingContent({
   const [isDetectingBuyerGps, setIsDetectingBuyerGps] = useState(false);
   const [buyerInfoSavedToast, setBuyerInfoSavedToast] = useState(false);
   const [copiedBuyerLink, setCopiedBuyerLink] = useState(false);
+
+  // Time-based Tracking Stages & Reschedule State
+  const [simulatedStage, setSimulatedStage] = useState<'AUTO' | 'INITIAL' | 'DELAYED_SELLER' | 'PICKUP_FAILED'>('AUTO');
+  const [selectedRescheduleSlot, setSelectedRescheduleSlot] = useState<PickupSlot>('MORNING_10_1');
+  const [isRescheduling, setIsRescheduling] = useState(false);
+  const [rescheduledToast, setRescheduledToast] = useState(false);
+
+  const getTomorrowDateStr = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  };
+
+  const handleReschedule = () => {
+    if (!deal) return;
+    setIsRescheduling(true);
+    const tomorrowStr = getTomorrowDateStr();
+    const upfront = deal.upfrontPaid || deal.upfrontPricing?.totalUpfront || (deal.isExchange ? 198 : 99);
+    const halfFee = Math.max(49, Math.round(upfront / 2));
+
+    setTimeout(() => {
+      const updated = rescheduleDealPickup(deal.id, tomorrowStr, selectedRescheduleSlot, halfFee);
+      if (updated) {
+        setDeal({ ...updated });
+      } else {
+        setDeal((prev) =>
+          prev
+            ? {
+                ...prev,
+                status: 'COURIER_ASSIGNED',
+                pickupSlot: selectedRescheduleSlot,
+                pickupAttemptStatus: {
+                  isDelayed: false,
+                  isFailed: false,
+                  stage: 'RESCHEDULED',
+                  reason: `Pickup rescheduled for tomorrow (${tomorrowStr}) at 50% discount (₹${halfFee} paid).`,
+                  nextAttemptScheduled: `Rescheduled for ${tomorrowStr} (${
+                    selectedRescheduleSlot === 'MORNING_10_1' ? '10:00 AM – 01:00 PM' : '02:00 PM – 05:00 PM'
+                  })`,
+                  nextAttemptTime: `${tomorrowStr} • ${
+                    selectedRescheduleSlot === 'MORNING_10_1' ? '10:00 AM – 01:00 PM' : '02:00 PM – 05:00 PM'
+                  }`,
+                  rescheduledAt: new Date().toISOString(),
+                  rescheduledDate: tomorrowStr,
+                  rescheduledSlot: selectedRescheduleSlot,
+                  rescheduleFee: halfFee,
+                  escrowStatusNote: '100% Escrow deposit is safe in RBI Nodal vault while pickup is re-attempted.'
+                }
+              }
+            : null
+        );
+      }
+      setIsRescheduling(false);
+      setRescheduledToast(true);
+      setTimeout(() => setRescheduledToast(false), 5000);
+    }, 500);
+  };
+
+  const getEffectiveStage = (): 'INITIAL' | 'DELAYED_SELLER' | 'PICKUP_FAILED' | 'RESCHEDULED' => {
+    if (deal?.pickupAttemptStatus?.stage === 'RESCHEDULED') {
+      return 'RESCHEDULED';
+    }
+    if (simulatedStage !== 'AUTO') {
+      return simulatedStage;
+    }
+    if (deal?.status === 'PICKUP_FAILED' || deal?.pickupAttemptStatus?.isFailed) {
+      return 'PICKUP_FAILED';
+    }
+    if (deal?.status === 'PICKUP_DELAYED_SELLER' || deal?.pickupAttemptStatus?.isDelayed) {
+      return 'DELAYED_SELLER';
+    }
+    if (deal?.createdAt) {
+      const createdTime = new Date(deal.createdAt).getTime();
+      const elapsedHours = (Date.now() - createdTime) / (1000 * 60 * 60);
+      if (elapsedHours >= 24) return 'PICKUP_FAILED';
+      if (elapsedHours >= 2) return 'DELAYED_SELLER';
+    }
+    return 'INITIAL';
+  };
 
   const handleDownloadAWB = () => {
     if (!deal) return;
@@ -297,6 +377,8 @@ function TrackingContent({
 
   const isExchange = deal.isExchange || deal.id.includes('EXCH');
   const upfrontFee = deal.upfrontPaid || deal.upfrontPricing?.totalUpfront || (isExchange ? 198 : 99);
+  const halfRescheduleFee = Math.max(49, Math.round(upfrontFee / 2));
+  const effectiveStage = getEffectiveStage();
 
   const getStatusStep = () => {
     switch (deal.status) {
@@ -306,6 +388,8 @@ function TrackingContent({
       case 'ESCROW_LOCKED':
         return 1;
       case 'COURIER_ASSIGNED':
+      case 'PICKUP_DELAYED_SELLER':
+      case 'PICKUP_FAILED':
         return 2;
       case 'PICKUP_INSPECTION':
       case 'PICKUP_VERIFIED':
@@ -439,8 +523,251 @@ function TrackingContent({
           </div>
         </div>
 
-        {/* OPERATIONAL TELEMETRY: SELLER UNREACHABLE HOLD */}
-        {deal.pickupAttemptStatus && deal.pickupAttemptStatus.isDelayed && (
+        {/* RESCHEDULE CONFIRMATION TOAST */}
+        {rescheduledToast && (
+          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-semibold flex items-center justify-between shadow-sm animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <span>
+                Pickup re-attempt confirmed for tomorrow with 50% discount! Field officer re-assigned.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setRescheduledToast(false)}
+              className="text-emerald-700 hover:text-emerald-950 font-bold p-1 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* TIME TELEMETRY & STATUS SIMULATION CONTROLS */}
+        <div className="flex items-center justify-between flex-wrap gap-2 px-3.5 py-2.5 bg-slate-100/90 rounded-2xl text-[11px] text-slate-600 border border-slate-200">
+          <div className="flex items-center gap-1.5 font-bold text-slate-700">
+            <Clock className="w-3.5 h-3.5 text-[#0066FF]" />
+            <span>Telemetry Preview:</span>
+          </div>
+          <div className="flex items-center gap-1 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setSimulatedStage('AUTO')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer text-[11px] ${
+                simulatedStage === 'AUTO'
+                  ? 'bg-[#0066FF] text-white shadow-2xs'
+                  : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              ⏱️ Auto (Time-Based)
+            </button>
+            <button
+              type="button"
+              onClick={() => setSimulatedStage('INITIAL')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer text-[11px] ${
+                simulatedStage === 'INITIAL'
+                  ? 'bg-[#0066FF] text-white shadow-2xs'
+                  : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              1. Booked (Now)
+            </button>
+            <button
+              type="button"
+              onClick={() => setSimulatedStage('DELAYED_SELLER')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer text-[11px] ${
+                simulatedStage === 'DELAYED_SELLER'
+                  ? 'bg-amber-600 text-white shadow-2xs'
+                  : 'bg-white text-amber-800 hover:bg-amber-50 border border-amber-200'
+              }`}
+            >
+              2. Seller Not Picked Up (Try Next Day)
+            </button>
+            <button
+              type="button"
+              onClick={() => setSimulatedStage('PICKUP_FAILED')}
+              className={`px-2.5 py-1 rounded-lg font-semibold transition cursor-pointer text-[11px] ${
+                simulatedStage === 'PICKUP_FAILED'
+                  ? 'bg-rose-600 text-white shadow-2xs'
+                  : 'bg-white text-rose-800 hover:bg-rose-50 border border-rose-200'
+              }`}
+            >
+              3. Pickup Failed &amp; Reschedule (50% Off)
+            </button>
+          </div>
+        </div>
+
+        {/* STAGE: RESCHEDULED CONFIRMED */}
+        {effectiveStage === 'RESCHEDULED' && (
+          <div className="rounded-3xl border-2 border-emerald-300 bg-emerald-50/70 p-5 sm:p-6 shadow-sm space-y-4 animate-in fade-in-50">
+            <div className="flex flex-wrap items-start justify-between gap-4 pb-3 border-b border-emerald-200">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-emerald-200 text-emerald-950 px-2 py-0.5 rounded">
+                      Pickup Rescheduled Confirmed
+                    </span>
+                    <span className="text-xs font-bold text-emerald-900">
+                      50% Reschedule Discount Applied
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-bold text-emerald-950 mt-0.5">
+                    Pickup Confirmed for Tomorrow &bull; {deal.pickupAttemptStatus?.rescheduledDate || getTomorrowDateStr()}
+                  </h3>
+                  <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
+                    SafeShip custody field officer has been re-assigned to pick up the parcel from <strong>{deal.seller.name}</strong> during the selected slot ({deal.pickupSlot === 'MORNING_10_1' ? '10:00 AM – 01:00 PM' : '02:00 PM – 05:00 PM'}).
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs font-bold text-emerald-800 bg-white border border-emerald-300 px-3 py-1.5 rounded-xl shadow-2xs">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>Nodal Escrow Protected</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* STAGE: PICKUP FAILED & RESCHEDULE AT HALF PRICE */}
+        {effectiveStage === 'PICKUP_FAILED' && (
+          <div className="rounded-3xl border-2 border-rose-300 bg-rose-50/60 p-5 sm:p-6 shadow-sm space-y-4 animate-in fade-in-50">
+            <div className="flex flex-wrap items-start justify-between gap-4 pb-3.5 border-b border-rose-200">
+              <div className="flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-rose-200 text-rose-950 px-2 py-0.5 rounded">
+                      Pickup Window Expired
+                    </span>
+                    <span className="text-xs font-bold text-rose-900">
+                      Pickup Attempt Failed
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-bold text-rose-950 mt-0.5">
+                    Seller Did Not Hand Over Package for Dispatch
+                  </h3>
+                  <p className="text-xs text-rose-800 mt-1 leading-relaxed">
+                    Our field officer reached the pickup location, but the seller <strong>{deal.seller.name}</strong> was unavailable or did not hand over the parcel within the scheduled dispatch window.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* HALF-PRICE RESCHEDULE CARD */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-rose-200 space-y-4 shadow-sm">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-wider text-rose-700 bg-rose-100 px-2 py-0.5 rounded">
+                    Special 50% Off Offer
+                  </span>
+                  <h4 className="text-base font-black text-slate-900 mt-1">
+                    Reschedule Pickup for Tomorrow at Half the Price
+                  </h4>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    SafeShip offers a 50% subsidized re-booking fee to dispatch another custody officer tomorrow.
+                  </p>
+                </div>
+
+                <div className="text-right">
+                  <div className="text-xs text-slate-400 line-through">₹{upfrontFee}</div>
+                  <div className="text-2xl font-black text-emerald-600 font-mono">
+                    ₹{halfRescheduleFee}
+                    <span className="text-xs text-slate-500 font-normal ml-1">only</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Slot Selector */}
+              <div className="space-y-2 pt-1 border-t border-slate-100">
+                <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <Calendar className="w-3.5 h-3.5 text-[#0066FF]" />
+                  <span>Select Tomorrow's Pickup Slot ({getTomorrowDateStr()}):</span>
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRescheduleSlot('MORNING_10_1')}
+                    className={`p-3 rounded-xl border text-left text-xs transition cursor-pointer flex items-center justify-between ${
+                      selectedRescheduleSlot === 'MORNING_10_1'
+                        ? 'border-[#0066FF] bg-blue-50/60 text-[#0066FF] font-bold ring-2 ring-[#0066FF]/20'
+                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold">🌅 Morning Window</div>
+                      <div className="text-[11px] text-slate-500 font-mono">10:00 AM – 01:00 PM</div>
+                    </div>
+                    {selectedRescheduleSlot === 'MORNING_10_1' && <Check className="w-4 h-4 text-[#0066FF]" />}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedRescheduleSlot('AFTERNOON_2_5')}
+                    className={`p-3 rounded-xl border text-left text-xs transition cursor-pointer flex items-center justify-between ${
+                      selectedRescheduleSlot === 'AFTERNOON_2_5'
+                        ? 'border-[#0066FF] bg-blue-50/60 text-[#0066FF] font-bold ring-2 ring-[#0066FF]/20'
+                        : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium'
+                    }`}
+                  >
+                    <div>
+                      <div className="font-bold">☀️ Afternoon Window</div>
+                      <div className="text-[11px] text-slate-500 font-mono">02:00 PM – 05:00 PM</div>
+                    </div>
+                    {selectedRescheduleSlot === 'AFTERNOON_2_5' && <Check className="w-4 h-4 text-[#0066FF]" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={handleReschedule}
+                  disabled={isRescheduling}
+                  className="flex-1 py-3 px-4 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-500/20 active:scale-95 disabled:opacity-50"
+                >
+                  {isRescheduling ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      <span>Confirming Tomorrow's Pickup...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Reschedule Pickup for Tomorrow (₹{halfRescheduleFee}) &rarr;</span>
+                    </>
+                  )}
+                </button>
+
+                <a
+                  href={`https://wa.me/?text=Hi%20${encodeURIComponent(deal.seller.name)},%20SafeShip%20pickup%20attempt%20failed%20for%20consignment%20%23${deal.id}%20because%20the%20package%20was%20not%20handed%20over.%20Please%20confirm%20your%20availability%20for%20tomorrow%20here:%20${encodeURIComponent(shareUrl)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-3 px-3.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>WhatsApp Seller</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Escrow Guarantee */}
+            <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs space-y-1">
+              <div className="flex items-center gap-1.5 text-emerald-900 font-bold">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>100% Escrow Security Guarantee</span>
+              </div>
+              <p className="text-[11px] text-emerald-800 leading-snug">
+                Your payment is 100% safe inside the RBI Nodal Escrow account. Zero funds are released until physical open-box verification is completed.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* STAGE: SELLER NOT PICKED UP / DELAYED (TRY AGAIN NEXT DAY) */}
+        {effectiveStage === 'DELAYED_SELLER' && (
           <div className="rounded-3xl border-2 border-amber-300 bg-amber-50/60 p-5 sm:p-6 shadow-sm space-y-4 animate-in fade-in-50">
             <div className="flex flex-wrap items-start justify-between gap-4 pb-3.5 border-b border-amber-200">
               <div className="flex items-start gap-3.5">
@@ -450,14 +777,17 @@ function TrackingContent({
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-950 px-2 py-0.5 rounded">
-                      Courier Partner Operational Hold
+                      Courier Operational Hold
                     </span>
                     <span className="text-xs font-bold text-amber-900">
-                      Seller Unreachable (2 Call Attempts Placed) &bull; Rescheduled
+                      Seller Has Not Handed Over &bull; Re-Attempt Scheduled Next Day
                     </span>
                   </div>
+                  <h3 className="text-sm font-bold text-amber-950 mt-0.5">
+                    Seller Has Not Handed Over Package — Trying Again Tomorrow
+                  </h3>
                   <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-                    Field Officer <strong>{deal.assignedCourier?.name || 'Rahul K.'}</strong> arrived at the pickup location but wasn’t able to reach the seller <strong>{deal.seller.name}</strong> ({deal.seller.phone}). Two priority telephony attempts went unanswered.
+                    SafeShip Field Officer <strong>{deal.assignedCourier?.name || 'Rahul K.'}</strong> arrived at the pickup location (<em>{deal.seller.pickupAddress || deal.city}</em>), but the seller <strong>{deal.seller.name}</strong> has not handed over the package for pickup. SafeShip will try pickup again next day.
                   </p>
                 </div>
               </div>
@@ -466,23 +796,23 @@ function TrackingContent({
                 <button
                   type="button"
                   onClick={handleRequestCallback}
-                  disabled={callbackRequested || deal.pickupAttemptStatus.sellerCallbackRequested}
+                  disabled={callbackRequested || deal.pickupAttemptStatus?.sellerCallbackRequested}
                   className={`px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-xs ${
-                    callbackRequested || deal.pickupAttemptStatus.sellerCallbackRequested
+                    callbackRequested || deal.pickupAttemptStatus?.sellerCallbackRequested
                       ? 'bg-amber-200 text-amber-800 cursor-not-allowed'
                       : 'bg-amber-600 hover:bg-amber-700 text-white active:scale-95'
                   }`}
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${callbackRequested ? 'animate-spin' : ''}`} />
                   <span>
-                    {callbackRequested || deal.pickupAttemptStatus.sellerCallbackRequested
+                    {callbackRequested || deal.pickupAttemptStatus?.sellerCallbackRequested
                       ? 'Priority Re-dial Queued'
                       : 'Request Immediate Re-dial'}
                   </span>
                 </button>
 
                 <a
-                  href={`https://wa.me/?text=Hi%20${encodeURIComponent(deal.seller.name)},%20SafeShip%20courier%20partner%20is%20at%20your%20pickup%20address%20for%20consignment%20%23${deal.id}.%20Please%20answer%20the%20call%20or%20confirm%20pickup%20here:%20${encodeURIComponent(shareUrl)}`}
+                  href={`https://wa.me/?text=Hi%20${encodeURIComponent(deal.seller.name)},%20SafeShip%20courier%20partner%20is%20at%20your%20pickup%20address%20for%20consignment%20%23${deal.id}.%20Please%20hand%20over%20the%20package%20or%20confirm%20pickup%20here:%20${encodeURIComponent(shareUrl)}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="px-3.5 py-2 rounded-xl bg-white border border-amber-300 hover:bg-amber-100/60 text-xs font-bold text-amber-900 transition flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -492,37 +822,7 @@ function TrackingContent({
               </div>
             </div>
 
-            {/* Live Call Telemetry Log */}
-            <div className="space-y-2">
-              <span className="text-[11px] font-bold text-amber-900 uppercase tracking-wider">
-                Field Officer Call Telemetry &amp; Log
-              </span>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {(deal.pickupAttemptStatus.attempts || deal.pickupAttemptStatus.callAttempts || []).map((att, idx) => (
-                  <div
-                    key={att.attemptNumber || idx}
-                    className="p-3.5 rounded-2xl bg-white border border-amber-200 text-xs space-y-1.5 shadow-2xs"
-                  >
-                    <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-bold text-slate-800">
-                        Attempt #{att.attemptNumber || idx + 1} &bull; {att.timestamp || att.time}
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-50 text-rose-700 border border-rose-200">
-                        {att.outcome}
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-600">
-                      {att.note}
-                    </p>
-                    <div className="text-[10px] text-slate-400 font-mono">
-                      Driver: {att.driverPhone || att.caller} &rarr; Seller: {att.sellerPhone || att.target}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Reschedule Window & Escrow Guarantee */}
+            {/* Next Attempt Schedule Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div className="p-3.5 rounded-2xl bg-white/90 border border-amber-200 text-xs space-y-1">
                 <div className="flex items-center gap-1.5 text-amber-900 font-bold">
@@ -530,10 +830,10 @@ function TrackingContent({
                   <span>Next Scheduled Re-Attempt</span>
                 </div>
                 <p className="text-[11px] text-slate-800 font-semibold">
-                  {deal.pickupAttemptStatus.nextAttemptTime}
+                  Tomorrow ({getTomorrowDateStr()}) &bull; Morning Window (10:00 AM – 01:00 PM)
                 </p>
                 <p className="text-[10px] text-slate-500 leading-relaxed">
-                  Automated IVR call and SMS alert dispatched to seller with one-click window selector.
+                  Automated SMS alert dispatched to seller to keep package packed and ready.
                 </p>
               </div>
 
@@ -543,18 +843,15 @@ function TrackingContent({
                   <span>100% Escrow Security Guarantee</span>
                 </div>
                 <p className="text-[11px] text-emerald-800 leading-snug">
-                  {deal.pickupAttemptStatus.escrowStatusNote}
-                </p>
-                <p className="text-[10px] text-emerald-700 font-mono">
-                  RBI Section 10A nodal escrow protection &bull; Zero risk to buyer or seller
+                  Zero risk to buyer or seller. Escrow funds stay safe in RBI Nodal account until physical open-box verification succeeds.
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* ON-TIME DISPATCH TELEMETRY CARD */}
-        {(!deal.pickupAttemptStatus || !deal.pickupAttemptStatus.isDelayed) && deal.status === 'COURIER_ASSIGNED' && (
+        {/* STAGE: INITIAL / ON-TIME DISPATCH TELEMETRY CARD */}
+        {effectiveStage === 'INITIAL' && deal.status === 'COURIER_ASSIGNED' && (
           <div className="rounded-3xl border border-blue-200 bg-gradient-to-r from-blue-50/70 to-indigo-50/50 p-5 sm:p-6 shadow-xs space-y-4 animate-in fade-in">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="flex items-start gap-3.5">
@@ -1015,21 +1312,21 @@ function TrackingContent({
         </div>
       </main>
 
-      {/* POST-PAYMENT HIGH-TRUST CUSTODY & HANDSHAKE MODAL */}
+      {/* MINIMAL ORDER SUCCESS & SENDABLE LINK MODAL */}
       {showPostPaymentModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white text-[#0F172A] rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 animate-in zoom-in-95 max-h-[90vh] overflow-y-auto space-y-5">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="bg-white text-[#0F172A] rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 animate-in zoom-in-95 space-y-5">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center font-black text-sm">
                   ✓
                 </div>
                 <div>
                   <h3 className="font-bold text-base text-slate-900">
-                    Booking Confirmed &amp; Custody Assigned
+                    Order Created Successfully!
                   </h3>
                   <span className="text-[11px] text-emerald-600 font-semibold">
-                    Payment Verified via Razorpay &bull; Order #{deal.id}
+                    Order #{deal.id} Confirmed
                   </span>
                 </div>
               </div>
@@ -1042,132 +1339,60 @@ function TrackingContent({
               </button>
             </div>
 
-            <div className="text-xs text-[#475569] space-y-3.5 leading-relaxed">
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Upfront Booking Secured:</span>
-                  <strong className="text-slate-900 font-mono text-sm">
-                    ₹{(deal.upfrontPaid || upfrontFee).toLocaleString('en-IN')}
-                  </strong>
-                </div>
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-500">Official Tax Invoice:</span>
-                  <span className="font-mono font-semibold text-[#0066FF]">
-                    {deal.billingInfo?.invoiceNumber || `INV-2026-SS-${deal.id.toUpperCase()}`}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-[11px]">
-                  <span className="text-slate-500">Payment Reference ID:</span>
-                  <span className="font-mono text-slate-700">
-                    {paymentId || deal.paymentId || 'pay_live_verified'}
-                  </span>
-                </div>
+            <div className="text-center space-y-1.5 pt-1">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Send this live tracking link to the counterparty (buyer or seller). They can track real-time open-box inspection and delivery status:
+              </p>
+            </div>
+
+            {/* SENDABLE LINK BOX */}
+            <div className="p-4 rounded-2xl bg-blue-50/70 border border-blue-200 space-y-3">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-bold uppercase tracking-wider text-blue-900">
+                  Sendable Tracking Link
+                </span>
+                <span className="font-mono font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  Live &bull; Active
+                </span>
               </div>
 
-              {/* MAGIC LINK: LINK BUYER INFO & ESCROW REFUND DETAILS */}
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50 via-indigo-50/40 to-blue-50 border border-blue-200 space-y-2.5 shadow-2xs">
-                <div className="flex items-center justify-between flex-wrap gap-1">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-base">🔗</span>
-                    <span className="font-black text-xs text-blue-900">
-                      Buyer Info &amp; Escrow Refund Account
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-bold bg-blue-100 text-[#0066FF] px-2 py-0.5 rounded-full">
-                    Magic Link
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-600 leading-snug">
-                  Need the buyer to link their delivery address or refund UPI ID? Share this link or enter it now so the courier knows where to deliver.
-                </p>
-                <div className="flex items-center gap-2 pt-0.5 flex-wrap">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowPostPaymentModal(false);
-                      setShowBuyerInfoModal(true);
-                    }}
-                    className="flex-1 py-2 px-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold transition shadow-xs active:scale-95 text-center cursor-pointer min-w-[140px]"
-                  >
-                    ✏️ Enter / Link Info Now
-                  </button>
-                  <a
-                    href={`https://wa.me/?text=${encodeURIComponent(`Hi! Here is our SafeShip verified order #${deal.id} for ${deal.title}. Please open this link to fill your delivery address and instant escrow refund account: ${buyerFillShareUrl}`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-xs active:scale-95 text-center cursor-pointer flex items-center gap-1"
-                  >
-                    <span>WhatsApp</span>
-                  </a>
-                  <button
-                    type="button"
-                    onClick={handleCopyBuyerFillLink}
-                    className="py-2 px-3 rounded-xl bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-bold transition shadow-2xs active:scale-95 text-center cursor-pointer"
-                  >
-                    {copiedBuyerLink ? 'Copied!' : 'Copy Link'}
-                  </button>
-                </div>
+              <div className="flex items-center gap-2 bg-white border border-blue-200 rounded-xl px-3 py-2.5">
+                <input
+                  type="text"
+                  readOnly
+                  value={shareUrl}
+                  className="text-xs font-mono text-slate-800 bg-transparent flex-1 outline-hidden select-all"
+                />
               </div>
 
-              <div className="space-y-3">
-                <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#0066FF] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</div>
-                  <div>
-                    <h4 className="font-bold text-[#0F172A] text-xs">Bonded Officer Dispatched</h4>
-                    <p className="text-[11px] text-[#64748B] mt-0.5">
-                      SafeShip custody officer <strong>Rahul K.</strong> (KA 03 HY 4012) is en route to <em>{deal.seller.pickupAddress}</em>. Automated SMS tracking has been triggered.
-                    </p>
-                  </div>
-                </div>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={copyTrackingLink}
+                  className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-black text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                >
+                  {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                  <span>{copied ? 'Copied Link!' : 'Copy Link'}</span>
+                </button>
 
-                <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#0066FF] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</div>
-                  <div>
-                    <h4 className="font-bold text-[#0F172A] text-xs">Pickup Audit &amp; Tamper Sealing</h4>
-                    <p className="text-[11px] text-[#64748B] mt-0.5">
-                      The officer verifies cosmetic condition, serial number, and accessories against the uploaded photo declaration before sealing the parcel in heavy-gauge security bag <strong>SSP-TAMPER-SAFE</strong>.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-100 flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-[#0066FF] text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</div>
-                  <div>
-                    <h4 className="font-bold text-[#0F172A] text-xs">Road Freight Linehaul Telemetry</h4>
-                    <p className="text-[11px] text-[#64748B] mt-0.5">
-                      Package travels through the <strong>{deal.routeCorridor || 'National Express Highway Corridor'}</strong> with GPS telemetry and ICICI Lombard cargo underwriting.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full bg-emerald-600 text-white text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">4</div>
-                  <div>
-                    <h4 className="font-bold text-emerald-950 text-xs">Doorstep Open-Box Inspection &amp; Escrow Release</h4>
-                    <p className="text-[11px] text-emerald-800 mt-0.5">
-                      At delivery, the receiver is granted 10 minutes to unbox and test the item. Only when satisfied does the buyer share the 6-digit release OTP or pay the merchandise amount (<strong>₹{deal.declaredValue.toLocaleString('en-IN')}</strong>). If rejected, the item is returned safely at <strong>₹0 product liability</strong>.
-                    </p>
-                  </div>
-                </div>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`Hi! Here is our SafeShip verified delivery order #${deal.id} for "${deal.title}". Track live open-box inspection & courier pickup here: ${shareUrl}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 text-center"
+                >
+                  <span>Share on WhatsApp</span>
+                </a>
               </div>
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
-              <button
-                type="button"
-                onClick={handleDownloadAWB}
-                className="px-3.5 py-2.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-xs font-bold text-[#0F172A] flex items-center gap-1.5 transition cursor-pointer shadow-xs"
-              >
-                <FileText className="w-3.5 h-3.5 text-[#0066FF]" />
-                <span>{downloadingPdf ? 'Generating...' : 'Download Tax Invoice & AWB (PDF)'}</span>
-              </button>
-
+            <div className="pt-2">
               <button
                 type="button"
                 onClick={() => setShowPostPaymentModal(false)}
-                className="px-5 py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs transition cursor-pointer shadow-md shadow-[#0066FF]/20"
+                className="w-full py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-blue-500/20 active:scale-95 cursor-pointer"
               >
-                Continue to Live Telemetry &rarr;
+                <span>View Live Tracking & Details &rarr;</span>
               </button>
             </div>
           </div>
