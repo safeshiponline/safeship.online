@@ -21,10 +21,10 @@ export function isResendActive(): boolean {
 export const resend = getResendClient().client;
 
 export function getDefaultFromEmail(): string {
-  return process.env.RESEND_FROM_EMAIL?.trim() || 'SafeShip India <onboarding@resend.dev>';
+  return process.env.RESEND_FROM_EMAIL?.trim() || 'SafeShip India <notifications@safeship.online>';
 }
 
-export const DEFAULT_FROM_EMAIL = 'SafeShip India <onboarding@resend.dev>';
+export const DEFAULT_FROM_EMAIL = 'SafeShip India <notifications@safeship.online>';
 
 export interface SendEmailParams {
   to: string | string[];
