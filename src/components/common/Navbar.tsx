@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, ArrowLeftRight, Package, ShieldCheck, MapPin, Menu, X, Home, Truck, User } from './Icons';
 import { SafeShipLogo } from './SafeShipLogo';
-import { getSession, UserSession } from '@/lib/auth';
+import { getSession, fetchCurrentUser, UserSession } from '@/lib/auth';
 
 export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -12,6 +12,9 @@ export const Navbar: React.FC = () => {
 
   useEffect(() => {
     setSession(getSession());
+    fetchCurrentUser().then((u) => {
+      if (u) setSession(u);
+    });
     const onAuth = () => setSession(getSession());
     window.addEventListener('safeship_auth_changed', onAuth);
     return () => window.removeEventListener('safeship_auth_changed', onAuth);

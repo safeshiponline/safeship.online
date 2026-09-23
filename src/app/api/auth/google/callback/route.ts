@@ -83,12 +83,17 @@ export async function GET(request: Request) {
     }
 
     // 4. Redirect with session cookie set
-    const destUrl = state.startsWith('/') ? `${origin}${state}` : `${origin}/profile`;
-    const response = NextResponse.redirect(destUrl, 302);
+    const destBase = state.startsWith('/') ? `${origin}${state}` : `${origin}/profile`;
+    const dest = new URL(destBase);
+    dest.searchParams.set('auth', 'google_success');
+    if (isNewUser) {
+      dest.searchParams.set('welcome', 'true');
+    }
+    const response = NextResponse.redirect(dest.toString(), 302);
 
     response.cookies.set('safeship_token', sessionToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
+      secure: !isLocal && process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
       maxAge: 60 * 60 * 24 * 30 // 30 days

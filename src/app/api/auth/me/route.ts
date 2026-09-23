@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       authenticated: true,
-      user: session
+      user: session,
+      token
     });
   } catch (err: any) {
     return NextResponse.json({ authenticated: false, user: null }, { status: 200 });

@@ -221,7 +221,7 @@ export async function fetchCurrentUser(): Promise<UserSession | null> {
     const res = await fetch('/api/auth/me', { headers });
     const data = await res.json();
     if (data.authenticated && data.user) {
-      saveSession(data.user);
+      saveSession(data.user, data.token);
       return data.user;
     }
     return null;
