@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   const state = searchParams.get('state') || '/profile';
   const error = searchParams.get('error');
 
-  const host = request.headers.get('host') || new URL(request.url).host;
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || new URL(request.url).host;
   const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
   const origin = isLocal
     ? `http://${host}`
@@ -17,15 +17,15 @@ export async function GET(request: Request) {
   const redirectUri = `${origin}/api/auth/google/callback`;
 
   if (error) {
-    return NextResponse.redirect(`${origin}/profile?error=${encodeURIComponent(error)}`, 302);
+    return NextResponse.redirect(`${origin}/in/profile?error=${encodeURIComponent(error)}`, 302);
   }
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/profile?error=No+authorization+code+provided`, 302);
+    return NextResponse.redirect(`${origin}/in/profile?error=No+authorization+code+provided`, 302);
   }
 
-  const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)?.trim();
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
 
   try {
     // 1. Exchange code for Google access token
@@ -83,8 +83,9 @@ export async function GET(request: Request) {
     }
 
     // 4. Redirect with session cookie set
-    const destBase = state.startsWith('/') ? `${origin}${state}` : `${origin}/profile`;
-    const dest = new URL(destBase);
+    const rawDest = state.startsWith('/') ? state : '/profile';
+    const normalizedDest = rawDest.startsWith('/in/') || rawDest === '/in' ? rawDest : `/in${rawDest === '/' ? '' : rawDest}`;
+    const dest = new URL(normalizedDest, origin);
     dest.searchParams.set('auth', 'google_success');
     if (isNewUser) {
       dest.searchParams.set('welcome', 'true');

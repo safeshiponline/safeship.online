@@ -3,10 +3,10 @@ import { NextResponse } from 'next/server';
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const returnUrl = searchParams.get('returnUrl') || '/profile';
-  const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+  const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID)?.trim();
 
   // Resolve base URL dynamically (supports both local development and production)
-  const host = request.headers.get('host') || new URL(request.url).host;
+  const host = request.headers.get('x-forwarded-host') || request.headers.get('host') || new URL(request.url).host;
   const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
   const origin = isLocal
     ? `http://${host}`
