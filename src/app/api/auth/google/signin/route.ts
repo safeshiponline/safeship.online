@@ -5,9 +5,12 @@ export async function GET(request: Request) {
   const returnUrl = searchParams.get('returnUrl') || '/profile';
   const clientId = process.env.GOOGLE_CLIENT_ID || process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
-  // Resolve base URL dynamically
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  const origin = appUrl ? appUrl.replace(/\/$/, '') : new URL(request.url).origin;
+  // Resolve base URL dynamically (supports both local development and production)
+  const host = request.headers.get('host') || new URL(request.url).host;
+  const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+  const origin = isLocal
+    ? `http://${host}`
+    : (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || `https://${host}`);
   const redirectUri = `${origin}/api/auth/google/callback`;
 
   // If real Google OAuth Client ID is configured, redirect directly to accounts.google.com

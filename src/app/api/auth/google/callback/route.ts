@@ -9,8 +9,11 @@ export async function GET(request: Request) {
   const state = searchParams.get('state') || '/profile';
   const error = searchParams.get('error');
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  const origin = appUrl ? appUrl.replace(/\/$/, '') : new URL(request.url).origin;
+  const host = request.headers.get('host') || new URL(request.url).host;
+  const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+  const origin = isLocal
+    ? `http://${host}`
+    : (process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || `https://${host}`);
   const redirectUri = `${origin}/api/auth/google/callback`;
 
   if (error) {
