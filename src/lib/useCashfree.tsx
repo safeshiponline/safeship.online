@@ -51,6 +51,44 @@ export function loadCashfreeScript(): Promise<boolean> {
   });
 }
 
+function showBrandedLoadingBridge(title = 'Opening SafeShip Secure Checkout...') {
+  if (typeof document === 'undefined') return () => {};
+  const bridgeId = 'safeship-payment-bridge';
+  try {
+    const existing = document.getElementById(bridgeId);
+    if (existing) existing.remove();
+  } catch {}
+
+  const el = document.createElement('div');
+  el.id = bridgeId;
+  el.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,0.45);backdrop-filter:blur(4px);animation:fadeIn 0.15s ease-out;';
+  el.innerHTML = `
+    <div style="background:#ffffff;border-radius:24px;padding:24px 28px;max-width:340px;width:90%;text-align:center;box-shadow:0 25px 50px -12px rgba(0,102,255,0.25),0 0 0 1px rgba(0,102,255,0.1);font-family:system-ui,-apple-system,sans-serif;">
+      <div style="width:52px;height:52px;border-radius:16px;background:#EBF3FF;color:#0066FF;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;border:1.5px solid #BFDBFE;">
+        <svg style="width:26px;height:26px;animation:ss-spin 0.9s linear infinite;" viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" stroke="#BFDBFE" stroke-width="2.5" fill="none"></circle>
+          <path d="M12 2a10 10 0 0 1 10 10" stroke="#0066FF" stroke-width="2.5"></path>
+        </svg>
+      </div>
+      <p style="font-size:15px;font-weight:800;color:#0F172A;margin:0 0 4px;letter-spacing:-0.02em;">${title}</p>
+      <p style="font-size:11px;font-weight:600;color:#0066FF;margin:0 0 8px;">RBI Nodal Escrow &bull; 100% Encrypted</p>
+      <p style="font-size:11px;color:#64748B;margin:0;line-height:1.4;">Connecting to Cashfree UPI, GooglePay, PhonePe, Cards &amp; NetBanking...</p>
+    </div>
+    <style>
+      @keyframes ss-spin { 100% { transform: rotate(360deg); } }
+      @keyframes fadeIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+    </style>
+  `;
+  document.body.appendChild(el);
+
+  return () => {
+    try {
+      const b = document.getElementById(bridgeId);
+      if (b) b.remove();
+    } catch {}
+  };
+}
+
 export function useCashfree() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -60,6 +98,7 @@ export function useCashfree() {
   const openCheckout = useCallback(async (options: CashfreePaymentOptions) => {
     setLoading(true);
     setError(null);
+    const dismissBridge = showBrandedLoadingBridge();
 
     try {
       // 1. Ensure Cashfree SDK is loaded
@@ -93,6 +132,9 @@ export function useCashfree() {
       const mode = process.env.NEXT_PUBLIC_CASHFREE_ENV === 'sandbox' ? 'sandbox' : 'production';
       const cashfreeInstance = window.Cashfree({ mode });
 
+      // 4. Dismiss bridge as Cashfree modal presents
+      dismissBridge();
+
       // 4. Trigger Cashfree Checkout (modal or redirect)
       const checkoutResult = await cashfreeInstance.checkout({
         paymentSessionId: orderData.paymentSessionId,
@@ -121,6 +163,7 @@ export function useCashfree() {
       }
       throw err;
     } finally {
+      dismissBridge();
       setLoading(false);
     }
   }, []);

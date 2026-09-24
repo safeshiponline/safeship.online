@@ -79,6 +79,20 @@ export default function ProfilePage() {
       if (user) {
         setSession(user);
         populateEditFields(user);
+      } else {
+        // If unauthenticated, seamlessly auto-trigger Google sign-in unless error or manual flag
+        if (typeof window !== 'undefined') {
+          const params = new URLSearchParams(window.location.search);
+          const hasError = params.has('error');
+          const isCancelled = params.get('auth') === 'cancelled';
+          const isManual = params.get('manual') === '1' || params.get('stay') === '1' || params.get('logout') === '1';
+          const isGoogleSuccess = params.get('auth') === 'google_success';
+
+          if (!hasError && !isCancelled && !isManual && !isGoogleSuccess) {
+            const returnUrl = params.get('returnUrl') || '/in/profile';
+            window.location.href = `/api/auth/google/signin?returnUrl=${encodeURIComponent(returnUrl)}`;
+          }
+        }
       }
     });
 
@@ -235,6 +249,7 @@ export default function ProfilePage() {
       setSession(null);
       setEmail('');
       setPassword('');
+      window.location.href = '/in?logout=1';
     }
   };
 

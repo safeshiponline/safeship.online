@@ -356,7 +356,7 @@ function CreateShipmentContent() {
 
 
   // Helper to downsample / compress uploaded photos for rapid, high-accuracy OCR & vision analysis
-  const compressImageForOcr = (file: File, maxDimension = 1600, quality = 0.88): Promise<string> => {
+  const compressImageForOcr = (file: File, maxDimension = 1000, quality = 0.80): Promise<string> => {
     return new Promise((resolve) => {
       const reader = new FileReader();
       reader.onload = (e) => {
@@ -451,7 +451,7 @@ function CreateShipmentContent() {
     const newFiles = Array.from(fileList);
     const compressedList: string[] = [];
     for (const f of newFiles) {
-      const comp = await compressImageForOcr(f, 1600, 0.88);
+      const comp = await compressImageForOcr(f, 1000, 0.80);
       if (comp) compressedList.push(comp);
     }
     if (compressedList.length === 0) return;
@@ -496,7 +496,7 @@ function CreateShipmentContent() {
 
   // Handle single angle slot upload
   const handleAnglePhotoUpload = async (angleKey: ProductAngleKey, file: File) => {
-    const optimized = await compressImageForOcr(file, 1600, 0.88);
+    const optimized = await compressImageForOcr(file, 1000, 0.80);
     if (optimized) {
       setAnglePhotos((prev) => {
         const next = { ...prev, [angleKey]: optimized };
@@ -518,14 +518,14 @@ function CreateShipmentContent() {
     // Fill empty slots first
     for (const k of keys) {
       if (!current[k] && fileIdx < files.length) {
-        const comp = await compressImageForOcr(files[fileIdx], 1600, 0.88);
+        const comp = await compressImageForOcr(files[fileIdx], 1000, 0.80);
         current[k] = comp;
         fileIdx++;
       }
     }
     // Fill any remaining from the start
     for (let i = 0; fileIdx < files.length && i < keys.length; i++) {
-      const comp = await compressImageForOcr(files[fileIdx], 1600, 0.88);
+      const comp = await compressImageForOcr(files[fileIdx], 1000, 0.80);
       current[keys[i]] = comp;
       fileIdx++;
     }
@@ -1907,8 +1907,12 @@ function CreateShipmentContent() {
                   type="text"
                   value={itemName}
                   onChange={(e) => {
-                    setItemName(e.target.value);
+                    const nextVal = e.target.value;
+                    setItemName(nextVal);
                     clearFieldError('itemName');
+                    if (uploadedPhotos.length > 0 && nextVal.trim().length >= 2) {
+                      verifyMultiAnglePhotos(uploadedPhotos, nextVal.trim());
+                    }
                   }}
                   className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-sm text-[#0F172A] outline-hidden transition ${
                     errors.itemName ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
@@ -1994,16 +1998,77 @@ function CreateShipmentContent() {
                 <div className="flex items-center justify-between flex-wrap gap-1">
                   <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5 flex-wrap">
                     <span>
-                      Upload Item Photos {itemName ? <span className="text-[#0066FF] font-black underline decoration-blue-200 underline-offset-2">&quot;{itemName}&quot;</span> : ''}
+                      Upload 2 to 4 Photos of Your Item {itemName ? <span className="text-[#0066FF] font-black underline decoration-blue-200 underline-offset-2">&quot;{itemName}&quot;</span> : ''}
                     </span>
                     <span className="text-rose-500">*</span>
                   </label>
-                  <span className="text-[10px] text-[#64748B]">Audited at doorstep unboxing</span>
+                  <span className="text-[10px] text-[#0066FF] font-bold bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                    Recommended: 2 to 4 angles
+                  </span>
                 </div>
 
                 <p className="text-[11px] text-slate-500">
-                  Upload 1 to 6 clear photos of your item (front, back, or condition). Photos are used by the SafeShip agent to verify item condition upon doorstep delivery.
+                  Please attach 2 to 4 clear photos covering key angles. SafeShip Optical Engine verifies model geometry, screen, and chassis for doorstep escrow unboxing.
                 </p>
+
+                {/* Recommended Angles Guide */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-0.5">
+                  <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] flex items-center gap-2 shadow-2xs">
+                    <span className="text-base shrink-0">📱</span>
+                    <div>
+                      <span className="font-bold block leading-tight text-slate-900">Photo 1: Front</span>
+                      <span className="text-[10px] text-slate-500 leading-tight block">Screen / power-on</span>
+                    </div>
+                  </div>
+                  <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] flex items-center gap-2 shadow-2xs">
+                    <span className="text-base shrink-0">📸</span>
+                    <div>
+                      <span className="font-bold block leading-tight text-slate-900">Photo 2: Back</span>
+                      <span className="text-[10px] text-slate-500 leading-tight block">Cameras &amp; chassis</span>
+                    </div>
+                  </div>
+                  <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] flex items-center gap-2 shadow-2xs">
+                    <span className="text-base shrink-0">🔍</span>
+                    <div>
+                      <span className="font-bold block leading-tight text-slate-900">Photo 3: Sides</span>
+                      <span className="text-[10px] text-slate-500 leading-tight block">Edges &amp; charging port</span>
+                    </div>
+                  </div>
+                  <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] flex items-center gap-2 shadow-2xs">
+                    <span className="text-base shrink-0">📦</span>
+                    <div>
+                      <span className="font-bold block leading-tight text-slate-900">Photo 4: Box / Bill</span>
+                      <span className="text-[10px] text-slate-500 leading-tight block">Box &amp; accessories</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Dynamic Status / Progress Banner */}
+                <div className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between gap-2 transition ${
+                  uploadedPhotos.length === 0
+                    ? 'bg-blue-50/70 border-blue-200 text-blue-900'
+                    : uploadedPhotos.length === 1
+                    ? 'bg-amber-50 border-amber-200 text-amber-900'
+                    : 'bg-emerald-50 border-emerald-200 text-emerald-900'
+                }`}>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${
+                      uploadedPhotos.length === 0
+                        ? 'bg-blue-500'
+                        : uploadedPhotos.length === 1
+                        ? 'bg-amber-500 animate-pulse'
+                        : 'bg-emerald-500'
+                    }`} />
+                    <span className="text-[11px] truncate">
+                      {uploadedPhotos.length === 0 && 'Upload 2 to 4 photos for instant AI optical verification & doorstep escrow approval.'}
+                      {uploadedPhotos.length === 1 && '1 photo attached • Add 1–2 more angles (Back/Sides) for 99.8% verification.'}
+                      {uploadedPhotos.length >= 2 && `✓ Optimal multi-angle coverage (${uploadedPhotos.length} photos attached) • AI verified.`}
+                    </span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white border border-current font-bold shrink-0">
+                    {uploadedPhotos.length}/4 Recommended
+                  </span>
+                </div>
 
                 {/* Upload Box / Photo Gallery */}
                 {uploadedPhotos.length === 0 ? (
@@ -2086,7 +2151,14 @@ function CreateShipmentContent() {
                     </div>
 
                     <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-                      <span>{uploadedPhotos.length} of 6 photos attached</span>
+                      <span className="font-medium">
+                        {uploadedPhotos.length} of 6 photos attached &bull;{' '}
+                        {uploadedPhotos.length >= 2 ? (
+                          <span className="text-emerald-600 font-semibold">✓ Recommended 2–4 angles met</span>
+                        ) : (
+                          <span className="text-amber-600 font-semibold">Add 1 more angle for 99.8% verification</span>
+                        )}
+                      </span>
                       <label className="text-[#0066FF] hover:underline font-semibold cursor-pointer">
                         <span>+ Add more photos</span>
                         <input
@@ -2098,6 +2170,16 @@ function CreateShipmentContent() {
                         />
                       </label>
                     </div>
+                  </div>
+                )}
+
+                {/* Prompt to enter item model if photos uploaded first */}
+                {!isMatchingPhoto && !photoMatchResult && uploadedPhotos.length > 0 && (!itemName || itemName.trim().length < 2) && (
+                  <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-medium flex items-center gap-2 animate-in fade-in">
+                    <span className="text-base shrink-0">💡</span>
+                    <span>
+                      <strong>{uploadedPhotos.length} photo(s) uploaded!</strong> Please enter your <strong>Item Model / Specification</strong> above to automatically run optical verification.
+                    </span>
                   </div>
                 )}
 

@@ -14,8 +14,8 @@ export const SafeShipLogo: React.FC<SafeShipLogoProps> = ({ className = 'w-9 h-9
     xmlns="http://www.w3.org/2000/svg"
     className={className}
   >
-    {/* Outer Rounded Squircle Container */}
-    <rect width="48" height="48" rx="13" fill="#0066FF" />
+    {/* Outer Rounded Squircle Container with 2px safe margins to prevent clipping */}
+    <rect x="2" y="2" width="44" height="44" rx="12" fill="#0066FF" />
     
     {/* Outer Hexagon */}
     <path

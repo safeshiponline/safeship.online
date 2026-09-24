@@ -382,6 +382,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-[#F8FAFC] text-[#0F172A] selection:bg-[#0066FF] selection:text-white" suppressHydrationWarning>
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
+        <Script id="cashfree-sdk" src="https://sdk.cashfree.com/js/v3/cashfree.js" strategy="afterInteractive" />
         <PostHogProvider>
           {children}
           <AISupportWidget />

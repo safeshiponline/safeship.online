@@ -1,12 +1,21 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Package, Plus, ArrowLeftRight, User } from './Icons';
+import { getSession } from '@/lib/auth';
 
 export const MobileBottomNav: React.FC = () => {
   const pathname = usePathname();
+  const [hasSession, setHasSession] = useState<boolean>(false);
+
+  useEffect(() => {
+    setHasSession(!!getSession());
+    const onAuth = () => setHasSession(!!getSession());
+    window.addEventListener('safeship_auth_changed', onAuth);
+    return () => window.removeEventListener('safeship_auth_changed', onAuth);
+  }, []);
 
   const isHome = pathname === '/' || pathname === '/in';
   const isShipments = pathname.startsWith('/track') || pathname.startsWith('/in/track');
@@ -67,15 +76,28 @@ export const MobileBottomNav: React.FC = () => {
         </Link>
 
         {/* Profile */}
-        <Link
-          href="/in/profile"
-          className={`flex flex-col items-center gap-0.5 transition group w-12 ${
-            isProfile ? 'text-[#0066FF] font-bold' : 'text-[#64748B] hover:text-[#0F172A] font-medium'
-          }`}
-        >
-          <User className="w-5 h-5 group-hover:scale-110 transition" />
-          <span className="text-[9px] tracking-tight">Profile</span>
-        </Link>
+        {hasSession ? (
+          <Link
+            href="/in/profile"
+            className={`flex flex-col items-center gap-0.5 transition group w-12 ${
+              isProfile ? 'text-[#0066FF] font-bold' : 'text-[#64748B] hover:text-[#0F172A] font-medium'
+            }`}
+          >
+            <User className="w-5 h-5 group-hover:scale-110 transition" />
+            <span className="text-[9px] tracking-tight">Profile</span>
+          </Link>
+        ) : (
+          <a
+            href="/api/auth/google/signin?returnUrl=/in/profile"
+            className={`flex flex-col items-center gap-0.5 transition group w-12 ${
+              isProfile ? 'text-[#0066FF] font-bold' : 'text-[#64748B] hover:text-[#0F172A] font-medium'
+            }`}
+            title="Sign in with Google"
+          >
+            <User className="w-5 h-5 group-hover:scale-110 transition text-[#0066FF]" />
+            <span className="text-[9px] tracking-tight font-semibold text-[#0066FF]">Sign in</span>
+          </a>
+        )}
       </nav>
     </div>
   );
