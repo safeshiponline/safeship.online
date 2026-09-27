@@ -89,5 +89,31 @@
     "createdAt": "2026-09-23T12:23:25.519Z",
     "kycVerified": true,
     "memberCode": "USR-7480"
+  },
+  "aman.test@safeship.online": {
+    "id": "usr_mufykufk_6ewk",
+    "name": "Aman Sharma",
+    "email": "aman.test@safeship.online",
+    "phone": "+91 9876543210",
+    "passwordHash": "dd03eaf9604220be85a8ad8e2bad23d8aa1220b125ba68afe118a0ff0f2c5d3aa66d6f19ef99dbff4ac4d8fbccc4011f3de3ebba2d1e87fd7371d3cc9cfd741c",
+    "salt": "e8e27a7420077f6685fd7eedb404c6e5",
+    "avatarUrl": "https://api.dicebear.com/7.x/initials/svg?seed=Aman%20Sharma&backgroundColor=0066FF&textColor=FFFFFF",
+    "provider": "credentials",
+    "createdAt": "2026-09-24T20:02:32.336Z",
+    "kycVerified": true,
+    "memberCode": "USR-8280"
+  },
+  "aman.vip@safeship.online": {
+    "id": "usr_mug42f84_e63d",
+    "name": "Aman VIP",
+    "email": "aman.vip@safeship.online",
+    "phone": "+91 9876543219",
+    "passwordHash": "fcad0ebee536de19b95fc927dac0a408e27aa328802bc7719b574bdba2c9df529052faba4e6e368248693b431eb92385bfa1f1046af72d1829cc4f278847a1e3",
+    "salt": "db8dec0f60404196a8a6504f6d7604bb",
+    "avatarUrl": "https://api.dicebear.com/7.x/initials/svg?seed=Aman%20VIP&backgroundColor=0066FF&textColor=FFFFFF",
+    "provider": "credentials",
+    "createdAt": "2026-09-24T22:36:10.516Z",
+    "kycVerified": true,
+    "memberCode": "USR-6783"
   }
 }

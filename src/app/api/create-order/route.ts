@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { createCashfreeOrder } from '@/lib/cashfreeServer';
-import { getRazorpayClient, DEFAULT_RAZORPAY_KEY_ID, DEFAULT_RAZORPAY_KEY_SECRET } from '@/lib/razorpayServer';
+import { getRazorpayClient } from '@/lib/razorpayServer';
+import { isTrustedRequestOrigin, safeErrorMessage } from '@/lib/requestSecurity';
 
 export async function POST(request: Request) {
+  if (!isTrustedRequestOrigin(request)) {
+    return NextResponse.json({ error: 'Untrusted request origin.' }, { status: 403 });
+  }
   try {
     let body: any;
     try {
@@ -89,24 +93,12 @@ export async function POST(request: Request) {
     }
 
     // Fallback: Razorpay (if configured)
-    const key_id = process.env.RAZORPAY_KEY_ID || DEFAULT_RAZORPAY_KEY_ID;
-    const key_secret = process.env.RAZORPAY_KEY_SECRET || DEFAULT_RAZORPAY_KEY_SECRET;
-
-    if (!key_id || !key_secret) {
-      return NextResponse.json(
-        {
-          error: 'Payment gateway credentials are not configured.',
-        },
-        { status: 500 }
-      );
-    }
-
     let razorpay;
     try {
       razorpay = getRazorpayClient();
-    } catch (authErr: any) {
+    } catch (authErr: unknown) {
       return NextResponse.json(
-        { error: authErr.message || 'Razorpay initialization failed' },
+        { error: safeErrorMessage(authErr, 'Payment gateway is unavailable.') },
         { status: 500 }
       );
     }
@@ -148,10 +140,10 @@ export async function POST(request: Request) {
         { status: statusCode }
       );
     }
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Unexpected server error in /api/create-order:', err);
     return NextResponse.json(
-      { error: err.message || 'Internal Server Error' },
+      { error: safeErrorMessage(err, 'Internal Server Error') },
       { status: 500 }
     );
   }

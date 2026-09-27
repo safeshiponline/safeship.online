@@ -90,7 +90,7 @@ export default function TermsPage() {
               <span className="text-[#0066FF]">3.</span> Escrow Settlement &amp; RBI Nodal Account Rules
             </h2>
             <p>
-              3.1. SafeShip maintains segregated nodal accounts pursuant to Reserve Bank of India (RBI) Section 10A regulatory directives managed by designated trustee banks (ICICI Bank &amp; HDFC Bank).
+              3.1. SafeShip processes all escrow settlements through segregated nodal accounts operated by RBI-authorized Payment Aggregators (Cashfree Payments India Pvt. Ltd. / Razorpay) in accordance with Reserve Bank of India Payment Aggregator Guidelines (DPSS.CO.PD.No.1810/02.14.008/2019-20).
             </p>
             <p>
               3.2. Only shipping, distance surcharges, and transit insurance fees are charged upfront to confirm dispatch. Declared merchandise valuation is settled strictly at the doorstep via instant UPI/card payment into the nodal escrow account upon inspection sign-off.

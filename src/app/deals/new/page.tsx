@@ -247,6 +247,7 @@ function CreateShipmentContent() {
   } | null>(null);
 
   // Collaborative Booking Link State (Invite Counterparty to Fill Details)
+  const [buyerWillProvideAddress, setBuyerWillProvideAddress] = useState<boolean>(false);
   const [showCollabModal, setShowCollabModal] = useState<boolean>(false);
   const [collabRoleTarget, setCollabRoleTarget] = useState<'seller' | 'buyer'>('seller');
   const [collabCopied, setCollabCopied] = useState<boolean>(false);
@@ -1258,22 +1259,34 @@ function CreateShipmentContent() {
       errs.pickupPincode = 'Please enter a valid 6-digit Indian PIN code.';
     }
 
-    if (!buyerName || buyerName.trim().length < 2) {
-      errs.buyerName = 'Please enter receiver / buyer name.';
-    }
-    if (!buyerPhone || !/^[6-9]\d{9}$/.test(buyerPhone.replace(/\D/g, ''))) {
-      errs.buyerPhone = 'Please enter a valid 10-digit Indian mobile number for receiver.';
-    }
-    if (!dropLocation || dropLocation.trim().length < 3) {
-      errs.dropLocation = 'Please enter a delivery address (minimum 3 characters).';
-    }
-    if (!dropPincode || !/^\d{6}$/.test(dropPincode.trim())) {
-      errs.dropPincode = 'Please enter a valid 6-digit Indian PIN code.';
+    if (!buyerWillProvideAddress) {
+      if (!buyerName || buyerName.trim().length < 2) {
+        errs.buyerName = 'Please enter receiver / buyer name.';
+      }
+      if (!buyerPhone || !/^[6-9]\d{9}$/.test(buyerPhone.replace(/\D/g, ''))) {
+        errs.buyerPhone = 'Please enter a valid 10-digit Indian mobile number for receiver.';
+      }
+      if (!dropLocation || dropLocation.trim().length < 3) {
+        errs.dropLocation = 'Please enter a delivery address (minimum 3 characters).';
+      }
+      if (!dropPincode || !/^\d{6}$/.test(dropPincode.trim())) {
+        errs.dropPincode = 'Please enter a valid 6-digit Indian PIN code.';
+      }
+    } else {
+      // Sendable Link Mode: buyer confirms their own delivery address & PIN code via the link
+      if (!buyerName || buyerName.trim().length < 2) {
+        setBuyerName('Buyer / Recipient');
+      }
+      if (!dropLocation || dropLocation.trim().length < 3) {
+        setDropLocation('Pending delivery address confirmation by recipient via link');
+      }
+      if (!dropPincode || !/^\d{6}$/.test(dropPincode.trim())) {
+        setDropPincode('110001'); // Metro linehaul corridor fallback
+      }
     }
 
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
-      setStepErrorBanner('Please provide valid contact numbers, addresses and 6-digit PIN codes.');
       if (errs.senderName || errs.senderPhone || errs.pickupLocation || errs.pickupPincode) {
         setStep3Chunk(1);
         if (errs.senderName) scrollToField('field-senderName');
@@ -1468,7 +1481,7 @@ function CreateShipmentContent() {
 
   const completeDealCreation = (paymentId: string, upfrontAmountPaid: number) => {
     try {
-      const insurancePolicyNumber = `POL-ICICI-LOMBARD-2026-${Date.now().toString(36).toUpperCase()}`;
+      const insurancePolicyNumber = `POL-SAFESHIP-TRANSIT-2026-${Date.now().toString(36).toUpperCase()}`;
 
       const created = createNewDeal({
         title: mode === 'exchange' ? `2-Way Swap: ${itemName} ⇄ ${exchangeItemName}` : itemName,
@@ -1620,13 +1633,13 @@ function CreateShipmentContent() {
 
           <div className="text-center">
             <span className="text-[11px] font-bold text-[#0066FF] uppercase tracking-wider">
-              {mode === 'exchange' ? '2-Way Item Exchange' : 'Safe Delivery'} &bull; Step {currentStep} of 4
+              {mode === 'exchange' ? 'Item exchange' : 'Shipment booking'} &bull; Step {currentStep} of 4
             </span>
             <h1 className="text-sm font-bold text-[#0F172A] mt-0.5">
-              {currentStep === 1 && (mode === 'exchange' ? 'Choose Swap Category' : 'Select Item Category')}
-              {currentStep === 2 && (mode === 'exchange' ? 'Item Specifications & Photos' : 'Item Details & Declared Valuation')}
-              {currentStep === 3 && 'Origin, Destination & Bonded Route'}
-              {currentStep === 4 && 'Choose Logistics Tier & Settle Fee'}
+              {currentStep === 1 && (mode === 'exchange' ? 'What are you exchanging?' : 'What are you sending?')}
+              {currentStep === 2 && 'Add item details'}
+              {currentStep === 3 && 'Pickup and delivery'}
+              {currentStep === 4 && 'Review your quote'}
             </h1>
           </div>
 
@@ -1672,10 +1685,10 @@ function CreateShipmentContent() {
                 {s < currentStep ? <Check className="w-3.5 h-3.5" /> : s}
               </div>
               <span className="text-[11px] font-medium hidden sm:inline text-[#64748B]">
-                {s === 1 && 'Category'}
-                {s === 2 && (mode === 'exchange' ? 'Dual Items' : 'Details')}
-                {s === 3 && 'Routing'}
-                {s === 4 && 'Tier & Pay'}
+                {s === 1 && 'Item'}
+                {s === 2 && 'Details'}
+                {s === 3 && 'Addresses'}
+                {s === 4 && 'Review'}
               </span>
             </div>
           ))}
@@ -1684,6 +1697,17 @@ function CreateShipmentContent() {
 
       {/* Main Wizard Form Body */}
       <main className="max-w-xl mx-auto w-full p-4 sm:p-6 flex-1">
+        {!isCollabInvite && currentStep < 4 && (
+          <aside className="mb-4 rounded-2xl border border-blue-100 bg-blue-50/70 px-3.5 py-3 text-xs text-slate-700">
+            <div className="flex items-start gap-2.5">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#0066FF]" />
+              <div>
+                <p className="font-bold text-slate-900">Start with the essentials</p>
+                <p className="mt-0.5 leading-relaxed">We’ll show your delivery choices and total before you book. Your draft saves automatically on this device.</p>
+              </div>
+            </div>
+          </aside>
+        )}
         
         {/* Collaborative Booking Invitation Banner */}
         {isCollabInvite && (
@@ -2891,7 +2915,7 @@ function CreateShipmentContent() {
               <p className="text-xs text-[#64748B] mt-0.5">
                 {mode === 'exchange'
                   ? 'SafeShip schedules bonded pick-up and delivery officers across municipal hubs.'
-                  : 'Enter origin and destination. Indian PIN codes auto-resolve city, hub, and road routing.'}
+                  : 'Add the pickup and delivery address. Your PIN codes help us estimate service and timing.'}
               </p>
             </div>
 
@@ -3091,38 +3115,6 @@ function CreateShipmentContent() {
                   </p>
                 </div>
 
-                {/* Chunk 3.1 Incomplete Notification */}
-                {(errors.senderName || errors.senderPhone || errors.pickupLocation || errors.pickupPincode) && (
-                  <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs space-y-1.5 animate-in fade-in">
-                    <div className="flex items-center gap-1.5 font-bold">
-                      <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
-                      <span>Please complete sender details before continuing:</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 pt-0.5">
-                      {errors.senderName && (
-                        <button type="button" onClick={() => scrollToField('field-senderName')} className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer">
-                          ⚠️ {errors.senderName}
-                        </button>
-                      )}
-                      {errors.senderPhone && (
-                        <button type="button" onClick={() => scrollToField('field-senderPhone')} className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer">
-                          ⚠️ {errors.senderPhone}
-                        </button>
-                      )}
-                      {errors.pickupLocation && (
-                        <button type="button" onClick={() => scrollToField('field-pickupLocation')} className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer">
-                          ⚠️ {errors.pickupLocation}
-                        </button>
-                      )}
-                      {errors.pickupPincode && (
-                        <button type="button" onClick={() => scrollToField('field-pickupPincode')} className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer">
-                          ⚠️ {errors.pickupPincode}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-
                 {/* Mobile Chunk 3.1 Next Button */}
                 <div className="md:hidden pt-3 border-t border-slate-100 flex gap-2">
                   <button
@@ -3160,6 +3152,55 @@ function CreateShipmentContent() {
                     <span className="text-[11px] text-slate-400 font-medium">Destination Address</span>
                   </div>
 
+                  {/* Shareable Link Mode Toggle */}
+                  <div
+                    onClick={() => {
+                      const next = !buyerWillProvideAddress;
+                      setBuyerWillProvideAddress(next);
+                      if (next) {
+                        clearFieldError('dropLocation');
+                        clearFieldError('dropPincode');
+                        if (!dropLocation) setDropLocation('Pending address confirmation by recipient via link');
+                        if (!dropPincode) setDropPincode('110001');
+                      }
+                    }}
+                    className={`p-3.5 rounded-2xl border transition cursor-pointer select-none flex items-center justify-between ${
+                      buyerWillProvideAddress
+                        ? 'bg-blue-50/80 border-[#0066FF] ring-1 ring-blue-300'
+                        : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <input
+                        type="checkbox"
+                        id="chk-buyer-will-fill"
+                        checked={buyerWillProvideAddress}
+                        onChange={(e) => {
+                          setBuyerWillProvideAddress(e.target.checked);
+                          if (e.target.checked) {
+                            clearFieldError('dropLocation');
+                            clearFieldError('dropPincode');
+                            if (!dropLocation) setDropLocation('Pending address confirmation by recipient via link');
+                            if (!dropPincode) setDropPincode('110001');
+                          }
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-0 cursor-pointer"
+                      />
+                      <div>
+                        <label htmlFor="chk-buyer-will-fill" className="text-xs font-bold text-slate-900 cursor-pointer block">
+                          I don&apos;t have the buyer&apos;s full address yet (Send Link Mode)
+                        </label>
+                        <span className="text-[11px] text-slate-500 block leading-tight">
+                          SafeShip will generate your sendable link. The buyer confirms their address &amp; PIN code directly.
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-bold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 shrink-0">
+                      Minimal Mode
+                    </span>
+                  </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-[11px] font-bold text-[#475569] block mb-1">
@@ -3180,7 +3221,7 @@ function CreateShipmentContent() {
 
                     <div>
                       <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                        Receiver Mobile <span className="text-rose-500">*</span>:
+                        Receiver Mobile {buyerWillProvideAddress ? <span className="text-slate-400 font-normal">(Optional)</span> : <span className="text-rose-500">*</span>}:
                       </label>
                       <input
                         id="field-buyerPhone"
@@ -3197,55 +3238,69 @@ function CreateShipmentContent() {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                      Delivery Street Address &amp; Unit <span className="text-rose-500">*</span>:
-                    </label>
-                    <input
-                      id="field-dropLocation"
-                      type="text"
-                      value={dropLocation}
-                      onChange={(e) => { setDropLocation(e.target.value); clearFieldError('dropLocation'); }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
-                        errors.dropLocation ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                      }`}
-                      placeholder="e.g., Unit 12B, Building 4, Cyber City, DLF Phase 2"
-                    />
-                    {errors.dropLocation && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.dropLocation}</p>}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <div className="w-36">
-                      <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                        PIN Code <span className="text-rose-500">*</span>:
-                      </label>
-                      <input
-                        id="field-dropPincode"
-                        type="text"
-                        maxLength={6}
-                        value={dropPincode}
-                        onChange={(e) => handleDropPincodeChange(e.target.value)}
-                        className={`w-full px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] text-center font-mono font-bold outline-hidden ${
-                          errors.dropPincode ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                        }`}
-                        placeholder="e.g., 122002"
-                      />
-                      {errors.dropPincode && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.dropPincode}</p>}
+                  {buyerWillProvideAddress ? (
+                    <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs space-y-1 animate-in fade-in">
+                      <div className="flex items-center gap-1.5 font-bold">
+                        <Check className="w-4 h-4 text-emerald-600" />
+                        <span>Sendable Link Ready</span>
+                      </div>
+                      <p className="text-[11px] text-emerald-800 leading-relaxed">
+                        Receiver delivery address &amp; PIN code will be provided directly by the recipient upon opening the link. You only need to enter their name or nickname above.
+                      </p>
                     </div>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                          Delivery Street Address &amp; Unit <span className="text-rose-500">*</span>:
+                        </label>
+                        <input
+                          id="field-dropLocation"
+                          type="text"
+                          value={dropLocation}
+                          onChange={(e) => { setDropLocation(e.target.value); clearFieldError('dropLocation'); }}
+                          className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
+                            errors.dropLocation ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                          }`}
+                          placeholder="e.g., Unit 12B, Building 4, Cyber City, DLF Phase 2"
+                        />
+                        {errors.dropLocation && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.dropLocation}</p>}
+                      </div>
 
-                    <div className="flex-1 flex flex-col justify-end">
-                      {dropCity ? (
-                        <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center justify-between">
-                          <span className="font-bold">
-                            {dropCity}{dropDistrict && !dropCity.includes(dropDistrict) ? ` (${dropDistrict})` : ''}, {dropState}
-                          </span>
-                          <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0 ml-2">{dropHub}</span>
+                      <div className="flex gap-2">
+                        <div className="w-36">
+                          <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                            PIN Code <span className="text-rose-500">*</span>:
+                          </label>
+                          <input
+                            id="field-dropPincode"
+                            type="text"
+                            maxLength={6}
+                            value={dropPincode}
+                            onChange={(e) => handleDropPincodeChange(e.target.value)}
+                            className={`w-full px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] text-center font-mono font-bold outline-hidden ${
+                              errors.dropPincode ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                            }`}
+                            placeholder="e.g., 122002"
+                          />
+                          {errors.dropPincode && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.dropPincode}</p>}
                         </div>
-                      ) : (
-                        <span className="text-[11px] text-[#94A3B8] italic pb-2">Enter 6-digit PIN code to auto-resolve city &amp; hub</span>
-                      )}
-                    </div>
-                  </div>
+
+                        <div className="flex-1 flex flex-col justify-end">
+                          {dropCity ? (
+                            <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center justify-between">
+                              <span className="font-bold">
+                                {dropCity}{dropDistrict && !dropCity.includes(dropDistrict) ? ` (${dropDistrict})` : ''}, {dropState}
+                              </span>
+                              <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0 ml-2">{dropHub}</span>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-[#94A3B8] italic pb-2">Enter 6-digit PIN code to auto-resolve city &amp; hub</span>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 {/* ROUTE TELEMETRY BAR */}
@@ -3335,35 +3390,6 @@ function CreateShipmentContent() {
                 </div>
               </div>
 
-              {/* Step 3 Error Summary Banner on Mobile Chunk 3.2 */}
-              {Object.keys(errors).length > 0 && currentStep === 3 && (
-                <div className="p-3.5 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-900 text-xs font-semibold space-y-1.5 animate-in fade-in">
-                  <div className="flex items-center gap-1.5 font-bold text-rose-800">
-                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>Please complete required fields to proceed:</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    {Object.entries(errors).map(([fieldKey, msg]) => (
-                      <button
-                        key={fieldKey}
-                        type="button"
-                        onClick={() => {
-                          if (['senderName', 'senderPhone', 'pickupLocation', 'pickupPincode'].includes(fieldKey)) {
-                            setStep3Chunk(1);
-                          } else {
-                            setStep3Chunk(2);
-                          }
-                          scrollToField(`field-${fieldKey}`);
-                        }}
-                        className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer text-left shadow-2xs"
-                      >
-                        ⚠️ {msg}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Mobile Chunk 3.2 Navigation Buttons */}
               <div className="md:hidden pt-2 flex gap-2">
                 <button
@@ -3445,7 +3471,7 @@ function CreateShipmentContent() {
                   {mode === 'exchange' ? 'Review & Book 2-Way Exchange' : 'Review & Confirm Booking'}
                 </h2>
                 <p className="text-xs text-[#64748B] mt-0.5">
-                  Doorstep Open-Box Inspection &bull; {includeInsurance ? '₹10 Lakhs Transit Insurance Included' : 'Standard Carrier Transit'}
+                  {includeInsurance ? 'Shipment protection selected' : 'Standard delivery selected'} &bull; Review your total before booking.
                 </p>
               </div>
               <div className={`flex items-center gap-1.5 self-start sm:self-auto px-3 py-1 rounded-full border ${
@@ -3453,7 +3479,7 @@ function CreateShipmentContent() {
               }`}>
                 <ShieldCheck className={`w-4 h-4 ${includeInsurance ? 'text-[#0066FF]' : 'text-slate-500'}`} />
                 <span className="text-[11px] font-bold">
-                  {includeInsurance ? '₹10 Lakhs Active Insurance' : 'Insurance Opted Out'}
+                  {includeInsurance ? 'Protection selected' : 'No additional protection'}
                 </span>
               </div>
             </div>
@@ -3725,7 +3751,7 @@ function CreateShipmentContent() {
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                        100% loss, theft &amp; transit damage cover underwritten by ICICI Lombard up to ₹10 Lakhs.
+                        Protection is calculated from the declared value. Coverage and exclusions are confirmed in your booking summary.
                       </p>
                     </div>
                   </div>
@@ -3793,12 +3819,12 @@ function CreateShipmentContent() {
                 </div>
 
                 <div className="flex justify-between items-center text-slate-600">
-                  <span>10-Minute Doorstep Open-Box Inspection:</span>
+                  <span>Delivery verification:</span>
                   <span className="font-semibold text-emerald-600">INCLUDED FREE (₹0)</span>
                 </div>
 
                 <div className="flex justify-between items-center text-slate-600">
-                  <span>In-Transit Cargo Insurance (₹10 Lakhs Cover):</span>
+                  <span>Shipment protection:</span>
                   <span className="font-mono font-semibold">
                     {includeInsurance ? (
                       <span className="text-blue-700 font-bold">+₹{calculatedInsuranceFee}</span>

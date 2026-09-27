@@ -21,7 +21,6 @@ export interface UserSession {
 }
 
 const AUTH_STORAGE_KEY = 'safeship_user_session';
-const AUTH_TOKEN_KEY = 'safeship_user_token';
 
 /**
  * Retrieve active user session synchronously from localStorage
@@ -42,8 +41,7 @@ export function getSession(): UserSession | null {
  * Retrieve stored JWT token
  */
 export function getStoredToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return localStorage.getItem(AUTH_TOKEN_KEY);
+  return null;
 }
 
 /**
@@ -53,9 +51,9 @@ export function saveSession(session: UserSession, token?: string): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(session));
-    if (token) {
-      localStorage.setItem(AUTH_TOKEN_KEY, token);
-    }
+    // Sessions are authenticated through the HttpOnly cookie set by the server.
+    // Never persist a bearer token where injected scripts could read it.
+    void token;
     window.dispatchEvent(new Event('safeship_auth_changed'));
   } catch (e) {
     console.error('Failed to save user session:', e);
@@ -69,7 +67,6 @@ export function clearSession(): void {
   if (typeof window === 'undefined') return;
   try {
     localStorage.removeItem(AUTH_STORAGE_KEY);
-    localStorage.removeItem(AUTH_TOKEN_KEY);
     window.dispatchEvent(new Event('safeship_auth_changed'));
   } catch (e) {
     console.error('Failed to clear user session:', e);
@@ -97,7 +94,7 @@ export async function registerUser(params: {
       return { success: false, error: data.error || 'Failed to create account.' };
     }
 
-    saveSession(data.user, data.token);
+    saveSession(data.user);
     return { success: true, user: data.user };
   } catch (err: any) {
     return { success: false, error: err.message || 'Network error during registration.' };
@@ -132,7 +129,7 @@ export async function loginWithCredentials(params: {
       };
     }
 
-    saveSession(data.user, data.token);
+    saveSession(data.user);
     return { success: true, user: data.user };
   } catch (err: any) {
     return { success: false, error: err.message || 'Network error during sign in.' };
@@ -155,7 +152,10 @@ export async function loginWithGoogle(
   nameInput?: string,
   credential?: string
 ): Promise<{ success: boolean; user?: UserSession; error?: string }> {
-  const email = emailInput?.trim() || 'user.safeship@gmail.com';
+  const email = emailInput?.trim();
+  if (!email) {
+    return { success: false, error: 'Continue with Google to securely sign in.' };
+  }
   let name = nameInput?.trim();
   if (!name) {
     const prefix = email.split('@')[0].replace(/[._-]/g, ' ');
@@ -174,36 +174,12 @@ export async function loginWithGoogle(
 
     const data = await res.json();
     if (res.ok && data.success && data.user) {
-      saveSession(data.user, data.token);
+      saveSession(data.user);
       return { success: true, user: data.user };
     }
-
-    // Resilient client fallback if server offline
-    const fallbackUser: UserSession = {
-      id: `usr_${Date.now().toString(36)}`,
-      name,
-      email,
-      avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0066FF&textColor=FFFFFF`,
-      provider: 'google',
-      createdAt: new Date().toISOString(),
-      kycVerified: true,
-      memberCode: `USR-${Math.floor(1000 + Math.random() * 9000)}`
-    };
-    saveSession(fallbackUser);
-    return { success: true, user: fallbackUser };
+    return { success: false, error: data.error || 'Google sign-in could not be completed.' };
   } catch {
-    const fallbackUser: UserSession = {
-      id: `usr_${Date.now().toString(36)}`,
-      name,
-      email,
-      avatarUrl: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0066FF&textColor=FFFFFF`,
-      provider: 'google',
-      createdAt: new Date().toISOString(),
-      kycVerified: true,
-      memberCode: `USR-${Math.floor(1000 + Math.random() * 9000)}`
-    };
-    saveSession(fallbackUser);
-    return { success: true, user: fallbackUser };
+    return { success: false, error: 'Google sign-in could not be completed.' };
   }
 }
 
@@ -212,16 +188,10 @@ export async function loginWithGoogle(
  */
 export async function fetchCurrentUser(): Promise<UserSession | null> {
   try {
-    const token = getStoredToken();
-    const headers: Record<string, string> = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const res = await fetch('/api/auth/me', { headers });
+    const res = await fetch('/api/auth/me');
     const data = await res.json();
     if (data.authenticated && data.user) {
-      saveSession(data.user, data.token);
+      saveSession(data.user);
       return data.user;
     }
     return null;
@@ -246,13 +216,9 @@ export async function updateUserProfile(updates: {
   gstin?: string;
 }): Promise<{ success: boolean; user?: UserSession; error?: string }> {
   try {
-    const token = getStoredToken();
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
     };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
 
     const res = await fetch('/api/auth/profile', {
       method: 'PUT',
@@ -265,7 +231,7 @@ export async function updateUserProfile(updates: {
       return { success: false, error: data.error || 'Failed to update profile.' };
     }
 
-    saveSession(data.user, data.token);
+    saveSession(data.user);
     return { success: true, user: data.user };
   } catch (err: any) {
     return { success: false, error: err.message || 'Network error updating profile.' };

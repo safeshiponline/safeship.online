@@ -72,7 +72,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
     isIntercity: true,
     packageWeightKg: 0.9,
     dimensionsCm: '20 x 15 x 10 cm',
-    insurancePolicyNumber: 'POL-ICICI-LOMBARD-2026-SS48291',
+    insurancePolicyNumber: 'POL-SAFESHIP-INSURED-2026-SS48291',
     upfrontPricing: {
       baseFee: 299,
       distanceSurcharge: 150,
@@ -373,7 +373,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
         timestamp: '2026-09-12T09:15:00Z',
         actor: 'BUYER',
         title: 'Escrow Locked via UPI (₹89,635)',
-        description: 'Funds secured in SafeShip RBI-compliant Escrow Account (ICICI Bank).'
+        description: 'Funds secured in SafeShip RBI-compliant Escrow Account (Cashfree PA Rail).'
       },
       {
         id: 'aud_blr_4',

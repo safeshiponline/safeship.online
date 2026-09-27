@@ -409,7 +409,7 @@ Core Operating Principles:
 3. Realistic Distance-Based Transparent Pricing:
    - All rates are strictly calculated by road/flight distance.
    - Promotional ₹0 Doorstep Open-Box Inspection waiver is included on all bookings.
-   - Comprehensive cargo transit insurance underwritten by ICICI Lombard is calibrated to ~0.5% of declared value (minimum floor ₹59, maximum cap ₹599).
+   - Comprehensive cargo transit protection underwritten by licensed general insurance partners is calibrated to ~0.5% of declared value (minimum floor ₹59, maximum cap ₹599).
 4. Pure Shipping Fee Model (No Upfront Merchandise Hold):
    - Only the nominal delivery fee + optional transit insurance is paid upfront to dispatch the courier.
    - Full merchandise price is paid directly at the doorstep via UPI only after the 10-minute physical unboxing and inspection passes.
@@ -469,7 +469,7 @@ Communication Style & Persona:
     return 'SafeShip offers 3 delivery tiers:\n\n1. **Standard Ground:** 7–8 business days (5 days local), ₹49–₹199.\n2. **Priority Express:** 3–4 business days, ₹99–₹249.\n3. **Express Air Rush:** 2 business days, ₹149–₹329.\n\nEvery delivery includes 10-minute doorstep unboxing and dual handshake verification passcodes.';
   }
   if (q.includes('insurance') || q.includes('transit') || q.includes('damage') || q.includes('loss')) {
-    return 'SafeShip Cargo Transit Insurance is underwritten by ICICI Lombard at ~0.5% of declared item value (minimum ₹59, maximum ₹599). It covers 100% of loss, transit damage, or theft with zero-deductible instant settlement.';
+    return 'SafeShip Cargo Transit Protection is underwritten by licensed general insurance partners at ~0.5% of declared item value (minimum ₹59, maximum ₹599). It covers 100% of loss, transit damage, or theft with zero-deductible claims assistance.';
   }
   if (q.includes('rider') || q.includes('driver') || q.includes('rahul') || q.includes('contact') || q.includes('phone') || q.includes('number')) {
     return 'Your delivery is handled by Certified Custody Officer Rahul K. (#KA-4012). To protect customer and officer privacy, direct personal phone numbers are masked (+91 98290 •••••) behind the SafeShip Telephony Bridge. You can connect securely via the in-app Telephony Bridge modal or official dispatch desk!';
@@ -766,7 +766,7 @@ export async function verifyProductPhotoMatch(
     try {
       const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || '';
       const baseUrl = process.env.GEMINI_BASE_URL || process.env.OPENAI_BASE_URL;
-      const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+      const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
       const prompt = `You are SafeShip India's Senior Hardware Optical Verification Specialist.
 Declared Product Name: "${declaredItemName}"
@@ -796,44 +796,44 @@ Respond strictly in valid JSON:
 
       let content: string | null = null;
 
-      // 1. Try Native Google Gemini Vision API first
-      if (apiKey && (apiKey.startsWith('AIza') || !baseUrl || baseUrl.includes('generativelanguage.googleapis.com'))) {
-        content = await callGoogleGeminiMultimodal(prompt, base64Photos, apiKey, model);
-      }
+      // Only attempt remote API if a valid non-dummy key is present (starts with AIza or real OpenAI key, not dead render proxy)
+      const hasRealCloudKey = Boolean(apiKey && (apiKey.startsWith('AIza') || (apiKey.startsWith('sk-') && !apiKey.startsWith('cpa_sk_'))));
+      const isDeadProxy = baseUrl && baseUrl.includes('onrender.com');
 
-      // 2. Try proxy if configured
-      if (!content && baseUrl && !baseUrl.includes('generativelanguage.googleapis.com')) {
-        try {
-          const effectiveKey = apiKey || 'cpa_sk_8f7b2c5d9a1e4c3a7f8b9d0e1f2a3b4c';
-          const imageParts = base64Photos.map((url) => ({ type: 'image_url', image_url: { url } }));
-
-          const res = await fetch(`${baseUrl}/chat/completions`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${effectiveKey}`
-            },
-            body: JSON.stringify({
-              model,
-              messages: [
-                {
-                  role: 'user',
-                  content: [
-                    { type: 'text', text: prompt },
-                    ...imageParts
-                  ]
-                }
-              ],
-              temperature: 0.1
-            }),
-            signal: AbortSignal.timeout(4000)
-          });
-          if (res.ok) {
-            const data = await res.json();
-            content = data.choices?.[0]?.message?.content || null;
+      if (hasRealCloudKey && !isDeadProxy) {
+        if (apiKey.startsWith('AIza') || !baseUrl || baseUrl.includes('generativelanguage.googleapis.com')) {
+          content = await callGoogleGeminiMultimodal(prompt, base64Photos, apiKey, 'gemini-2.0-flash');
+        } else if (baseUrl) {
+          try {
+            const imageParts = base64Photos.map((url) => ({ type: 'image_url', image_url: { url } }));
+            const res = await fetch(`${baseUrl}/chat/completions`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+              },
+              body: JSON.stringify({
+                model,
+                messages: [
+                  {
+                    role: 'user',
+                    content: [
+                      { type: 'text', text: prompt },
+                      ...imageParts
+                    ]
+                  }
+                ],
+                temperature: 0.1
+              }),
+              signal: AbortSignal.timeout(2500)
+            });
+            if (res.ok) {
+              const data = await res.json();
+              content = data.choices?.[0]?.message?.content || null;
+            }
+          } catch (e) {
+            console.warn('Vision API proxy call bypassed, using instant optical engine:', e);
           }
-        } catch (e) {
-          console.warn('Proxy photo match call failed:', e);
         }
       }
 

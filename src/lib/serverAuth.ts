@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
+import 'server-only';
 
 export interface ServerUser {
   id: string;
@@ -44,11 +45,18 @@ export interface AuthSessionData {
   memberCode: string;
 }
 
-const AUTH_SECRET = process.env.AUTH_SECRET || process.env.RAZORPAY_KEY_SECRET || 'safeship_auth_jwt_supersecret_2026';
 const USERS_FILE_PATH = path.join(process.cwd(), 'data', 'users.json');
 
 // In-memory cache to guarantee ultra-fast response and serverless tolerance
 let usersCache: Record<string, ServerUser> | null = null;
+
+function getAuthSecret(): string {
+  const secret = process.env.AUTH_SECRET?.trim()
+    || process.env.RAZORPAY_KEY_SECRET
+    || process.env.CASHFREE_SECRET_KEY
+    || 'safeship_auth_production_secret_key_2026_99x_resilient';
+  return secret;
+}
 
 /**
  * Generate a random 16-byte hex salt
@@ -83,6 +91,7 @@ export function verifyPassword(password: string, hash: string, salt: string): bo
  * Create a signed, tamper-proof session JWT token using HMAC-SHA256
  */
 export function createSessionToken(user: ServerUser): string {
+  const authSecret = getAuthSecret();
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
   const payload = Buffer.from(
     JSON.stringify({
@@ -106,7 +115,7 @@ export function createSessionToken(user: ServerUser): string {
   ).toString('base64url');
 
   const signature = crypto
-    .createHmac('sha256', AUTH_SECRET)
+    .createHmac('sha256', authSecret)
     .update(`${header}.${payload}`)
     .digest('base64url');
 
@@ -118,12 +127,13 @@ export function createSessionToken(user: ServerUser): string {
  */
 export function verifySessionToken(token: string): AuthSessionData | null {
   try {
+    const authSecret = getAuthSecret();
     const parts = token.split('.');
     if (parts.length !== 3) return null;
     const [header, payload, signature] = parts;
 
     const expectedSig = crypto
-      .createHmac('sha256', AUTH_SECRET)
+      .createHmac('sha256', authSecret)
       .update(`${header}.${payload}`)
       .digest('base64url');
 
@@ -209,43 +219,6 @@ function loadUsers(): Record<string, ServerUser> {
     }
   } catch (e) {
     console.warn('Could not read users.json, initializing defaults:', e);
-  }
-
-  // Pre-seed demo / founder account if empty
-  const defaultEmail = 'aman.sharma@gmail.com';
-  if (!loaded[defaultEmail]) {
-    const salt = generateSalt();
-    const hash = hashPassword('Password123!', salt);
-    loaded[defaultEmail] = {
-      id: 'usr_founder_01',
-      name: 'Aman Sharma',
-      email: defaultEmail,
-      phone: '+91 98290 12345',
-      passwordHash: hash,
-      salt: salt,
-      provider: 'credentials',
-      createdAt: '2026-01-15T10:00:00.000Z',
-      kycVerified: true,
-      memberCode: 'USR-8901'
-    };
-  }
-
-  const demoEmail = 'user.safeship@gmail.com';
-  if (!loaded[demoEmail]) {
-    const salt = generateSalt();
-    const hash = hashPassword('SafeShip2026!', salt);
-    loaded[demoEmail] = {
-      id: 'usr_trader_02',
-      name: 'SafeShip Trader',
-      email: demoEmail,
-      phone: '+91 98290 55555',
-      passwordHash: hash,
-      salt: salt,
-      provider: 'credentials',
-      createdAt: '2026-02-01T12:00:00.000Z',
-      kycVerified: true,
-      memberCode: 'USR-2940'
-    };
   }
 
   usersCache = loaded;

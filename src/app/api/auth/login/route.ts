@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { findUserByEmail, verifyPassword, createSessionToken, sanitizeUser } from '@/lib/serverAuth';
+import { isTrustedRequestOrigin, safeErrorMessage } from '@/lib/requestSecurity';
 
 export async function POST(request: Request) {
+  if (!isTrustedRequestOrigin(request)) {
+    return NextResponse.json({ success: false, error: 'Untrusted request origin.' }, { status: 403 });
+  }
   try {
     let body: any;
     try {
@@ -63,7 +67,6 @@ export async function POST(request: Request) {
     const response = NextResponse.json({
       success: true,
       user: sanitized,
-      token,
       message: 'Logged in successfully.'
     });
 
@@ -76,9 +79,9 @@ export async function POST(request: Request) {
     });
 
     return response;
-  } catch (err: any) {
+    } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: err.message || 'Login failed.' },
+      { success: false, error: safeErrorMessage(err, 'Login failed.') },
       { status: 500 }
     );
   }

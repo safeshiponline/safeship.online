@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server';
 import { registerUserServer, createSessionToken, sanitizeUser } from '@/lib/serverAuth';
 import { sendTransactionalEmail } from '@/lib/resend';
 import { renderWelcomeUserEmail } from '@/lib/emailTemplates';
+import { isTrustedRequestOrigin, safeErrorMessage } from '@/lib/requestSecurity';
 
 export async function POST(request: Request) {
+  if (!isTrustedRequestOrigin(request)) {
+    return NextResponse.json({ success: false, error: 'Untrusted request origin.' }, { status: 403 });
+  }
   try {
     let body: any;
     try {
@@ -77,7 +81,6 @@ export async function POST(request: Request) {
         ...sanitized,
         firstOrderDiscount: 99
       },
-      token,
       message: 'Account created successfully! Your flat ₹99 first-order discount is automatically active.'
     }, { status: 201 });
 
@@ -91,9 +94,9 @@ export async function POST(request: Request) {
     });
 
     return response;
-  } catch (err: any) {
+  } catch (err: unknown) {
     return NextResponse.json(
-      { success: false, error: err.message || 'Failed to create account.' },
+      { success: false, error: safeErrorMessage(err, 'Failed to create account.') },
       { status: 400 }
     );
   }

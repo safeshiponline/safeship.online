@@ -25,19 +25,19 @@ export default function NodalEscrowPage() {
 
         {/* Header Title */}
         <div className="space-y-2 border-b border-[#E2E8F0] pb-6">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">
-              RBI Section 10A Regulated
+              RBI Payment Aggregator Compliant
             </span>
             <span className="text-[11px] text-[#64748B]">
-              Trustee Banking: ICICI Bank / HDFC Bank Nodal Services
+              Escrow Processing: Licensed Payment Aggregators (Cashfree / Razorpay)
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#0F172A]">
-            RBI Section 10A Nodal Escrow Architecture
+            RBI-Compliant Escrow Settlement Architecture
           </h1>
           <p className="text-sm text-[#475569] leading-relaxed">
-            SafeShip operates under strict regulatory compliance pursuant to Section 10A of the Payment and Settlement Systems Act, 2007. Buyer funds are held in ring-fenced, bankruptcy-remote trustee accounts.
+            SafeShip operates pursuant to Reserve Bank of India (RBI) Payment Aggregator and Nodal Account Guidelines (DPSS.CO.PD.No.1810/02.14.008/2019-20). Buyer funds are held in ring-fenced, bankruptcy-remote nodal escrow accounts via RBI-licensed partners and only disbursed upon doorstep physical inspection approval.
           </p>
         </div>
 
@@ -106,9 +106,9 @@ export default function NodalEscrowPage() {
               <span className="text-[#0066FF]">3.</span> Trustee Bank Details
             </h2>
             <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] font-mono text-[11px] space-y-1 text-slate-700">
-              <div>Trustee Entity: ICICI Bank Ltd. / HDFC Bank Nodal Services</div>
-              <div>Account Type: Regulated Section 10A Nodal Trustee Account</div>
-              <div>Audit Firm: Suresh Surana &amp; Associates LLP (Statutory Auditors)</div>
+              <div>Settlement Rails: Cashfree Payments India Pvt. Ltd. / Razorpay (RBI Authorized Payment Aggregators)</div>
+              <div>Account Type: RBI-Compliant Payment Aggregator Nodal Escrow Account</div>
+              <div>Regulatory Directive: RBI Circular DPSS.CO.PD.No.1810/02.14.008/2019-20</div>
               <div>Regulatory Oversight: Department of Payment and Settlement Systems (DPSS), RBI Central Office, Mumbai</div>
             </div>
           </section>

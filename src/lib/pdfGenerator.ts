@@ -125,7 +125,7 @@ export function generateConsignmentNotePDF(deal: SafeDeal): jsPDF {
   doc.text('24/7 Digital Support: support@safeship.online • safeship.online', margin + 6, y + 31);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(royalBlue[0], royalBlue[1], royalBlue[2]);
-  doc.text('RBI Section 10A Regulated Trustee Nodal Escrow', margin + 6, y + 36);
+  doc.text('RBI-Authorized Payment Aggregator Nodal Escrow', margin + 6, y + 36);
 
   // Right: Bill To / Client
   const rX = margin + 2 + colW + 2;
@@ -215,7 +215,7 @@ export function generateConsignmentNotePDF(deal: SafeDeal): jsPDF {
     },
     {
       num: '4',
-      desc: `In-Transit Cargo Insurance (ICICI Lombard Underwriting on ₹${deal.declaredValue.toLocaleString('en-IN')})`,
+      desc: `In-Transit Cargo Protection (Registered Underwriting on ₹${deal.declaredValue.toLocaleString('en-IN')})`,
       sac: '997133',
       basis: '0.5% Declared',
       taxable: (Math.round((insFee / 1.18) * 100) / 100).toFixed(2),
@@ -386,7 +386,7 @@ export function generateConsignmentNotePDF(deal: SafeDeal): jsPDF {
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'normal');
   doc.text('STANDARD DELIVERY CONSIGNMENT NOTE & AIR WAYBILL (AWB)', margin + 6, margin + 14);
-  doc.text('RBI COMPLIANT NODAL ESCROW • ICICI TRUSTEE VAULT • 100% OPEN-BOX VERIFIED', margin + 6, margin + 18);
+  doc.text('RBI COMPLIANT NODAL ESCROW • CASHFREE / RAZORPAY RAILS • 100% OPEN-BOX VERIFIED', margin + 6, margin + 18);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10.5);

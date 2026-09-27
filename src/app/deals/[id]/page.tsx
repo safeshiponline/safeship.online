@@ -177,7 +177,7 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
                       <span>Lock {formatINR(totalPayable)} in RBI Nodal Escrow</span>
                     </div>
                     <div className="text-xs text-zinc-500 max-w-md leading-relaxed">
-                      Funds are held under RBI Section 10A PSSA trusteeship. Your capital is never transferred to the seller until you verify the unbroken tamper seal and give your delivery OTP.
+                      Funds are held in segregated RBI-compliant Payment Aggregator nodal escrow. Your capital is never transferred to the seller until you verify the unbroken tamper seal and give your delivery OTP.
                     </div>
                   </div>
                   <button

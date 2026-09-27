@@ -102,7 +102,7 @@ export default function AdminOpsPage() {
                   Institutional Escrow &amp; Logistics Command Center
                 </h1>
                 <p className="text-xs text-[#64748B] mt-0.5">
-                  RBI Section 10A Nodal Custody &bull; ICICI Trustee Backed &bull; Multi-Corridor Clearing &amp; Dispute Desk
+                  RBI Payment Aggregator Nodal Custody &bull; Multi-Corridor Clearing &amp; Dispute Desk
                 </p>
               </div>
             </div>
@@ -111,7 +111,7 @@ export default function AdminOpsPage() {
           <div className="flex items-center gap-2">
             <span className="px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-semibold flex items-center gap-2 shadow-2xs">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              Nodal Settlement Operational (ICICI #...0912)
+              Nodal Escrow Rails Operational (Cashfree / Razorpay PA)
             </span>
           </div>
         </div>

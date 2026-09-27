@@ -1170,7 +1170,7 @@ function TrackingContent({
               </div>
               <h3 className="text-xs font-bold text-[#0F172A]">Linehaul Telemetry</h3>
               <p className="text-[11px] text-[#64748B] leading-relaxed">
-                Tracked in real time via highway linehaul GPS corridor. Cargo insured under policy {deal.insurancePolicyNumber || 'POL-ICICI-LOMBARD'}.
+                Tracked in real time via highway linehaul GPS corridor. Cargo insured under policy {deal.insurancePolicyNumber || 'POL-SAFESHIP-TRANSIT-2026'}.
               </p>
             </div>
 

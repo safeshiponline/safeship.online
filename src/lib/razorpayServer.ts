@@ -1,5 +1,6 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
+import 'server-only';
 
 /**
  * Server-side Razorpay SDK instance.
@@ -7,16 +8,19 @@ import crypto from 'crypto';
  * KEY_SECRET is NEVER exposed to client-side bundles.
  */
 
-export const DEFAULT_RAZORPAY_KEY_ID = 'rzp_live_TbXrOgkdfajAg0';
-export const DEFAULT_RAZORPAY_KEY_SECRET = 'm4tTNZXH03lCQ6mioRylMNO4';
-
-export function getRazorpayClient(): Razorpay {
-  const key_id = process.env.RAZORPAY_KEY_ID || DEFAULT_RAZORPAY_KEY_ID;
-  const key_secret = process.env.RAZORPAY_KEY_SECRET || DEFAULT_RAZORPAY_KEY_SECRET;
+function getRazorpayCredentials() {
+  const key_id = process.env.RAZORPAY_KEY_ID?.trim();
+  const key_secret = process.env.RAZORPAY_KEY_SECRET?.trim();
 
   if (!key_id || !key_secret) {
-    throw new Error('Razorpay credentials missing in environment variables (RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)');
+    throw new Error('Razorpay credentials are not configured.');
   }
+
+  return { key_id, key_secret };
+}
+
+export function getRazorpayClient(): Razorpay {
+  const { key_id, key_secret } = getRazorpayCredentials();
 
   return new Razorpay({
     key_id,
@@ -33,10 +37,7 @@ export function verifyRazorpaySignature(
   paymentId: string,
   razorpaySignature: string
 ): boolean {
-  const key_secret = process.env.RAZORPAY_KEY_SECRET || DEFAULT_RAZORPAY_KEY_SECRET;
-  if (!key_secret) {
-    throw new Error('RAZORPAY_KEY_SECRET missing for signature verification');
-  }
+  const { key_secret } = getRazorpayCredentials();
 
   if (!orderId || !paymentId || !razorpaySignature) {
     return false;

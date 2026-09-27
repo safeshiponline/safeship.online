@@ -14,38 +14,40 @@ export const SafeShipLogo: React.FC<SafeShipLogoProps> = ({ className = 'w-9 h-9
     xmlns="http://www.w3.org/2000/svg"
     className={className}
   >
-    {/* Outer Rounded Squircle Container with 2px safe margins to prevent clipping */}
-    <rect x="2" y="2" width="44" height="44" rx="12" fill="#0066FF" />
+    {/* Outer Rounded Squircle Container with 3.5px safe margin ensuring 0% clipping on circular masks */}
+    <rect x="3.5" y="3.5" width="41" height="41" rx="10.5" fill="#0066FF" />
     
-    {/* Outer Hexagon */}
-    <path
-      d="M24 9L37.5 16.8V32.4L24 40.2L10.5 32.4V16.8L24 9Z"
-      fill="white"
-    />
+    {/* Centered Safe-Zone Hexagon */}
+    <g transform="translate(24, 24) scale(0.92) translate(-24, -24.6)">
+      <path
+        d="M24 9L37.5 16.8V32.4L24 40.2L10.5 32.4V16.8L24 9Z"
+        fill="white"
+      />
 
-    {/* Subtle 3D Bevel Facets */}
-    <path
-      d="M24 9L37.5 16.8L30 21.2L24 17.7L18 21.2L10.5 16.8L24 9Z"
-      fill="#FFFFFF"
-    />
-    <path
-      d="M10.5 16.8L18 21.2V27.9L10.5 32.4V16.8Z"
-      fill="#E0E7FF"
-    />
-    <path
-      d="M37.5 16.8L30 21.2V27.9L37.5 32.4V16.8Z"
-      fill="#F1F5F9"
-    />
-    <path
-      d="M24 40.2L10.5 32.4L18 27.9L24 31.4L30 27.9L37.5 32.4L24 40.2Z"
-      fill="#CBD5E1"
-    />
+      {/* Subtle 3D Bevel Facets */}
+      <path
+        d="M24 9L37.5 16.8L30 21.2L24 17.7L18 21.2L10.5 16.8L24 9Z"
+        fill="#FFFFFF"
+      />
+      <path
+        d="M10.5 16.8L18 21.2V27.9L10.5 32.4V16.8Z"
+        fill="#E0E7FF"
+      />
+      <path
+        d="M37.5 16.8L30 21.2V27.9L37.5 32.4V16.8Z"
+        fill="#F1F5F9"
+      />
+      <path
+        d="M24 40.2L10.5 32.4L18 27.9L24 31.4L30 27.9L37.5 32.4L24 40.2Z"
+        fill="#CBD5E1"
+      />
 
-    {/* Center Hexagonal Aperture (matches background blue) */}
-    <path
-      d="M24 18L30 21.5V28.5L24 32L18 28.5V21.5L24 18Z"
-      fill="#0066FF"
-    />
+      {/* Center Hexagonal Aperture (matches background blue) */}
+      <path
+        d="M24 18L30 21.5V28.5L24 32L18 28.5V21.5L24 18Z"
+        fill="#0066FF"
+      />
+    </g>
   </svg>
 );
 

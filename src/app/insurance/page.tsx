@@ -27,17 +27,17 @@ export default function InsurancePage() {
         <div className="space-y-2 border-b border-[#E2E8F0] pb-6">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold uppercase tracking-widest bg-blue-100 text-[#0066FF] px-2.5 py-0.5 rounded-full">
-              ICICI Lombard Master Policy
+              Group Cargo Protection
             </span>
             <span className="text-[11px] text-[#64748B]">
-              Master Policy No: POL-ICICI-LOMBARD-2026-SAFESHIP
+              Group Transit Policy: POL-SAFESHIP-PROTECT-2026
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#0F172A]">
-            Cargo Transit Insurance &amp; Claims Underwriting
+            Cargo Transit Protection &amp; Claims Settlement
           </h1>
           <p className="text-sm text-[#475569] leading-relaxed">
-            Every shipment moving across the SafeShip logistics network is comprehensively underwritten against physical transit damage, vehicular accidents, linehaul loss, and theft up to ₹10,00,000 per consignment.
+            Every shipment moving across the SafeShip logistics network is comprehensively covered under registered group cargo transit policies underwritten by licensed Indian general insurers against physical transit damage, vehicular accidents, linehaul loss, and theft up to ₹10,00,000 per consignment.
           </p>
         </div>
 
@@ -117,7 +117,7 @@ export default function InsurancePage() {
             <ol className="list-decimal pl-5 space-y-1.5 text-[#475569]">
               <li><strong>Doorstep Logging:</strong> The custody officer records the damage on the digital manifest and applies a rejected tamper seal.</li>
               <li><strong>Instant Evidence Comparison:</strong> Our AI comparison engine correlates the pickup baseline photos against the doorstep damage photo.</li>
-              <li><strong>Insurer Sign-off:</strong> ICICI Lombard Marine Inland Claims desk verifies the electronic chain of custody within 24 hours.</li>
+              <li><strong>Underwriter Verification:</strong> The authorized cargo claims desk verifies the electronic chain of custody within 24 hours.</li>
               <li><strong>Direct Disbursement:</strong> Approved claim settlement funds are wired directly into the beneficiary’s verified bank account via NEFT/RTGS.</li>
             </ol>
           </section>

@@ -119,12 +119,12 @@ export const EnterpriseFooter: React.FC = () => {
               <div className="font-bold text-white flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-[#0066FF]" />
-                  <span>RBI Regulated Nodal Escrow</span>
+                  <span>RBI-Compliant Escrow Rails</span>
                 </span>
                 <span className="text-[10px] text-emerald-400 font-bold">100% SECURE</span>
               </div>
               <p className="text-slate-400 text-[10px] leading-relaxed">
-                Escrow balances held in ICICI Bank Trustee Nodal accounts. Zero product charge until inspection approval.
+                Escrow funds held in regulated nodal accounts via RBI-licensed Payment Aggregators (Cashfree / Razorpay). Zero product advance released until buyer approval.
               </p>
               <div className="pt-1.5 border-t border-slate-800 text-[10px] space-y-0.5 text-slate-300">
                 <div>💬 24/7 Live Support: <span className="text-emerald-400 font-semibold">In-App Live Support &amp; Priority Ticket Desk</span></div>
@@ -193,8 +193,8 @@ export const EnterpriseFooter: React.FC = () => {
                 onClick={() => setActiveModal('INSURANCE')}
                 className="w-full text-left p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 transition cursor-pointer"
               >
-                <div className="font-bold text-white text-[11px]">Cargo Insurance Policy</div>
-                <div className="text-[10px] text-slate-400">Underwritten by ICICI Lombard &amp; New India</div>
+                <div className="font-bold text-white text-[11px]">Cargo Transit Protection</div>
+                <div className="text-[10px] text-slate-400">Underwritten by Licensed General Insurers</div>
               </button>
 
               <div className="flex flex-wrap gap-2 pt-1 text-[11px] text-slate-400">
@@ -216,8 +216,21 @@ export const EnterpriseFooter: React.FC = () => {
           </div>
         </div>
 
+        {/* Regulatory, Trademark & Intermediary Disclaimer */}
+        <div className="mt-10 pt-6 border-t border-slate-800/80 text-[11px] text-slate-400 leading-relaxed space-y-2">
+          <p>
+            <strong>Regulatory &amp; Legal Intermediary Notice:</strong> SafeShip Technologies India Private Limited operates as an electronic intermediary and logistics technology coordination platform under Section 79 of the Information Technology Act, 2000. SafeShip provides doorstep unboxing inspection workflows in conjunction with contracted third-party logistics courier partners. Payment collections and escrow settlements are strictly facilitated through RBI-authorized Payment Aggregators (including Cashfree Payments India Pvt. Ltd. and Razorpay Software Pvt. Ltd.) in full adherence to the Reserve Bank of India (RBI) Payment Aggregator Guidelines. Cargo transit protection is governed under group marine inland transit policies issued by licensed general insurance carriers.
+          </p>
+          <p>
+            <strong>Trademark &amp; Non-Affiliation Disclaimer:</strong> All third-party trademarks, product names, logos, and brand identities referenced on this website (including Apple, iPhone, Samsung, Galaxy, Delhivery, BlueDart, DTDC, ICICI Lombard, Cashfree, and Razorpay) are the registered property of their respective owners. Their reference on SafeShip is strictly for factual identification and compatibility purposes and does not imply endorsement, affiliation, or direct sponsorship.
+          </p>
+          <p className="text-slate-500">
+            <strong>Grievance Redressal (Rule 3(2) IT Intermediary Rules, 2021):</strong> Grievance Officer: Aman Sharma &bull; Email: grievance@safeship.online &bull; Response window: Acknowledgement within 24 hours, resolution within 15 business days. SafeShip Technologies India Pvt. Ltd., Malviya Nagar Expressway Hub, Jaipur, Rajasthan 302017.
+          </p>
+        </div>
+
         {/* Bottom Bar */}
-        <div className="mt-12 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
+        <div className="mt-8 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
           <div>
             &copy; {new Date().getFullYear()} SafeShip Technologies India Pvt. Ltd. All rights reserved.
           </div>
@@ -264,7 +277,7 @@ export const EnterpriseFooter: React.FC = () => {
                     <strong>2. Instant Return Guarantee:</strong> If the merchandise differs in condition, serial number, or battery health, delivery may be rejected on the spot at ₹0 product charge to the recipient.
                   </p>
                   <p>
-                    <strong>3. Nodal Account Disbursals:</strong> Escrow deposits are held in a segregated trustee nodal account pursuant to RBI Section 10A guidelines and released automatically upon OTP confirmation.
+                    <strong>3. Nodal Escrow Settlements:</strong> Buyer payments are securely processed through RBI-authorized Payment Aggregator nodal accounts (Cashfree / Razorpay) in adherence to RBI guidelines and disbursed automatically to the seller upon OTP confirmation.
                   </p>
                 </>
               )}

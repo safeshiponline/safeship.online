@@ -20,7 +20,7 @@ export const LIVE_TICKER_ITEMS = [
   {
     icon: Lock,
     color: 'text-blue-400',
-    full: 'RBI Section 10A Trustee Escrow: 100% Operational',
+    full: 'RBI-Compliant Payment Aggregator Escrow: 100% Operational',
     short: 'RBI Escrow: 100% Operational',
   },
   {
@@ -106,7 +106,7 @@ export const LiveTickerBar: React.FC = () => {
         <div className="hidden lg:flex items-center gap-3 text-[10px] font-mono text-slate-300 shrink-0">
           <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-950/60 border border-blue-800/40 text-blue-200">
             <Lock className="w-3 h-3 text-[#0066FF]" />
-            <span>RBI Escrow (ICICI Bank)</span>
+            <span>RBI Nodal Escrow Rail</span>
           </span>
           <span className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-950/60 border border-emerald-800/40 text-emerald-200">
             <ShieldCheck className="w-3 h-3 text-emerald-400" />

@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: ['/', '/llms.txt', '/llms-full.txt'],
-        disallow: ['/api/', '/admin/'],
+        disallow: ['/api/', '/admin/', '/checkout-test/', '/courier/', '/track/'],
       },
       {
         userAgent: [
@@ -20,11 +20,13 @@ export default function robots(): MetadataRoute.Robots {
           'cohere-ai'
         ],
         allow: ['/', '/llms.txt', '/llms-full.txt'],
-        disallow: ['/api/', '/admin/'],
+        disallow: ['/api/', '/admin/', '/checkout-test/', '/courier/', '/track/'],
       }
     ],
-    sitemap: 'https://safeship.online/in/sitemap.xml',
-    host: 'https://safeship.online/in',
+    sitemap: [
+      'https://safeship.online/sitemap.xml',
+      'https://safeship.online/in/sitemap.xml'
+    ],
+    host: 'https://safeship.online',
   };
 }
-

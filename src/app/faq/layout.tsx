@@ -3,7 +3,7 @@ import React from 'react';
 
 export const metadata: Metadata = {
   title: 'Open Box Delivery & Safe Shipping FAQs | SafeShip India',
-  description: 'Frequently asked questions regarding guaranteed open box delivery, safe shipping protocols, verify then pay escrow settlement, ICICI Lombard transit insurance, and doorstep returns.',
+  description: 'Frequently asked questions regarding guaranteed open box delivery, safe shipping protocols, verify then pay escrow settlement, comprehensive transit cargo protection, and doorstep returns.',
   keywords: [
     'open box delivery faq',
     'safe shipping questions',
@@ -78,7 +78,7 @@ const faqPageSchema = {
           name: 'What is verify then pay shipping and how does it protect buyers and sellers?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Verify then pay shipping is SafeShip’s proprietary escrow-backed delivery mechanism. The buyer pays ₹0 upfront product cost. Funds are locked in an RBI Section 10A regulated nodal escrow account and are released to the seller strictly after the buyer unboxes and verifies the device at their doorstep.'
+            text: 'Verify then pay shipping is SafeShip’s proprietary escrow-backed delivery mechanism. The buyer pays ₹0 upfront product cost. Funds are securely managed through RBI-authorized Payment Aggregator nodal escrow accounts and are released to the seller strictly after the buyer unboxes and verifies the device at their doorstep.'
           }
         },
         {
@@ -102,7 +102,7 @@ const faqPageSchema = {
           name: 'Who holds the buyer’s money during transit?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Merchandise funds are deposited into a legally segregated, ring-fenced nodal escrow account pursuant to Reserve Bank of India (RBI) Section 10A trustee guidelines, managed by ICICI Bank. SafeShip never commingles these funds with operational cash, and money is only released to the seller after the buyer inspects and approves the item.'
+            text: 'Merchandise funds are processed through segregated, ring-fenced nodal escrow accounts operated by RBI-authorized Payment Aggregators (Cashfree / Razorpay) in adherence to RBI Guidelines (DPSS.CO.PD.No.1810/02.14.008/2019-20). SafeShip never commingles these funds with operational cash, and money is only released to the seller after the buyer inspects and approves the item.'
           }
         },
         {
@@ -110,7 +110,7 @@ const faqPageSchema = {
           name: 'How does SafeShip safe shipping ensure safe delivery of expensive electronics?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'SafeShip protects electronics with heavy-gauge tamper-evident security bags, verified chain-of-custody logging at every transport hub, and mandatory ICICI Lombard Marine Inland transit insurance up to ₹10,00,000 covering theft, collision, and transit damage.'
+            text: 'SafeShip protects electronics with heavy-gauge tamper-evident security bags, verified chain-of-custody logging at every transport hub, and comprehensive group transit cargo protection underwritten by IRDAI-registered general insurers up to ₹10,00,000 covering theft, collision, and transit damage.'
           }
         }
       ]

@@ -143,7 +143,7 @@ export function AISupportWidget() {
   const quickPrompts = [
     'How does open-box verification work?',
     'What if the device IMEI does not match?',
-    'How does RBI Section 10A escrow protect me?',
+    'How does RBI Payment Aggregator escrow protect me?',
     'Raise Support Ticket (TC)'
   ];
 

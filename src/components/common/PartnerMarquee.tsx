@@ -10,11 +10,11 @@ export interface PartnerItem {
 
 export const PARTNERS: PartnerItem[] = [
   {
-    name: 'ICICI Bank',
-    role: 'RBI Nodal Escrow',
+    name: 'Cashfree Payments',
+    role: 'RBI Nodal Escrow Rail',
     logo: (
-      <span className="w-5 h-5 rounded-md bg-[#F15A24] text-white flex items-center justify-center text-[11px] font-black shrink-0">
-        i
+      <span className="w-5 h-5 rounded-md bg-[#6B21A8] text-white flex items-center justify-center text-[10px] font-black shrink-0">
+        CF
       </span>
     ),
   },
@@ -58,8 +58,8 @@ export const PARTNERS: PartnerItem[] = [
     ),
   },
   {
-    name: 'ICICI Lombard',
-    role: '100% Transit Cargo Cover',
+    name: 'General Cargo Cover',
+    role: '100% Transit Protection',
     logo: (
       <span className="w-2.5 h-2.5 rounded-full bg-amber-600 shrink-0" />
     ),

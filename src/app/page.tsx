@@ -1174,7 +1174,7 @@ export default function HomePage() {
               Calculate Distance, Transit Time &amp; Verified Fare
             </h2>
             <p className="text-xs sm:text-sm text-slate-600">
-              Zero surprises. Calculate exact courier linehaul, ICICI Lombard cargo insurance, and doorstep open-box service.
+              Zero surprises. Calculate exact courier linehaul, comprehensive transit cargo protection, and doorstep open-box service.
             </p>
           </div>
 
@@ -1343,7 +1343,7 @@ export default function HomePage() {
                   <span className="font-bold text-[#0066FF]">Included</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span>ICICI Lombard Transit Insurance:</span>
+                  <span>Transit Cargo Protection:</span>
                   <span className="font-mono font-bold text-slate-900">₹{Math.round(calcValue * 0.008)}</span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -1392,7 +1392,7 @@ export default function HomePage() {
               Why SafeShip is the Best Shipping Company for Open Box Delivery &amp; Safe Shipping
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              Standard couriers (Delhivery, BlueDart, DTDC) enforce a strict &quot;pay before opening&quot; policy that leaves buyers vulnerable to scams. SafeShip mandates a 10-minute doorstep unboxing audit and RBI Section 10A nodal escrow so you verify then pay with complete peace of mind.
+              Standard couriers (Delhivery, BlueDart, DTDC) enforce a strict &quot;pay before opening&quot; policy that leaves buyers vulnerable to scams. SafeShip mandates a 10-minute doorstep unboxing audit and RBI-compliant Payment Aggregator nodal escrow so you verify then pay with complete peace of mind.
             </p>
           </div>
 
@@ -1439,7 +1439,7 @@ export default function HomePage() {
                   <td className="py-3.5 px-4 font-bold text-slate-900">Verify Then Pay Escrow Protection?</td>
                   <td className="py-3.5 px-4 bg-blue-50/40 border-x-2 border-[#0066FF]/30 text-[#0066FF] font-bold">
                     <span className="inline-flex items-center gap-1 bg-blue-100/70 text-[#0066FF] px-2 py-0.5 rounded-md text-[11px]">
-                      ✓ YES (RBI Section 10A trustee)
+                      ✓ YES (RBI PA nodal escrow)
                     </span>
                   </td>
                   <td className="py-3.5 px-4 text-slate-500">✗ Courier pool (no hold)</td>
@@ -1611,7 +1611,7 @@ export default function HomePage() {
                 corridor: 'Chennai ⇄ Kolkata',
                 type: 'Commercial Air Freight',
                 sla: '2-3 Business Days',
-                features: 'Air linehaul transit, full valuation ICICI Lombard coverage'
+                features: 'Air linehaul transit, full valuation transit protection coverage'
               },
               {
                 corridor: 'All Tier 1 & Tier 2 Cities',
@@ -1685,7 +1685,7 @@ export default function HomePage() {
                 Safe Shipping &amp; RBI Escrow
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Buyer payments are held in segregated trustee nodal accounts under RBI Section 10A directives. Sellers get guaranteed instant payout upon buyer approval with zero return-swap scams.
+                Buyer payments are held in segregated trustee nodal accounts under RBI Payment Aggregator directives. Sellers get guaranteed instant payout upon buyer approval with zero return-swap scams.
               </p>
             </div>
 
@@ -1697,7 +1697,7 @@ export default function HomePage() {
                 Trusted Across 19,000+ PINs
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                With 50,000+ verified deliveries, ₹10 Lakh ICICI Lombard cargo insurance, and PAN-India expressway linehauls, SafeShip is India&apos;s #1 rated safe shipping platform.
+                With 50,000+ verified deliveries, ₹10 Lakh transit cargo protection, and PAN-India expressway linehauls, SafeShip is India&apos;s #1 rated safe shipping platform.
               </p>
             </div>
           </div>
@@ -1730,15 +1730,11 @@ export default function HomePage() {
               },
               {
                 q: 'What is safe open box delivery shipping and how does it prevent online fraud?',
-                a: 'Safe open box delivery shipping is an insured, escrow-protected courier protocol where the recipient inspects and tests high-value electronics (phones, laptops, cameras) at their doorstep before paying. SafeShip combines 10-minute physical unboxing, RBI Section 10A trustee escrow, and ₹10 Lakh ICICI Lombard transit insurance to eliminate 100% of classifieds fraud.'
-              },
-              {
-                q: 'Why is SafeShip also searched as "Safe of Shipping Company" or "Shave Shipping Company"?',
-                a: 'Users searching for "safe shipping company", "safe of shipping company", or voice queries like "shave shipping company" are referring to SafeShip Technologies India (https://safeship.online/in) — India’s premier open box delivery and safe escrow logistics provider known for scam-free electronics shipping.'
+                a: 'Safe open box delivery shipping is an insured, escrow-protected courier protocol where the recipient inspects and tests high-value electronics (phones, laptops, cameras) at their doorstep before paying. SafeShip combines 10-minute physical unboxing, RBI-authorized Payment Aggregator escrow, and ₹10 Lakh transit cargo protection to eliminate 100% of classifieds fraud.'
               },
               {
                 q: 'What is verify then pay shipping and how does it protect buyers and sellers?',
-                a: 'Verify then pay shipping is SafeShip’s proprietary escrow delivery protocol. The buyer pays ₹0 product advance. Funds are safely held in an RBI Section 10A regulated trustee nodal account. The package is delivered in a tamper-evident pouch, unboxed, and physically verified at the doorstep before payment is released via dynamic UPI QR code.'
+                a: 'Verify then pay shipping is SafeShip’s proprietary escrow delivery protocol. The buyer pays ₹0 product advance. Funds are safely held in an RBI-compliant Payment Aggregator nodal escrow account. The package is delivered in a tamper-evident pouch, unboxed, and physically verified at the doorstep before payment is released via dynamic UPI QR code.'
               },
               {
                 q: 'Can I really open the parcel and power on the device before paying?',
@@ -1746,7 +1742,7 @@ export default function HomePage() {
               },
               {
                 q: 'How does SafeShip safe shipping prevent scams on OLX, Cashify, and online marketplaces?',
-                a: 'SafeShip mathematically eliminates classifieds fraud by removing blind advance payments: (1) Doorstep open-box inspection prevents dummy bricks or cracked screens, (2) GSMA IMEI validation verifies phone authenticity, (3) RBI regulated nodal escrow guarantees sellers receive verified payouts, and (4) ICICI Lombard insurance covers up to ₹10 Lakh in transit.'
+                a: 'SafeShip mathematically eliminates classifieds fraud by removing blind advance payments: (1) Doorstep open-box inspection prevents dummy bricks or cracked screens, (2) GSMA IMEI validation verifies phone authenticity, (3) RBI-compliant nodal escrow guarantees sellers receive verified payouts, and (4) comprehensive transit protection covers up to ₹10 Lakh in transit.'
               },
               {
                 q: 'What happens if the delivered gadget is fake, broken, or has defects?',
@@ -1754,11 +1750,11 @@ export default function HomePage() {
               },
               {
                 q: 'How and when does the seller receive their payment?',
-                a: 'Funds are held in segregated RBI Section 10A Trustee Nodal accounts with ICICI Bank. Once the buyer tests and approves the gadget at their doorstep and provides the 6-digit handover OTP, the full merchandise amount is settled instantly to the seller’s verified UPI or bank account.'
+                a: 'Funds are held in segregated RBI-compliant Payment Aggregator Nodal accounts (Cashfree / Razorpay). Once the buyer tests and approves the gadget at their doorstep and provides the 6-digit handover OTP, the full merchandise amount is settled instantly to the seller’s verified UPI or bank account.'
               },
               {
                 q: 'Why is there a nominal courier booking fee upfront?',
-                a: 'The nominal booking fee covers courier linehaul freight, priority air transport, and mandatory ICICI Lombard cargo transit insurance. The actual gadget price (e.g. ₹40,000) is strictly ₹0 advance until doorstep inspection.'
+                a: 'The nominal booking fee covers courier linehaul freight, priority air transport, and comprehensive cargo transit protection. The actual gadget price (e.g. ₹40,000) is strictly ₹0 advance until doorstep inspection.'
               },
               {
                 q: 'How does the 2-Way Bilateral Gadget Exchange work?',
@@ -1799,7 +1795,7 @@ export default function HomePage() {
               Ready to Buy or Sell Gadgets Without Fear?
             </h3>
             <p className="text-xs sm:text-sm text-blue-100 max-w-xl">
-              10-minute doorstep unboxing audit &bull; ₹0 upfront product risk &bull; RBI Section 10A trustee escrow. Join thousands of safe Indian gadget buyers and sellers.
+              10-minute doorstep unboxing audit &bull; ₹0 upfront product risk &bull; RBI-authorized nodal escrow. Join thousands of safe Indian gadget buyers and sellers.
             </p>
           </div>
 

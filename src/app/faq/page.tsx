@@ -19,7 +19,7 @@ export default function FAQPage() {
     {
       category: 'ESCROW',
       question: 'Who holds the buyer’s money during transit?',
-      answer: 'Merchandise funds are deposited into a legally segregated, ring-fenced nodal escrow account pursuant to Reserve Bank of India (RBI) Section 10A trustee guidelines, managed by ICICI Bank and HDFC Bank. SafeShip never commingles these funds with operational cash, and money is only released to the seller after the buyer inspects and approves the item.'
+      answer: 'Merchandise funds are processed through legally segregated, ring-fenced nodal escrow accounts operated by RBI-authorized Payment Aggregators (Cashfree / Razorpay) in adherence to RBI Guidelines (DPSS.CO.PD.No.1810/02.14.008/2019-20). SafeShip never commingles these funds with operational cash, and money is only released to the seller after the buyer inspects and approves the item.'
     },
     {
       category: 'REJECTION',
@@ -39,7 +39,7 @@ export default function FAQPage() {
     {
       category: 'INSURANCE',
       question: 'Is my shipment insured against transit loss or damage?',
-      answer: 'Yes. Every shipment includes comprehensive cargo transit insurance underwritten by ICICI Lombard Marine Inland Insurance. Items valued over ₹5,000 are covered at 0.5% of declared valuation up to ₹10,00,000, covering accidental transit drops, vehicle collisions, monsoon water damage, and linehaul loss.'
+      answer: 'Yes. Every shipment includes comprehensive group cargo transit protection underwritten by IRDAI-registered general insurance partners. Items valued over ₹5,000 are covered at ~0.5% of declared valuation up to ₹10,00,000, covering accidental transit drops, vehicle collisions, monsoon water damage, and linehaul loss with rapid claim assistance.'
     },
     {
       category: 'PRICING',

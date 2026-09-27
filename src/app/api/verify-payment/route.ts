@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
-import { verifyRazorpaySignature, DEFAULT_RAZORPAY_KEY_SECRET } from '@/lib/razorpayServer';
+import { verifyRazorpaySignature } from '@/lib/razorpayServer';
 import { getCashfreeOrder } from '@/lib/cashfreeServer';
+import { isTrustedRequestOrigin, safeErrorMessage } from '@/lib/requestSecurity';
 
 export async function POST(request: Request) {
+  if (!isTrustedRequestOrigin(request)) {
+    return NextResponse.json({ success: false, error: 'Untrusted request origin.' }, { status: 403 });
+  }
   try {
     let body: any;
     try {
@@ -16,11 +20,12 @@ export async function POST(request: Request) {
     const payment_id = body.razorpay_payment_id || body.payment_id || body.paymentId;
     const signature = body.razorpay_signature || body.signature;
 
-    // Check Cashfree first if order_id looks like a Cashfree order or signature is absent / direct_verified
-    if (order_id && (!signature || signature === 'direct_verified' || order_id.startsWith('order_') || order_id.startsWith('cf_'))) {
+    // Cashfree is verified against the provider's current order state; an order
+    // alone is never proof that a payment succeeded.
+    if (order_id && (!signature || order_id.startsWith('order_') || order_id.startsWith('cf_'))) {
       try {
         const cfOrder = await getCashfreeOrder(order_id);
-        if (cfOrder) {
+        if (cfOrder?.order_status === 'PAID') {
           return NextResponse.json({
             success: true,
             gateway: 'cashfree',
@@ -47,28 +52,13 @@ export async function POST(request: Request) {
       );
     }
 
-    const key_secret = process.env.RAZORPAY_KEY_SECRET || DEFAULT_RAZORPAY_KEY_SECRET;
+    if (!order_id || !payment_id || !signature) {
+      return NextResponse.json({ success: false, error: 'A verified payment reference is required.' }, { status: 400 });
+    }
 
-    // If order_id and signature are provided, perform cryptographic HMAC-SHA256 verification
-    if (order_id && signature && signature !== 'direct_verified') {
-      if (!key_secret) {
-        return NextResponse.json(
-          { success: false, error: 'Server configuration error: RAZORPAY_KEY_SECRET missing.' },
-          { status: 500 }
-        );
-      }
-
-      const isValid = verifyRazorpaySignature(order_id, payment_id, signature);
-
-      if (!isValid) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Payment verification failed: signature mismatch.',
-          },
-          { status: 400 }
-        );
-      }
+    const isValid = verifyRazorpaySignature(order_id, payment_id, signature);
+    if (!isValid) {
+      return NextResponse.json({ success: false, error: 'Payment verification failed: signature mismatch.' }, { status: 400 });
     }
 
     // Return successful verification
@@ -79,10 +69,10 @@ export async function POST(request: Request) {
       payment_id: payment_id || `cf_${Date.now()}`,
       verified_at: new Date().toISOString(),
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('Error in /api/verify-payment:', err);
     return NextResponse.json(
-      { success: false, error: err.message || 'Internal Server Error' },
+      { success: false, error: safeErrorMessage(err, 'Internal Server Error') },
       { status: 500 }
     );
   }

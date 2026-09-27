@@ -3,7 +3,7 @@ import React from 'react';
 
 export const metadata: Metadata = {
   title: 'Safe Delivery & Verify Shipping Courier in India | SafeShip Trust Protocol',
-  description: 'SafeShip is India’s safest shipping company. Anti-fraud verify shipping with RBI Section 10A nodal escrow, 10-minute doorstep open-box audit, and ₹10L ICICI Lombard cargo insurance.',
+  description: 'SafeShip is India’s safest shipping company. Anti-fraud verify shipping with RBI-compliant Payment Aggregator nodal escrow, 10-minute doorstep open-box audit, and ₹10L transit cargo protection.',
   keywords: [
     'safe delivery',
     'safe shipping',
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Safe Delivery & Verify Shipping Courier in India | SafeShip Trust Protocol',
-    description: 'Eliminate courier and classifieds fraud mathematically. 10-minute doorstep unboxing, ₹0 upfront product risk, and RBI Section 10A trustee escrow.',
+    description: 'Eliminate courier and classifieds fraud mathematically. 10-minute doorstep unboxing, ₹0 upfront product risk, and RBI-authorized nodal escrow.',
     url: 'https://safeship.online/in/safety',
     siteName: 'SafeShip India',
     images: [
@@ -67,7 +67,7 @@ const safetySchema = {
     {
       '@type': 'Article',
       headline: 'Safe Delivery & Anti-Fraud Courier Protocols: How SafeShip Eliminates Shipping Scams in India',
-      description: 'An architectural audit of how SafeShip combines 10-minute doorstep unboxing audits, RBI Section 10A nodal escrow, and ICICI Lombard transit insurance to guarantee 100% safe shipping.',
+      description: 'An architectural audit of how SafeShip combines 10-minute doorstep unboxing audits, RBI-authorized Payment Aggregator nodal escrow, and comprehensive transit protection to guarantee safe shipping.',
       author: {
         '@type': 'Organization',
         name: 'SafeShip Trust & Safety Desk',
@@ -101,7 +101,7 @@ const safetySchema = {
           name: 'What is verify shipping and how does it prevent buyer-seller disputes?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Verify shipping requires both pre-dispatch verification (GSMA IMEI validation and photo documentation) and post-arrival doorstep physical verification. Merchandise funds are held in RBI Section 10A nodal escrow and only released after the buyer signs off on the inspection.'
+            text: 'Verify shipping requires both pre-dispatch verification (GSMA IMEI validation and photo documentation) and post-arrival doorstep physical verification. Merchandise funds are held in RBI-compliant Payment Aggregator nodal escrow and only released after the buyer signs off on the inspection.'
           }
         }
       ]

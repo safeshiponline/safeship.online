@@ -548,7 +548,7 @@ export function getRealisticTransitDays(tier: DeliveryServiceTier, distanceKm: n
 /**
  * Calculates value-calibrated cargo transit insurance fee.
  * ~0.5% of product value, bounded reasonably between ₹59 and ₹599.
- * Underwritten by ICICI Lombard Marine Inland Transit Insurance.
+ * Underwritten by licensed Indian general insurance partners.
  */
 export function calculateInsuranceFee(declaredValue: number): number {
   const value = Math.max(0, Number(declaredValue) || 0);
@@ -655,7 +655,7 @@ export function calculateTierPricing(
   const value = Math.max(0, Number(declaredValue) || 0);
 
   // 1. Cargo Insurance Fee
-  // Nominal transit risk underwritten by ICICI Lombard (₹29 - ₹299, ~0.25%)
+  // Transit risk underwritten by licensed general insurance partners (₹29 - ₹299, ~0.25%)
   const insuranceFee = calculateInsuranceFee(value);
 
   // 2. Doorstep Open-Box Inspection & Verification Fee

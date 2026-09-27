@@ -686,7 +686,7 @@ export default function ProfilePage() {
                   </span>
                   <span className="text-xs font-bold text-emerald-600 mt-1 block flex items-center gap-1">
                     <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
-                    <span>ICICI Trustee Active</span>
+                    <span>RBI Nodal Active</span>
                   </span>
                 </div>
               </div>
@@ -916,7 +916,7 @@ export default function ProfilePage() {
                           <div className="flex items-center gap-3 text-[11px] text-slate-400 mt-1.5 font-mono">
                             <span>Valuation: {formatINR(deal.declaredValue)}</span>
                             <span>&bull;</span>
-                            <span>Policy: {deal.insurancePolicyNumber || 'POL-ICICI-ACTIVE'}</span>
+                            <span>Policy: {deal.insurancePolicyNumber || 'POL-SAFESHIP-ACTIVE'}</span>
                           </div>
                         </div>
                       </div>

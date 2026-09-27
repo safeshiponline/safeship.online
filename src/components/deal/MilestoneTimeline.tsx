@@ -103,7 +103,7 @@ export const MilestoneTimeline: React.FC<MilestoneTimelineProps> = ({
             Escrow Custody & Inspection Pipeline
           </h3>
           <p className="text-xs text-zinc-500 mt-0.5">
-            Institutional verification protocol under RBI Section 10A PSSA guidelines
+            Verification protocol under RBI Payment Aggregator Escrow guidelines
           </p>
         </div>
         {isDisputed && (

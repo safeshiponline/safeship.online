@@ -53,7 +53,7 @@ function getBaseEmailLayout(title: string, preheader: string, contentHtml: strin
     <div class="footer">
       <p style="margin: 0 0 8px 0;"><strong>SafeShip Logistics &amp; Security Services Private Limited</strong></p>
       <p style="margin: 0 0 8px 0;">
-        All consignments protected under RBI Section 10A nodal escrow governance &bull; ₹10,00,000 Transit cargo insurance underwritten by ICICI Lombard General Insurance Co. Ltd.
+        All consignments protected under RBI Payment Aggregator nodal escrow governance &bull; ₹10,00,000 Transit cargo protection underwritten by licensed general insurance partners.
       </p>
       <p style="margin: 0;">
         Need assistance? 24/7 Custody Helpdesk: <strong>080-4719-2300</strong> &bull; Email: <a href="mailto:support@safeship.online" style="color: #0066FF; text-decoration: none;">support@safeship.online</a>
@@ -262,10 +262,10 @@ export function renderCourierDispatchedEmail(deal: SafeDeal): { subject: string;
 export function renderPickupVerifiedEmail(deal: SafeDeal): { subject: string; html: string } {
   const trackUrl = `${APP_URL}/in/track/${deal.id}`;
   const sealId = deal.tamperSeal?.sealId || `SSP-${deal.id}-TAMPER-SAFE`;
-  const insurancePolicy = deal.insurancePolicyNumber || 'POL-ICICI-LOMBARD-2026';
+  const insurancePolicy = deal.insurancePolicyNumber || 'POL-SAFESHIP-TRANSIT-2026';
 
   const subject = `Pickup Verified & Sealed in Security Bag #${sealId}: Consignment #${deal.id}`;
-  const preheader = `Condition verified, barcode sealed, and ICICI Lombard transit insurance activated.`;
+  const preheader = `Condition verified, barcode sealed, and transit insurance protection activated.`;
 
   const html = getBaseEmailLayout(
     subject,
@@ -287,7 +287,7 @@ export function renderPickupVerifiedEmail(deal: SafeDeal): { subject: string; ht
         </tr>
         <tr>
           <td class="label">Transit Insurance</td>
-          <td class="val" style="color: #10B981;">₹${deal.declaredValue.toLocaleString('en-IN')} (ICICI Lombard Active)</td>
+          <td class="val" style="color: #10B981;">₹${deal.declaredValue.toLocaleString('en-IN')} (Active Protection)</td>
         </tr>
         <tr>
           <td class="label">Policy Number</td>
@@ -540,10 +540,10 @@ export function renderWelcomeUserEmail(name: string, email: string): { subject: 
 
       <div style="margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid #E2E8F0;">
         <div style="font-size: 13px; font-weight: 700; color: #0F172A; margin-bottom: 3px;">
-          🛡️ 2. RBI Section 10A Nodal Escrow
+          🛡️ 2. RBI Payment Aggregator Nodal Escrow
         </div>
         <div style="font-size: 12px; color: #64748B; line-height: 1.5;">
-          Buyer funds remain safely in an ICICI Bank Nodal Escrow vault. Money is released to the seller only after open-box approval.
+          Buyer funds remain safely in an RBI-compliant Payment Aggregator Nodal Escrow vault (Cashfree / Razorpay). Money is released to the seller only after open-box approval.
         </div>
       </div>
 
@@ -558,10 +558,10 @@ export function renderWelcomeUserEmail(name: string, email: string): { subject: 
 
       <div>
         <div style="font-size: 13px; font-weight: 700; color: #0F172A; margin-bottom: 3px;">
-          🚚 4. ₹10 Lakh Cargo Insurance
+          🚚 4. ₹10 Lakh Cargo Transit Protection
         </div>
         <div style="font-size: 12px; color: #64748B; line-height: 1.5;">
-          Underwritten by ICICI Lombard General Insurance Co. Ltd. Full replacement coverage during road and air transit.
+          Underwritten by licensed general insurance partners. Full replacement coverage during road and air transit.
         </div>
       </div>
     </div>

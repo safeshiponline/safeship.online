@@ -42,7 +42,7 @@ export default function SafetyTrustHubPage() {
               <span>100% FRAUD-PROOF GUARANTEE</span>
             </span>
             <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
-              RBI Section 10A Escrow Protected
+              RBI-Compliant PA Escrow Protected
             </span>
           </div>
 
@@ -74,10 +74,10 @@ export default function SafetyTrustHubPage() {
               <Lock className="w-5 h-5" />
             </div>
             <h3 className="text-sm font-bold text-[#0F172A]">
-              2. RBI Regulated Nodal Escrow
+              2. RBI-Authorized Nodal Escrow
             </h3>
             <p className="text-[#64748B] leading-relaxed">
-              Merchandise payments are deposited into segregated trustee accounts governed pursuant to Reserve Bank of India Section 10A guidelines. The seller is only paid after you physically inspect and approve the shipment.
+              Merchandise payments are processed through RBI-authorized Payment Aggregator nodal accounts (Cashfree / Razorpay) under RBI Guidelines (DPSS.CO.PD.No.1810/02.14.008/2019-20). The seller is only paid after you physically inspect and approve the shipment.
             </p>
           </div>
 
@@ -98,10 +98,10 @@ export default function SafetyTrustHubPage() {
               <Sparkles className="w-5 h-5" />
             </div>
             <h3 className="text-sm font-bold text-[#0F172A]">
-              4. 100% In-Transit Insurance (ICICI Lombard)
+              4. 100% In-Transit Cargo Protection
             </h3>
             <p className="text-[#64748B] leading-relaxed">
-              Every parcel is protected under a Master Cargo Policy underwritten by ICICI Lombard up to ₹10,00,000 covering physical transit damage, theft, and loss with rapid 48-hour claim settlements.
+              Every parcel is covered under group transit cargo protection underwritten by IRDAI-licensed general insurers up to ₹10,00,000 covering physical transit damage, theft, and linehaul loss with dedicated claims support.
             </p>
           </div>
         </div>
@@ -154,7 +154,7 @@ export default function SafetyTrustHubPage() {
                 </tr>
                 <tr>
                   <td className="py-2.5 font-semibold">RBI Regulated Escrow Trustee?</td>
-                  <td className="py-2.5 text-emerald-600 font-bold">YES (Section 10A Nodal)</td>
+                  <td className="py-2.5 text-emerald-600 font-bold">YES (RBI PA Nodal Escrow)</td>
                   <td className="py-2.5 text-slate-400 font-medium">No (Commercial cash)</td>
                   <td className="py-2.5 text-rose-600 font-medium">NO (Personal UPI)</td>
                 </tr>
@@ -206,8 +206,8 @@ export default function SafetyTrustHubPage() {
               <span className="font-mono text-[#0066FF] font-bold">08AAECS2938Q1ZP</span> (Rajasthan State Jurisdiction)
             </div>
             <div>
-              <strong className="text-slate-900 block">Trustee Nodal Banking:</strong>
-              ICICI Bank Limited &bull; Section 10A Escrow Rail
+              <strong className="text-slate-900 block">Payment Aggregator Nodal Rail:</strong>
+              RBI-Authorized Payment Aggregators (Cashfree / Razorpay Escrow)
             </div>
             <div>
               <strong className="text-slate-900 block">24/7 Support &amp; Dispute Portal:</strong>
