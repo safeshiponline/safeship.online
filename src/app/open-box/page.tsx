@@ -27,6 +27,7 @@ import {
 import { useRazorpay } from '@/lib/useRazorpay';
 import { downloadConsignmentNotePDF } from '@/lib/pdfGenerator';
 import { getDealById, getStoredDeals } from '@/lib/store';
+import AutoTriggerButton from '@/components/common/AutoTriggerButton';
 
 export default function OpenBoxPage() {
   return (
@@ -488,29 +489,36 @@ function OpenBoxContent() {
           </div>
         </div>
 
-        {/* ACTION BUTTONS: Accept Delivery vs Report Issue */}
+        {/* ACTION BUTTON: Single prominent manual button (Zero auto-trigger) */}
         <div className="space-y-3 pt-2">
           <button
             type="button"
+            id="btn-accept-delivery"
             disabled={!allChecked}
             onClick={() => setShowPaymentModal(true)}
-            className={`w-full py-4 rounded-2xl font-bold text-sm shadow-md transition flex items-center justify-center gap-2 ${
+            className={`w-full py-4 px-6 rounded-2xl font-black text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer ${
               allChecked
-                ? 'bg-[#0066FF] hover:bg-[#0052FF] text-white cursor-pointer active:scale-98 shadow-[#0066FF]/25'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                ? 'bg-[#0066FF] hover:bg-[#0052FF] text-white shadow-[#0066FF]/25 active:scale-98'
+                : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
             }`}
           >
             <CheckCircle2 className="w-5 h-5" />
             <span>{isExchange ? 'Accept 2-Way Swap & Settle ₹3,000' : 'Accept Delivery & Pay ₹65,000'}</span>
           </button>
 
-          <button
-            type="button"
-            onClick={() => setShowDisputeModal(true)}
-            className="w-full py-3.5 rounded-2xl bg-white hover:bg-rose-50 border border-rose-200 text-rose-600 font-bold text-xs shadow-2xs transition active:scale-98 cursor-pointer"
-          >
-            {isExchange ? 'Abort Exchange / Keep Original Devices' : 'Report an Issue / Return to Sender'}
-          </button>
+          {/* Discreet Help / Return Link (No oversized competing buttons) */}
+          <div className="text-center pt-1">
+            <button
+              type="button"
+              onClick={() => setShowDisputeModal(true)}
+              className="text-xs text-slate-500 hover:text-rose-600 font-medium transition cursor-pointer inline-flex items-center gap-1.5 group py-1"
+            >
+              <AlertTriangle className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-500 transition" />
+              <span className="underline decoration-slate-300 group-hover:decoration-rose-400">
+                {isExchange ? 'Need to cancel? Abort swap & keep original devices →' : 'Spotted an issue? Report defect or return to sender →'}
+              </span>
+            </button>
+          </div>
         </div>
 
       </main>

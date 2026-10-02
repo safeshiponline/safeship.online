@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { Headphones, X, Send, ShieldCheck, Check, AlertTriangle, FileText, Sparkles, Clock, ArrowRight } from '@/components/common/Icons';
 import { analytics } from '@/lib/analytics';
 
@@ -87,6 +88,11 @@ function parseBold(text: string) {
 }
 
 export function AISupportWidget() {
+  const pathname = usePathname();
+  if (pathname?.includes('/credit-cards')) {
+    return null;
+  }
+
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'CHAT' | 'TICKETS'>('CHAT');
   const [input, setInput] = useState('');

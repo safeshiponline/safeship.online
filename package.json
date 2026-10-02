@@ -7,7 +7,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "remotion:studio": "remotion studio src/remotion/index.ts",
+    "remotion:render": "remotion render src/remotion/index.ts SafeShipPromo out/safeship_promo_1080p.mp4 --codec h264 --crf 16 --fps 30 --pixel-format yuv420p"
   },
   "dependencies": {
     "jspdf": "^4.2.1",
@@ -19,12 +21,16 @@
     "resend": "^6.28.1"
   },
   "devDependencies": {
+    "@remotion/cli": "^4.0.532",
+    "@remotion/media-utils": "^4.0.532",
+    "@remotion/player": "^4.0.532",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
+    "remotion": "^4.0.532",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

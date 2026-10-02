@@ -41,9 +41,17 @@ function getBaseEmailLayout(title: string, preheader: string, contentHtml: strin
   </div>
   <div class="container">
     <div class="header">
+      <!-- Official SafeShip Brand Logo -->
+      <table align="center" border="0" cellpadding="0" cellspacing="0" style="margin: 0 auto 14px auto;">
+        <tr>
+          <td align="center" style="vertical-align: middle;">
+            <img src="${APP_URL}/apple-icon.png" width="52" height="52" alt="SafeShip" style="display:block; border-radius:13px; border: 2px solid rgba(255,255,255,0.3); box-shadow: 0 6px 16px rgba(0,0,0,0.2);" />
+          </td>
+        </tr>
+      </table>
       <div class="badge">Open-Box Doorstep Verification Active</div>
       <h1 style="margin: 12px 0 4px 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">SafeShip India</h1>
-      <p style="margin: 0; font-size: 13px; opacity: 0.9;">India's Safest Verified Shipping &amp; Escrow Platform</p>
+      <p style="margin: 0; font-size: 13px; opacity: 0.95;">India's Safest Verified Shipping &amp; Escrow Platform</p>
     </div>
 
     <div class="content">
@@ -51,7 +59,10 @@ function getBaseEmailLayout(title: string, preheader: string, contentHtml: strin
     </div>
 
     <div class="footer">
-      <p style="margin: 0 0 8px 0;"><strong>SafeShip Logistics &amp; Security Services Private Limited</strong></p>
+      <p style="margin: 0 0 10px 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <img src="${APP_URL}/apple-icon.png" width="20" height="20" alt="SafeShip" style="display:inline-block; vertical-align:middle; border-radius:5px; margin-right:6px;" />
+        <strong>SafeShip Logistics &amp; Security Services Private Limited</strong>
+      </p>
       <p style="margin: 0 0 8px 0;">
         All consignments protected under RBI Payment Aggregator nodal escrow governance &bull; ₹10,00,000 Transit cargo protection underwritten by licensed general insurance partners.
       </p>
@@ -239,6 +250,14 @@ export function renderCourierDispatchedEmail(deal: SafeDeal): { subject: string;
         <tr>
           <td class="label">Declared Item</td>
           <td class="val">${deal.title}</td>
+        </tr>
+        <tr>
+          <td class="label">Pickup Window</td>
+          <td class="val" style="color: #0066FF; font-weight: 700;">${deal.pickupSlot === 'MORNING_10_1' ? 'Morning 10:00 AM – 01:00 PM' : 'Afternoon 02:00 PM – 05:00 PM'}</td>
+        </tr>
+        <tr>
+          <td class="label">Calling Protocol</td>
+          <td class="val">${courierName} will call seller on the pickup time before arriving.</td>
         </tr>
         <tr>
           <td class="label">Security Bag</td>

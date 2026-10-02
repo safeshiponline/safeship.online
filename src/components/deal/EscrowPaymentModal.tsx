@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { SafeDeal } from '@/lib/types';
 import { fundDealEscrow } from '@/lib/store';
+import { notifyMilestoneEmail } from '@/lib/emailClient';
 import { formatINR } from '@/lib/escrowCalculator';
 import { lookupPincode, formatFullAddress, INDIAN_STATES } from '@/lib/indianAddresses';
 import { GpsLocator } from '../common/GpsLocator';
@@ -24,6 +26,7 @@ export const EscrowPaymentModal: React.FC<EscrowPaymentModalProps> = ({
   onClose,
   onSuccess
 }) => {
+  const router = useRouter();
   const [tab, setTab] = useState<'UPI' | 'QR' | 'RZP_LINK' | 'NETBANKING'>('UPI');
   const [selectedUpiApp, setSelectedUpiApp] = useState<'GPAY' | 'PHONEPE' | 'PAYTM' | 'CRED'>('GPAY');
   
@@ -100,6 +103,10 @@ export const EscrowPaymentModal: React.FC<EscrowPaymentModalProps> = ({
           paymentMethod: `Cashfree Escrow (${verifyData.payment_id})`
         });
 
+        if (updated) {
+          notifyMilestoneEmail(updated, 'COURIER_ASSIGNED');
+        }
+
         setIsProcessing(false);
         setStep('SUCCESS');
 
@@ -107,8 +114,9 @@ export const EscrowPaymentModal: React.FC<EscrowPaymentModalProps> = ({
           if (updated) {
             onSuccess(updated);
             onClose();
+            router.push(`/in/track/${deal.id}?escrow_paid=true`);
           }
-        }, 1500);
+        }, 2200);
       },
       onFailure: (err) => {
         setIsProcessing(false);
@@ -560,14 +568,44 @@ export const EscrowPaymentModal: React.FC<EscrowPaymentModalProps> = ({
 
         {/* STEP 3: SUCCESS */}
         {step === 'SUCCESS' && (
-          <div className="text-center py-6 space-y-2.5">
-            <div className="h-12 w-12 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-7 h-7" />
+          <div className="text-center py-6 space-y-4 animate-in fade-in">
+            <div className="h-14 w-14 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto shadow-sm">
+              <CheckCircle2 className="w-8 h-8" />
             </div>
-            <div className="text-base font-bold text-zinc-900">₹{totalAmount.toLocaleString('en-IN')} Escrow Locked!</div>
-            <p className="text-xs text-zinc-500 max-w-xs mx-auto">
-              Funds safely held in RBI Nodal Escrow. SafeShip courier is now dispatched to the seller.
-            </p>
+            <div>
+              <div className="text-lg font-black text-zinc-900">₹{totalAmount.toLocaleString('en-IN')} Escrow Locked in RBI Vault!</div>
+              <p className="text-xs text-zinc-500 max-w-xs mx-auto mt-1">
+                Funds safely held in RBI Nodal Escrow. SafeShip courier <strong>Rahul K.</strong> is now dispatched.
+              </p>
+            </div>
+
+            {/* Tracking Access Box */}
+            <div className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-2xl text-left space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Consignment Tracking ID</span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">● Live Telemetry Active</span>
+              </div>
+              <div className="font-mono text-base font-black text-zinc-900 flex items-center justify-between">
+                <span>#{deal.id}</span>
+                <span className="text-xs font-normal text-zinc-500">{city}</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  router.push(`/in/track/${deal.id}?escrow_paid=true`);
+                }}
+                className="w-full py-3.5 px-4 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-black text-xs transition flex items-center justify-center gap-2 shadow-md cursor-pointer"
+              >
+                <span>Open Live Consignment Tracking &rarr;</span>
+              </button>
+              <div className="text-[11px] text-zinc-400">
+                Redirecting to live tracking in 2 seconds...
+              </div>
+            </div>
           </div>
         )}
       </div>

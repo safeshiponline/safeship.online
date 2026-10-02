@@ -105,6 +105,12 @@ export function createNewDeal(params: {
   city: string;
   pincode: string;
   sellerUpiId?: string;
+  sellerBankAccount?: {
+    accountNumber: string;
+    ifsc: string;
+    holderName?: string;
+    bankName?: string;
+  };
   feeSplitOption?: FeeSplitOption;
   deliveryTier?: SafeDeal['deliveryTier'];
   serviceTier?: DeliveryServiceTier;
@@ -189,10 +195,7 @@ export function createNewDeal(params: {
     pincode: params.pincode,
     isExchange: params.isExchange || false,
     exchangeItem: params.exchangeItem,
-    itemPhotos: params.itemPhotos.length > 0 ? params.itemPhotos : [
-      '/images/hero_openbox_authentic.webp',
-      '/images/openbox_macro_4x3.webp'
-    ],
+    itemPhotos: params.itemPhotos || [],
     seller: {
       id: `usr_${Math.random().toString(36).substring(2, 8)}`,
       name: params.sellerName,
@@ -201,7 +204,8 @@ export function createNewDeal(params: {
       pickupAddress: params.pickupAddress,
       city: params.city,
       pincode: params.pincode,
-      upiId: params.sellerUpiId || `${params.sellerName.toLowerCase().replace(/\s+/g, '')}@okaxis`,
+      upiId: params.sellerUpiId || undefined,
+      bankAccount: params.sellerBankAccount,
       rating: 5.0,
       dealsCompleted: 1
     },
@@ -209,7 +213,7 @@ export function createNewDeal(params: {
       id: 'usr_buyer_active',
       name: params.buyerName || 'Buyer Partner',
       email: 'buyer@safeship.online',
-      phone: params.buyerPhone || '+91 98110 88912',
+      phone: params.buyerPhone || '',
       deliveryAddress: params.deliveryAddress || `${params.city} Central Delivery Point`,
       city: params.city,
       pincode: params.pincode,
@@ -256,7 +260,7 @@ export function createNewDeal(params: {
     dimensionsCm: params.dimensionsCm,
     buyerReleasePin: buyerPin,
     sellerPickupCode: sellerCode,
-    status: params.upfrontPaid ? 'ESCROW_LOCKED' : 'PENDING_ACCEPTANCE',
+    status: params.upfrontPaid ? 'COURIER_ASSIGNED' : 'PENDING_ACCEPTANCE',
     assignedCourier: {
       id: 'cr_rahul_k',
       name: 'Rahul K.',
@@ -279,7 +283,7 @@ export function createNewDeal(params: {
       barcode: `99${newId}4820`,
       appliedAt: new Date().toISOString(),
       inspectedBy: 'Rahul K. (SafeShip Partner #KA-4012)',
-      inspectionPhotos: params.itemPhotos.length > 0 ? params.itemPhotos : ['/images/openbox_macro_4x3.webp'],
+      inspectionPhotos: params.itemPhotos || [],
       intactVerifiedAtDelivery: true
     },
     escrowVault: {
@@ -322,7 +326,63 @@ export function createNewDeal(params: {
   saveStoredDeals(updated);
   const currentOrders = getUserOrders();
   saveUserOrders([newDeal, ...currentOrders]);
+
+  if (typeof window !== 'undefined') {
+    fetch('/api/deals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deal: newDeal }),
+    }).catch(() => {});
+  }
+
   return newDeal;
+}
+
+export function lockDealEscrowHold(dealId: string, paymentMethod: string = 'SafeShip Nodal Escrow Hold', utr?: string): SafeDeal | null {
+  const deals = getStoredDeals();
+  const index = deals.findIndex((d) => d.id === dealId);
+  if (index === -1) return null;
+
+  const deal = deals[index];
+  const escrowAmount = deal.declaredValue;
+
+  deal.status = 'ESCROW_LOCKED';
+  deal.escrowVault = {
+    ...deal.escrowVault,
+    depositedAmount: escrowAmount,
+    isLocked: true,
+    depositedAt: new Date().toISOString(),
+    paymentMethodUsed: paymentMethod,
+    utrNumber: utr || `UTR-HOLD-${Date.now().toString(36).toUpperCase()}`
+  };
+
+  deal.auditTrail.unshift({
+    id: `aud_${Date.now()}_escrow`,
+    timestamp: new Date().toISOString(),
+    actor: 'BUYER',
+    title: 'Item Escrow Placed on Hold',
+    description: `₹${escrowAmount.toLocaleString('en-IN')} placed on hold in SafeShip RBI-regulated Nodal Account. Released to seller after doorstep unboxing OTP approval.`
+  });
+
+  deals[index] = deal;
+  saveStoredDeals(deals);
+
+  const orders = getUserOrders();
+  const ordIdx = orders.findIndex((o) => o.id === dealId);
+  if (ordIdx !== -1) {
+    orders[ordIdx] = deal;
+    saveUserOrders(orders);
+  }
+
+  if (typeof window !== 'undefined') {
+    fetch('/api/deals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deal }),
+    }).catch(() => {});
+  }
+
+  return deal;
 }
 
 export function fundDealEscrow(dealId: string, buyerData: { name: string; email: string; phone: string; address: string; city: string; pincode: string; paymentMethod: string }): SafeDeal | null {

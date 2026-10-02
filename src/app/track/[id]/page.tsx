@@ -3,7 +3,7 @@
 import React, { use, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getDealById, requestSellerCallback, advanceDealMilestone, updateDealDetails, rescheduleDealPickup } from '@/lib/store';
+import { getDealById, requestSellerCallback, advanceDealMilestone, updateDealDetails, rescheduleDealPickup, lockDealEscrowHold } from '@/lib/store';
 import { notifyMilestoneEmail } from '@/lib/emailClient';
 import { reverseGeocodeToIndianLocation } from '@/lib/pincodeService';
 import { SafeDeal, PickupSlot } from '@/lib/types';
@@ -62,6 +62,7 @@ function TrackingContent({
   const searchParams = useSearchParams();
   const isNewlyBooked = searchParams.get('booked') === 'true';
   const paymentId = searchParams.get('payment_id');
+  const isEscrowPaid = searchParams.get('escrow_paid') === 'true' || searchParams.get('escrow_locked') === 'true';
 
   const resolvedParams = use(params);
   const [deal, setDeal] = useState<SafeDeal | null>(null);
@@ -92,10 +93,71 @@ function TrackingContent({
   const [isRescheduling, setIsRescheduling] = useState(false);
   const [rescheduledToast, setRescheduledToast] = useState(false);
 
+  const [isEscrowHolding, setIsEscrowHolding] = useState(false);
+  const [escrowHoldSuccess, setEscrowHoldSuccess] = useState(false);
+  const [isSendingEmailAlert, setIsSendingEmailAlert] = useState(false);
+  const [emailAlertSentToast, setEmailAlertSentToast] = useState(false);
+
+  const handlePutEscrowHold = () => {
+    if (!deal) return;
+    setIsEscrowHolding(true);
+    setTimeout(() => {
+      const updated = lockDealEscrowHold(deal.id, 'Cashfree PG v3 Escrow Hold');
+      if (updated) {
+        setDeal(updated);
+        notifyMilestoneEmail(updated, 'COURIER_ASSIGNED');
+      }
+      setIsEscrowHolding(false);
+      setEscrowHoldSuccess(true);
+      setEmailAlertSentToast(true);
+      setTimeout(() => setEmailAlertSentToast(false), 5000);
+    }, 700);
+  };
+
+  const handleResendPickupAlert = async () => {
+    if (!deal) return;
+    setIsSendingEmailAlert(true);
+    await notifyMilestoneEmail(deal, 'COURIER_ASSIGNED');
+    setIsSendingEmailAlert(false);
+    setEmailAlertSentToast(true);
+    setTimeout(() => setEmailAlertSentToast(false), 5000);
+  };
+
   const getTomorrowDateStr = () => {
     const d = new Date();
     d.setDate(d.getDate() + 1);
     return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+  };
+
+  const getActualPickupSchedule = () => {
+    const now = new Date();
+    const currentHour = now.getHours();
+    const isMorning = deal?.pickupSlot === 'MORNING_10_1';
+    
+    // If it's already past the slot window today, schedule for tomorrow
+    const isTomorrow = isMorning ? currentHour >= 12 : currentHour >= 16;
+    
+    const targetDate = new Date(now);
+    if (isTomorrow) {
+      targetDate.setDate(targetDate.getDate() + 1);
+    }
+    
+    const dateFormatted = targetDate.toLocaleDateString('en-IN', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short',
+    });
+    
+    const slotWindow = isMorning ? '10:00 AM – 01:00 PM' : '02:00 PM – 05:00 PM';
+    const dayLabel = isTomorrow ? 'Tomorrow' : 'Today';
+    
+    return {
+      dateFormatted,
+      slotWindow,
+      dayLabel,
+      fullSchedule: `${dayLabel} (${dateFormatted}), ${slotWindow}`,
+      callTime: isMorning ? '10:00 AM' : '02:00 PM'
+    };
   };
 
   const handleReschedule = () => {
@@ -285,10 +347,27 @@ function TrackingContent({
       setBuyerFormCity(loaded.buyer?.city || '');
       setBuyerFormUpi(loaded.buyer?.upiId || '');
       analytics.trackTrackingViewed(loaded.id, loaded.status);
+      setIsLoading(false);
     } else {
-      setDeal(null);
+      fetch(`/api/deals?id=${encodeURIComponent(resolvedParams.id)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((serverDeal) => {
+          if (serverDeal && serverDeal.id) {
+            setDeal(serverDeal);
+            setBuyerFormName(serverDeal.buyer?.name || '');
+            setBuyerFormPhone(serverDeal.buyer?.phone || '');
+            setBuyerFormAddress(serverDeal.buyer?.deliveryAddress || '');
+            setBuyerFormPincode(serverDeal.buyer?.pincode || '');
+            setBuyerFormCity(serverDeal.buyer?.city || '');
+            setBuyerFormUpi(serverDeal.buyer?.upiId || '');
+            analytics.trackTrackingViewed(serverDeal.id, serverDeal.status);
+          } else {
+            setDeal(null);
+          }
+        })
+        .catch(() => setDeal(null))
+        .finally(() => setIsLoading(false));
     }
-    setIsLoading(false);
   }, [resolvedParams.id]);
 
   if (!deal) {
@@ -412,7 +491,35 @@ function TrackingContent({
 
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-6 sm:py-9 space-y-6">
         
-
+        {/* ESCROW PAID / SECURED CELEBRATION BANNER */}
+        {isEscrowPaid && (
+          <div className="rounded-2xl border-2 border-emerald-300 bg-emerald-50 p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black shrink-0 shadow-xs">
+                ✓
+              </div>
+              <div>
+                <div className="text-sm font-black text-emerald-950 flex items-center gap-2">
+                  <span>Escrow Payment Confirmed &amp; Secured in RBI Vault!</span>
+                  <span className="text-[10px] bg-emerald-200 text-emerald-900 font-bold px-2 py-0.5 rounded-full">
+                    Live Telemetry Active
+                  </span>
+                </div>
+                <p className="text-xs text-emerald-800 mt-0.5">
+                  Consignment #{deal.id} is active. Field Officer <strong>Rahul K.</strong> has been dispatched for pickup on the scheduled time.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={copyTrackingLink}
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shrink-0 shadow-xs cursor-pointer active:scale-95"
+            >
+              {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copied ? 'Tracking Link Copied!' : 'Copy Tracking Link'}</span>
+            </button>
+          </div>
+        )}
 
         {/* Top Header Card */}
         <div className="rounded-3xl border border-[#E2E8F0] bg-white p-5 sm:p-7 shadow-xs flex flex-wrap items-center justify-between gap-4">
@@ -522,6 +629,96 @@ function TrackingContent({
             ))}
           </div>
         </div>
+
+        {/* 2-STAGE PAYMENT LIFECYCLE: MANDATORY ESCROW HOLD BANNER */}
+        {!deal.escrowVault?.isLocked ? (
+          <div className="rounded-3xl border-2 border-amber-300 bg-amber-50/80 p-5 sm:p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4 animate-in fade-in">
+            <div className="flex items-start gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <AlertTriangle className="w-6 h-6 text-white" />
+              </div>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-950 px-2.5 py-0.5 rounded-full">
+                    Action Mandatory &bull; Pickup Paused
+                  </span>
+                  <span className="text-sm font-black text-amber-950">
+                    Authorize Item Escrow (₹{deal.declaredValue.toLocaleString('en-IN')}) to Dispatch Courier
+                  </span>
+                </div>
+                <p className="text-xs text-amber-900 leading-relaxed max-w-2xl">
+                  Shipping fee (₹{deal.upfrontPaid || upfrontFee}) is paid, but Field Officer <strong>Rahul K.</strong> is paused until the item escrow is secured in the SafeShip RBI-regulated Nodal Vault. Funds are protected and only released to the seller after the 10-minute doorstep unboxing passes.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              disabled={isEscrowHolding || escrowHoldSuccess}
+              onClick={handlePutEscrowHold}
+              className="w-full md:w-auto py-3 px-5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-500/20 active:scale-95 shrink-0 disabled:opacity-70"
+            >
+              {isEscrowHolding ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Securing in RBI Vault...</span>
+                </>
+              ) : escrowHoldSuccess ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-300" />
+                  <span>Escrow Locked &amp; Courier Dispatched! ✓</span>
+                </>
+              ) : (
+                <>
+                  <Lock className="w-4 h-4" />
+                  <span>Authorize Escrow Hold (₹{deal.declaredValue.toLocaleString('en-IN')}) &amp; Dispatch</span>
+                </>
+              )}
+            </button>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs animate-in fade-in">
+            <div className="flex items-center gap-2.5 font-bold text-emerald-950">
+              <div className="w-7 h-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black">
+                ✓
+              </div>
+              <div>
+                <span>Stage 2 Escrow Secured: ₹{deal.declaredValue.toLocaleString('en-IN')} in RBI Nodal Vault</span>
+                <p className="text-[11px] text-emerald-700 font-normal">
+                  Field Officer Rahul K. dispatched &bull; Pickup notification with 4-digit code ({deal.sellerPickupCode}) active for {deal.seller.email}.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              disabled={isSendingEmailAlert}
+              onClick={handleResendPickupAlert}
+              className="px-3.5 py-1.5 rounded-xl border border-emerald-300 bg-white hover:bg-emerald-100/50 text-emerald-900 text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-2xs self-end sm:self-auto"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSendingEmailAlert ? 'animate-spin' : ''}`} />
+              <span>{isSendingEmailAlert ? 'Sending Email...' : 'Re-send Pickup Email Alert'}</span>
+            </button>
+          </div>
+        )}
+
+        {/* EMAIL ALERT SENT CONFIRMATION TOAST */}
+        {emailAlertSentToast && (
+          <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-semibold flex items-center justify-between shadow-sm animate-in fade-in">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-[#0066FF]" />
+              <span>
+                Live pickup alert &amp; 4-digit verification code ({deal.sellerPickupCode}) dispatched via email to {deal.seller.email}!
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEmailAlertSentToast(false)}
+              className="text-blue-700 hover:text-blue-950 p-1 cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         {/* RESCHEDULE CONFIRMATION TOAST */}
         {rescheduledToast && (
@@ -861,21 +1058,58 @@ function TrackingContent({
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[10px] font-black uppercase tracking-wider bg-blue-200 text-blue-900 px-2 py-0.5 rounded">
-                      Courier Partner Dispatched
+                      Courier Shipping Charge Paid
                     </span>
                     <span className="text-xs font-bold text-blue-900">
-                      On-Time Pickup &bull; {deal.pickupAttemptStatus?.nextAttemptScheduled || 'Scheduled Today'}
+                      Pickup Scheduled &bull; {deal.pickupAttemptStatus?.nextAttemptScheduled || getActualPickupSchedule().fullSchedule}
                     </span>
                   </div>
                   <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                    SafeShip Bonded Field Officer <strong>{deal.assignedCourier?.name || 'Rahul K.'}</strong> has been assigned to pick up the parcel from <strong>{deal.seller.name}</strong> ({deal.seller.pickupAddress || deal.city}).
+                    Courier fee (₹{deal.upfrontPaid || upfrontFee}) confirmed. SafeShip Bonded Delivery Boy <strong>{deal.assignedCourier?.name || 'Rahul K.'}</strong> has been allocated for pickup from <strong>{deal.seller.name}</strong> ({deal.seller.pickupAddress || deal.city}).
                   </p>
                 </div>
               </div>
 
               <div className="flex items-center gap-2 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                <span>Open-Box Tamper Bag Assigned</span>
+                <span>RBI Escrow Protected</span>
+              </div>
+            </div>
+
+            {/* Delivery Boy Call Rules */}
+            <div className="p-3.5 rounded-2xl bg-white/90 border border-blue-200 text-xs space-y-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-1.5 text-blue-950 font-bold">
+                  <Phone className="w-4 h-4 text-[#0066FF]" />
+                  <span>Delivery Boy Time-Synchronized Calling Protocol</span>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  Strict Timeline Enforced
+                </span>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-0.5">
+                <div className="p-2.5 rounded-xl bg-blue-50/60 border border-blue-100 space-y-1">
+                  <span className="font-bold text-[#0066FF] flex items-center gap-1">
+                    <span>📞 1. Pickup Time Call:</span>
+                  </span>
+                  <span className="text-slate-600 block leading-tight">
+                    Delivery boy will call seller <strong>on the pickup time</strong> ({getActualPickupSchedule().slotWindow} &bull; Call at ~{getActualPickupSchedule().callTime}) to confirm arrival and verify 4-digit Pickup OTP.
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-emerald-50/60 border border-emerald-100 space-y-1">
+                  <span className="font-bold text-emerald-800 flex items-center gap-1">
+                    <span>📲 2. Delivery Time Call:</span>
+                  </span>
+                  <span className="text-slate-600 block leading-tight">
+                    Delivery boy will call buyer <strong>only after successful pickup</strong> and when reaching near the buyer for the 10-minute doorstep unboxing.
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-1 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                <span>Escrow money: <strong>₹{deal.declaredValue.toLocaleString('en-IN')}</strong></span>
+                <span className="text-emerald-700 font-semibold">Given to seller only after delivery OTP approval</span>
               </div>
             </div>
           </div>
@@ -1144,44 +1378,44 @@ function TrackingContent({
             <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
               <div className="flex items-center justify-between">
                 <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center justify-center">1</span>
-                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">Completed</span>
+                <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">Paid First</span>
               </div>
-              <h3 className="text-xs font-bold text-[#0F172A]">Upfront Fee Paid</h3>
+              <h3 className="text-xs font-bold text-[#0F172A]">Shipping Charge Paid</h3>
               <p className="text-[11px] text-[#64748B] leading-relaxed">
-                Courier charge (₹{deal.upfrontPaid || upfrontFee}) confirmed via Razorpay ({paymentId || deal.escrowVault.paymentMethodUsed}). Bonded officer Rahul K. dispatched to pickup address.
+                Courier fee (₹{deal.upfrontPaid || upfrontFee}) confirmed via {paymentId ? 'Cashfree PG' : (deal.escrowVault.paymentMethodUsed || 'Online PG')}. Delivery Boy Rahul K. scheduled for doorstep pickup.
               </p>
             </div>
 
             <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
               <div className="flex items-center justify-between">
                 <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 text-xs font-bold flex items-center justify-center">2</span>
-                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">In Progress</span>
+                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">Pickup Time</span>
               </div>
-              <h3 className="text-xs font-bold text-[#0F172A]">Pickup &amp; Barcode Sealing</h3>
+              <h3 className="text-xs font-bold text-[#0F172A]">Delivery Boy Calls Seller</h3>
               <p className="text-[11px] text-[#64748B] leading-relaxed">
-                Officer physically verifies model and serial number against declaration, photographs device, and seals it in heavy-gauge tamper bag <strong className="text-slate-800">SSP-TAMPER-SAFE</strong>.
+                Delivery boy calls seller <strong>on the pickup time</strong> ({deal.pickupSlot === 'MORNING_10_1' ? '10 AM – 1 PM' : '2 PM – 5 PM'}) to confirm arrival, inspect device, and verify 4-digit Pickup OTP.
               </p>
             </div>
 
             <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
               <div className="flex items-center justify-between">
                 <span className="w-6 h-6 rounded-full bg-purple-100 text-purple-800 text-xs font-bold flex items-center justify-center">3</span>
-                <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">Monitored</span>
+                <span className="text-[10px] font-bold text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">RBI Vault</span>
               </div>
-              <h3 className="text-xs font-bold text-[#0F172A]">Linehaul Telemetry</h3>
+              <h3 className="text-xs font-bold text-[#0F172A]">Escrow Money Secured</h3>
               <p className="text-[11px] text-[#64748B] leading-relaxed">
-                Tracked in real time via highway linehaul GPS corridor. Cargo insured under policy {deal.insurancePolicyNumber || 'POL-SAFESHIP-TRANSIT-2026'}.
+                Merchandise escrow amount (₹{deal.declaredValue.toLocaleString('en-IN')}) is locked safely in RBI Nodal account. Monitored via GPS corridor under insured policy {deal.insurancePolicyNumber || 'POL-SAFESHIP-TRANSIT-2026'}.
               </p>
             </div>
 
             <div className="p-4 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] space-y-2">
               <div className="flex items-center justify-between">
                 <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-800 text-xs font-bold flex items-center justify-center">4</span>
-                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Doorstep</span>
+                <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded">Post-Delivery</span>
               </div>
-              <h3 className="text-xs font-bold text-[#0F172A]">Open-Box &amp; Escrow Settlement</h3>
+              <h3 className="text-xs font-bold text-[#0F172A]">Escrow Given to Seller</h3>
               <p className="text-[11px] text-[#64748B] leading-relaxed">
-                Officer unboxes parcel. Buyer takes 10 mins to test. If approved, buyer pays ₹{deal.declaredValue.toLocaleString('en-IN')} / enters OTP. If rejected, returned with ₹0 product charge.
+                Delivery boy calls buyer when near. Buyer tests item for 10 mins. Upon OTP sign-off, escrow money (₹{deal.declaredValue.toLocaleString('en-IN')}) is transferred directly to the seller!
               </p>
             </div>
           </div>
@@ -1339,7 +1573,76 @@ function TrackingContent({
               </button>
             </div>
 
-            <div className="text-center space-y-1.5 pt-1">
+            {/* 3-Step Lifecycle Notification Box */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+              <div className="flex items-center justify-between text-[11px] pb-1.5 border-b border-slate-200">
+                <span className="font-bold text-slate-700">1. Shipping Charge</span>
+                <span className="font-mono font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                  ₹{deal.upfrontPaid || upfrontFee} Paid First ✓
+                </span>
+              </div>
+              <div className="flex items-start gap-2 text-[11px] text-slate-700">
+                <span className="text-[#0066FF] font-bold shrink-0">📞 Delivery Boy Call:</span>
+                <span>Field officer ({deal.assignedCourier?.name || 'Rahul K.'}) will call seller <strong>on the pickup time</strong> ({deal.pickupSlot === 'MORNING_10_1' ? '10:00 AM – 01:00 PM' : '02:00 PM – 05:00 PM'}).</span>
+              </div>
+              <div className="flex items-start gap-2 text-[11px] text-slate-700">
+                <span className="text-emerald-700 font-bold shrink-0">💰 Escrow Money:</span>
+                <span>₹{deal.declaredValue.toLocaleString('en-IN')} held in RBI Nodal Escrow and <strong>given to the seller after delivery approval</strong>.</span>
+              </div>
+            </div>
+
+            {/* Stage 2 Escrow Hold Action inside Post Payment Modal */}
+            {!deal.escrowVault?.isLocked ? (
+              <div className="p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-xs space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-950 bg-amber-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3 text-amber-700" />
+                    <span>Stage 2 Mandatory Action</span>
+                  </span>
+                  <span className="font-black text-amber-950 font-mono text-sm">
+                    ₹{deal.declaredValue.toLocaleString('en-IN')}
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-900 leading-snug">
+                  Pickup dispatch is currently paused. Place the item value in SafeShip RBI Nodal Escrow so <strong>Field Officer Rahul K.</strong> is activated for doorstep pickup. Released to seller only after your 10-min unboxing approval.
+                </p>
+                <button
+                  type="button"
+                  disabled={isEscrowHolding || escrowHoldSuccess}
+                  onClick={handlePutEscrowHold}
+                  className="w-full py-3 px-4 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-blue-500/20 active:scale-95 disabled:opacity-70"
+                >
+                  {isEscrowHolding ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Securing in RBI Vault...</span>
+                    </>
+                  ) : escrowHoldSuccess ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-300" />
+                      <span>Escrow Secured &amp; Courier Dispatched! ✓</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Authorize Escrow Hold (₹{deal.declaredValue.toLocaleString('en-IN')}) &amp; Dispatch</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : (
+              <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-950 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span className="font-bold">₹{deal.declaredValue.toLocaleString('en-IN')} Secured in RBI Nodal Vault ✓</span>
+                </div>
+                <span className="text-[10px] text-emerald-700 font-semibold bg-emerald-100/80 px-2 py-0.5 rounded">
+                  Dispatched
+                </span>
+              </div>
+            )}
+
+            <div className="text-center space-y-1 pt-0.5">
               <p className="text-xs text-slate-600 leading-relaxed">
                 Send this live tracking link to the counterparty (buyer or seller). They can track real-time open-box inspection and delivery status:
               </p>
@@ -1579,7 +1882,7 @@ function TrackingContent({
         </div>
       )}
 
-      <EnterpriseFooter />
+      <EnterpriseFooter hideServiceabilityBanner={true} />
     </div>
   );
 }

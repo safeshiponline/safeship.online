@@ -181,7 +181,13 @@ export interface SafeDeal {
     pickupAddress: string;
     city: string;
     pincode: string;
-    upiId: string; // e.g. rohit@okhdfcbank
+    upiId?: string; // e.g. rohit@okhdfcbank
+    bankAccount?: {
+      accountNumber: string;
+      ifsc: string;
+      holderName?: string;
+      bankName?: string;
+    };
     rating: number;
     dealsCompleted: number;
   };

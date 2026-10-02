@@ -6,6 +6,11 @@ import {
   EmailEvent,
   renderBookingConfirmedSellerEmail,
   renderBookingConfirmedBuyerEmail,
+  renderCourierDispatchedEmail,
+  renderPickupVerifiedEmail,
+  renderOutForDeliveryBuyerEmail,
+  renderCompletedSellerEmail,
+  renderCompletedBuyerEmail,
   renderWelcomeUserEmail,
 } from '@/lib/emailTemplates';
 
@@ -63,27 +68,68 @@ export async function POST(request: Request) {
 
     const results: Array<{ recipient: string; role: 'seller' | 'buyer'; result: SendEmailResult }> = [];
 
-    const sellerEmail = deal.seller?.email?.trim();
+    const sellerEmail = (directEmail || deal.seller?.email)?.trim();
     const buyerEmail = deal.buyer?.email?.trim();
 
-    // Policy: Outbound transactional emails are strictly restricted to Signup (WELCOME) and Order Creation (BOOKING_CONFIRMED)
-    if (event !== 'BOOKING_CONFIRMED') {
-      return NextResponse.json({
-        success: true,
-        skipped: true,
-        message: `Notification for "${event}" skipped per policy. Transactional emails are sent strictly on signup and order creation.`
-      });
+    // 1. ORDER CREATION / BOOKING CONFIRMED (Shipping Fee Paid)
+    if (event === 'BOOKING_CONFIRMED') {
+      if (sellerEmail) {
+        const { subject, html } = renderBookingConfirmedSellerEmail(deal);
+        const res = await sendTransactionalEmail({ to: sellerEmail, subject, html });
+        results.push({ recipient: sellerEmail, role: 'seller', result: res });
+      }
+      if (buyerEmail && buyerEmail !== sellerEmail) {
+        const { subject, html } = renderBookingConfirmedBuyerEmail(deal);
+        const res = await sendTransactionalEmail({ to: buyerEmail, subject, html });
+        results.push({ recipient: buyerEmail, role: 'buyer', result: res });
+      }
     }
-
-    if (sellerEmail) {
-      const { subject, html } = renderBookingConfirmedSellerEmail(deal);
-      const res = await sendTransactionalEmail({ to: sellerEmail, subject, html });
-      results.push({ recipient: sellerEmail, role: 'seller', result: res });
+    // 2. TIME FOR PICKUP / COURIER DISPATCHED / ESCROW LOCKED
+    else if (event === 'COURIER_ASSIGNED') {
+      if (sellerEmail) {
+        const { subject, html } = renderCourierDispatchedEmail(deal);
+        const res = await sendTransactionalEmail({ to: sellerEmail, subject, html });
+        results.push({ recipient: sellerEmail, role: 'seller', result: res });
+      }
+      if (buyerEmail && buyerEmail !== sellerEmail) {
+        const { subject, html } = renderCourierDispatchedEmail(deal);
+        const res = await sendTransactionalEmail({ to: buyerEmail, subject, html });
+        results.push({ recipient: buyerEmail, role: 'buyer', result: res });
+      }
     }
-    if (buyerEmail) {
-      const { subject, html } = renderBookingConfirmedBuyerEmail(deal);
-      const res = await sendTransactionalEmail({ to: buyerEmail, subject, html });
-      results.push({ recipient: buyerEmail, role: 'buyer', result: res });
+    // 3. PICKUP VERIFIED & TAMPER SEALED
+    else if (event === 'PICKUP_VERIFIED') {
+      if (sellerEmail) {
+        const { subject, html } = renderPickupVerifiedEmail(deal);
+        const res = await sendTransactionalEmail({ to: sellerEmail, subject, html });
+        results.push({ recipient: sellerEmail, role: 'seller', result: res });
+      }
+      if (buyerEmail && buyerEmail !== sellerEmail) {
+        const { subject, html } = renderPickupVerifiedEmail(deal);
+        const res = await sendTransactionalEmail({ to: buyerEmail, subject, html });
+        results.push({ recipient: buyerEmail, role: 'buyer', result: res });
+      }
+    }
+    // 4. OUT FOR DELIVERY (10-Min Doorstep Inspection)
+    else if (event === 'OUT_FOR_DELIVERY') {
+      if (buyerEmail) {
+        const { subject, html } = renderOutForDeliveryBuyerEmail(deal);
+        const res = await sendTransactionalEmail({ to: buyerEmail, subject, html });
+        results.push({ recipient: buyerEmail, role: 'buyer', result: res });
+      }
+    }
+    // 5. COMPLETED & SETTLED
+    else if (event === 'COMPLETED') {
+      if (sellerEmail) {
+        const { subject, html } = renderCompletedSellerEmail(deal);
+        const res = await sendTransactionalEmail({ to: sellerEmail, subject, html });
+        results.push({ recipient: sellerEmail, role: 'seller', result: res });
+      }
+      if (buyerEmail && buyerEmail !== sellerEmail) {
+        const { subject, html } = renderCompletedBuyerEmail(deal);
+        const res = await sendTransactionalEmail({ to: buyerEmail, subject, html });
+        results.push({ recipient: buyerEmail, role: 'buyer', result: res });
+      }
     }
 
     const allSuccessful = results.length > 0 ? results.every((r) => r.result.success) : true;

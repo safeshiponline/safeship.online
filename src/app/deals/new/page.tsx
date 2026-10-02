@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useMemo, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SafeShipLogo } from '@/components/common/SafeShipLogo';
@@ -9,6 +9,7 @@ import {
   ArrowRight,
   ArrowLeftRight,
   Check,
+  CheckCircle2,
   Package,
   Camera,
   MapPin,
@@ -39,17 +40,19 @@ import {
   Zap,
   Copy,
   Share2,
-  Link2
+  Link2,
+  RefreshCw
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
-import { createNewDeal, getUserOrders } from '@/lib/store';
+import { createNewDeal, getUserOrders, lockDealEscrowHold } from '@/lib/store';
 import { analytics } from '@/lib/analytics';
 import { notifyMilestoneEmail } from '@/lib/emailClient';
 import { getSession, UserSession } from '@/lib/auth';
 import { ProductPhotoMatchResult, validateLuhnImei, identifyBrandFromImei } from '@/lib/geminiUnified';
-import { ItemCategory, DeliveryServiceTier, PickupSlot, FeeSplitOption } from '@/lib/types';
+import { ItemCategory, DeliveryServiceTier, PickupSlot, FeeSplitOption, SafeDeal } from '@/lib/types';
 import { resolvePincode, calculateRoadDistance, calculateTierPricing, calculateInsuranceFee, getRealisticTransitDays, reverseGeocodeToIndianLocation } from '@/lib/pincodeService';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
+import AutoTriggerButton from '@/components/common/AutoTriggerButton';
 
 export default function CreateShipmentPage() {
   return (
@@ -72,38 +75,58 @@ function inferCategory(name: string): ItemCategory | null {
   return null;
 }
 
-function getCatalogPhotoForDevice(name: string, category?: string): string {
-  const lower = (name || '').toLowerCase();
-  if (lower.includes('macbook') || lower.includes('laptop') || category === 'LAPTOPS_COMPUTERS') {
-    return '/images/openbox_macro_4x3.webp';
+function detectProductInfo(name: string) {
+  const n = (name || '').trim().toLowerCase();
+  if (n.length < 3) return null;
+  if (/iphone|apple phone|pro max|mini|plus/i.test(n)) {
+    return { brand: 'Apple iPhone Series', category: 'Smartphone', badge: 'iOS Device' };
   }
-  if (lower.includes('camera') || lower.includes('lens') || lower.includes('sony a') || category === 'CAMERAS_OPTICS') {
-    return '/images/camera_gear_4x3.webp';
+  if (/samsung|galaxy|ultra|flip|fold|s2\d|a5\d/i.test(n)) {
+    return { brand: 'Samsung Galaxy Series', category: 'Smartphone', badge: 'Galaxy Device' };
   }
-  if (lower.includes('ps5') || lower.includes('playstation') || lower.includes('xbox') || lower.includes('headphone') || category === 'GAMING_AUDIO') {
-    return '/images/gaming_ps5_4x3.webp';
+  if (/pixel|google pixel/i.test(n)) {
+    return { brand: 'Google Pixel Series', category: 'Smartphone', badge: 'Tensor Device' };
   }
-  if (lower.includes('watch') || category === 'LUXURY_WATCHES') {
-    return '/images/tech_deals_items.webp';
+  if (/oneplus|nord/i.test(n)) {
+    return { brand: 'OnePlus Series', category: 'Smartphone', badge: 'OxygenOS Device' };
   }
-  return '/images/hero_openbox_4x3.webp';
+  if (/macbook|mac mini|mac studio|imac/i.test(n)) {
+    return { brand: 'Apple Mac / MacBook', category: 'Laptop / PC', badge: 'macOS Computer' };
+  }
+  if (/dell|xps|alienware|latitude/i.test(n)) {
+    return { brand: 'Dell PC / Laptop', category: 'Laptop / PC', badge: 'Windows PC' };
+  }
+  if (/thinkpad|lenovo|legion|yoga/i.test(n)) {
+    return { brand: 'Lenovo PC / ThinkPad', category: 'Laptop / PC', badge: 'Computer Hardware' };
+  }
+  if (/hp|spectre|envy|omen|pavilion/i.test(n)) {
+    return { brand: 'HP PC / Laptop', category: 'Laptop / PC', badge: 'Computer Hardware' };
+  }
+  if (/asus|rog|zenbook|tuf/i.test(n)) {
+    return { brand: 'ASUS PC / ROG', category: 'Laptop / PC', badge: 'Computer Hardware' };
+  }
+  if (/ipad|apple tablet/i.test(n)) {
+    return { brand: 'Apple iPad Series', category: 'Tablet', badge: 'iPadOS Device' };
+  }
+  if (/sony|alpha|a7|a6|fx3|canon|eos|nikon|fuji|fujifilm|lumix/i.test(n)) {
+    return { brand: 'Digital Camera & Lens', category: 'Camera & Optics', badge: 'Optical Hardware' };
+  }
+  if (/ps5|playstation|xbox|nintendo|switch|steam deck/i.test(n)) {
+    return { brand: 'Gaming Console', category: 'Gaming', badge: 'Console Hardware' };
+  }
+  if (/apple watch|iwatch|galaxy watch|garmin/i.test(n)) {
+    return { brand: 'Smartwatch / Wearable', category: 'Wearable', badge: 'Wearable Device' };
+  }
+  if (/airpods|sony wh|sony wf|bose|sennheiser|headphone|earbuds/i.test(n)) {
+    return { brand: 'Audio / Headphones', category: 'Audio', badge: 'Personal Audio' };
+  }
+  if (/rtx|gtx|radeon|gpu|graphics card/i.test(n)) {
+    return { brand: 'Graphics Card (GPU)', category: 'PC Hardware', badge: 'PC Component' };
+  }
+  return { brand: 'Hardware Listing', category: 'Electronics', badge: 'Declared Hardware' };
 }
 
 type ProductAngleKey = 'front' | 'back' | 'sides' | 'box';
-
-interface ProductAngleSlot {
-  key: ProductAngleKey;
-  label: string;
-  shortDesc: string;
-  tag: string;
-}
-
-const PRODUCT_ANGLES: ProductAngleSlot[] = [
-  { key: 'front', label: 'Front Screen', shortDesc: 'Active display, Dynamic Island / notch, glass & bezels', tag: 'Screen Check' },
-  { key: 'back', label: 'Back & Cameras', shortDesc: 'Camera cluster, triple/dual lenses, rear glass, OEM logo', tag: 'Camera Cluster' },
-  { key: 'sides', label: 'Frame & Rails', shortDesc: 'Titanium/metal rails, volume buttons, charging port & corners', tag: 'Chassis Profile' },
-  { key: 'box', label: 'Box / Bill / Serial', shortDesc: 'Retail box barcode sticker, purchase invoice, or serial label', tag: 'Packaging / Label' }
-];
 
 function CreateShipmentContent() {
   const router = useRouter();
@@ -112,8 +135,6 @@ function CreateShipmentContent() {
 
   const [mode, setMode] = useState<'send' | 'exchange'>(initialType);
   const [currentStep, setCurrentStep] = useState<number>(1);
-  const [step2Chunk, setStep2Chunk] = useState<1 | 2 | 3>(1);
-  const [step3Chunk, setStep3Chunk] = useState<1 | 2>(1);
 
   // Form State - Item 1 (What you are sending / swapping out)
   // ZERO mock pre-filled data - all text starts empty with elegant placeholders
@@ -147,8 +168,16 @@ function CreateShipmentContent() {
   // Counterparty Contacts
   const [senderName, setSenderName] = useState<string>('');
   const [senderPhone, setSenderPhone] = useState<string>('');
+  const [senderEmail, setSenderEmail] = useState<string>('');
   const [buyerName, setBuyerName] = useState<string>('');
   const [buyerPhone, setBuyerPhone] = useState<string>('');
+
+  // Seller Settlement Details (Optional Bank Account / UPI)
+  const [sellerSettlementType, setSellerSettlementType] = useState<'BANK' | 'UPI'>('BANK');
+  const [sellerAccountNumber, setSellerAccountNumber] = useState<string>('');
+  const [sellerIfsc, setSellerIfsc] = useState<string>('');
+  const [sellerAccountName, setSellerAccountName] = useState<string>('');
+  const [sellerUpiId, setSellerUpiId] = useState<string>('');
 
   // Location & Distance State
   const [pickupLocation, setPickupLocation] = useState<string>('');
@@ -184,6 +213,15 @@ function CreateShipmentContent() {
   // Subtle non-refundable courier shipping fee agreement
   const [agreeTerms, setAgreeTerms] = useState<boolean>(true);
 
+  // Live Payment Mode: Cashfree PG v3 active (pass ?demo=true in URL for sandbox/testing)
+  const [isTestProcessing, setIsTestProcessing] = useState<boolean>(false);
+  const SIMULATE_PAID_FOR_TESTING = false;
+
+  // Post-payment Escrow Hold Prompt State
+  const [createdDealForEscrow, setCreatedDealForEscrow] = useState<SafeDeal | null>(null);
+  const [isEscrowHolding, setIsEscrowHolding] = useState<boolean>(false);
+  const [escrowHoldSuccess, setEscrowHoldSuccess] = useState<boolean>(false);
+
   // Field Validation State
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [stepErrorBanner, setStepErrorBanner] = useState<string>('');
@@ -215,7 +253,6 @@ function CreateShipmentContent() {
 
   // User Session State
   const [session, setSession] = useState<UserSession | null>(null);
-  const [sellerUpiId, setSellerUpiId] = useState<string>('');
 
   // Hardware IMEI & Serial Number + Multi-Angle Product Photo Verification State
   const [productPhoto, setProductPhoto] = useState<string | null>(null);
@@ -234,6 +271,8 @@ function CreateShipmentContent() {
   } | null>(null);
   const [isMatchingPhoto, setIsMatchingPhoto] = useState<boolean>(false);
   const [photoMatchResult, setPhotoMatchResult] = useState<ProductPhotoMatchResult | null>(null);
+  const [dismissedMismatch, setDismissedMismatch] = useState<boolean>(false);
+  const detectedProduct = useMemo(() => detectProductInfo(itemName), [itemName]);
   const [imeiAuditReport, setImeiAuditReport] = useState<{
     status: 'VALID' | 'BLURRY_RETRY' | 'NOT_FOUND';
     imei?: string;
@@ -288,35 +327,6 @@ function CreateShipmentContent() {
       }
     };
 
-    const applySavedLocation = () => {
-      try {
-        const savedLocStr = localStorage.getItem('safeship_user_location');
-        if (savedLocStr) {
-          const savedLoc = JSON.parse(savedLocStr);
-          if (savedLoc?.pincode) {
-            setPickupPincode((prev) => {
-              if (!prev) {
-                const info = resolvePincode(savedLoc.pincode);
-                if (info && info.city) {
-                  setPickupCity(`${info.city}, ${info.state}`);
-                  setPickupDistrict(info.district || '');
-                  setPickupState(info.state || '');
-                  setPickupHub(info.hubName || '');
-                }
-                return savedLoc.pincode;
-              }
-              return prev;
-            });
-            if (savedLoc.formattedAddress) {
-              setPickupLocation((prev) => (!prev ? savedLoc.formattedAddress : prev));
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('Could not restore saved location:', err);
-      }
-    };
-
     const current = getSession();
     applyUserSession(current);
 
@@ -325,33 +335,9 @@ function CreateShipmentContent() {
       applyUserSession(updated);
     };
 
-    const onLocationChange = (e: any) => {
-      const loc = e.detail;
-      if (loc?.pincode) {
-        setPickupPincode((prev) => {
-          if (!prev || prev === loc.pincode) {
-            const info = resolvePincode(loc.pincode);
-            if (info && info.city) {
-              setPickupCity(`${info.city}, ${info.state}`);
-              setPickupDistrict(info.district || '');
-              setPickupState(info.state || '');
-              setPickupHub(info.hubName || '');
-            }
-            return loc.pincode;
-          }
-          return prev;
-        });
-        if (loc.formattedAddress) {
-          setPickupLocation((prev) => (!prev ? loc.formattedAddress : prev));
-        }
-      }
-    };
-
     window.addEventListener('safeship_auth_changed', onAuthChange);
-    window.addEventListener('safeship_location_updated', onLocationChange);
     return () => {
       window.removeEventListener('safeship_auth_changed', onAuthChange);
-      window.removeEventListener('safeship_location_updated', onLocationChange);
     };
   }, []);
 
@@ -396,6 +382,7 @@ function CreateShipmentContent() {
   // Verify multi-angle photos with SafeShip Vision Engine
   const verifyMultiAnglePhotos = async (photos: string[], nameToCheck?: string) => {
     clearFieldError('photos');
+    setDismissedMismatch(false);
     const validPhotos = photos.filter((p) => p && typeof p === 'string' && p.trim().length > 0);
     if (validPhotos.length > 0) {
       setProductPhoto(validPhotos[0]);
@@ -746,77 +733,28 @@ function CreateShipmentContent() {
 
 
   useEffect(() => {
-    const isDemo = searchParams.get('demo') === 'true';
     const reqStep = searchParams.get('step');
-    const reqVal = searchParams.get('val');
-    if (isDemo) {
-      setSelectedCategory('SMARTPHONES_TABLETS');
-      setItemName('Apple iPhone 15 Pro (128GB)');
-      setCondition('Used - Mint');
-      setDeclaredValue(reqVal ? Number(reqVal) : 8000);
-      setPackageWeight('0.85');
-      setProductPhoto('/images/hero_openbox_4x3.webp');
-      setUploadedPhotos(['/images/hero_openbox_4x3.webp']);
-      setPhotoMatchResult({
-        isMatch: true,
-        confidence: '99.4%',
-        detectedCategory: 'Smartphone (Apple / OEM)',
-        reason: 'Photo matches declared Apple iPhone 15 Pro — OLED screen and titanium chassis verified',
-        suggestedImei: ''
-      });
-      setImeiAuditReport({
-        status: 'VALID',
-        imei: '861940058291038',
-        serial: 'D4G7K3Y9L2',
-        brand: 'Apple',
-        model: 'iPhone 15 Pro 256GB Natural Titanium',
-        cleanImei: true,
-        warrantyEligible: true,
-        details: 'Match found in Apple database • Valid product • Not reported stolen • Warranty eligible',
-        verifiedAt: '13 Sep 2026, 09:15 AM'
-      });
-      setManualImei('861940058291038');
-      setSenderName('Rohan Verma');
-      setSenderPhone('9829012345');
-      setPickupLocation('Flat 402, Block B, Malviya Nagar');
-      setPickupPincode('302017');
-      const pick = resolvePincode('302017');
-      setPickupCity(pick.city);
-      setPickupDistrict(pick.district);
-      setPickupState(pick.state);
-      setPickupHub(pick.hubName);
 
-      setBuyerName('Amit Sharma');
-      setBuyerPhone('9811088912');
-      setDropLocation('Unit 12B, Building 4, DLF Phase 2');
-      setDropPincode('110001');
-      const drop = resolvePincode('110001');
-      setDropCity(drop.city);
-      setDropDistrict(drop.district);
-      setDropState(drop.state);
-      setDropHub(drop.hubName);
-
-      const route = calculateRoadDistance('302017', '110001');
-      setDistanceKm(route.distanceKm);
-      setIsIntercity(route.isIntercity);
-      setRouteCorridor(route.corridorName);
-      setRouteTransitSummary(route.transitSummary);
-
-      if (reqStep) {
-        setCurrentStep(Number(reqStep));
-      }
-    } else {
-      // Form Draft Persistence: restore from localStorage if exists
-      if (searchParams.get('reset') === '1') {
-        try {
-          localStorage.removeItem('safeship_deal_draft_v2');
-        } catch {}
-      } else if (!draftRestoredOnceRef.current) {
-        draftRestoredOnceRef.current = true;
-        try {
-          const rawDraft = localStorage.getItem('safeship_deal_draft_v2');
-          if (rawDraft) {
-            const draft = JSON.parse(rawDraft);
+    // Form Draft Persistence: restore from localStorage if exists
+    if (searchParams.get('reset') === '1') {
+      try {
+        localStorage.removeItem('safeship_deal_draft_v2');
+      } catch {}
+    } else if (!draftRestoredOnceRef.current) {
+      draftRestoredOnceRef.current = true;
+      try {
+        const rawDraft = localStorage.getItem('safeship_deal_draft_v2');
+        if (rawDraft) {
+          const draft = JSON.parse(rawDraft);
+          // Protect against any legacy demo test data
+          const isLegacyDemoDraft =
+            (draft.itemName === 'Apple iPhone 15 Pro (128GB)' && draft.senderName === 'Rohan Verma') ||
+            draft.manualImei === '861940058291038' ||
+            draft.senderName === 'Rohan Verma' ||
+            draft.buyerName === 'Amit Sharma';
+          if (isLegacyDemoDraft) {
+            localStorage.removeItem('safeship_deal_draft_v2');
+          } else {
             if (draft.mode) setMode(draft.mode);
             if (draft.selectedCategory) setSelectedCategory(draft.selectedCategory);
             else if (draft.itemName) {
@@ -827,21 +765,22 @@ function CreateShipmentContent() {
             if (draft.condition) setCondition(draft.condition);
             if (draft.declaredValue) setDeclaredValue(Number(draft.declaredValue));
             if (draft.includedItems) setIncludedItems(draft.includedItems);
-            if (draft.productPhoto) {
-              setProductPhoto(draft.productPhoto);
-            } else if (draft.itemName) {
-              const autoPhoto = getCatalogPhotoForDevice(draft.itemName, draft.selectedCategory);
-              setProductPhoto(autoPhoto);
-            }
+            // ZERO pre-filled photos: only restore real user uploads, never mock /images/
             if (Array.isArray(draft.uploadedPhotos) && draft.uploadedPhotos.length > 0) {
-              setUploadedPhotos(draft.uploadedPhotos);
-            } else if (draft.productPhoto) {
+              const realUserPhotos = draft.uploadedPhotos.filter((p: string) => typeof p === 'string' && !p.startsWith('/images/'));
+              setUploadedPhotos(realUserPhotos);
+              setProductPhoto(realUserPhotos.length > 0 ? realUserPhotos[0] : null);
+            } else if (draft.productPhoto && typeof draft.productPhoto === 'string' && !draft.productPhoto.startsWith('/images/')) {
+              setProductPhoto(draft.productPhoto);
               setUploadedPhotos([draft.productPhoto]);
+            } else {
+              setProductPhoto(null);
+              setUploadedPhotos([]);
             }
-            if (draft.manualImei) setManualImei(draft.manualImei);
+            if (draft.manualImei && draft.manualImei !== '861940058291038') setManualImei(draft.manualImei);
             if (draft.backsidePhoto) setBacksidePhoto(draft.backsidePhoto);
             if (draft.photoMatchResult) setPhotoMatchResult(draft.photoMatchResult);
-            if (draft.imeiAuditReport) setImeiAuditReport(draft.imeiAuditReport);
+            if (draft.imeiAuditReport && draft.imeiAuditReport.imei !== '861940058291038') setImeiAuditReport(draft.imeiAuditReport);
             if (draft.exchangeItemName) setExchangeItemName(draft.exchangeItemName);
             if (draft.exchangeCondition) setExchangeCondition(draft.exchangeCondition);
             if (draft.exchangeValue) setExchangeValue(Number(draft.exchangeValue));
@@ -850,25 +789,35 @@ function CreateShipmentContent() {
             if (draft.cashPayer) setCashPayer(draft.cashPayer);
             if (draft.senderName) setSenderName(draft.senderName);
             if (draft.senderPhone) setSenderPhone(draft.senderPhone);
+            if (draft.senderEmail) setSenderEmail(draft.senderEmail);
+            if (draft.sellerSettlementType) setSellerSettlementType(draft.sellerSettlementType);
+            if (draft.sellerAccountNumber) setSellerAccountNumber(draft.sellerAccountNumber);
+            if (draft.sellerIfsc) setSellerIfsc(draft.sellerIfsc);
+            if (draft.sellerAccountName) setSellerAccountName(draft.sellerAccountName);
+            if (draft.sellerUpiId) setSellerUpiId(draft.sellerUpiId);
             if (draft.buyerName) setBuyerName(draft.buyerName);
             if (draft.buyerPhone) setBuyerPhone(draft.buyerPhone);
             if (draft.pickupLocation) setPickupLocation(draft.pickupLocation);
             if (draft.pickupPincode) {
               setPickupPincode(draft.pickupPincode);
               const pick = resolvePincode(draft.pickupPincode);
-              setPickupCity(pick.city);
-              setPickupDistrict(pick.district);
-              setPickupState(pick.state);
-              setPickupHub(pick.hubName);
+              if (pick) {
+                setPickupCity(pick.city);
+                setPickupDistrict(pick.district);
+                setPickupState(pick.state);
+                setPickupHub(pick.hubName);
+              }
             }
             if (draft.dropLocation) setDropLocation(draft.dropLocation);
             if (draft.dropPincode) {
               setDropPincode(draft.dropPincode);
               const drop = resolvePincode(draft.dropPincode);
-              setDropCity(drop.city);
-              setDropDistrict(drop.district);
-              setDropState(drop.state);
-              setDropHub(drop.hubName);
+              if (drop) {
+                setDropCity(drop.city);
+                setDropDistrict(drop.district);
+                setDropState(drop.state);
+                setDropHub(drop.hubName);
+              }
             }
             if (draft.pickupPincode && draft.dropPincode) {
               const route = calculateRoadDistance(draft.pickupPincode, draft.dropPincode);
@@ -886,68 +835,47 @@ function CreateShipmentContent() {
             if (!reqStep && draft.currentStep && draft.currentStep > 1) {
               setCurrentStep(Number(draft.currentStep));
             }
-            if (draft.step2Chunk) setStep2Chunk(draft.step2Chunk);
-            if (draft.step3Chunk) setStep3Chunk(draft.step3Chunk);
             if (draft.itemName || draft.senderName || draft.pickupPincode) {
               setDraftRestored(true);
             }
           }
-        } catch (e) {
-          console.warn('Failed restoring draft from localStorage:', e);
         }
+      } catch (e) {
+        console.warn('Failed restoring draft from localStorage:', e);
       }
+    }
 
-      const collabParam = searchParams.get('collab') || searchParams.get('role');
-      if (collabParam === 'seller' || collabParam === 'buyer') {
-        setIsCollabInvite(true);
-        setCollabPartnerRole(collabParam as 'seller' | 'buyer');
-        const reqBuyerName = searchParams.get('buyerName');
-        const reqBuyerPhone = searchParams.get('buyerPhone');
-        const reqDropPin = searchParams.get('dropPin');
-        const reqDropLoc = searchParams.get('dropLoc');
-        const reqSenderName = searchParams.get('senderName');
-        const reqSenderPhone = searchParams.get('senderPhone');
-        const reqPickPin = searchParams.get('pickPin');
-        const reqPickLoc = searchParams.get('pickLoc');
-        const reqCat = searchParams.get('cat') as ItemCategory;
-        const reqCond = searchParams.get('cond');
+    if (reqStep && !isNaN(Number(reqStep))) {
+      setCurrentStep(Number(reqStep));
+    }
 
-        if (reqBuyerName) setBuyerName(reqBuyerName);
-        if (reqBuyerPhone) setBuyerPhone(reqBuyerPhone);
-        if (reqDropLoc) setDropLocation(reqDropLoc);
-        if (reqDropPin) handleDropPincodeChange(reqDropPin);
+    const collabParam = searchParams.get('collab') || searchParams.get('role');
+    if (collabParam === 'seller' || collabParam === 'buyer') {
+      setIsCollabInvite(true);
+      setCollabPartnerRole(collabParam as 'seller' | 'buyer');
+      const reqBuyerName = searchParams.get('buyerName');
+      const reqBuyerPhone = searchParams.get('buyerPhone');
+      const reqDropPin = searchParams.get('dropPin');
+      const reqDropLoc = searchParams.get('dropLoc');
+      const reqSenderName = searchParams.get('senderName');
+      const reqSenderPhone = searchParams.get('senderPhone');
+      const reqPickPin = searchParams.get('pickPin');
+      const reqPickLoc = searchParams.get('pickLoc');
+      const reqCat = searchParams.get('cat') as ItemCategory;
+      const reqCond = searchParams.get('cond');
 
-        if (reqSenderName) setSenderName(reqSenderName);
-        if (reqSenderPhone) setSenderPhone(reqSenderPhone);
-        if (reqPickLoc) setPickupLocation(reqPickLoc);
-        if (reqPickPin) handlePickupPincodeChange(reqPickPin);
+      if (reqBuyerName) setBuyerName(reqBuyerName);
+      if (reqBuyerPhone) setBuyerPhone(reqBuyerPhone);
+      if (reqDropLoc) setDropLocation(reqDropLoc);
+      if (reqDropPin) handleDropPincodeChange(reqDropPin);
 
-        if (reqCat) setSelectedCategory(reqCat);
-        if (reqCond) setCondition(reqCond);
-      }
+      if (reqSenderName) setSenderName(reqSenderName);
+      if (reqSenderPhone) setSenderPhone(reqSenderPhone);
+      if (reqPickLoc) setPickupLocation(reqPickLoc);
+      if (reqPickPin) handlePickupPincodeChange(reqPickPin);
 
-      const reqItem = searchParams.get('item');
-      const reqImei = searchParams.get('imei');
-      const reqPhoto = searchParams.get('photo');
-      const reqBackside = searchParams.get('backside');
-      const reqVal = searchParams.get('declaredValue') || searchParams.get('val');
-
-      if (reqItem) {
-        setItemName(reqItem);
-      }
-      if (reqImei) {
-        setManualImei(reqImei);
-      }
-      if (reqPhoto) {
-        setProductPhoto(reqPhoto);
-        setUploadedPhotos((prev) => (prev.includes(reqPhoto) ? prev : [reqPhoto, ...prev]));
-      }
-      if (reqBackside) {
-        setBacksidePhoto(reqBackside);
-      }
-      if (reqVal) {
-        setDeclaredValue(Number(reqVal));
-      }
+      if (reqCat) setSelectedCategory(reqCat);
+      if (reqCond) setCondition(reqCond);
     }
 
     const reqTier = searchParams.get('tier');
@@ -955,11 +883,6 @@ function CreateShipmentContent() {
       setSelectedTier('FASTEST_AIR_RUSH');
     } else if (reqTier === 'STANDARD' || reqTier === 'STANDARD_GROUND' || reqTier === 'STANDARD_DELIVERY') {
       setSelectedTier('STANDARD_GROUND');
-    }
-
-    const reqValGlobal = searchParams.get('declaredValue') || searchParams.get('val');
-    if (reqValGlobal && !isNaN(Number(reqValGlobal))) {
-      setDeclaredValue(Number(reqValGlobal));
     }
   }, [searchParams]);
 
@@ -992,7 +915,30 @@ function CreateShipmentContent() {
   // Auto-save form state to localStorage on every change
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (!itemName && !senderName && !pickupPincode && !buyerName && declaredValue === 0) return;
+    const hasAnyUserEntry = Boolean(
+      itemName ||
+      senderName ||
+      senderPhone ||
+      buyerName ||
+      buyerPhone ||
+      pickupLocation ||
+      pickupPincode ||
+      dropLocation ||
+      dropPincode ||
+      declaredValue > 0 ||
+      uploadedPhotos.length > 0 ||
+      manualImei ||
+      sellerUpiId ||
+      sellerAccountNumber ||
+      sellerIfsc ||
+      sellerAccountName ||
+      businessName ||
+      gstin ||
+      exchangeItemName ||
+      includedItems
+    );
+    if (!hasAnyUserEntry) return;
+
     try {
       const draftData = {
         mode,
@@ -1015,6 +961,12 @@ function CreateShipmentContent() {
         cashPayer,
         senderName,
         senderPhone,
+        senderEmail,
+        sellerSettlementType,
+        sellerAccountNumber,
+        sellerIfsc,
+        sellerAccountName,
+        sellerUpiId,
         buyerName,
         buyerPhone,
         pickupLocation,
@@ -1042,8 +994,6 @@ function CreateShipmentContent() {
         businessName,
         gstin,
         currentStep,
-        step2Chunk,
-        step3Chunk,
         savedAt: new Date().toISOString()
       };
       localStorage.setItem('safeship_deal_draft_v2', JSON.stringify(draftData));
@@ -1071,6 +1021,12 @@ function CreateShipmentContent() {
     cashPayer,
     senderName,
     senderPhone,
+    senderEmail,
+    sellerSettlementType,
+    sellerAccountNumber,
+    sellerIfsc,
+    sellerAccountName,
+    sellerUpiId,
     buyerName,
     buyerPhone,
     pickupLocation,
@@ -1097,9 +1053,7 @@ function CreateShipmentContent() {
     isB2B,
     businessName,
     gstin,
-    currentStep,
-    step2Chunk,
-    step3Chunk
+    currentStep
   ]);
 
   const clearSavedDraft = () => {
@@ -1124,6 +1078,7 @@ function CreateShipmentContent() {
     setCashDifference(0);
     setSenderName('');
     setSenderPhone('');
+    setSenderEmail('');
     setBuyerName('');
     setBuyerPhone('');
     setPickupLocation('');
@@ -1134,8 +1089,6 @@ function CreateShipmentContent() {
     setDropCity('');
     setDistanceKm(0);
     goToStep(1);
-    setStep2Chunk(1);
-    setStep3Chunk(1);
   };
 
   // 8 Realistic Categories (Vehicles removed!)
@@ -1188,13 +1141,9 @@ function CreateShipmentContent() {
     if (!includedItems || includedItems.trim().length < 2) {
       errs.includedItems = 'Please specify accessories/items included in the parcel.';
     }
+    // ZERO mock photos: user must upload their real item photo
     if (!productPhoto && uploadedPhotos.length === 0) {
-      const catPhoto = getCatalogPhotoForDevice(itemName, selectedCategory);
-      if (catPhoto) {
-        verifyPhotoMatch(catPhoto, itemName);
-      } else {
-        errs.photos = `Please attach 1 photo of ${itemName ? `"${itemName}"` : 'the product'} for doorstep open-box verification.`;
-      }
+      errs.photos = 'Please attach at least 1 photo of your item for doorstep open-box verification.';
     }
 
     if (mode === 'exchange') {
@@ -1215,28 +1164,8 @@ function CreateShipmentContent() {
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
       setStepErrorBanner('Please complete the highlighted required fields to proceed.');
-      if (errs.itemName) {
-        setStep2Chunk(1);
-        scrollToField('field-itemName');
-      } else if (errs.photos) {
-        setStep2Chunk(2);
-        scrollToField('field-photos');
-      } else if (errs.condition) {
-        setStep2Chunk(3);
-        scrollToField('field-condition');
-      } else if (errs.declaredValue) {
-        setStep2Chunk(3);
-        scrollToField('field-declaredValue');
-      } else if (errs.includedItems) {
-        setStep2Chunk(3);
-        scrollToField('field-includedItems');
-      } else if (errs.exchangeItemName) {
-        setStep2Chunk(3);
-        scrollToField('field-exchangeItemName');
-      } else if (errs.exchangeValue) {
-        setStep2Chunk(3);
-        scrollToField('field-exchangeValue');
-      }
+      const firstField = Object.keys(errs)[0];
+      scrollToField(`field-${firstField}`);
       return false;
     }
     setStepErrorBanner('');
@@ -1287,91 +1216,26 @@ function CreateShipmentContent() {
 
     setErrors(errs);
     if (Object.keys(errs).length > 0) {
-      if (errs.senderName || errs.senderPhone || errs.pickupLocation || errs.pickupPincode) {
-        setStep3Chunk(1);
-        if (errs.senderName) scrollToField('field-senderName');
-        else if (errs.senderPhone) scrollToField('field-senderPhone');
-        else if (errs.pickupLocation) scrollToField('field-pickupLocation');
-        else if (errs.pickupPincode) scrollToField('field-pickupPincode');
-      } else {
-        setStep3Chunk(2);
-        if (errs.buyerName) scrollToField('field-buyerName');
-        else if (errs.buyerPhone) scrollToField('field-buyerPhone');
-        else if (errs.dropLocation) scrollToField('field-dropLocation');
-        else if (errs.dropPincode) scrollToField('field-dropPincode');
-      }
+      setStepErrorBanner('Please complete the highlighted address fields to continue.');
+      const firstField = Object.keys(errs)[0];
+      scrollToField(`field-${firstField}`);
       return false;
     }
     setStepErrorBanner('');
     return true;
   };
 
-  const handleNextStep2Chunk = (targetChunk: 2 | 3) => {
-    if (targetChunk === 2) {
-      if (!itemName || itemName.trim().length < 3) {
-        setErrors((prev) => ({ ...prev, itemName: 'Please enter an item model or specification (minimum 3 characters).' }));
-        scrollToField('field-itemName');
-        return;
-      }
-      clearFieldError('itemName');
-      setStep2Chunk(2);
-    } else if (targetChunk === 3) {
-      if (!productPhoto && uploadedPhotos.length === 0) {
-        const catPhoto = getCatalogPhotoForDevice(itemName, selectedCategory);
-        if (catPhoto) {
-          verifyPhotoMatch(catPhoto, itemName);
-        } else {
-          setErrors((prev) => ({ ...prev, photos: `Please attach 1 photo of ${itemName ? `"${itemName}"` : 'the product'} for doorstep open-box verification.` }));
-          scrollToField('field-photos');
-          return;
-        }
-      }
-      clearFieldError('photos');
-      setStep2Chunk(3);
-    }
-  };
-
-  const handleNextStep3Chunk = (targetChunk: 2) => {
-    if (targetChunk === 2) {
-      const errs: Record<string, string> = {};
-      if (!senderName || senderName.trim().length < 2) {
-        errs.senderName = 'Please enter sender name (minimum 2 characters).';
-      }
-      if (!senderPhone || !/^[6-9]\d{9}$/.test(senderPhone.replace(/\D/g, ''))) {
-        errs.senderPhone = 'Please enter a valid 10-digit Indian mobile number.';
-      }
-      if (!pickupLocation || pickupLocation.trim().length < 3) {
-        errs.pickupLocation = 'Please enter pickup street address (minimum 3 characters).';
-      }
-      if (!pickupPincode || !/^\d{6}$/.test(pickupPincode.trim())) {
-        errs.pickupPincode = 'Please enter a valid 6-digit Indian PIN code.';
-      }
-      if (Object.keys(errs).length > 0) {
-        setErrors((prev) => ({ ...prev, ...errs }));
-        if (errs.senderName) scrollToField('field-senderName');
-        else if (errs.senderPhone) scrollToField('field-senderPhone');
-        else if (errs.pickupLocation) scrollToField('field-pickupLocation');
-        else if (errs.pickupPincode) scrollToField('field-pickupPincode');
-        return;
-      }
-      setStep3Chunk(2);
-    }
-  };
-
   const handleNextStep = () => {
     if (currentStep === 1) {
       if (validateStep1()) {
         goToStep(2);
-        setStep2Chunk(1);
       }
     } else if (currentStep === 2) {
       if (validateStep2()) {
         goToStep(3);
-        setStep3Chunk(1);
       }
     } else if (currentStep === 3) {
       if (validateStep3()) {
-        // Ensure distance is resolved
         if (pickupPincode && dropPincode && distanceKm === 0) {
           const route = calculateRoadDistance(pickupPincode, dropPincode);
           setDistanceKm(route.distanceKm);
@@ -1403,13 +1267,25 @@ function CreateShipmentContent() {
   const calculatedInsuranceFee = calculateInsuranceFee(declaredValue);
   const activeInsuranceFee = includeInsurance ? calculatedInsuranceFee : 0;
 
-  // Upfront Booking Payable Amount:
-  // Strictly the verified courier shipping fee + optional cargo transit insurance!
-  // First-order customers automatically receive flat ₹99 off their courier charges (no coupon code required).
+  // Item Escrow Deposit Amount:
+  // Full declared item valuation held safely in RBI Nodal Escrow until 10-minute doorstep unboxing approval.
+  // In 2-way exchange mode: the agreed cash difference if user is paying trade difference.
+  const itemEscrowAmount = mode === 'exchange' ? (cashPayer === 'YOU_PAY' ? cashDifference : 0) : declaredValue;
+
+  // Courier Shipping Fee (after automatic first-order discount):
   const FIRST_ORDER_DISCOUNT = 99;
   const firstOrderDiscount = isFirstOrder ? Math.min(FIRST_ORDER_DISCOUNT, fullDeliveryFee) : 0;
-  const upfrontPayableAmount = Math.max(0, (fullDeliveryFee - firstOrderDiscount) + activeInsuranceFee);
-  const buyerDeliveryFee = upfrontPayableAmount;
+  const netCourierShippingFee = Math.max(0, fullDeliveryFee - firstOrderDiscount);
+
+  // Upfront Shipping Charge (Payable First to Schedule & Dispatch Courier):
+  // Courier shipping fee (with auto first-order discount) + cargo transit protection (if opted in)
+  const upfrontShippingCharge = Math.max(0, netCourierShippingFee + activeInsuranceFee);
+  const upfrontPayableAmount = upfrontShippingCharge;
+  
+  // Total Escrow Amount (Item Valuation held in escrow & given to seller after delivery approval):
+  const totalItemEscrowAmount = itemEscrowAmount;
+  const totalEscrowPayable = Math.max(0, itemEscrowAmount + upfrontShippingCharge);
+  const buyerDeliveryFee = netCourierShippingFee;
   const sellerDeliveryFee = 0;
   const freeDeliveryDiscount = firstOrderDiscount;
   const codCharge = 0;
@@ -1489,11 +1365,16 @@ function CreateShipmentContent() {
         category: (selectedCategory || 'SMARTPHONES_TABLETS') as ItemCategory,
         declaredValue,
         condition: condition as any,
-        itemPhotos: uploadedPhotos.length > 0 ? uploadedPhotos : ['/images/openbox_macro_4x3.webp'],
+        itemPhotos: uploadedPhotos,
         sellerName: senderName.trim(),
-        sellerEmail: session?.email || `${senderName.toLowerCase().replace(/\s+/g, '')}@safeship.online`,
+        sellerEmail: senderEmail.trim() || session?.email || `${senderName.toLowerCase().replace(/\s+/g, '')}@safeship.online`,
         sellerPhone: senderPhone.trim().startsWith('+91') ? senderPhone.trim() : `+91 ${senderPhone.trim()}`,
         sellerUpiId: sellerUpiId.trim() || undefined,
+        sellerBankAccount: sellerAccountNumber.trim() ? {
+          accountNumber: sellerAccountNumber.trim(),
+          ifsc: sellerIfsc.trim().toUpperCase(),
+          holderName: sellerAccountName.trim() || senderName.trim(),
+        } : undefined,
         pickupAddress: pickupLocation,
         city: pickupCity || 'Jaipur',
         pincode: pickupPincode,
@@ -1509,7 +1390,7 @@ function CreateShipmentContent() {
           condition: exchangeCondition,
           declaredValue: exchangeValue,
           cashDifference,
-          photos: ['/images/exchange_hero_4x3.webp']
+          photos: []
         } : undefined,
         serviceTier: selectedTier,
         pickupSlot,
@@ -1561,7 +1442,8 @@ function CreateShipmentContent() {
         localStorage.removeItem('safeship_deal_draft_v2');
       } catch {}
 
-      router.push(`/in/track/${created.id}?booked=true&payment_id=${paymentId}`);
+      // Prompt immediately for escrow hold after courier delivery fee is paid
+      setCreatedDealForEscrow(created);
     } catch (e) {
       console.error('Error creating deal record in store:', e);
       const fallbackId = `SS${Math.floor(10000 + Math.random() * 90000)}`;
@@ -1572,14 +1454,35 @@ function CreateShipmentContent() {
     }
   };
 
+  const handlePutEscrowOnHold = () => {
+    if (!createdDealForEscrow) return;
+    setIsEscrowHolding(true);
+    setTimeout(() => {
+      const updated = lockDealEscrowHold(createdDealForEscrow.id, 'Cashfree PG v3 Escrow Hold');
+      if (updated) {
+        notifyMilestoneEmail(updated, 'COURIER_ASSIGNED');
+      }
+      setIsEscrowHolding(false);
+      setEscrowHoldSuccess(true);
+      setTimeout(() => {
+        router.push(`/in/track/${createdDealForEscrow.id}?booked=true&escrow_locked=true&escrow_paid=true`);
+      }, 1000);
+    }, 700);
+  };
+
   const handleConfirmBooking = () => {
     clearPaymentGatewayError();
 
     if (!agreeTerms) return;
 
-    // If Upfront fee is ₹0 or demo mode: instant confirmed booking
-    if (upfrontPayableAmount === 0 || searchParams.get('demo') === 'true') {
-      completeDealCreation(`DEMO_PAY_${Date.now().toString(36).toUpperCase()}`, upfrontPayableAmount);
+    // Temporary Test Mode or Demo: Stop actual Cashfree payment gateway and proceed directly as paid
+    if (SIMULATE_PAID_FOR_TESTING || upfrontPayableAmount === 0 || searchParams.get('demo') === 'true') {
+      setIsTestProcessing(true);
+      setTimeout(() => {
+        const testPaymentId = `TEST_PAID_${Date.now().toString(36).toUpperCase()}`;
+        completeDealCreation(testPaymentId, upfrontPayableAmount);
+        setIsTestProcessing(false);
+      }, 500);
       return;
     }
 
@@ -1587,11 +1490,11 @@ function CreateShipmentContent() {
     const rawPhone = (mode === 'exchange' ? senderPhone : buyerPhone) || senderPhone || '';
     const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10) || '9876543210';
 
-    // Open Cashfree PG v3 Checkout directly for verified courier shipping fee:
+    // Open Cashfree PG v3 Checkout for Courier Shipping Fee:
     openCheckout({
       amountInRupees: upfrontPayableAmount,
       name: 'SafeShip Courier Booking',
-      description: `Verified Shipping Fee for ${itemName || 'Shipment'} (${selectedTier === 'FASTEST_AIR_RUSH' ? 'Express Air' : selectedTier === 'PRIORITY_EXPRESS' ? 'Priority Express' : 'Standard Ground'})`,
+      description: `Courier Shipping Fee: ₹${upfrontPayableAmount.toLocaleString('en-IN')} for ${itemName || 'Merchandise'} (Item escrow of ₹${itemEscrowAmount.toLocaleString('en-IN')} released to seller after delivery approval)`,
       prefill: {
         name: payerName,
         email: 'customer@safeship.online',
@@ -1599,8 +1502,11 @@ function CreateShipmentContent() {
       },
       notes: {
         mode,
-        shippingFee: upfrontPayableAmount.toString(),
+        shippingFeePaid: upfrontPayableAmount.toString(),
+        itemEscrowAmount: itemEscrowAmount.toString(),
         pickupSlot,
+        pickupCallProtocol: 'Delivery boy will call seller at scheduled pickup time',
+        deliveryCallProtocol: 'Delivery boy will call buyer only after successful pickup',
         estimatedDelivery: deliveryDateFormatted,
         origin: `${pickupLocation} (${pickupPincode})`,
         destination: `${dropLocation} (${dropPincode})`,
@@ -1696,18 +1602,8 @@ function CreateShipmentContent() {
       </div>
 
       {/* Main Wizard Form Body */}
-      <main className="max-w-xl mx-auto w-full p-4 sm:p-6 flex-1">
-        {!isCollabInvite && currentStep < 4 && (
-          <aside className="mb-4 rounded-2xl border border-blue-100 bg-blue-50/70 px-3.5 py-3 text-xs text-slate-700">
-            <div className="flex items-start gap-2.5">
-              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-[#0066FF]" />
-              <div>
-                <p className="font-bold text-slate-900">Start with the essentials</p>
-                <p className="mt-0.5 leading-relaxed">We’ll show your delivery choices and total before you book. Your draft saves automatically on this device.</p>
-              </div>
-            </div>
-          </aside>
-        )}
+      <main className={`mx-auto w-full p-4 sm:p-6 lg:p-8 flex-1 transition-all ${currentStep === 4 ? 'max-w-6xl' : 'max-w-3xl'}`}>
+
         
         {/* Collaborative Booking Invitation Banner */}
         {isCollabInvite && (
@@ -1841,87 +1737,21 @@ function CreateShipmentContent() {
         )}
 
         {/* =================================================================== */}
-        {/* STEP 2: ITEM DETAILS & VALUATION (Starts Empty with Placeholders)  */}
+        {/* STEP 2: ITEM DETAILS & PHOTO VERIFICATION (Minimal, Zero Scroll)   */}
         {/* =================================================================== */}
         {currentStep === 2 && (
           <div className="space-y-4 animate-in fade-in">
             <div>
               <h2 className="text-xl font-bold text-[#0F172A]">
-                {mode === 'exchange' ? 'Dual Item Specifications' : 'Item Details & Declared Value'}
+                {mode === 'exchange' ? 'Dual Item Specifications' : 'Item Details & Verification'}
               </h2>
               <p className="text-xs text-[#64748B] mt-0.5">
-                {mode === 'exchange'
-                  ? 'Enter details for both items. The bonded officer audits both devices against this declaration.'
-                  : 'Declared value determines transit insurance coverage and doorstep open-box inspection.'}
+                Provide item specifications and upload at least 1 photo for doorstep open-box verification.
               </p>
             </div>
 
-            {/* Mobile Progressive Chunk Navigation Bar */}
-            <div className="md:hidden flex items-center justify-between gap-1 p-1 bg-slate-100/90 rounded-2xl border border-slate-200">
-              <button
-                type="button"
-                onClick={() => setStep2Chunk(1)}
-                className={`flex-1 py-2 px-1 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5 ${
-                  step2Chunk === 1
-                    ? 'bg-white text-[#0066FF] shadow-xs'
-                    : itemName ? 'text-slate-700' : 'text-slate-400'
-                }`}
-              >
-                <span className={`w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold ${
-                  step2Chunk === 1 ? 'bg-[#0066FF] text-white' : itemName ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'
-                }`}>
-                  {itemName ? '✓' : '1'}
-                </span>
-                <span>1. Model</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleNextStep2Chunk(2)}
-                className={`flex-1 py-2 px-1 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5 ${
-                  step2Chunk === 2
-                    ? 'bg-white text-[#0066FF] shadow-xs'
-                    : (productPhoto || uploadedPhotos.length > 0) ? 'text-slate-700' : 'text-slate-400'
-                }`}
-              >
-                <span className={`w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold ${
-                  step2Chunk === 2 ? 'bg-[#0066FF] text-white' : (productPhoto || uploadedPhotos.length > 0) ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'
-                }`}>
-                  {(productPhoto || uploadedPhotos.length > 0) ? '✓' : '2'}
-                </span>
-                <span>2. Photo &amp; IMEI</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleNextStep2Chunk(3)}
-                className={`flex-1 py-2 px-1 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5 ${
-                  step2Chunk === 3
-                    ? 'bg-white text-[#0066FF] shadow-xs'
-                    : declaredValue > 0 ? 'text-slate-700' : 'text-slate-400'
-                }`}
-              >
-                <span className={`w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold ${
-                  step2Chunk === 3 ? 'bg-[#0066FF] text-white' : declaredValue > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'
-                }`}>
-                  {declaredValue > 0 ? '✓' : '3'}
-                </span>
-                <span>3. Valuation</span>
-              </button>
-            </div>
-
-            {/* CHUNK 2.1: Model & Specification */}
-            <div className={`bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3.5 ${step2Chunk === 1 ? 'block' : 'hidden md:block'}`}>
-              <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
-                <span className="text-xs font-bold text-[#0066FF] uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[#0066FF]" />
-                  <span>{mode === 'exchange' ? 'Item 1: What You Send (Swap Out)' : 'Item Information'}</span>
-                </span>
-                <span className="text-[11px] font-semibold text-[#64748B]">
-                  {categories.find((c) => c.id === selectedCategory)?.label || 'Electronics'}
-                </span>
-              </div>
-
+            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-4">
+              {/* Item Model */}
               <div>
                 <label className="text-xs font-bold text-[#334155] block mb-1">
                   Item Model / Specification <span className="text-rose-500">*</span>:
@@ -1946,169 +1776,122 @@ function CreateShipmentContent() {
                 {errors.itemName && (
                   <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.itemName}</p>
                 )}
-              </div>
 
-
-              {/* Mobile Chunk 2.1 Error Callout */}
-              {errors.itemName && (
-                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs font-semibold flex items-center gap-1.5 animate-in fade-in">
-                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>{errors.itemName}</span>
-                </div>
-              )}
-
-              {/* Mobile Chunk 2.1 Next Button */}
-              <div className="md:hidden pt-3 border-t border-slate-100 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => goToStep(1)}
-                  className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer"
-                >
-                  ← Categories
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleNextStep2Chunk(2)}
-                  className="flex-1 py-3 px-4 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
-                >
-                  <span>Next: Snap Photo &amp; IMEI (Part 2)</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* CHUNK 2.2: Multi-Angle Photos & Device Identity */}
-            <div className={`bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-4 ${step2Chunk === 2 ? 'block' : 'hidden md:block'}`}>
-              <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9] flex-wrap gap-1">
-                <span className="text-xs font-bold text-[#0066FF] uppercase tracking-wider flex items-center gap-1.5">
-                  <Camera className="w-4 h-4 text-[#0066FF]" />
-                  <span>
-                    Multi-Angle Hardware Photo Verification {itemName ? <span className="text-slate-900 font-extrabold normal-case">({itemName})</span> : ''}
-                  </span>
-                </span>
-                <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
-                  Doorstep Open-Box Protected
-                </span>
-              </div>
-
-              {/* Collaborative Link Quick Callout (If Buyer doesn't have photos) */}
-              <div className="p-3 rounded-2xl bg-blue-50/70 border border-blue-200/80 flex items-center justify-between gap-2.5 flex-wrap">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Share2 className="w-4 h-4 text-[#0066FF] shrink-0" />
-                  <div className="min-w-0">
-                    <span className="text-xs font-bold text-slate-900 block truncate">
-                      Don&apos;t have device photos yet?
+                {/* Clean Product Verification Pill */}
+                {detectedProduct && (
+                  <div className="mt-2 flex items-center justify-between px-3 py-1.5 rounded-xl bg-blue-50/70 border border-blue-200/80 text-[11px] text-blue-900 animate-in fade-in">
+                    <span className="flex items-center gap-1.5 font-semibold">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
+                      <span>Product Verified: <strong>{detectedProduct.brand}</strong> ({detectedProduct.badge})</span>
                     </span>
-                    <span className="text-[11px] text-slate-600 block truncate">
-                      Share a pre-filled link with the seller to upload device photos directly from their phone.
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/90 px-2 py-0.5 rounded-md">
+                      ✓ Open-Box Eligible
                     </span>
                   </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCollabRoleTarget('seller');
-                    setShowCollabModal(true);
-                  }}
-                  className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 text-[#0066FF] text-xs font-bold border border-blue-200 shadow-2xs shrink-0 transition cursor-pointer active:scale-95 flex items-center gap-1.5"
-                >
-                  <Link2 className="w-3.5 h-3.5" />
-                  <span>Send Link to Seller</span>
-                </button>
+                )}
               </div>
 
-              {/* Simple Item Photo Upload Section */}
-              <div id="field-photos" className="space-y-3 rounded-2xl p-1">
-                <div className="flex items-center justify-between flex-wrap gap-1">
-                  <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5 flex-wrap">
-                    <span>
-                      Upload 2 to 4 Photos of Your Item {itemName ? <span className="text-[#0066FF] font-black underline decoration-blue-200 underline-offset-2">&quot;{itemName}&quot;</span> : ''}
-                    </span>
+              {/* Condition & Declared Valuation Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-bold text-[#334155] block mb-1">
+                    Physical Condition <span className="text-rose-500">*</span>:
+                  </label>
+                  <select
+                    id="field-condition"
+                    value={condition}
+                    onChange={(e) => {
+                      setCondition(e.target.value);
+                      clearFieldError('condition');
+                    }}
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
+                      errors.condition ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                    }`}
+                  >
+                    <option value="Used - Mint">Used - Mint (Flawless, scratchless)</option>
+                    <option value="Used - Excellent">Used - Excellent (Minor cosmetic wear)</option>
+                    <option value="Brand New Sealed">Brand New Sealed (Unopened factory box)</option>
+                    <option value="Used - Good">Used - Good (Normal wear, 100% functional)</option>
+                    <option value="Used - Fair">Used - Fair (Visible scratches, fully working)</option>
+                  </select>
+                  {errors.condition && (
+                    <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.condition}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-[#334155] block mb-1">
+                    Declared Valuation (₹) <span className="text-rose-500">*</span>:
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
+                    <input
+                      id="field-declaredValue"
+                      type="number"
+                      value={declaredValue === 0 ? '' : declaredValue}
+                      onChange={(e) => {
+                        const val = e.target.value === '' ? 0 : Number(e.target.value);
+                        setDeclaredValue(val);
+                        clearFieldError('declaredValue');
+                      }}
+                      placeholder="e.g., 65000"
+                      className={`w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-sm font-bold text-slate-900 outline-hidden transition ${
+                        errors.declaredValue ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                      }`}
+                    />
+                  </div>
+                  {errors.declaredValue && (
+                    <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.declaredValue}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Included Items */}
+              <div>
+                <label className="text-xs font-bold text-[#334155] block mb-1">
+                  Included In-the-Box / Accessories <span className="text-rose-500">*</span>:
+                </label>
+                <input
+                  id="field-includedItems"
+                  type="text"
+                  value={includedItems}
+                  onChange={(e) => {
+                    setIncludedItems(e.target.value);
+                    clearFieldError('includedItems');
+                  }}
+                  placeholder="e.g., Original box, charger, purchase invoice"
+                  className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
+                    errors.includedItems ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                  }`}
+                />
+                {errors.includedItems && (
+                  <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.includedItems}</p>
+                )}
+              </div>
+
+              {/* Photo Upload Section: 100% Zero pre-filled photos */}
+              <div id="field-photos" className="pt-2 border-t border-slate-100 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5">
+                    <Camera className="w-4 h-4 text-[#0066FF]" />
+                    <span>Upload Item Photos (1–4 Photos)</span>
                     <span className="text-rose-500">*</span>
                   </label>
-                  <span className="text-[10px] text-[#0066FF] font-bold bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
-                    Recommended: 2 to 4 angles
+                  <span className="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-full">
+                    {uploadedPhotos.length} / 4 attached
                   </span>
                 </div>
 
-                <p className="text-[11px] text-slate-500">
-                  Please attach 2 to 4 clear photos covering key angles. SafeShip Optical Engine verifies model geometry, screen, and chassis for doorstep escrow unboxing.
-                </p>
-
-                {/* Recommended Angles Guide */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-0.5">
-                  <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] flex items-center gap-2 shadow-2xs">
-                    <span className="text-base shrink-0">📱</span>
-                    <div>
-                      <span className="font-bold block leading-tight text-slate-900">Photo 1: Front</span>
-                      <span className="text-[10px] text-slate-500 leading-tight block">Screen / power-on</span>
-                    </div>
-                  </div>
-                  <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] flex items-center gap-2 shadow-2xs">
-                    <span className="text-base shrink-0">📸</span>
-                    <div>
-                      <span className="font-bold block leading-tight text-slate-900">Photo 2: Back</span>
-                      <span className="text-[10px] text-slate-500 leading-tight block">Cameras &amp; chassis</span>
-                    </div>
-                  </div>
-                  <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] flex items-center gap-2 shadow-2xs">
-                    <span className="text-base shrink-0">🔍</span>
-                    <div>
-                      <span className="font-bold block leading-tight text-slate-900">Photo 3: Sides</span>
-                      <span className="text-[10px] text-slate-500 leading-tight block">Edges &amp; charging port</span>
-                    </div>
-                  </div>
-                  <div className="p-2 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] flex items-center gap-2 shadow-2xs">
-                    <span className="text-base shrink-0">📦</span>
-                    <div>
-                      <span className="font-bold block leading-tight text-slate-900">Photo 4: Box / Bill</span>
-                      <span className="text-[10px] text-slate-500 leading-tight block">Box &amp; accessories</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Dynamic Status / Progress Banner */}
-                <div className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between gap-2 transition ${
-                  uploadedPhotos.length === 0
-                    ? 'bg-blue-50/70 border-blue-200 text-blue-900'
-                    : uploadedPhotos.length === 1
-                    ? 'bg-amber-50 border-amber-200 text-amber-900'
-                    : 'bg-emerald-50 border-emerald-200 text-emerald-900'
-                }`}>
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${
-                      uploadedPhotos.length === 0
-                        ? 'bg-blue-500'
-                        : uploadedPhotos.length === 1
-                        ? 'bg-amber-500 animate-pulse'
-                        : 'bg-emerald-500'
-                    }`} />
-                    <span className="text-[11px] truncate">
-                      {uploadedPhotos.length === 0 && 'Upload 2 to 4 photos for instant AI optical verification & doorstep escrow approval.'}
-                      {uploadedPhotos.length === 1 && '1 photo attached • Add 1–2 more angles (Back/Sides) for 99.8% verification.'}
-                      {uploadedPhotos.length >= 2 && `✓ Optimal multi-angle coverage (${uploadedPhotos.length} photos attached) • AI verified.`}
-                    </span>
-                  </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white border border-current font-bold shrink-0">
-                    {uploadedPhotos.length}/4 Recommended
-                  </span>
-                </div>
-
-                {/* Upload Box / Photo Gallery */}
                 {uploadedPhotos.length === 0 ? (
-                  <label className="flex flex-col items-center justify-center p-6 sm:p-8 rounded-2xl border-2 border-dashed border-blue-300 hover:border-[#0066FF] bg-blue-50/40 hover:bg-blue-50/70 transition cursor-pointer group text-center shadow-2xs">
-                    <div className="w-12 h-12 rounded-2xl bg-white border border-blue-200 text-[#0066FF] flex items-center justify-center mb-3 shadow-xs group-hover:scale-105 transition-transform">
-                      <Camera className="w-6 h-6" />
+                  <label className="flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-dashed border-blue-200 hover:border-[#0066FF] bg-blue-50/30 hover:bg-blue-50/60 transition cursor-pointer group text-center shadow-2xs">
+                    <div className="w-10 h-10 rounded-xl bg-white border border-blue-200 text-[#0066FF] flex items-center justify-center mb-2 shadow-xs group-hover:scale-105 transition-transform">
+                      <Camera className="w-5 h-5" />
                     </div>
-                    <span className="text-sm font-bold text-slate-900 block">
+                    <span className="text-xs font-bold text-slate-900 block">
                       Tap or drag photos to upload
                     </span>
-                    <span className="text-xs text-slate-500 mt-1 max-w-sm block">
-                      PNG, JPG or WebP up to 10MB &bull; Select 1 to 6 photos from your gallery
-                    </span>
-                    <span className="mt-3.5 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-xs transition active:scale-95">
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Choose Photos</span>
+                    <span className="text-[11px] text-slate-500 mt-0.5 block">
+                      Screen, rear, or retail box &bull; Verified at unboxing
                     </span>
                     <input
                       type="file"
@@ -2119,50 +1902,29 @@ function CreateShipmentContent() {
                     />
                   </label>
                 ) : (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                       {uploadedPhotos.map((photoUrl, idx) => (
-                        <div
-                          key={idx}
-                          className="relative rounded-2xl border border-slate-200 bg-white p-1.5 shadow-2xs group flex flex-col items-center"
-                        >
-                          <div className="w-full aspect-square rounded-xl bg-slate-100 overflow-hidden flex items-center justify-center relative">
-                            <img
-                              src={photoUrl}
-                              alt={`Item photo ${idx + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                            {idx === 0 && (
-                              <span className="absolute bottom-1.5 left-1.5 px-2 py-0.5 rounded-md bg-emerald-600/90 text-white font-bold text-[9px] shadow-xs">
-                                Cover Photo
-                              </span>
-                            )}
+                        <div key={idx} className="relative rounded-xl border border-slate-200 bg-white p-1 shadow-2xs group flex flex-col items-center">
+                          <div className="w-full aspect-square rounded-lg bg-slate-100 overflow-hidden flex items-center justify-center relative">
+                            <img src={photoUrl} alt={`Item ${idx + 1}`} className="w-full h-full object-cover" />
                             <button
                               type="button"
                               onClick={() => handleRemovePhoto(idx)}
-                              className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-slate-900/80 hover:bg-rose-600 text-white flex items-center justify-center text-xs transition cursor-pointer shadow-xs"
-                              title="Remove photo"
+                              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-slate-900/80 hover:bg-rose-600 text-white flex items-center justify-center text-xs transition cursor-pointer shadow-xs"
+                              title="Remove"
                             >
                               &times;
                             </button>
                           </div>
-                          <span className="text-[10px] text-slate-500 font-medium mt-1">
-                            Photo #{idx + 1}
-                          </span>
+                          <span className="text-[9px] text-slate-400 font-medium mt-0.5">Photo #{idx + 1}</span>
                         </div>
                       ))}
 
-                      {uploadedPhotos.length < 6 && (
-                        <label className="flex flex-col items-center justify-center aspect-square rounded-2xl border-2 border-dashed border-slate-300 hover:border-[#0066FF] bg-slate-50 hover:bg-blue-50/50 transition cursor-pointer text-center p-2 group">
-                          <div className="w-8 h-8 rounded-xl bg-white border border-slate-200 text-[#0066FF] flex items-center justify-center mb-1 group-hover:scale-105 transition-transform shadow-2xs">
-                            <Camera className="w-4 h-4" />
-                          </div>
-                          <span className="text-xs font-bold text-slate-700">
-                            + Add Photo
-                          </span>
-                          <span className="text-[10px] text-slate-400">
-                            ({6 - uploadedPhotos.length} remaining)
-                          </span>
+                      {uploadedPhotos.length < 4 && (
+                        <label className="flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-dashed border-slate-300 hover:border-[#0066FF] bg-slate-50 hover:bg-blue-50/50 transition cursor-pointer text-center p-1 group">
+                          <Camera className="w-4 h-4 text-[#0066FF] mb-1" />
+                          <span className="text-[10px] font-bold text-slate-700">+ Add</span>
                           <input
                             type="file"
                             multiple
@@ -2173,730 +1935,176 @@ function CreateShipmentContent() {
                         </label>
                       )}
                     </div>
-
-                    <div className="flex items-center justify-between text-xs text-slate-500 px-1">
-                      <span className="font-medium">
-                        {uploadedPhotos.length} of 6 photos attached &bull;{' '}
-                        {uploadedPhotos.length >= 2 ? (
-                          <span className="text-emerald-600 font-semibold">✓ Recommended 2–4 angles met</span>
-                        ) : (
-                          <span className="text-amber-600 font-semibold">Add 1 more angle for 99.8% verification</span>
-                        )}
-                      </span>
-                      <label className="text-[#0066FF] hover:underline font-semibold cursor-pointer">
-                        <span>+ Add more photos</span>
-                        <input
-                          type="file"
-                          multiple
-                          accept="image/*"
-                          onChange={(e) => handleSimplePhotoUpload(e.target.files)}
-                          className="hidden"
-                        />
-                      </label>
-                    </div>
-                  </div>
-                )}
-
-                {/* Prompt to enter item model if photos uploaded first */}
-                {!isMatchingPhoto && !photoMatchResult && uploadedPhotos.length > 0 && (!itemName || itemName.trim().length < 2) && (
-                  <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-medium flex items-center gap-2 animate-in fade-in">
-                    <span className="text-base shrink-0">💡</span>
-                    <span>
-                      <strong>{uploadedPhotos.length} photo(s) uploaded!</strong> Please enter your <strong>Item Model / Specification</strong> above to automatically run optical verification.
-                    </span>
-                  </div>
-                )}
-
-                {/* Multimodal Verification Status Feedback */}
-                {isMatchingPhoto && (
-                  <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-medium flex items-center gap-2.5 animate-in fade-in">
-                    <span className="w-4 h-4 rounded-full border-2 border-[#0066FF] border-t-transparent animate-spin shrink-0" />
-                    <div>
-                      <span className="font-bold block">Analyzing item photos...</span>
-                      <span className="text-[11px] text-blue-700">
-                        SafeShip Optical Engine is verifying model geometry, display condition, and features for &quot;{itemName || 'Product'}&quot;.
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Verified Hardware Match Card */}
-                {!isMatchingPhoto && photoMatchResult && photoMatchResult.isMatch && (
-                  <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-300 text-emerald-950 space-y-2.5 animate-in fade-in">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0 shadow-xs">
-                          ✓
-                        </div>
-                        <div>
-                          <span className="text-xs font-bold text-emerald-950 block">
-                            Hardware Model Verified: {photoMatchResult.detectedModel || itemName || 'Declared Product'}
-                          </span>
-                          <span className="text-[11px] text-emerald-800">
-                            {photoMatchResult.reason}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-end shrink-0 gap-0.5">
-                        <span className="text-[10px] font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-md">
-                          {photoMatchResult.confidence || '99%'} MATCH
-                        </span>
-                        {uploadedPhotos.length > 0 && (
-                          <span className="text-[9px] font-bold text-emerald-700">
-                            {uploadedPhotos.length} Photo(s) Verified
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Features Verified Chips */}
-                    {photoMatchResult.featuresVerified && photoMatchResult.featuresVerified.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {photoMatchResult.featuresVerified.map((feat, idx) => (
-                          <span
-                            key={idx}
-                            className="text-[10px] font-bold bg-white border border-emerald-200 text-emerald-800 px-2 py-0.5 rounded-lg shadow-2xs flex items-center gap-1"
-                          >
-                            <span className="text-emerald-600">✓</span>
-                            <span>{feat}</span>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Cosmetic Assessment Note */}
-                    {photoMatchResult.cosmeticAssessment && (
-                      <div className="text-[11px] text-emerald-800 bg-emerald-100/60 p-2 rounded-xl border border-emerald-200/60 flex items-start gap-1.5">
-                        <span className="shrink-0">🔍</span>
-                        <span>
-                          <strong>Cosmetic Audit:</strong> {photoMatchResult.cosmeticAssessment}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Discrepancy Notice Banner */}
-                {!isMatchingPhoto && photoMatchResult && !photoMatchResult.isMatch && (
-                  <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-950 flex flex-col gap-2.5 animate-in fade-in">
-                    <div className="flex items-start gap-2.5">
-                      <span className="text-base shrink-0">ℹ️</span>
-                      <div>
-                        <span className="text-xs font-bold text-amber-900 block">
-                          Visual Assessment Note: {photoMatchResult.detectedCategory || 'Variance Noted'}
-                        </span>
-                        <span className="text-[11px] text-amber-800">
-                          {photoMatchResult.reason}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="pt-2 border-t border-amber-200/70 flex items-center justify-between gap-2 flex-wrap">
-                      <span className="text-[10px] text-amber-700 font-medium">
-                        * SafeShip officer verifies physical item against this photo at doorstep unboxing.
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setPhotoMatchResult({
-                            isMatch: true,
-                            confidence: '96.0%',
-                            detectedCategory: photoMatchResult.detectedCategory || 'Declared Item',
-                            detectedModel: itemName || 'Declared Device',
-                            reason: `Confirmed by sender — officer Rahul K. will audit physical hardware against declared "${itemName}".`,
-                            suggestedImei: photoMatchResult.suggestedImei || manualImei || undefined,
-                            anglesAudited: uploadedPhotos.length || 1
-                          });
-                          clearFieldError('photos');
-                        }}
-                        className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[10px] font-bold transition cursor-pointer active:scale-95 shadow-2xs"
-                      >
-                        Accept &amp; Proceed ✓
-                      </button>
-                    </div>
                   </div>
                 )}
 
                 {errors.photos && (
-                  <p className="text-[11px] text-rose-600 font-semibold mt-1 flex items-center gap-1">
-                    <span>⚠️</span>
-                    <span>{errors.photos}</span>
-                  </p>
+                  <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.photos}</p>
                 )}
-              </div>
 
-              {/* IMEI / Serial Number Section */}
-              <div className="pt-3 border-t border-slate-100 space-y-3">
-                <div className="flex items-center justify-between flex-wrap gap-1">
-                  <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-[#0066FF]" />
-                    <span>IMEI / Serial Number:</span>
-                  </label>
-                  <span className="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200 font-medium">
-                    Optional • Verified at unboxing
-                  </span>
-                </div>
+                {/* Multimodal Verification Status Badge */}
+                {isMatchingPhoto && (
+                  <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-medium flex items-center gap-2">
+                    <span className="w-3.5 h-3.5 rounded-full border-2 border-[#0066FF] border-t-transparent animate-spin shrink-0" />
+                    <span>AI verifying device photos against {itemName || 'declared item'}...</span>
+                  </div>
+                )}
 
-                <p className="text-[11px] text-slate-500">
-                  Upload a photo of your device&apos;s <strong>*#06# dialer screen</strong>, <strong>Settings &gt; About</strong>, or <strong>retail box barcode</strong> to auto-scan the 15-digit IMEI. You can also type or edit it manually below.
-                </p>
-
-                {/* Upload Photo Dropzone / Selector */}
-                {!backsidePhoto && (
-                  <label className="p-4 rounded-2xl border-2 border-dashed border-slate-200 hover:border-[#0066FF] bg-[#F8FAFC] hover:bg-blue-50/40 transition flex flex-col sm:flex-row items-center justify-between gap-3 cursor-pointer group">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0066FF] flex items-center justify-center shrink-0 group-hover:scale-105 transition">
-                        <Upload className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-900 block">
-                          Upload Photo for Automatic IMEI Scan
-                        </span>
-                        <span className="text-[10px] text-slate-500 block mt-0.5">
-                          Upload photo from gallery or file &bull; Automatically scans &amp; enters 15-digit IMEI
-                        </span>
-                      </div>
-                    </div>
-                    <span className="px-3.5 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold shadow-xs shrink-0 transition active:scale-95">
-                      Upload Photo
+                {!isMatchingPhoto && photoMatchResult && photoMatchResult.isMatch && (
+                  <div className="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Hardware Model Verified: {photoMatchResult.detectedModel || itemName}</span>
                     </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImeiPhotoUpload}
-                      className="hidden"
-                    />
-                  </label>
-                )}
-
-                {/* Attached & Scanned Photo Preview + Status */}
-                {backsidePhoto && (
-                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 overflow-hidden shrink-0 flex items-center justify-center p-0.5">
-                          <img src={backsidePhoto} alt="Uploaded IMEI / Barcode" className="w-full h-full object-contain" />
-                        </div>
-                        <div className="min-w-0">
-                          <span className="text-xs font-bold text-slate-900 block truncate">
-                            IMEI Photo Attached
-                          </span>
-                          <span className="text-[10px] text-slate-500 block">
-                            {isScanningBackside ? 'SafeShip Vision is analyzing digits...' : 'Photo analyzed'}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        <label className="px-2.5 py-1.5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-[11px] font-bold transition cursor-pointer shadow-2xs">
-                          <span>Change Photo</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImeiPhotoUpload}
-                            className="hidden"
-                          />
-                        </label>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setBacksidePhoto(null);
-                            setImeiScanFeedback(null);
-                          }}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200 transition cursor-pointer"
-                          title="Remove photo"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Scanning Animation State */}
-                    {isScanningBackside && (
-                      <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 flex items-center gap-2.5 text-xs font-semibold text-[#0066FF] animate-in fade-in">
-                        <span className="w-4 h-4 rounded-full border-2 border-[#0066FF] border-t-transparent animate-spin shrink-0" />
-                        <div>
-                          <span>Scanning photo for 15-digit IMEI...</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Feedback Banner */}
-                    {!isScanningBackside && imeiScanFeedback && (
-                      <div className={`p-2.5 rounded-xl text-xs flex items-center justify-between gap-2 animate-in fade-in ${
-                        imeiScanFeedback.status === 'SUCCESS'
-                          ? 'bg-emerald-50 border border-emerald-300 text-emerald-950'
-                          : imeiScanFeedback.status === 'BLURRY'
-                          ? 'bg-amber-50 border border-amber-300 text-amber-950'
-                          : 'bg-slate-100 border border-slate-200 text-slate-800'
-                      }`}>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="shrink-0">
-                            {imeiScanFeedback.status === 'SUCCESS' ? '✓' : '⚠️'}
-                          </span>
-                          <span className="font-medium text-[11px]">
-                            {imeiScanFeedback.message}
-                          </span>
-                        </div>
-                        {imeiScanFeedback.status === 'SUCCESS' && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-emerald-200 text-emerald-900 shrink-0">
-                            AUTO-ENTERED
-                          </span>
-                        )}
-                      </div>
-                    )}
+                    <span className="text-[10px] bg-emerald-200 text-emerald-950 px-2 py-0.5 rounded-md font-bold">
+                      {photoMatchResult.confidence || '99%'} Match
+                    </span>
                   </div>
                 )}
 
-                {/* Manual Text Input Field (Editable with live validation) */}
-                <div className="space-y-1.5 pt-0.5">
-                  <div className="flex items-center justify-between text-[11px] flex-wrap gap-1">
-                    <span className="font-bold text-slate-700">15-Digit IMEI or Serial Number:</span>
-                    {manualImei && (
-                      (() => {
-                        const digitsOnly = manualImei.replace(/\D/g, '');
-                        const is15 = digitsOnly.length === 15;
-                        const isLuhn = is15 && validateLuhnImei(digitsOnly);
-                        const brandDetected = is15 ? identifyBrandFromImei(digitsOnly) : 'Device Hardware';
-                        if (isLuhn) {
-                          return (
-                            <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 animate-in fade-in">
-                              <span>✓</span>
-                              <span>{brandDetected} • GSMA Luhn Valid</span>
-                            </span>
-                          );
-                        }
-                        if (is15) {
-                          return (
-                            <span className="text-slate-700 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 animate-in fade-in">
-                              <span>15-Digit Format</span>
-                            </span>
-                          );
-                        }
-                        if (manualImei.trim().length >= 6) {
-                          return (
-                            <span className="text-slate-700 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 animate-in fade-in">
-                              <span>Serial Number Recorded</span>
-                            </span>
-                          );
-                        }
-                        return (
-                          <span className="text-emerald-600 font-bold text-[10px]">
-                            ✓ Linked
+                {/* Product Mismatch: Elegant Amber Notice with Replace Photo / Confirm actions */}
+                {!isMatchingPhoto && photoMatchResult && !photoMatchResult.isMatch && !dismissedMismatch && (
+                  <div className="p-3 rounded-2xl bg-amber-50/95 border border-amber-300 text-amber-950 text-xs space-y-2 animate-in fade-in shadow-2xs">
+                    <div className="flex items-start gap-2.5">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <h4 className="font-bold text-amber-900 text-xs">
+                            Notice: {photoMatchResult.detectedCategory || 'Item'} Detected
+                          </h4>
+                          <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.5 rounded">
+                            Optical Check
                           </span>
-                        );
-                      })()
-                    )}
-                  </div>
-
-                  <div className="relative flex items-center">
-                    <input
-                      type="text"
-                      value={manualImei}
-                      onChange={(e) => {
-                        const raw = e.target.value;
-                        const match15 = raw.match(/\b\d{15}\b/);
-                        const cleanVal = match15 ? match15[0] : raw;
-                        setManualImei(cleanVal);
-                        clearFieldError('imei');
-                      }}
-                      className="w-full px-3.5 py-2.5 pr-20 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs font-mono font-bold text-[#0F172A] outline-hidden focus:border-[#0066FF] transition"
-                      placeholder="Enter or verify 15-digit IMEI"
-                    />
-
-                    <div className="absolute right-2 flex items-center gap-1.5">
-                      {manualImei && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setManualImei('');
-                            setImeiScanFeedback(null);
-                          }}
-                          className="px-2 py-0.5 rounded-md bg-slate-200 hover:bg-slate-300 text-slate-600 text-[10px] font-bold cursor-pointer transition"
-                          title="Clear field"
-                        >
-                          Clear
-                        </button>
-                      )}
+                        </div>
+                        <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                          {photoMatchResult.reason || `The uploaded photo looks like a ${photoMatchResult.detectedCategory || 'different device'}, while declared item is "${itemName}".`}
+                        </p>
+                        <p className="text-[10px] text-amber-700/90 mt-0.5">
+                          Bonded delivery officer Rahul K. will verify the physical item against this order during the 10-minute doorstep unboxing window.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="pt-1.5 border-t border-amber-200/70 flex items-center justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUploadedPhotos([]);
+                          setProductPhoto(null);
+                          setPhotoMatchResult(null);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 font-bold text-[11px] transition cursor-pointer"
+                      >
+                        Replace Photo
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDismissedMismatch(true)}
+                        className="px-2.5 py-1 rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-bold text-[11px] transition cursor-pointer"
+                      >
+                        I Confirm Item is Correct (Proceed)
+                      </button>
                     </div>
                   </div>
+                )}
 
-                  <div className="flex items-center justify-between text-[10px] text-slate-500 pt-0.5">
-                    <span>You can freely edit or type digits here if any number was misread from the photo.</span>
-                    {manualImei && <span>{manualImei.replace(/\D/g, '').length} / 15 digits</span>}
-                  </div>
-                </div>
-
-                <p className="text-[10px] text-[#64748B]">
-                  SafeShip&apos;s doorstep officer compares this against the physical chassis during the 10-minute unboxing inspection.
-                </p>
-              </div>
-
-              {/* Mobile Chunk 2.2 Error Callout */}
-              {errors.photos && (
-                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs font-semibold flex flex-col gap-1.5 animate-in fade-in">
-                  <div className="flex items-center gap-1.5">
-                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>{errors.photos}</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const photo = getCatalogPhotoForDevice(itemName, selectedCategory);
-                      verifyPhotoMatch(photo, itemName);
-                    }}
-                    className="self-start text-[11px] font-bold text-[#0066FF] hover:underline cursor-pointer"
-                  >
-                    ⚡ Tap here to use verified catalog photo &rarr;
-                  </button>
-                </div>
-              )}
-
-              {/* Mobile Chunk 2.2 Navigation Buttons */}
-              <div className="md:hidden pt-3 border-t border-slate-100 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setStep2Chunk(1)}
-                  className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer"
-                >
-                  ← Model
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleNextStep2Chunk(3)}
-                  className="flex-1 py-3 px-4 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
-                >
-                  <span>Next: Valuation &amp; Condition (Part 3)</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* CHUNK 2.3: Condition, Valuation & Box Items */}
-            <div className={`space-y-4 ${step2Chunk === 3 ? 'block' : 'hidden md:block'}`}>
-              <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3.5">
-                <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
-                  <span className="text-xs font-bold text-[#0066FF] uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#0066FF]" />
-                    <span>Valuation &amp; Condition</span>
-                  </span>
-                  <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    Doorstep Inspection Protected
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-[#334155] block mb-1">
-                      Physical Condition <span className="text-rose-500">*</span>:
-                    </label>
-                    <select
-                      id="field-condition"
-                      value={condition}
-                      onChange={(e) => {
-                        setCondition(e.target.value);
-                        clearFieldError('condition');
-                      }}
-                      className={`w-full px-3 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
-                        errors.condition ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                      }`}
+                {/* Dismissed / Overridden Mismatch Pill */}
+                {!isMatchingPhoto && photoMatchResult && !photoMatchResult.isMatch && dismissedMismatch && (
+                  <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] flex items-center justify-between">
+                    <span>Listing confirmed by sender &bull; Physical audit at doorstep</span>
+                    <button
+                      type="button"
+                      onClick={() => setDismissedMismatch(false)}
+                      className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
                     >
-                      <option value="Brand New Sealed">Brand New Sealed (Factory Pack)</option>
-                      <option value="Used - Mint">Used - Mint (Scratchless)</option>
-                      <option value="Used - Excellent">Used - Excellent (Minor Signs)</option>
-                      <option value="Used - Good">Used - Good (Normal Wear)</option>
-                      <option value="Used - Fair">Used - Fair (Visible Scuffs)</option>
-                    </select>
-                    {errors.condition && (
-                      <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.condition}</p>
-                    )}
+                      Review Notice
+                    </button>
                   </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-[#334155] block mb-1">
-                      Declared Valuation (₹) <span className="text-rose-500">*</span>:
-                    </label>
-                    <input
-                      id="field-declaredValue"
-                      type="number"
-                      value={declaredValue === 0 ? '' : declaredValue}
-                      onChange={(e) => {
-                        setDeclaredValue(e.target.value === '' ? 0 : Number(e.target.value));
-                        clearFieldError('declaredValue');
-                      }}
-                      placeholder="e.g., 65000"
-                      className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-sm font-bold text-[#0066FF] outline-hidden transition ${
-                        errors.declaredValue ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                      }`}
-                    />
-                    {errors.declaredValue ? (
-                      <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.declaredValue}</p>
-                    ) : (
-                      <span className="text-[10px] text-emerald-600 font-semibold block mt-0.5">
-                        {mode === 'exchange' ? '* Mutual valuation reference' : '* Paid by buyer upon doorstep open-box approval'}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-xs font-bold text-[#334155] block mb-1">
-                    What&apos;s Included in the Box <span className="text-rose-500">*</span>:
-                  </label>
-                  <input
-                    id="field-includedItems"
-                    type="text"
-                    value={includedItems}
-                    onChange={(e) => {
-                      setIncludedItems(e.target.value);
-                      clearFieldError('includedItems');
-                    }}
-                    className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
-                      errors.includedItems ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                    }`}
-                    placeholder="e.g., Original retail box, 140W MagSafe charger, purchase invoice"
-                  />
-                  {errors.includedItems && (
-                    <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.includedItems}</p>
-                  )}
-                </div>
+                )}
               </div>
 
-              {/* ITEM 2 (Only in 2-Way Item Exchange: What you receive) */}
+              {/* Optional Serial / IMEI input */}
+              <div className="pt-2 border-t border-slate-100">
+                <label className="text-xs font-bold text-[#334155] flex items-center justify-between mb-1">
+                  <span className="flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF]" />
+                    <span>IMEI or Serial Number:</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-normal">Optional &bull; Audited at unboxing</span>
+                </label>
+                <input
+                  id="field-manualImei"
+                  type="text"
+                  value={manualImei}
+                  onChange={(e) => {
+                    const clean = e.target.value.replace(/\s+/g, '');
+                    setManualImei(clean);
+                  }}
+                  placeholder="e.g. 15-digit IMEI or serial number"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0066FF] text-xs font-mono text-[#0F172A] outline-hidden transition"
+                />
+              </div>
+
+              {/* Minimal Open-Box & Escrow Assurance */}
+              <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
+                <span className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>10-min doorstep open-box inspection &bull; ₹0 return if rejected</span>
+                </span>
+                <span className="text-[11px] font-semibold text-[#0066FF] shrink-0 hidden sm:inline">RBI Nodal Escrow</span>
+              </div>
+
+              {/* Exchange Mode Fields (If 2-Way exchange) */}
               {mode === 'exchange' && (
-                <div className="bg-white rounded-3xl p-5 border border-amber-200 shadow-xs space-y-3.5 animate-in fade-in">
-                  <div className="flex items-center justify-between pb-2 border-b border-amber-100">
-                    <span className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1.5">
-                      <ArrowLeftRight className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Item 2: What You Receive in Exchange</span>
-                    </span>
-                    <span className="text-[10px] font-bold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                      SWAP PARTNER ITEM
-                    </span>
+                <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-3 pt-3">
+                  <div className="flex items-center justify-between pb-1.5 border-b border-amber-200/60">
+                    <span className="text-xs font-bold text-amber-900">Partner Item (What You Receive)</span>
+                    <span className="text-[10px] text-amber-700 font-semibold bg-amber-100 px-2 py-0.5 rounded-full">2-Way Swap</span>
                   </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-[#334155] block mb-1">
-                      Partner Item Model / Spec <span className="text-rose-500">*</span>:
-                    </label>
-                    <input
-                      type="text"
-                      value={exchangeItemName}
-                      onChange={(e) => {
-                        setExchangeItemName(e.target.value);
-                        clearFieldError('exchangeItemName');
-                      }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-sm text-[#0F172A] outline-hidden transition ${
-                        errors.exchangeItemName ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-amber-500'
-                      }`}
-                      placeholder="e.g., iPhone 15 Pro Max 256GB Natural Titanium"
-                    />
-                    {errors.exchangeItemName && (
-                      <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.exchangeItemName}</p>
-                    )}
-                  </div>
-
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="text-xs font-bold text-[#334155] block mb-1">
-                        Condition <span className="text-rose-500">*</span>:
-                      </label>
-                      <select
-                        value={exchangeCondition}
-                        onChange={(e) => {
-                          setExchangeCondition(e.target.value);
-                          clearFieldError('exchangeCondition');
-                        }}
-                        className={`w-full px-3 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
-                          errors.exchangeCondition ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-amber-500'
-                        }`}
-                      >
-                        <option value="Used - Excellent">Used - Excellent</option>
-                        <option value="Brand New Sealed">Brand New Sealed</option>
-                        <option value="Used - Mint">Used - Mint</option>
-                        <option value="Used - Good">Used - Good</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="text-xs font-bold text-[#334155] block mb-1">
-                        Estimated Valuation (₹) <span className="text-rose-500">*</span>:
-                      </label>
+                      <label className="text-[11px] font-bold text-[#334155] block mb-1">Partner Item Model <span className="text-rose-500">*</span>:</label>
                       <input
+                        id="field-exchangeItemName"
+                        type="text"
+                        value={exchangeItemName}
+                        onChange={(e) => { setExchangeItemName(e.target.value); clearFieldError('exchangeItemName'); }}
+                        placeholder="e.g. MacBook Air M2 16GB"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs text-[#0F172A] outline-hidden"
+                      />
+                      {errors.exchangeItemName && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.exchangeItemName}</p>}
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-[#334155] block mb-1">Partner Estimated Value (₹) <span className="text-rose-500">*</span>:</label>
+                      <input
+                        id="field-exchangeValue"
                         type="number"
                         value={exchangeValue === 0 ? '' : exchangeValue}
-                        onChange={(e) => {
-                          setExchangeValue(e.target.value === '' ? 0 : Number(e.target.value));
-                          clearFieldError('exchangeValue');
-                        }}
-                        placeholder="e.g., 68000"
-                        className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-sm font-bold text-amber-700 outline-hidden transition ${
-                          errors.exchangeValue ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-amber-500'
-                        }`}
+                        onChange={(e) => { setExchangeValue(e.target.value === '' ? 0 : Number(e.target.value)); clearFieldError('exchangeValue'); }}
+                        placeholder="e.g. 70000"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-bold text-amber-800 outline-hidden"
                       />
+                      {errors.exchangeValue && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.exchangeValue}</p>}
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-[#334155] block mb-1">
-                      What&apos;s Included with Partner Item <span className="text-rose-500">*</span>:
-                    </label>
-                    <input
-                      type="text"
-                      value={exchangeIncluded}
-                      onChange={(e) => {
-                        setExchangeIncluded(e.target.value);
-                        clearFieldError('exchangeIncluded');
-                      }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
-                        errors.exchangeIncluded ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-amber-500'
-                      }`}
-                      placeholder="e.g., USB-C braided cable, case, original box"
-                    />
-                  </div>
-
-                  {/* Cash Settlement / Balance Difference */}
-                  <div className="p-3.5 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-amber-900">
-                        Cash Difference Adjustment:
-                      </span>
-                      <span className="text-xs font-black text-amber-700">
-                        {cashPayer === 'EVEN_TRADE' ? 'Even Swap (₹0)' : `₹${cashDifference.toLocaleString('en-IN')}`}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                      <button
-                        type="button"
-                        onClick={() => { setCashPayer('EVEN_TRADE'); setCashDifference(0); }}
-                        className={`p-2 rounded-xl font-bold border transition cursor-pointer ${
-                          cashPayer === 'EVEN_TRADE'
-                            ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                            : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-50'
-                        }`}
-                      >
-                        Even Trade (₹0)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setCashPayer('THEY_PAY'); setCashDifference(3000); }}
-                        className={`p-2 rounded-xl font-bold border transition cursor-pointer ${
-                          cashPayer === 'THEY_PAY'
-                            ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                            : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-50'
-                        }`}
-                      >
-                        Partner Pays +₹3k
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setCashPayer('YOU_PAY'); setCashDifference(3000); }}
-                        className={`p-2 rounded-xl font-bold border transition cursor-pointer ${
-                          cashPayer === 'YOU_PAY'
-                            ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
-                            : 'bg-white text-slate-700 border-amber-200 hover:bg-amber-50'
-                        }`}
-                      >
-                        You Pay +₹3k
-                      </button>
-                    </div>
-                    <p className="text-[10px] text-amber-800">
-                      * Any cash difference is settled safely at doorstep via UPI only after mutual inspection passes.
-                    </p>
                   </div>
                 </div>
               )}
 
-              {/* Mobile Chunk 2.3 Error Callout */}
-              {Object.keys(errors).length > 0 && currentStep === 2 && (
-                <div className="p-3.5 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-900 text-xs font-semibold space-y-1.5 animate-in fade-in">
-                  <div className="flex items-center gap-1.5 font-bold text-rose-800">
-                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>Please complete required fields to proceed:</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    {Object.entries(errors).map(([fieldKey, msg]) => (
-                      <button
-                        key={fieldKey}
-                        type="button"
-                        onClick={() => {
-                          if (fieldKey === 'itemName') setStep2Chunk(1);
-                          else if (fieldKey === 'photos') setStep2Chunk(2);
-                          else setStep2Chunk(3);
-                          scrollToField(`field-${fieldKey}`);
-                        }}
-                        className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer text-left shadow-2xs"
-                      >
-                        ⚠️ {msg}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Mobile Chunk 2.3 Navigation Buttons */}
-              <div className="md:hidden pt-2 flex gap-2">
+              {/* Navigation Buttons */}
+              <div className="pt-2 flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setStep2Chunk(2)}
-                  className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer"
+                  onClick={() => goToStep(1)}
+                  className="py-3 px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition cursor-pointer"
                 >
-                  ← Photo
+                  ← Categories
                 </button>
                 <button
                   type="button"
                   onClick={handleNextStep}
-                  className="flex-1 py-3 px-4 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                  className="flex-1 py-3 px-5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
                 >
                   <span>Next: Routing &amp; Addresses</span>
                   <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Desktop Navigation Controls (Hidden on Mobile) */}
-            <div className="hidden md:flex flex-col gap-2 pt-2">
-              {Object.keys(errors).length > 0 && currentStep === 2 && (
-                <div className="p-3.5 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-900 text-xs font-semibold space-y-1.5 animate-in fade-in">
-                  <div className="flex items-center gap-1.5 font-bold text-rose-800">
-                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>Please complete required fields to proceed:</span>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    {Object.entries(errors).map(([fieldKey, msg]) => (
-                      <button
-                        key={fieldKey}
-                        type="button"
-                        onClick={() => {
-                          scrollToField(`field-${fieldKey}`);
-                        }}
-                        className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer text-left shadow-2xs"
-                      >
-                        ⚠️ {msg}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStepErrorBanner('');
-                    setErrors({});
-                    goToStep(1);
-                  }}
-                  className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextStep}
-                  className="flex-1 py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <span>Next: Routing &amp; Addresses</span>
-                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -2904,7 +2112,7 @@ function CreateShipmentContent() {
         )}
 
         {/* =================================================================== */}
-        {/* STEP 3: PICKUP & DROP LOCATIONS + AUTO PINCODE RESOLUTION           */}
+        {/* STEP 3: PICKUP & DROP LOCATIONS (Minimal, Zero Scroll)              */}
         {/* =================================================================== */}
         {currentStep === 3 && (
           <div className="space-y-4 animate-in fade-in">
@@ -2913,294 +2121,261 @@ function CreateShipmentContent() {
                 {mode === 'exchange' ? '2-Way Addresses & Corridor' : 'Origin & Destination Addresses'}
               </h2>
               <p className="text-xs text-[#64748B] mt-0.5">
-                {mode === 'exchange'
-                  ? 'SafeShip schedules bonded pick-up and delivery officers across municipal hubs.'
-                  : 'Add the pickup and delivery address. Your PIN codes help us estimate service and timing.'}
+                Add pickup and delivery details. PIN codes auto-resolve city, state &amp; logistics hub.
               </p>
             </div>
 
-            {/* Mobile Progressive Chunk Navigation Bar */}
-            <div className="md:hidden flex items-center justify-between gap-1 p-1 bg-slate-100/90 rounded-2xl border border-slate-200">
-              <button
-                type="button"
-                onClick={() => setStep3Chunk(1)}
-                className={`flex-1 py-2 px-1 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5 ${
-                  step3Chunk === 1
-                    ? 'bg-white text-[#0066FF] shadow-xs'
-                    : pickupPincode ? 'text-slate-700' : 'text-slate-400'
-                }`}
-              >
-                <span className={`w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold ${
-                  step3Chunk === 1 ? 'bg-[#0066FF] text-white' : pickupPincode ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'
-                }`}>
-                  {pickupPincode ? '✓' : '1'}
-                </span>
-                <span>1. Pickup &amp; Sender</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleNextStep3Chunk(2)}
-                className={`flex-1 py-2 px-1 rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5 ${
-                  step3Chunk === 2
-                    ? 'bg-white text-[#0066FF] shadow-xs'
-                    : dropPincode ? 'text-slate-700' : 'text-slate-400'
-                }`}
-              >
-                <span className={`w-4 h-4 rounded-full text-[10px] flex items-center justify-center font-bold ${
-                  step3Chunk === 2 ? 'bg-[#0066FF] text-white' : dropPincode ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-500'
-                }`}>
-                  {dropPincode ? '✓' : '2'}
-                </span>
-                <span>2. Delivery &amp; Transit</span>
-              </button>
-            </div>
-
-            {/* Collaborative Booking Quick Action Banner */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 flex-wrap">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#0066FF] flex items-center justify-center shrink-0">
-                  <Share2 className="w-4 h-4" />
+            {/* SENDER / PICKUP DETAILS */}
+            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3.5">
+              <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A]">
+                  <span className="w-2 h-2 rounded-full bg-[#0066FF]" />
+                  <span>Sender / Pickup Address</span>
                 </div>
-                <div className="min-w-0">
-                  <span className="text-xs font-bold text-slate-900 block truncate">
-                    Need the other party to fill their address?
+                {pickupCity && (
+                  <span className="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                    {pickupCity}, {pickupState} ✓
                   </span>
-                  <span className="text-[11px] text-slate-500 block truncate">
-                    Generate a pre-filled link so the sender/seller can enter pickup details directly.
-                  </span>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setCollabRoleTarget('seller');
-                  setShowCollabModal(true);
-                }}
-                className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-[#0066FF] text-xs font-bold border border-slate-300 shadow-2xs shrink-0 transition cursor-pointer active:scale-95 flex items-center gap-1.5"
-              >
-                <Link2 className="w-3.5 h-3.5" />
-                <span>Share Fill Link</span>
-              </button>
-            </div>
-
-            {/* CHUNK 3.1: Sender / Pickup */}
-            <div className={`space-y-4 ${step3Chunk === 1 ? 'block' : 'hidden md:block'}`}>
-
-              {/* SENDER CONTACT & PICKUP ADDRESS */}
-              <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3.5">
-                <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9] flex-wrap gap-2">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A]">
-                    <span className="w-2 h-2 rounded-full bg-[#0066FF]" />
-                    <span>Sender / Pickup Details</span>
-                  </div>
-                  <span className="text-[11px] text-slate-400 font-medium">Origin Address</span>
-                </div>
-
-                {pickupPincode && (
-                  <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-blue-50/70 border border-blue-100 text-[11px] text-blue-900">
-                    <div className="flex items-center gap-1.5 truncate">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                      <span className="truncate">
-                        Pickup Location: <strong>{pickupCity || pickupPincode}</strong> {pickupHub ? `• ${pickupHub}` : ''}
-                      </span>
-                    </div>
-                    <span className="text-[10px] text-blue-600 font-bold shrink-0 ml-2">Auto-filled ✓</span>
-                  </div>
                 )}
+              </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                      Sender Name <span className="text-rose-500">*</span>:
-                    </label>
-                    <input
-                      id="field-senderName"
-                      type="text"
-                      value={senderName}
-                      onChange={(e) => { setSenderName(e.target.value); clearFieldError('senderName'); }}
-                      className={`w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
-                        errors.senderName ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                      }`}
-                      placeholder="e.g., Rohan Verma"
-                    />
-                    {errors.senderName && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.senderName}</p>}
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                      Sender Mobile <span className="text-rose-500">*</span>:
-                    </label>
-                    <input
-                      id="field-senderPhone"
-                      type="tel"
-                      maxLength={10}
-                      value={senderPhone}
-                      onChange={(e) => { setSenderPhone(e.target.value.replace(/\D/g, '')); clearFieldError('senderPhone'); }}
-                      className={`w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] font-mono outline-hidden ${
-                        errors.senderPhone ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                      }`}
-                      placeholder="e.g., 9829012890"
-                    />
-                    {errors.senderPhone && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.senderPhone}</p>}
-                  </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                    Sender Name <span className="text-rose-500">*</span>:
+                  </label>
+                  <input
+                    id="field-senderName"
+                    type="text"
+                    value={senderName}
+                    onChange={(e) => { setSenderName(e.target.value); clearFieldError('senderName'); }}
+                    className={`w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
+                      errors.senderName ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                    }`}
+                    placeholder="e.g., Rohan Verma"
+                  />
+                  {errors.senderName && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.senderName}</p>}
                 </div>
 
                 <div>
                   <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                    Pickup Street Address &amp; Landmarks <span className="text-rose-500">*</span>:
+                    Sender Mobile <span className="text-rose-500">*</span>:
                   </label>
                   <input
-                    id="field-pickupLocation"
-                    type="text"
-                    value={pickupLocation}
-                    onChange={(e) => { setPickupLocation(e.target.value); clearFieldError('pickupLocation'); }}
-                    className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
-                      errors.pickupLocation ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                    id="field-senderPhone"
+                    type="tel"
+                    maxLength={10}
+                    value={senderPhone}
+                    onChange={(e) => { setSenderPhone(e.target.value.replace(/\D/g, '')); clearFieldError('senderPhone'); }}
+                    className={`w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] font-mono outline-hidden ${
+                      errors.senderPhone ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
                     }`}
-                    placeholder="e.g., Flat 402, Embassy Golf Links, Domlur"
+                    placeholder="e.g., 9829012890"
                   />
-                  {errors.pickupLocation && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.pickupLocation}</p>}
+                  {errors.senderPhone && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.senderPhone}</p>}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                  Email for Pickup Alerts &amp; Tracking <span className="text-slate-400 font-normal">(Optional &bull; receives 4-digit pickup code)</span>:
+                </label>
+                <input
+                  id="field-senderEmail"
+                  type="email"
+                  value={senderEmail}
+                  onChange={(e) => setSenderEmail(e.target.value.trim())}
+                  className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0066FF] text-xs text-[#0F172A] outline-hidden"
+                  placeholder="e.g., yourname@gmail.com"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                  Pickup Street Address &amp; Landmarks <span className="text-rose-500">*</span>:
+                </label>
+                <input
+                  id="field-pickupLocation"
+                  type="text"
+                  value={pickupLocation}
+                  onChange={(e) => { setPickupLocation(e.target.value); clearFieldError('pickupLocation'); }}
+                  className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
+                    errors.pickupLocation ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                  }`}
+                  placeholder="e.g., Flat 402, Block B, Malviya Nagar"
+                />
+                {errors.pickupLocation && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.pickupLocation}</p>}
+              </div>
+
+              <div className="flex gap-2">
+                <div className="w-36">
+                  <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                    Pickup PIN <span className="text-rose-500">*</span>:
+                  </label>
+                  <input
+                    id="field-pickupPincode"
+                    type="text"
+                    maxLength={6}
+                    value={pickupPincode}
+                    onChange={(e) => handlePickupPincodeChange(e.target.value)}
+                    className={`w-full px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] text-center font-mono font-bold outline-hidden ${
+                      errors.pickupPincode ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                    }`}
+                    placeholder="e.g., 302017"
+                  />
+                  {errors.pickupPincode && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.pickupPincode}</p>}
                 </div>
 
-                <div className="flex gap-2">
-                  <div className="w-36">
+                <div className="flex-1 flex flex-col justify-end">
+                  {pickupCity ? (
+                    <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center justify-between">
+                      <span className="font-bold">
+                        {pickupCity}, {pickupState}
+                      </span>
+                      <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0">{pickupHub || 'Hub Active'}</span>
+                    </div>
+                  ) : (
+                    <span className="text-[11px] text-[#94A3B8] italic pb-2">Enter 6-digit PIN code to auto-resolve city &amp; hub</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* OPTIONAL SELLER SETTLEMENT DETAILS (BANK ACCOUNT / UPI) */}
+            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3.5">
+              <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A]">
+                  <CreditCard className="w-4 h-4 text-[#0066FF]" />
+                  <span>Seller Escrow Settlement Details</span>
+                  <span className="text-[10px] text-slate-400 font-normal">(Optional)</span>
+                </div>
+                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                  Where you get paid
+                </span>
+              </div>
+
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Where should SafeShip transfer the {declaredValue > 0 ? `₹${declaredValue.toLocaleString('en-IN')}` : 'item value'} payout once the buyer approves doorstep open-box inspection?
+              </p>
+
+              {/* Toggle: Bank Account vs UPI */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSellerSettlementType('BANK')}
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    sellerSettlementType === 'BANK'
+                      ? 'bg-blue-50 border-[#0066FF] text-[#0066FF] shadow-2xs'
+                      : 'bg-[#F8FAFC] border-slate-200 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <CreditCard className="w-3.5 h-3.5" />
+                  <span>Bank Account</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSellerSettlementType('UPI')}
+                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    sellerSettlementType === 'UPI'
+                      ? 'bg-blue-50 border-[#0066FF] text-[#0066FF] shadow-2xs'
+                      : 'bg-[#F8FAFC] border-slate-200 text-slate-600 hover:bg-slate-100'
+                  }`}
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>UPI ID</span>
+                </button>
+              </div>
+
+              {sellerSettlementType === 'BANK' ? (
+                <div className="space-y-2.5 pt-0.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                      <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                        Bank Account Number:
+                      </label>
+                      <input
+                        id="field-sellerAccountNumber"
+                        type="text"
+                        value={sellerAccountNumber}
+                        onChange={(e) => setSellerAccountNumber(e.target.value.replace(/\s+/g, ''))}
+                        className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0066FF] text-xs font-mono text-[#0F172A] outline-hidden"
+                        placeholder="e.g., 50100482910482"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                        Bank IFSC Code:
+                      </label>
+                      <input
+                        id="field-sellerIfsc"
+                        type="text"
+                        maxLength={11}
+                        value={sellerIfsc}
+                        onChange={(e) => setSellerIfsc(e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                        className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0066FF] text-xs font-mono font-bold text-[#0F172A] outline-hidden uppercase"
+                        placeholder="e.g., HDFC0001234"
+                      />
+                    </div>
+                  </div>
+                  <div>
                     <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                      PIN Code <span className="text-rose-500">*</span>:
+                      Account Beneficiary Name:
                     </label>
                     <input
-                      id="field-pickupPincode"
+                      id="field-sellerAccountName"
                       type="text"
-                      maxLength={6}
-                      value={pickupPincode}
-                      onChange={(e) => handlePickupPincodeChange(e.target.value)}
-                      className={`w-full px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] text-center font-mono font-bold outline-hidden ${
-                        errors.pickupPincode ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                      }`}
-                      placeholder="e.g., 560071"
+                      value={sellerAccountName}
+                      onChange={(e) => setSellerAccountName(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0066FF] text-xs text-[#0F172A] outline-hidden"
+                      placeholder={senderName ? `e.g., ${senderName}` : 'e.g., Rohan Verma (as per passbook)'}
                     />
-                    {errors.pickupPincode && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.pickupPincode}</p>}
-                  </div>
-
-                  <div className="flex-1 flex flex-col justify-end">
-                    {pickupCity ? (
-                      <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center justify-between">
-                        <span className="font-bold">
-                          {pickupCity}{pickupDistrict && !pickupCity.includes(pickupDistrict) ? ` (${pickupDistrict})` : ''}, {pickupState}
-                        </span>
-                        <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0 ml-2">{pickupHub}</span>
-                      </div>
-                    ) : (
-                      <span className="text-[11px] text-[#94A3B8] italic pb-2">Enter 6-digit PIN code to auto-resolve city &amp; hub</span>
-                    )}
                   </div>
                 </div>
-
-                {/* Seller Payout Bank Account / UPI ID */}
-                <div className="pt-2 border-t border-slate-100">
-                  <label className="text-[11px] font-bold text-[#475569] flex items-center justify-between mb-1">
-                    <span>Payout Bank Account / UPI ID:</span>
-                    <span className="text-[10px] text-slate-400 font-normal">Optional • Settled upon delivery approval</span>
+              ) : (
+                <div className="pt-0.5">
+                  <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                    Seller UPI ID (VPA):
                   </label>
                   <input
                     id="field-sellerUpiId"
                     type="text"
                     value={sellerUpiId}
-                    onChange={(e) => setSellerUpiId(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0066FF] text-xs text-[#0F172A] font-mono outline-hidden"
-                    placeholder="e.g., yourname@upi or Account No. & IFSC"
+                    onChange={(e) => setSellerUpiId(e.target.value.trim())}
+                    className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0066FF] text-xs font-mono text-[#0F172A] outline-hidden"
+                    placeholder="e.g., rohan@okhdfcbank or 9829012890@paytm"
                   />
-                  <p className="text-[10px] text-slate-500 mt-1">
-                    Funds are deposited directly into this account once the recipient inspects and approves the item.
-                  </p>
                 </div>
+              )}
 
-                {/* Mobile Chunk 3.1 Next Button */}
-                <div className="md:hidden pt-3 border-t border-slate-100 flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      goToStep(2);
-                      setStep2Chunk(3);
-                    }}
-                    className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer"
-                  >
-                    ← Step 2
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleNextStep3Chunk(2)}
-                    className="flex-1 py-3 px-4 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
-                  >
-                    <span>Next: Delivery Address (Part 2)</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[10px] text-slate-500 flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Optional now &bull; Can be added anytime before delivery unboxing</span>
+                </span>
+                <span className="font-semibold text-slate-700">RBI Nodal Escrow</span>
               </div>
             </div>
 
-            {/* CHUNK 3.2: Receiver / Delivery, Telemetry & Open-Box */}
-            <div className={`space-y-4 ${step3Chunk === 2 ? 'block' : 'hidden md:block'}`}>
-              <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-4">
-                {/* RECEIVER / BUYER DETAILS */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9] flex-wrap gap-2">
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A]">
-                      <span className="w-2 h-2 rounded-full bg-[#10B981]" />
-                      <span>Receiver / Delivery Details</span>
-                    </div>
-                    <span className="text-[11px] text-slate-400 font-medium">Destination Address</span>
-                  </div>
+            {/* RECEIVER / DELIVERY DETAILS */}
+            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3.5">
+              <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A]">
+                  <span className="w-2 h-2 rounded-full bg-[#10B981]" />
+                  <span>Receiver / Delivery Address</span>
+                </div>
+                <label className="flex items-center gap-1.5 text-[11px] text-[#0066FF] font-semibold cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={buyerWillProvideAddress}
+                    onChange={(e) => setBuyerWillProvideAddress(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded border-slate-300 text-[#0066FF]"
+                  />
+                  <span>Receiver fills via link</span>
+                </label>
+              </div>
 
-                  {/* Shareable Link Mode Toggle */}
-                  <div
-                    onClick={() => {
-                      const next = !buyerWillProvideAddress;
-                      setBuyerWillProvideAddress(next);
-                      if (next) {
-                        clearFieldError('dropLocation');
-                        clearFieldError('dropPincode');
-                        if (!dropLocation) setDropLocation('Pending address confirmation by recipient via link');
-                        if (!dropPincode) setDropPincode('110001');
-                      }
-                    }}
-                    className={`p-3.5 rounded-2xl border transition cursor-pointer select-none flex items-center justify-between ${
-                      buyerWillProvideAddress
-                        ? 'bg-blue-50/80 border-[#0066FF] ring-1 ring-blue-300'
-                        : 'bg-slate-50 border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <input
-                        type="checkbox"
-                        id="chk-buyer-will-fill"
-                        checked={buyerWillProvideAddress}
-                        onChange={(e) => {
-                          setBuyerWillProvideAddress(e.target.checked);
-                          if (e.target.checked) {
-                            clearFieldError('dropLocation');
-                            clearFieldError('dropPincode');
-                            if (!dropLocation) setDropLocation('Pending address confirmation by recipient via link');
-                            if (!dropPincode) setDropPincode('110001');
-                          }
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-0 cursor-pointer"
-                      />
-                      <div>
-                        <label htmlFor="chk-buyer-will-fill" className="text-xs font-bold text-slate-900 cursor-pointer block">
-                          I don&apos;t have the buyer&apos;s full address yet (Send Link Mode)
-                        </label>
-                        <span className="text-[11px] text-slate-500 block leading-tight">
-                          SafeShip will generate your sendable link. The buyer confirms their address &amp; PIN code directly.
-                        </span>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-bold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200 shrink-0">
-                      Minimal Mode
-                    </span>
-                  </div>
-
+              {!buyerWillProvideAddress ? (
+                <>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="text-[11px] font-bold text-[#475569] block mb-1">
@@ -3214,14 +2389,14 @@ function CreateShipmentContent() {
                         className={`w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
                           errors.buyerName ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
                         }`}
-                        placeholder="e.g., Priya Sharma"
+                        placeholder="e.g., Amit Sharma"
                       />
                       {errors.buyerName && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.buyerName}</p>}
                     </div>
 
                     <div>
                       <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                        Receiver Mobile {buyerWillProvideAddress ? <span className="text-slate-400 font-normal">(Optional)</span> : <span className="text-rose-500">*</span>}:
+                        Receiver Mobile <span className="text-rose-500">*</span>:
                       </label>
                       <input
                         id="field-buyerPhone"
@@ -3238,223 +2413,86 @@ function CreateShipmentContent() {
                     </div>
                   </div>
 
-                  {buyerWillProvideAddress ? (
-                    <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs space-y-1 animate-in fade-in">
-                      <div className="flex items-center gap-1.5 font-bold">
-                        <Check className="w-4 h-4 text-emerald-600" />
-                        <span>Sendable Link Ready</span>
-                      </div>
-                      <p className="text-[11px] text-emerald-800 leading-relaxed">
-                        Receiver delivery address &amp; PIN code will be provided directly by the recipient upon opening the link. You only need to enter their name or nickname above.
-                      </p>
-                    </div>
-                  ) : (
-                    <>
-                      <div>
-                        <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                          Delivery Street Address &amp; Unit <span className="text-rose-500">*</span>:
-                        </label>
-                        <input
-                          id="field-dropLocation"
-                          type="text"
-                          value={dropLocation}
-                          onChange={(e) => { setDropLocation(e.target.value); clearFieldError('dropLocation'); }}
-                          className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
-                            errors.dropLocation ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                          }`}
-                          placeholder="e.g., Unit 12B, Building 4, Cyber City, DLF Phase 2"
-                        />
-                        {errors.dropLocation && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.dropLocation}</p>}
-                      </div>
-
-                      <div className="flex gap-2">
-                        <div className="w-36">
-                          <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                            PIN Code <span className="text-rose-500">*</span>:
-                          </label>
-                          <input
-                            id="field-dropPincode"
-                            type="text"
-                            maxLength={6}
-                            value={dropPincode}
-                            onChange={(e) => handleDropPincodeChange(e.target.value)}
-                            className={`w-full px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] text-center font-mono font-bold outline-hidden ${
-                              errors.dropPincode ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                            }`}
-                            placeholder="e.g., 122002"
-                          />
-                          {errors.dropPincode && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.dropPincode}</p>}
-                        </div>
-
-                        <div className="flex-1 flex flex-col justify-end">
-                          {dropCity ? (
-                            <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center justify-between">
-                              <span className="font-bold">
-                                {dropCity}{dropDistrict && !dropCity.includes(dropDistrict) ? ` (${dropDistrict})` : ''}, {dropState}
-                              </span>
-                              <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0 ml-2">{dropHub}</span>
-                            </div>
-                          ) : (
-                            <span className="text-[11px] text-[#94A3B8] italic pb-2">Enter 6-digit PIN code to auto-resolve city &amp; hub</span>
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* ROUTE TELEMETRY BAR */}
-                {distanceKm > 0 && (
-                  <div className="p-4 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] space-y-2.5 animate-in fade-in">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <Truck className="w-5 h-5 text-[#0066FF] shrink-0" />
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-sm font-black text-[#0F172A] font-mono">
-                              {distanceKm.toLocaleString('en-IN')} km Road Distance
-                            </span>
-                            <span className="text-[10px] font-bold bg-[#0066FF] text-white px-2 py-0.5 rounded-full">
-                              {isIntercity ? 'National Linehaul Corridor' : 'Direct Intra-City Fleet'}
-                            </span>
-                          </div>
-                          <span className="text-xs text-[#0066FF] font-bold block mt-0.5">
-                            {routeCorridor}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-xs font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-lg shrink-0">
-                        Serviceable ✓
-                      </span>
-                    </div>
-
-                    {/* Verified National Logistics Corridor SLA */}
-                    <div className="pt-2 border-t border-blue-200/70 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-1.5 text-[#1E40AF] font-semibold">
-                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                        <span>Logistics Corridor Status:</span>
-                      </div>
-                      <span className="font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200 shadow-2xs">
-                        Active Express Linehaul Network
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Package Weight & Dimensions */}
-                <div>
-                  <label className="text-xs font-bold text-[#334155] block mb-1">
-                    Package Weight &amp; Box Size (Approximate):
-                  </label>
-                  <input
-                    type="text"
-                    value={packageWeight}
-                    onChange={(e) => setPackageWeight(e.target.value)}
-                    placeholder="e.g., 0.9 kg (Small Box 20 x 15 x 10 cm)"
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] outline-hidden"
-                  />
-                </div>
-
-                {/* Doorstep Open-Box Inspection Moat Toggle */}
-                <div className="p-3.5 rounded-2xl bg-[#F5F3FF] border border-[#DDD6FE] flex items-center justify-between">
-                  <div className="flex items-center gap-2.5 pr-2">
-                    <Eye className="w-5 h-5 text-[#7C3AED] shrink-0" />
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-[#0F172A]">
-                          Guaranteed Doorstep Open-Box Inspection
-                        </span>
-                        <span className="text-[9px] font-black bg-[#7C3AED] text-white px-1.5 py-0.2 rounded">
-                          INCLUDED FREE
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-[#64748B] mt-0.5">
-                        Courier unpacks item for physical inspection before accepting OTP.
-                      </p>
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setOpenBoxEnabled(!openBoxEnabled)}
-                    className={`w-12 h-6 rounded-full transition-colors relative cursor-pointer shrink-0 ${
-                      openBoxEnabled ? 'bg-[#7C3AED]' : 'bg-slate-300'
-                    }`}
-                  >
-                    <span
-                      className={`w-5 h-5 rounded-full bg-white block shadow transform transition-transform absolute top-0.5 ${
-                        openBoxEnabled ? 'translate-x-6' : 'translate-x-0.5'
+                  <div>
+                    <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                      Delivery Street Address &amp; Landmarks <span className="text-rose-500">*</span>:
+                    </label>
+                    <input
+                      id="field-dropLocation"
+                      type="text"
+                      value={dropLocation}
+                      onChange={(e) => { setDropLocation(e.target.value); clearFieldError('dropLocation'); }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
+                        errors.dropLocation ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
                       }`}
+                      placeholder="e.g., Unit 12B, Building 4, DLF Phase 2"
                     />
-                  </button>
-                </div>
-              </div>
-
-              {/* Mobile Chunk 3.2 Navigation Buttons */}
-              <div className="md:hidden pt-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setStep3Chunk(1)}
-                  className="py-3 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer"
-                >
-                  ← Pickup
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextStep}
-                  className="flex-1 py-3 px-4 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
-                >
-                  <span>Next: Tier Selection &amp; Pricing</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Desktop Navigation Controls (Hidden on Mobile) */}
-            <div className="hidden md:flex flex-col gap-2 pt-2">
-              {Object.keys(errors).length > 0 && currentStep === 3 && (
-                <div className="p-3.5 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-900 text-xs font-semibold space-y-1.5 animate-in fade-in">
-                  <div className="flex items-center gap-1.5 font-bold text-rose-800">
-                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>Please complete required fields to proceed:</span>
+                    {errors.dropLocation && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.dropLocation}</p>}
                   </div>
-                  <div className="flex flex-wrap gap-1.5 pt-0.5">
-                    {Object.entries(errors).map(([fieldKey, msg]) => (
-                      <button
-                        key={fieldKey}
-                        type="button"
-                        onClick={() => {
-                          scrollToField(`field-${fieldKey}`);
-                        }}
-                        className="text-[11px] bg-white border border-rose-300 text-rose-700 hover:bg-rose-100 px-2.5 py-1 rounded-lg font-semibold cursor-pointer text-left shadow-2xs"
-                      >
-                        ⚠️ {msg}
-                      </button>
-                    ))}
+
+                  <div className="flex gap-2">
+                    <div className="w-36">
+                      <label className="text-[11px] font-bold text-[#475569] block mb-1">
+                        Delivery PIN <span className="text-rose-500">*</span>:
+                      </label>
+                      <input
+                        id="field-dropPincode"
+                        type="text"
+                        maxLength={6}
+                        value={dropPincode}
+                        onChange={(e) => handleDropPincodeChange(e.target.value)}
+                        className={`w-full px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] text-center font-mono font-bold outline-hidden ${
+                          errors.dropPincode ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                        }`}
+                        placeholder="e.g., 110001"
+                      />
+                      {errors.dropPincode && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.dropPincode}</p>}
+                    </div>
+
+                    <div className="flex-1 flex flex-col justify-end">
+                      {dropCity ? (
+                        <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] flex items-center justify-between">
+                          <span className="font-bold">
+                            {dropCity}, {dropState}
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded shrink-0">{dropHub || 'Hub Active'}</span>
+                        </div>
+                      ) : (
+                        <span className="text-[11px] text-[#94A3B8] italic pb-2">Enter 6-digit PIN code to auto-resolve city &amp; hub</span>
+                      )}
+                    </div>
                   </div>
+                </>
+              ) : (
+                <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 text-xs text-blue-900 space-y-1">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <span>🔗</span>
+                    <span>Recipient Address Link Mode Enabled</span>
+                  </div>
+                  <p className="text-[11px] text-blue-700">
+                    A secure booking link will be generated. The receiver will enter their verified delivery address and PIN code.
+                  </p>
                 </div>
               )}
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStepErrorBanner('');
-                    setErrors({});
-                    goToStep(2);
-                  }}
-                  className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextStep}
-                  className="flex-1 py-3.5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md transition active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <span>Next: Tier Selection &amp; Upfront Pricing</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="pt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => goToStep(2)}
+                className="py-3 px-4 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold text-xs transition cursor-pointer"
+              >
+                ← Step 2
+              </button>
+              <button
+                type="button"
+                onClick={handleNextStep}
+                className="flex-1 py-3 px-5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+              >
+                <span>Next: Review Quote &amp; Book</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
             </div>
           </div>
         )}
@@ -3463,480 +2501,532 @@ function CreateShipmentContent() {
         {/* STEP 4: SERVICE TIER SELECTION, SCHEDULE & SHIPPING FEE            */}
         {/* =================================================================== */}
         {currentStep === 4 && (
-          <div className="space-y-4 animate-in fade-in">
+          <div className="space-y-5 animate-in fade-in">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b border-slate-200">
               <div>
-                <h2 className="text-xl font-black text-[#0F172A]">
-                  {mode === 'exchange' ? 'Review & Book 2-Way Exchange' : 'Review & Confirm Booking'}
+                <h2 className="text-xl sm:text-2xl font-black text-[#0F172A]">
+                  {mode === 'exchange' ? 'Review & Book 2-Way Exchange' : 'Review & Confirm Escrow Booking'}
                 </h2>
-                <p className="text-xs text-[#64748B] mt-0.5">
-                  {includeInsurance ? 'Shipment protection selected' : 'Standard delivery selected'} &bull; Review your total before booking.
+                <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
+                  100% funds held in RBI Nodal Escrow &bull; Released to seller only after 10-minute doorstep unboxing approval.
                 </p>
               </div>
-              <div className={`flex items-center gap-1.5 self-start sm:self-auto px-3 py-1 rounded-full border ${
-                includeInsurance ? 'bg-blue-50 border-blue-200 text-[#0066FF]' : 'bg-slate-100 border-slate-200 text-slate-600'
-              }`}>
-                <ShieldCheck className={`w-4 h-4 ${includeInsurance ? 'text-[#0066FF]' : 'text-slate-500'}`} />
-                <span className="text-[11px] font-bold">
-                  {includeInsurance ? 'Protection selected' : 'No additional protection'}
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>RBI Nodal Escrow Protected</span>
                 </span>
               </div>
             </div>
 
-            {/* 1. CONSIGNMENT CONTEXT BAR (Single compact card) */}
-            <div className="bg-white rounded-2xl p-3.5 border border-[#E2E8F0] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0066FF] flex items-center justify-center shrink-0 font-bold">
-                  <Smartphone className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-slate-900 truncate">{itemName || 'Merchandise'}</span>
-                    <span className="font-mono font-bold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded text-[11px]">
-                      ₹{declaredValue.toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-slate-500 truncate flex items-center gap-1.5 mt-0.5">
-                    <span>IMEI/Serial: <strong className="font-mono text-slate-700">{manualImei || 'Verified'}</strong></span>
-                    <span>&bull;</span>
-                    <span>{pickupCity || 'Jaipur'} &rarr; {dropCity || 'Delhi'} ({(distanceKm || effectiveDistance).toLocaleString('en-IN')} km)</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Open-Box Verified</span>
-                </span>
-              </div>
-            </div>
-
-            {/* 1. DELIVERY SPEED (3 Clean Tiers: Standard Ground, Priority Express, Express Air) */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-[#334155] uppercase tracking-wider block">
-                  1. Delivery Speed (3 Service Tiers)
-                </span>
-                <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                  Calculated for {(distanceKm || effectiveDistance).toLocaleString('en-IN')} km
-                </span>
-              </div>
-
-              {isFirstOrder && (
-                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-gradient-to-r from-blue-50 to-emerald-50 border border-blue-200 text-slate-800 text-xs font-medium animate-in fade-in">
-                  <span className="text-base shrink-0">🎁</span>
-                  <span><strong>First Order Perk:</strong> Flat ₹99 discount automatically applied below — no coupon code required!</span>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {/* Tier 1: Standard Ground */}
-                <div
-                  id="tier-card-STANDARD_GROUND"
-                  onClick={() => setSelectedTier('STANDARD_GROUND')}
-                  className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
-                    selectedTier === 'STANDARD_GROUND'
-                      ? 'bg-emerald-50/70 border-emerald-600 ring-2 ring-emerald-300 shadow-sm'
-                      : 'bg-white border-[#E2E8F0] hover:border-emerald-300'
-                  }`}
-                >
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                      <span className="text-sm font-black text-slate-900">📦 Standard Ground</span>
-                      <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full uppercase">
-                        Delivers {getDeliveryDateShort('STANDARD_GROUND')} ({getTransitDays('STANDARD_GROUND', distanceKm || effectiveDistance)} Days)
-                      </span>
+            {/* Desktop 2-Column Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+              {/* LEFT COLUMN: Consignment Info, Delivery Speed, Pickup Protocol, Cargo Insurance, Guarantee */}
+              <div className="lg:col-span-7 space-y-4">
+                {/* 1. CONSIGNMENT CONTEXT BAR */}
+                <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-[#E2E8F0] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0066FF] flex items-center justify-center shrink-0 font-bold">
+                      <Smartphone className="w-5 h-5" />
                     </div>
-                    <p className="text-[11px] text-slate-500 leading-tight">
-                      Reliable surface linehaul network with doorstep unboxing.
-                    </p>
-                  </div>
-                  <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                    <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
-                    <div className="text-right shrink-0">
-                      <div className="flex items-baseline gap-1.5 justify-end">
-                        {isFirstOrder ? (
-                          <>
-                            <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
-                            <span className="text-base font-black text-slate-900 font-mono">₹{Math.max(1, tierPricing.STANDARD_GROUND.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
-                          </>
-                        ) : (
-                          <span className="text-base font-black text-slate-900 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-emerald-700 font-semibold block">
-                        {isFirstOrder ? '₹99 First Order Off' : 'Surface Linehaul'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tier 2: Priority Express */}
-                <div
-                  id="tier-card-PRIORITY_EXPRESS"
-                  onClick={() => setSelectedTier('PRIORITY_EXPRESS')}
-                  className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
-                    selectedTier === 'PRIORITY_EXPRESS'
-                      ? 'bg-blue-50/70 border-[#0066FF] ring-2 ring-blue-300 shadow-sm'
-                      : 'bg-white border-[#E2E8F0] hover:border-blue-300'
-                  }`}
-                >
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                      <span className="text-sm font-black text-slate-900">🚀 Priority Express</span>
-                      <span className="text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full uppercase">
-                        Delivers {getDeliveryDateShort('PRIORITY_EXPRESS')} ({getTransitDays('PRIORITY_EXPRESS', distanceKm || effectiveDistance)} Days)
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 leading-tight">
-                      Priority expressway &amp; commercial air corridor.
-                    </p>
-                  </div>
-                  <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                    <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
-                    <div className="text-right shrink-0">
-                      <div className="flex items-baseline gap-1.5 justify-end">
-                        {isFirstOrder ? (
-                          <>
-                            <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
-                            <span className="text-base font-black text-blue-700 font-mono">₹{Math.max(1, tierPricing.PRIORITY_EXPRESS.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
-                          </>
-                        ) : (
-                          <span className="text-base font-black text-blue-700 font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-blue-700 font-semibold block">
-                        {isFirstOrder ? '₹99 First Order Off' : 'Express Linehaul'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Tier 3: Express Air */}
-                <div
-                  id="tier-card-FASTEST_AIR_RUSH"
-                  onClick={() => setSelectedTier('FASTEST_AIR_RUSH')}
-                  className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
-                    selectedTier === 'FASTEST_AIR_RUSH'
-                      ? 'bg-amber-50/60 border-amber-500 ring-2 ring-amber-300 shadow-sm'
-                      : 'bg-white border-[#E2E8F0] hover:border-amber-300'
-                  }`}
-                >
-                  <div className="space-y-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                      <span className="text-sm font-black text-slate-900">⚡ Express Air</span>
-                      <span className="text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-full shadow-2xs uppercase">
-                        Delivers {getDeliveryDateShort('FASTEST_AIR_RUSH')} ({getTransitDays('FASTEST_AIR_RUSH', distanceKm || effectiveDistance)} Days)
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 leading-tight">
-                      Next commercial cargo flight &amp; express dispatch.
-                    </p>
-                  </div>
-                  <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                    <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
-                    <div className="text-right shrink-0">
-                      <div className="flex items-baseline gap-1.5 justify-end">
-                        {isFirstOrder ? (
-                          <>
-                            <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
-                            <span className="text-base font-black text-amber-700 font-mono">₹{Math.max(1, tierPricing.FASTEST_AIR_RUSH.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
-                          </>
-                        ) : (
-                          <span className="text-base font-black text-amber-700 font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
-                        )}
-                      </div>
-                      <span className="text-[10px] text-amber-700 font-semibold block">
-                        {isFirstOrder ? '₹99 First Order Off' : 'Air Linehaul'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 2. PICKUP SCHEDULE & SLOT (Inline & Compact) */}
-            <div className="bg-white rounded-2xl p-3.5 border border-[#E2E8F0] shadow-xs space-y-2.5">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                <span className="text-xs font-bold text-[#334155] uppercase tracking-wider flex items-center gap-1.5">
-                  <Calendar className="w-4 h-4 text-[#0066FF]" />
-                  <span>2. Pickup Schedule &amp; Slot</span>
-                </span>
-                <span className="text-[11px] text-slate-500">
-                  Scheduled for: <strong className="text-slate-900">{pickupDateFormatted}</strong> ({pickupCity || 'Jaipur'})
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setPickupSlot('MORNING_10_1')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-between ${
-                    pickupSlot === 'MORNING_10_1'
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <span>☀️ Morning Slot</span>
-                  <span className="text-[10px] opacity-90">10 AM – 1 PM</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPickupSlot('AFTERNOON_2_5')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-between ${
-                    pickupSlot === 'AFTERNOON_2_5'
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                      : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <span>🌤️ Afternoon Slot</span>
-                  <span className="text-[10px] opacity-90">2 PM – 5 PM</span>
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-0.5">
-                <span className="flex items-center gap-1">
-                  <Lock className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Rider verifies secret <strong>4-digit Pickup OTP</strong> before parcel handover.</span>
-                </span>
-                <span className="font-semibold text-slate-700 hidden sm:inline">
-                  Estimated Delivery: {deliveryDateFormatted} ({deliveryTimeWindow})
-                </span>
-              </div>
-            </div>
-
-
-            {/* 3. UNIFIED ORDER & SHIPPING SUMMARY */}
-            <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E2E8F0] shadow-xs space-y-3.5">
-              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  3. Booking &amp; Shipping Fee Summary
-                </span>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  Open-Box Verified Transit
-                </span>
-              </div>
-
-              {/* Interactive Cargo Transit Insurance Checkbox Card */}
-              <div
-                id="card-transit-insurance"
-                onClick={() => setIncludeInsurance(!includeInsurance)}
-                className={`p-3.5 rounded-2xl border transition-all cursor-pointer select-none ${
-                  includeInsurance
-                    ? 'bg-blue-50/70 border-[#0066FF] ring-1 ring-blue-200'
-                    : 'bg-slate-50 border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-2.5">
-                    <input
-                      type="checkbox"
-                      id="chk-transit-insurance"
-                      checked={includeInsurance}
-                      onChange={(e) => setIncludeInsurance(e.target.checked)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-0 cursor-pointer"
-                    />
-                    <div>
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <label
-                          htmlFor="chk-transit-insurance"
-                          className="text-xs font-black text-slate-900 cursor-pointer"
-                        >
-                          Comprehensive In-Transit Cargo Insurance
-                        </label>
-                        <span className="text-[9px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded uppercase">
-                          Recommended
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-slate-900 truncate">{itemName || 'Merchandise'}</span>
+                        <span className="font-mono font-bold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded text-[11px]">
+                          ₹{declaredValue.toLocaleString('en-IN')}
                         </span>
                       </div>
-                      <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                        Protection is calculated from the declared value. Coverage and exclusions are confirmed in your booking summary.
-                      </p>
+                      <div className="text-[11px] text-slate-500 truncate flex items-center gap-1.5 mt-0.5">
+                        <span>IMEI/Serial: <strong className="font-mono text-slate-700">{manualImei || 'Verified'}</strong></span>
+                        <span>&bull;</span>
+                        <span>{pickupCity || 'Jaipur'} &rarr; {dropCity || 'Delhi'} ({(distanceKm || effectiveDistance).toLocaleString('en-IN')} km)</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <span
-                      className={`text-xs font-mono font-black block ${
-                        includeInsurance ? 'text-[#0066FF]' : 'text-slate-400 line-through'
-                      }`}
-                    >
-                      +₹{calculatedInsuranceFee}
-                    </span>
-                    <span className="text-[10px] text-slate-500 block">
-                      {includeInsurance ? `(~0.5% of ₹${declaredValue.toLocaleString('en-IN')})` : 'Opted Out'}
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                    <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Open-Box Verified</span>
                     </span>
                   </div>
+                </div>
+
+                {/* 2. DELIVERY SPEED (3 Clean Tiers: Standard Ground, Priority Express, Express Air) */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#334155] uppercase tracking-wider block">
+                      1. Delivery Speed (3 Service Tiers)
+                    </span>
+                    <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
+                      Calculated for {(distanceKm || effectiveDistance).toLocaleString('en-IN')} km
+                    </span>
+                  </div>
+
+                  {isFirstOrder && (
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-gradient-to-r from-blue-50 to-emerald-50 border border-blue-200 text-slate-800 text-xs font-medium animate-in fade-in">
+                      <span className="text-base shrink-0">🎁</span>
+                      <span><strong>First Order Perk:</strong> Flat ₹99 discount automatically applied below — no coupon code required!</span>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {/* Tier 1: Standard Ground */}
+                    <div
+                      id="tier-card-STANDARD_GROUND"
+                      onClick={() => setSelectedTier('STANDARD_GROUND')}
+                      className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
+                        selectedTier === 'STANDARD_GROUND'
+                          ? 'bg-emerald-50/70 border-emerald-600 ring-2 ring-emerald-300 shadow-sm'
+                          : 'bg-white border-[#E2E8F0] hover:border-emerald-300'
+                      }`}
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                          <span className="text-sm font-black text-slate-900">📦 Standard Ground</span>
+                          <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full uppercase">
+                            Delivers {getDeliveryDateShort('STANDARD_GROUND')} ({getTransitDays('STANDARD_GROUND', distanceKm || effectiveDistance)} Days)
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 leading-tight">
+                          Reliable surface linehaul network with doorstep unboxing.
+                        </p>
+                      </div>
+                      <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                        <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
+                        <div className="text-right shrink-0">
+                          <div className="flex items-baseline gap-1.5 justify-end">
+                            {isFirstOrder ? (
+                              <>
+                                <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
+                                <span className="text-base font-black text-slate-900 font-mono">₹{Math.max(1, tierPricing.STANDARD_GROUND.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
+                              </>
+                            ) : (
+                              <span className="text-base font-black text-slate-900 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-emerald-700 font-semibold block">
+                            {isFirstOrder ? '₹99 First Order Off' : 'Surface Linehaul'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tier 2: Priority Express */}
+                    <div
+                      id="tier-card-PRIORITY_EXPRESS"
+                      onClick={() => setSelectedTier('PRIORITY_EXPRESS')}
+                      className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
+                        selectedTier === 'PRIORITY_EXPRESS'
+                          ? 'bg-blue-50/70 border-[#0066FF] ring-2 ring-blue-300 shadow-sm'
+                          : 'bg-white border-[#E2E8F0] hover:border-blue-300'
+                      }`}
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                          <span className="text-sm font-black text-slate-900">🚀 Priority Express</span>
+                          <span className="text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full uppercase">
+                            Delivers {getDeliveryDateShort('PRIORITY_EXPRESS')} ({getTransitDays('PRIORITY_EXPRESS', distanceKm || effectiveDistance)} Days)
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 leading-tight">
+                          Priority expressway &amp; commercial air corridor.
+                        </p>
+                      </div>
+                      <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                        <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
+                        <div className="text-right shrink-0">
+                          <div className="flex items-baseline gap-1.5 justify-end">
+                            {isFirstOrder ? (
+                              <>
+                                <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
+                                <span className="text-base font-black text-blue-700 font-mono">₹{Math.max(1, tierPricing.PRIORITY_EXPRESS.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
+                              </>
+                            ) : (
+                              <span className="text-base font-black text-blue-700 font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-blue-700 font-semibold block">
+                            {isFirstOrder ? '₹99 First Order Off' : 'Express Linehaul'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tier 3: Express Air */}
+                    <div
+                      id="tier-card-FASTEST_AIR_RUSH"
+                      onClick={() => setSelectedTier('FASTEST_AIR_RUSH')}
+                      className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
+                        selectedTier === 'FASTEST_AIR_RUSH'
+                          ? 'bg-amber-50/60 border-amber-500 ring-2 ring-amber-300 shadow-sm'
+                          : 'bg-white border-[#E2E8F0] hover:border-amber-300'
+                      }`}
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                          <span className="text-sm font-black text-slate-900">⚡ Express Air</span>
+                          <span className="text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-full shadow-2xs uppercase">
+                            Delivers {getDeliveryDateShort('FASTEST_AIR_RUSH')} ({getTransitDays('FASTEST_AIR_RUSH', distanceKm || effectiveDistance)} Days)
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 leading-tight">
+                          Next commercial cargo flight &amp; express dispatch.
+                        </p>
+                      </div>
+                      <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                        <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
+                        <div className="text-right shrink-0">
+                          <div className="flex items-baseline gap-1.5 justify-end">
+                            {isFirstOrder ? (
+                              <>
+                                <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
+                                <span className="text-base font-black text-amber-700 font-mono">₹{Math.max(1, tierPricing.FASTEST_AIR_RUSH.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
+                              </>
+                            ) : (
+                              <span className="text-base font-black text-amber-700 font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-amber-700 font-semibold block">
+                            {isFirstOrder ? '₹99 First Order Off' : 'Air Linehaul'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. PICKUP SCHEDULE & TIME-SYNCHRONIZED CALLING PROTOCOL */}
+                <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-[#E2E8F0] shadow-xs space-y-2.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                    <span className="text-xs font-bold text-[#334155] uppercase tracking-wider flex items-center gap-1.5">
+                      <Calendar className="w-4 h-4 text-[#0066FF]" />
+                      <span>2. Pickup Schedule &amp; Calling Protocol</span>
+                    </span>
+                    <span className="text-[11px] text-slate-500">
+                      Scheduled for: <strong className="text-slate-900">{pickupDateFormatted}</strong> ({pickupCity || 'Jaipur'})
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPickupSlot('MORNING_10_1')}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-between ${
+                        pickupSlot === 'MORNING_10_1'
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>☀️ Morning Slot</span>
+                      <span className="text-[10px] opacity-90">10 AM – 1 PM</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPickupSlot('AFTERNOON_2_5')}
+                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-between ${
+                        pickupSlot === 'AFTERNOON_2_5'
+                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      <span>🌤️ Afternoon Slot</span>
+                      <span className="text-[10px] opacity-90">2 PM – 5 PM</span>
+                    </button>
+                  </div>
+
+                  {/* Exact Timeline & Contact Rules */}
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-[11px]">
+                    <div className="flex items-start gap-2 text-slate-700">
+                      <span className="text-[#0066FF] font-bold shrink-0">📞 Pickup Time Call:</span>
+                      <span>SafeShip delivery boy will call the seller <strong>on the pickup time</strong> ({pickupSlot === 'MORNING_10_1' ? '10 AM – 1 PM' : '2 PM – 5 PM'}) to confirm arrival, inspect parcel specifications, and verify 4-digit Pickup OTP.</span>
+                    </div>
+                    <div className="flex items-start gap-2 text-slate-700">
+                      <span className="text-emerald-700 font-bold shrink-0">📲 Delivery Time Call:</span>
+                      <span>Delivery boy will call the buyer <strong>only after successful pickup</strong> and when reaching near their doorstep ({deliveryDateFormatted}, {deliveryTimeWindow}) for the 10-minute doorstep unboxing.</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. CARGO TRANSIT INSURANCE CHECKBOX CARD */}
+                <div
+                  id="card-transit-insurance"
+                  onClick={() => setIncludeInsurance(!includeInsurance)}
+                  className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer select-none ${
+                    includeInsurance
+                      ? 'bg-blue-50/70 border-[#0066FF] ring-1 ring-blue-200'
+                      : 'bg-white border-[#E2E8F0] hover:border-slate-300'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2.5">
+                      <input
+                        type="checkbox"
+                        id="chk-transit-insurance"
+                        checked={includeInsurance}
+                        onChange={(e) => setIncludeInsurance(e.target.checked)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-0 cursor-pointer"
+                      />
+                      <div>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <label
+                            htmlFor="chk-transit-insurance"
+                            className="text-xs font-black text-slate-900 cursor-pointer"
+                          >
+                            Comprehensive In-Transit Cargo Protection
+                          </label>
+                          <span className="text-[9px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded uppercase">
+                            Recommended
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                          Full coverage against transit loss or physical damage during linehaul transit.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span
+                        className={`text-xs font-mono font-black block ${
+                          includeInsurance ? 'text-[#0066FF]' : 'text-slate-400 line-through'
+                        }`}
+                      >
+                        +₹{calculatedInsuranceFee}
+                      </span>
+                      <span className="text-[10px] text-slate-500 block">
+                        {includeInsurance ? `(~0.5% of ₹${declaredValue.toLocaleString('en-IN')})` : 'Opted Out'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 5. SAFESHIP DOORSTEP VERIFICATION & ESCROW GUARANTEE */}
+                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50/80 to-blue-50/80 border border-emerald-200/80 text-xs space-y-1.5">
+                  <div className="flex items-center gap-2 text-emerald-900 font-bold">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>SafeShip 2-Stage Escrow &amp; Doorstep Unboxing Guarantee</span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    You only pay the courier shipping fee (<strong>₹{upfrontShippingCharge.toLocaleString('en-IN')}</strong>) now to dispatch the delivery boy. The item escrow money (<strong>₹{itemEscrowAmount.toLocaleString('en-IN')}</strong>) is held safely in RBI Nodal Escrow and given to the seller only after your 10-minute doorstep unboxing approval and OTP entry. If rejected, item money is 100% refunded.
+                  </p>
+                </div>
+
+                {/* Desktop Back button */}
+                <div className="hidden lg:block pt-1">
+                  <button
+                    type="button"
+                    onClick={() => goToStep(3)}
+                    className="py-2.5 px-4 rounded-xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50 flex items-center gap-1.5"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back to Addresses &amp; Details</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="space-y-2 text-xs pt-1">
-                <div className="flex justify-between items-center text-slate-600">
-                  <span>Merchandise Declared Valuation:</span>
-                  <span className="font-mono font-semibold text-slate-900">
-                    ₹{declaredValue.toLocaleString('en-IN')}
-                    {includeInsurance && (
-                      <span className="text-[10px] text-blue-600 font-bold ml-1">(Insured)</span>
-                    )}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center text-slate-600">
-                  <span>Courier Shipping Charge ({selectedTier === 'FASTEST_AIR_RUSH' ? 'Express Air' : selectedTier === 'PRIORITY_EXPRESS' ? 'Priority Express' : 'Standard Ground'}):</span>
-                  <span className="font-mono font-semibold text-slate-900">
-                    ₹{fullDeliveryFee}
-                    <span className="text-[10px] text-slate-400 font-normal ml-1">({(distanceKm || effectiveDistance).toLocaleString('en-IN')} km)</span>
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center text-slate-600">
-                  <span>Courier Shipping Fee ({activeTierBreakdown.tierLabel}):</span>
-                  <span className="font-mono font-semibold text-slate-900">
-                    ₹{fullDeliveryFee}
-                  </span>
-                </div>
-
-                {isFirstOrder && firstOrderDiscount > 0 && (
-                  <div className="flex justify-between items-center text-emerald-700 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200 animate-in fade-in">
-                    <span className="flex items-center gap-1.5 font-bold text-xs">
-                      <span>🎉</span>
-                      <span>First-Order Auto Discount (No Coupon Needed):</span>
+              {/* RIGHT COLUMN: Unified Escrow Breakdown, Terms, Payment Button, Trust Badges (Sticky on desktop) */}
+              <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-20">
+                {/* 3. UNIFIED ORDER & ESCROW BREAKDOWN */}
+                <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E2E8F0] shadow-sm space-y-3.5">
+                  <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                    <div>
+                      <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">
+                        Shipping Fee &amp; Escrow Breakdown
+                      </span>
+                      <span className="text-[10px] text-slate-500">
+                        Shipping paid first &bull; Escrow given to seller post-delivery
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                      RBI Regulated
                     </span>
-                    <span className="font-mono font-black text-xs text-emerald-700">
-                      -₹{firstOrderDiscount}
-                    </span>
+                  </div>
+
+                  <div className="space-y-2.5 text-xs">
+                    {/* SECTION A: Payable Today (Courier Shipping) */}
+                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
+                      <span className="text-[10px] font-bold text-[#0066FF] uppercase tracking-wider block">
+                        1. Courier Shipping Charge (Payable Today)
+                      </span>
+                      
+                      <div className="flex justify-between items-center text-slate-600">
+                        <span>Courier Shipping ({activeTierBreakdown.tierLabel}):</span>
+                        <span className="font-mono font-semibold text-slate-900">
+                          ₹{fullDeliveryFee}
+                        </span>
+                      </div>
+
+                      {isFirstOrder && firstOrderDiscount > 0 && (
+                        <div className="flex justify-between items-center text-emerald-700">
+                          <span className="flex items-center gap-1">
+                            <span>🎉</span>
+                            <span>First-Order Auto Discount:</span>
+                          </span>
+                          <span className="font-mono font-bold text-emerald-700">
+                            -₹{firstOrderDiscount}
+                          </span>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between items-center text-slate-600">
+                        <span>Cargo Transit Protection:</span>
+                        <span className="font-mono font-semibold">
+                          {includeInsurance ? (
+                            <span className="text-blue-700 font-bold">+₹{calculatedInsuranceFee}</span>
+                          ) : (
+                            <span className="text-slate-400 font-normal">Opted Out (₹0)</span>
+                          )}
+                        </span>
+                      </div>
+
+                      <div className="flex justify-between items-center text-slate-600">
+                        <span>Doorstep Open-Box Inspection:</span>
+                        <span className="font-semibold text-emerald-600">INCLUDED FREE (₹0)</span>
+                      </div>
+                    </div>
+
+                    {/* SECTION B: Escrow Money (Given to Seller After Delivery) */}
+                    <div className="p-2.5 rounded-xl bg-blue-50/50 border border-blue-200/80 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">
+                          2. Item Escrow Money (Given to Seller After Delivery)
+                        </span>
+                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">
+                          Doorstep Protected
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center pt-0.5">
+                        <span className="text-slate-700 font-semibold">Merchandise Valuation:</span>
+                        <span className="font-mono font-bold text-slate-900 text-sm">
+                          ₹{itemEscrowAmount.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-slate-500 leading-tight">
+                        Held safely in RBI Nodal Escrow &bull; Released to seller only upon your 10-minute doorstep unboxing approval (100% refunded if rejected).
+                      </p>
+                    </div>
+
+                    {/* Guaranteed Delivery Date */}
+                    <div className="flex justify-between items-center text-slate-600 pt-0.5">
+                      <span>Guaranteed Delivery:</span>
+                      <span className="font-bold text-slate-900 text-[11px] flex items-center gap-1">
+                        <span>{deliveryDateFormatted}</span>
+                        <span className="text-[9px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+                          {deliveryTimeWindow}
+                        </span>
+                      </span>
+                    </div>
+
+                    {/* Prominent Payable Today */}
+                    <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
+                      <div>
+                        <span className="text-xs font-black text-[#0F172A] block">
+                          Payable Today:
+                        </span>
+                        <span className="text-[10px] text-slate-500 block">
+                          Courier shipping &amp; linehaul fee
+                        </span>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className="text-2xl sm:text-3xl font-black text-[#0066FF] font-mono tracking-tight block">
+                          ₹{upfrontShippingCharge.toLocaleString('en-IN')}
+                        </span>
+                        <span className="text-[10px] text-emerald-600 font-bold block">
+                          {isFirstOrder && firstOrderDiscount > 0 ? '✓ ₹99 Welcome Off Applied' : '✓ Zero Platform Fee'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Payment Error Alert */}
+                {paymentGatewayError && (
+                  <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between animate-in fade-in">
+                    <span>⚠️ {paymentGatewayError}</span>
+                    <button
+                      type="button"
+                      onClick={clearPaymentGatewayError}
+                      className="text-[10px] font-bold underline hover:text-rose-900 cursor-pointer ml-2"
+                    >
+                      Dismiss
+                    </button>
                   </div>
                 )}
 
-                <div className="flex justify-between items-center text-slate-600">
-                  <span>Guaranteed Delivery Date:</span>
-                  <span className="font-bold text-slate-900 flex items-center gap-1.5">
-                    <span>{deliveryDateFormatted}</span>
-                    <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
-                      {deliveryTimeWindow}
-                    </span>
-                  </span>
+                {/* Escrow Agreement & Shipping Terms Checkbox */}
+                <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-200 select-none">
+                  <input
+                    type="checkbox"
+                    id="chk-shipping-terms"
+                    checked={agreeTerms}
+                    onChange={(e) => setAgreeTerms(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-0 cursor-pointer shrink-0"
+                  />
+                  <label
+                    htmlFor="chk-shipping-terms"
+                    className="text-[11px] text-slate-600 transition cursor-pointer leading-tight"
+                  >
+                    I authorize paying the courier shipping fee (<strong>₹{upfrontShippingCharge.toLocaleString('en-IN')}</strong>) today to dispatch the delivery boy. I understand the item escrow money (<strong>₹{itemEscrowAmount.toLocaleString('en-IN')}</strong>) is held in RBI Nodal Escrow and will be given to the seller after delivery approval (or 100% refunded if rejected at doorstep).
+                  </label>
                 </div>
 
-                <div className="flex justify-between items-center text-slate-600">
-                  <span>Delivery verification:</span>
-                  <span className="font-semibold text-emerald-600">INCLUDED FREE (₹0)</span>
-                </div>
-
-                <div className="flex justify-between items-center text-slate-600">
-                  <span>Shipment protection:</span>
-                  <span className="font-mono font-semibold">
-                    {includeInsurance ? (
-                      <span className="text-blue-700 font-bold">+₹{calculatedInsuranceFee}</span>
-                    ) : (
-                      <span className="text-slate-400 font-normal">Opted Out (₹0)</span>
-                    )}
-                  </span>
-                </div>
-
-                {/* Prominent Payable Today */}
-                <div className="pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <span className="text-sm font-black text-[#0F172A] block">
-                      Total Payable Today:
-                    </span>
-                    <span className="text-[11px] text-slate-500 block">
-                      {isFirstOrder && firstOrderDiscount > 0
-                        ? `₹${fullDeliveryFee} courier fee - ₹${firstOrderDiscount} first-order auto discount${includeInsurance ? ` + ₹${calculatedInsuranceFee} insurance` : ''}`
-                        : (includeInsurance
-                            ? `Courier shipping fee (₹${fullDeliveryFee}) + Transit insurance (₹${calculatedInsuranceFee})`
-                            : `Courier shipping fee only (₹${fullDeliveryFee}) • Insurance opted out`)}
-                    </span>
+                {/* ACTION BUTTONS */}
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => goToStep(3)}
+                      className="lg:hidden py-3.5 px-4 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50 shrink-0"
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-confirm-booking"
+                      disabled={payingWithGateway || isTestProcessing || !agreeTerms}
+                      onClick={handleConfirmBooking}
+                      className={`flex-1 py-4 px-6 rounded-2xl text-white font-black text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer ${
+                        payingWithGateway || isTestProcessing || !agreeTerms
+                          ? 'bg-slate-300 cursor-not-allowed text-slate-500 shadow-none'
+                          : 'bg-[#0066FF] hover:bg-[#0052FF] shadow-blue-600/30 active:scale-98'
+                      }`}
+                    >
+                      {payingWithGateway || isTestProcessing ? (
+                        <>
+                          <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                          <span>Authorizing Payment (Testing Mode — Paid ✓)...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4 text-white" />
+                          <span>Pay ₹{upfrontShippingCharge.toLocaleString('en-IN')} Shipping Fee &amp; Schedule Pickup</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
                   </div>
-                  <div className="text-left sm:text-right shrink-0">
-                    <span className="text-2xl sm:text-3xl font-black text-[#0066FF] font-mono tracking-tight block">
-                      ₹{upfrontPayableAmount.toLocaleString('en-IN')}
-                    </span>
-                    <span className="text-[10px] text-emerald-600 font-bold">
-                      {isFirstOrder && firstOrderDiscount > 0 ? '✓ ₹99 First-Order Discount Applied' : '✓ Zero Platform Fee'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Payment Error Alert */}
-            {paymentGatewayError && (
-              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between animate-in fade-in">
-                <span>⚠️ {paymentGatewayError}</span>
-                <button
-                  type="button"
-                  onClick={clearPaymentGatewayError}
-                  className="text-[10px] font-bold underline hover:text-rose-900 cursor-pointer ml-2"
-                >
-                  Dismiss
-                </button>
-              </div>
-            )}
-
-            {/* Subtle Non-Refundable Shipping Fee Terms Checkbox */}
-            <div className="flex items-start gap-2 pt-1 pb-1 px-1 select-none">
-              <input
-                type="checkbox"
-                id="chk-shipping-terms"
-                checked={agreeTerms}
-                onChange={(e) => setAgreeTerms(e.target.checked)}
-                className="mt-0.5 w-3.5 h-3.5 rounded border-slate-300 text-[#0066FF] focus:ring-0 cursor-pointer opacity-70"
-              />
-              <label
-                htmlFor="chk-shipping-terms"
-                className="text-[11px] text-slate-400 hover:text-slate-500 transition cursor-pointer leading-tight"
-              >
-                I understand and agree that courier shipping charges are non-refundable once linehaul dispatch and doorstep pickup are scheduled.
-              </label>
-            </div>
-
-            {/* ACTION BUTTONS */}
-            <div className="space-y-2 pt-1">
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => goToStep(3)}
-                  className="py-3.5 px-5 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  id="btn-confirm-booking"
-                  disabled={payingWithGateway || !agreeTerms}
-                  onClick={handleConfirmBooking}
-                  className={`flex-1 py-4 rounded-2xl text-white font-black text-sm shadow-md transition flex items-center justify-center gap-2 ${
-                    payingWithGateway || !agreeTerms
-                      ? 'bg-slate-300 cursor-not-allowed text-slate-500'
-                      : 'bg-[#0066FF] hover:bg-[#0052FF] shadow-blue-600/30 cursor-pointer active:scale-98'
-                  }`}
-                >
-                  {payingWithGateway ? (
-                    <>
-                      <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                      <span>Connecting Cashfree Gateway...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Lock className="w-4 h-4 text-white" />
-                      <span>Pay ₹{upfrontPayableAmount.toLocaleString('en-IN')} Shipping Fee &amp; Confirm Booking</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
+                  {/* Test Mode Indicator & Payment Trust Badges */}
+                  {SIMULATE_PAID_FOR_TESTING && (
+                    <div className="text-center pt-0.5">
+                      <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
+                        <span>🧪</span>
+                        <span>Test Mode Active: Bypasses gateway and proceeds directly as paid</span>
+                      </span>
+                    </div>
                   )}
-                </button>
-              </div>
 
-              {/* Cashfree Payment Trust Badges */}
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-[11px] text-slate-500">
-                <span className="inline-flex items-center gap-1 font-semibold text-slate-700">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  Cashfree PG v3
-                </span>
-                <span>•</span>
-                <span>UPI (GPay, PhonePe, Paytm)</span>
-                <span>•</span>
-                <span>Cards &amp; NetBanking</span>
+                  <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-[11px] text-slate-500">
+                    <span className="inline-flex items-center gap-1 font-semibold text-slate-700">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      Cashfree PG v3
+                    </span>
+                    <span>•</span>
+                    <span>UPI (GPay, PhonePe, Paytm)</span>
+                    <span>•</span>
+                    <span>Cards &amp; NetBanking</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -4084,8 +3174,131 @@ function CreateShipmentContent() {
         </div>
       )}
 
-      {/* Enterprise Footer */}
-      <EnterpriseFooter />
+      {/* 2-STAGE PAYMENT LIFECYCLE: MANDATORY ESCROW HOLD MODAL */}
+      {createdDealForEscrow && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="bg-white text-[#0F172A] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in zoom-in-95 space-y-5">
+            {/* 2-Stage Progress Stepper */}
+            <div className="space-y-2 pb-3 border-b border-slate-100">
+              <div className="flex items-center justify-between text-[11px] font-bold">
+                <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>1. Courier Fee Paid (₹{createdDealForEscrow.upfrontPaid})</span>
+                </span>
+                <span className="text-indigo-800 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>2. Escrow Hold (Mandatory)</span>
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-1">
+                <div>
+                  <h3 className="font-black text-lg text-slate-900 tracking-tight">
+                    Authorize Escrow to Dispatch Courier
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    Order #{createdDealForEscrow.id} &bull; Destination: {createdDealForEscrow.buyer?.deliveryAddress || dropCity || 'Delhi'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => router.push(`/in/track/${createdDealForEscrow.id}?booked=true`)}
+                  className="text-slate-400 hover:text-slate-800 p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+                  title="Pause & view tracking"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* MANDATORY WARNING BANNER */}
+            <div className="p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-xs space-y-1.5 animate-in fade-in">
+              <div className="flex items-center gap-2 text-amber-950 font-black">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>Pickup Dispatch Paused: Escrow Hold Required</span>
+              </div>
+              <p className="text-[11px] text-amber-900 leading-relaxed">
+                Courier <strong>Rahul K.</strong> will NOT be dispatched for pickup until the item escrow amount is placed on hold. Escrow ensures zero payment risk for both buyer and seller.
+              </p>
+            </div>
+
+            {/* PREMIUM ESCROW VAULT CARD */}
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white space-y-3.5 shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-wider bg-white/15 px-2.5 py-1 rounded-full text-blue-200 border border-white/10 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>RBI-Regulated Nodal Escrow Vault</span>
+                </span>
+                <span className="text-[10px] text-emerald-300 font-bold bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded">
+                  0% Risk Guarantee
+                </span>
+              </div>
+
+              <div>
+                <span className="text-xs text-slate-300 block">Item: {createdDealForEscrow.title || itemName}</span>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <span className="text-3xl font-black font-mono tracking-tight text-white">
+                    ₹{createdDealForEscrow.declaredValue.toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-xs text-indigo-300 font-semibold">Held Safely in Escrow</span>
+                </div>
+              </div>
+
+              <div className="space-y-2 text-xs text-slate-200 border-t border-white/10 pt-3">
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-400 font-bold shrink-0">✓</span>
+                  <span><strong>Zero Payout to Seller upfront:</strong> Amount is released only after the 10-minute doorstep unboxing and buyer OTP approval.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-emerald-400 font-bold shrink-0">✓</span>
+                  <span><strong>100% Instant Refund:</strong> If rejected, the full ₹{createdDealForEscrow.declaredValue.toLocaleString('en-IN')} returns directly to the buyer.</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <span className="text-blue-300 font-bold shrink-0">📞</span>
+                  <span><strong>Synchronized Call:</strong> Officer Rahul K. will call seller on the scheduled pickup slot ({createdDealForEscrow.pickupSlot === 'MORNING_10_1' ? '10:00 AM – 01:00 PM' : '02:00 PM – 05:00 PM'}).</span>
+                </div>
+              </div>
+            </div>
+
+            {/* ACTION BUTTONS */}
+            <div className="space-y-2.5 pt-1">
+              <button
+                type="button"
+                disabled={isEscrowHolding || escrowHoldSuccess}
+                onClick={handlePutEscrowOnHold}
+                className="w-full py-4 px-5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-black text-sm tracking-wide shadow-lg shadow-blue-500/25 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-75"
+              >
+                {isEscrowHolding ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Securing ₹{createdDealForEscrow.declaredValue.toLocaleString('en-IN')} in RBI Vault...</span>
+                  </>
+                ) : escrowHoldSuccess ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-300" />
+                    <span>Escrow Secured! Dispatched Rahul K. ✓</span>
+                  </>
+                ) : (
+                  <>
+                    <Lock className="w-4 h-4" />
+                    <span>Authorize Escrow Hold (₹{createdDealForEscrow.declaredValue.toLocaleString('en-IN')}) &amp; Dispatch Courier</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => router.push(`/in/track/${createdDealForEscrow.id}?booked=true`)}
+                className="w-full py-2.5 px-4 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-semibold text-xs text-center transition cursor-pointer"
+              >
+                Keep Pickup on Hold &amp; View Live Tracking &rarr;
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enterprise Footer - Clean & Minimal on Selling Console */}
+      <EnterpriseFooter hideServiceabilityBanner={true} />
 
     </div>
   );

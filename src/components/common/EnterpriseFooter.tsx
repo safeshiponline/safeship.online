@@ -18,7 +18,11 @@ import {
   Check
 } from './Icons';
 
-export const EnterpriseFooter: React.FC = () => {
+interface EnterpriseFooterProps {
+  hideServiceabilityBanner?: boolean;
+}
+
+export const EnterpriseFooter: React.FC<EnterpriseFooterProps> = ({ hideServiceabilityBanner = false }) => {
   const [pincodeInput, setPincodeInput] = useState('');
   const [pincodeResult, setPincodeResult] = useState<ReturnType<typeof checkPincodeServiceability> | null>(null);
   const [activeModal, setActiveModal] = useState<'TERMS' | 'PRIVACY' | 'INSURANCE' | 'API' | null>(null);
@@ -33,7 +37,8 @@ export const EnterpriseFooter: React.FC = () => {
   return (
     <footer className="w-full bg-[#0F172A] text-white border-t border-slate-800 mt-16 pb-28 sm:pb-12 selection:bg-[#0066FF] selection:text-white">
       {/* 1. PINCODE SERVICEABILITY & TRUST BANNER */}
-      <div className="border-b border-slate-800 bg-slate-900/70 py-8 px-4 sm:px-6 lg:px-8">
+      {!hideServiceabilityBanner && (
+        <div className="border-b border-slate-800 bg-slate-900/70 py-8 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">
           <div className="max-w-xl text-center lg:text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/20 text-[#0066FF] text-xs font-bold mb-2">
@@ -102,6 +107,7 @@ export const EnterpriseFooter: React.FC = () => {
           </div>
         </div>
       </div>
+    )}
 
       {/* 2. ENTERPRISE PILLARS & DISCLOSURES */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

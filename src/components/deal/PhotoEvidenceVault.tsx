@@ -50,14 +50,14 @@ export const PhotoEvidenceVault: React.FC<PhotoEvidenceVaultProps> = ({
     },
   ];
 
-  const evidenceItems = photos && photos.length === 4
+  const evidenceItems = photos && photos.length > 0
     ? photos.map((url, idx) => ({
         url,
-        title: defaultEvidence[idx].title,
-        desc: defaultEvidence[idx].desc,
-        ocr: defaultEvidence[idx].ocr,
+        title: `Verification Photo #${idx + 1}`,
+        desc: 'Verified by Field Officer Rahul K. during doorstep custody verification.',
+        ocr: 'INSPECTION: VERIFIED'
       }))
-    : defaultEvidence;
+    : [];
 
   return (
     <div className={`rounded-3xl border border-[#CBD5E1] bg-white p-5 sm:p-6 shadow-xs space-y-4 ${className}`}>
@@ -144,32 +144,43 @@ export const PhotoEvidenceVault: React.FC<PhotoEvidenceVaultProps> = ({
         </div>
       </div>
 
-      {/* 4-Photo Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        {evidenceItems.map((item, index) => (
-          <button
-            key={index}
-            type="button"
-            onClick={() => setSelectedPhoto(item)}
-            className="group relative rounded-2xl overflow-hidden border border-[#CBD5E1] bg-[#F8FAFC] hover:border-[#0066FF] transition text-left cursor-pointer shadow-2xs"
-          >
-            <div className="aspect-square w-full overflow-hidden bg-slate-100">
-              <img
-                src={item.url}
-                alt={item.title}
-                className="h-full w-full object-cover group-hover:scale-105 transition duration-300"
-              />
-            </div>
-            <div className="p-2.5 bg-white">
-              <div className="text-[11px] font-bold text-[#0F172A] line-clamp-1">{item.title}</div>
-              <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
-                <Check className="w-2.5 h-2.5" />
-                <span>Verified</span>
-              </span>
-            </div>
-          </button>
-        ))}
-      </div>
+      {/* Photos Grid or Pending State */}
+      {evidenceItems.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          {evidenceItems.map((item, index) => (
+            <button
+              key={index}
+              type="button"
+              onClick={() => setSelectedPhoto(item)}
+              className="group relative rounded-2xl overflow-hidden border border-[#CBD5E1] bg-[#F8FAFC] hover:border-[#0066FF] transition text-left cursor-pointer shadow-2xs"
+            >
+              <div className="aspect-square w-full overflow-hidden bg-slate-100">
+                <img
+                  src={item.url}
+                  alt={item.title}
+                  className="h-full w-full object-cover group-hover:scale-105 transition duration-300"
+                />
+              </div>
+              <div className="p-2.5 bg-white">
+                <div className="text-[11px] font-bold text-[#0F172A] line-clamp-1">{item.title}</div>
+                <span className="text-[9px] font-bold text-emerald-600 flex items-center gap-1 mt-0.5">
+                  <Check className="w-2.5 h-2.5" />
+                  <span>Attached</span>
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-center space-y-1">
+          <p className="text-xs font-bold text-slate-800">
+            Awaiting Field Officer Physical Custody Audit
+          </p>
+          <p className="text-[11px] text-slate-500 max-w-md mx-auto">
+            High-resolution physical evidence photos of device condition, display, serial number, and serialized tamper-seal will be taken by Officer Rahul K. at pickup time.
+          </p>
+        </div>
+      )}
 
       {/* Lightbox Modal */}
       {selectedPhoto && (

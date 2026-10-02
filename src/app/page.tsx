@@ -66,6 +66,7 @@ export default function HomePage() {
   const [trackQuery, setTrackQuery] = useState<string>('');
   const [userOrders, setUserOrders] = useState<SafeDeal[]>([]);
   const [isMounted, setIsMounted] = useState<boolean>(false);
+  const [showPromoVideo, setShowPromoVideo] = useState<boolean>(false);
 
   // FAQ Accordion State
   const [calcOrigin, setCalcOrigin] = useState<string>('623526'); // Rameshwaram
@@ -700,6 +701,59 @@ export default function HomePage() {
         </div>
       )}
 
+      {/* PROMO EXPLAINER VIDEO MODAL */}
+      {showPromoVideo && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
+          <div className="relative w-full max-w-4xl bg-[#070B14] border border-blue-500/40 rounded-3xl overflow-hidden shadow-2xl shadow-blue-500/20">
+            {/* Top Modal Header */}
+            <div className="flex items-center justify-between px-5 py-3.5 bg-slate-900/90 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400" />
+                <span className="text-xs sm:text-sm font-bold text-white tracking-wide">
+                  SafeShip Official Explainer &bull; 60s Motion Graphics
+                </span>
+                <span className="hidden sm:inline text-[11px] bg-blue-600/30 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full font-semibold">
+                  1080p Full HD
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPromoVideo(false)}
+                className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition cursor-pointer"
+                aria-label="Close video"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Video Player */}
+            <div className="aspect-video w-full bg-black relative flex items-center justify-center">
+              <video
+                src="/video/safeship-promo.mp4"
+                controls
+                autoPlay
+                playsInline
+                className="w-full h-full object-contain"
+              />
+            </div>
+
+            {/* Modal Footer Trust Bar */}
+            <div className="px-5 py-3 bg-slate-900/80 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+              <span className="flex items-center gap-1.5 text-slate-300 font-medium">
+                <span>🛡️</span> Zero Scams &bull; RBI Nodal Escrow &bull; 10-Min Doorstep Inspection
+              </span>
+              <a
+                href="/video/safeship-promo.mp4"
+                download="SafeShip_Promo_60s.mp4"
+                className="text-[#38BDF8] hover:text-white font-bold transition flex items-center gap-1"
+              >
+                Download MP4 &darr;
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ========================================================================= */}
       {/* 3. HERO SECTION (LUXURY FINTECH AESTHETICS, AMBIENT DEPTH, PERFECT SCALING) */}
       {/* ========================================================================= */}
@@ -713,8 +767,8 @@ export default function HomePage() {
           {/* Left Hero Content */}
           <div className="lg:col-span-6 xl:col-span-5 space-y-2 sm:space-y-6">
             
-            {/* Eyebrow Pill Badge */}
-            <div>
+            {/* Eyebrow Pill Badge + Watch 60s Video Button */}
+            <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-blue-50/90 border border-blue-200/90 shadow-2xs text-[11px] sm:text-xs font-extrabold text-[#0066FF] tracking-tight">
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
@@ -722,6 +776,17 @@ export default function HomePage() {
                 </span>
                 <span>India&apos;s #1 Open-Box &amp; Escrow Platform</span>
               </span>
+
+              <button
+                type="button"
+                onClick={() => setShowPromoVideo(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-[11px] sm:text-xs font-extrabold shadow-2xs transition active:scale-95 cursor-pointer group"
+              >
+                <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] pl-0.5 group-hover:scale-110 transition shadow-xs">
+                  ▶
+                </span>
+                <span>Watch 60s Explainer</span>
+              </button>
             </div>
 
             {/* Mobile View: Calibrated Bold Headline on Left, Elongated Action Buttons on Right with Zero Collision (sm:hidden) */}
@@ -748,12 +813,15 @@ export default function HomePage() {
                   <span className="whitespace-nowrap">Track Shipment</span>
                 </Link>
 
-                {/* Book Delivery Under It */}
+                {/* Book Delivery Under It with Minimal Live Indicator */}
                 <Link
                   href="/in/deals/new?type=send"
-                  className="w-full h-[37px] min-[400px]:h-[39px] px-2.5 min-[400px]:px-3 rounded-2xl bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#0038CC] hover:from-[#0052FF] hover:to-[#002FA7] text-white font-black text-[13px] min-[400px]:text-[13.5px] min-[460px]:text-[14px] shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                  className="relative group overflow-hidden w-full h-[37px] min-[400px]:h-[39px] px-2.5 min-[400px]:px-3 rounded-2xl bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#0038CC] hover:from-[#0052FF] hover:to-[#002FA7] text-white font-black text-[13px] min-[400px]:text-[13.5px] min-[460px]:text-[14px] shadow-md shadow-blue-500/25 hover:shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
                 >
-                  <span className="shrink-0 text-xs min-[400px]:text-sm">📦</span>
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-70"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                  </span>
                   <span className="whitespace-nowrap">Book Delivery &rarr;</span>
                 </Link>
               </div>
@@ -791,11 +859,22 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Desktop Action Buttons: Track Shipment on top / first, Book Delivery next (hidden sm:flex) */}
-            <div className="hidden sm:flex items-center gap-3.5 pt-0.5">
+            {/* Desktop Action Buttons: Watch 60s Video, Track Shipment, Book Delivery */}
+            <div className="hidden sm:flex items-center gap-3 pt-0.5">
+              <button
+                type="button"
+                onClick={() => setShowPromoVideo(true)}
+                className="py-3 sm:py-3.5 px-5 rounded-2xl bg-blue-50/80 hover:bg-blue-100/90 border border-blue-200/90 text-[#0066FF] font-black text-sm sm:text-base shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer group"
+              >
+                <span className="w-6 h-6 rounded-full bg-[#0066FF] text-white flex items-center justify-center text-[10px] pl-0.5 group-hover:scale-110 transition shadow-xs shadow-blue-500/30">
+                  ▶
+                </span>
+                <span>Watch 60s Video</span>
+              </button>
+
               <Link
                 href="/in/track"
-                className="py-3 sm:py-3.5 px-6 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-sm sm:text-base shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
+                className="py-3 sm:py-3.5 px-5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-sm sm:text-base shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
               >
                 <Search className="w-4 h-4 text-slate-500 shrink-0" />
                 <span>Track Shipment</span>
@@ -805,7 +884,10 @@ export default function HomePage() {
                 href="/in/deals/new?type=send"
                 className="py-3 sm:py-3.5 px-7 rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-sm sm:text-base shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
               >
-                <span className="shrink-0 text-base">📦</span>
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-70"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                </span>
                 <span>Book Safe Delivery &rarr;</span>
               </Link>
             </div>
@@ -1366,7 +1448,7 @@ export default function HomePage() {
                 </div>
 
                 <Link
-                  href={`/in/deals/new?type=send&fromPin=${calcOrigin}&toPin=${calcDest}&val=${calcValue}`}
+                  href="/in/deals/new?type=send"
                   className="px-5 py-3 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md transition active:scale-95"
                 >
                   Book Safe Delivery &rarr;

@@ -32,7 +32,23 @@ export interface GeminiScanResult {
 
 const GEMINI_BASE_URL = process.env.GEMINI_BASE_URL || process.env.OPENAI_BASE_URL || '';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY || '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
+export const DEFAULT_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+
+/**
+ * Resilient Multi-Model Priority Cascade:
+ * Automatically falls through across models if any upstream returns 503 (MODEL_CAPACITY_EXHAUSTED),
+ * 429 (Rate limit / quota exceeded), or 5xx errors.
+ */
+export const MODEL_CASCADE: string[] = [
+  DEFAULT_MODEL,
+  'gemini-3.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'claude-3-5-sonnet',
+  'gemini-3.6-flash',
+  'gemini-3.8-flash-low',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+].filter((m, i, arr): m is string => Boolean(m) && arr.indexOf(m) === i);
 
 /**
  * Standard GSMA Luhn-10 Algorithm Checksum Validator for 15-Digit IMEIs
@@ -252,45 +268,48 @@ export async function callGeminiChat(
 ): Promise<string | null> {
   const apiKey = process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY;
   const baseUrl = process.env.GEMINI_BASE_URL || process.env.OPENAI_BASE_URL;
-  const model = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
   // 1. If an official Google Gemini API Key is present, use Google native endpoint directly
   if (apiKey && (apiKey.startsWith('AIza') || !baseUrl || baseUrl.includes('generativelanguage.googleapis.com'))) {
-    const nativeRes = await callGoogleGeminiNative(messages, apiKey, model, temperature);
+    const nativeRes = await callGoogleGeminiNative(messages, apiKey, DEFAULT_MODEL, temperature);
     if (nativeRes) return nativeRes;
   }
 
-  // 2. If a custom proxy base URL is explicitly provided, call with 12-second timeout
+  // 2. If a custom proxy base URL is provided, iterate through MODEL_CASCADE
   if (baseUrl && !baseUrl.includes('generativelanguage.googleapis.com')) {
-    try {
-      const effectiveKey = apiKey || 'cpa_sk_8f7b2c5d9a1e4c3a7f8b9d0e1f2a3b4c';
-      const res = await fetch(`${baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${effectiveKey}`
-        },
-        body: JSON.stringify({
-          model,
-          messages,
-          temperature
-        }),
-        signal: AbortSignal.timeout(12000)
-      });
+    const effectiveKey = apiKey || 'cpa_sk_8f7b2c5d9a1e4c3a7f8b9d0e1f2a3b4c';
+    for (const candidateModel of MODEL_CASCADE) {
+      try {
+        const res = await fetch(`${baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${effectiveKey}`
+          },
+          body: JSON.stringify({
+            model: candidateModel,
+            messages,
+            temperature
+          }),
+          signal: AbortSignal.timeout(12000)
+        });
 
-      if (res.ok) {
-        const data = await res.json();
-        const content = data.choices?.[0]?.message?.content;
-        if (content) return content;
+        if (res.ok) {
+          const data = await res.json();
+          const content = data.choices?.[0]?.message?.content;
+          if (content) return content;
+        } else {
+          console.warn(`[Model Cascade] Model ${candidateModel} returned HTTP ${res.status}, failing over to next model...`);
+        }
+      } catch (err) {
+        console.warn(`[Model Cascade] Model ${candidateModel} error or timed out:`, err);
       }
-    } catch (err) {
-      console.warn('Custom Gemini proxy call error or timed out:', err);
     }
   }
 
   // 3. Fallback: try native Google endpoint if standard apiKey is available
   if (apiKey && !apiKey.startsWith('cpa_sk_')) {
-    const fallbackRes = await callGoogleGeminiNative(messages, apiKey, model, temperature);
+    const fallbackRes = await callGoogleGeminiNative(messages, apiKey, DEFAULT_MODEL, temperature);
     if (fallbackRes) return fallbackRes;
   }
 
@@ -633,37 +652,42 @@ Respond strictly in valid JSON:
         content = await callGoogleGeminiMultimodal(prompt, imageInput, apiKey, model);
       }
 
-      // 2. Try proxy if configured
+      // 2. Try proxy if configured with Model Cascade
       if (!content && baseUrl && !baseUrl.includes('generativelanguage.googleapis.com')) {
-        try {
-          const effectiveKey = apiKey || 'cpa_sk_8f7b2c5d9a1e4c3a7f8b9d0e1f2a3b4c';
-          const res = await fetch(`${baseUrl}/chat/completions`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${effectiveKey}`
-            },
-            body: JSON.stringify({
-              model,
-              messages: [
-                {
-                  role: 'user',
-                  content: [
-                    { type: 'text', text: prompt },
-                    { type: 'image_url', image_url: { url: imageInput } }
-                  ]
-                }
-              ],
-              temperature: 0.1
-            }),
-            signal: AbortSignal.timeout(30000)
-          });
-          if (res.ok) {
-            const data = await res.json();
-            content = data.choices?.[0]?.message?.content || null;
+        const effectiveKey = apiKey || 'cpa_sk_8f7b2c5d9a1e4c3a7f8b9d0e1f2a3b4c';
+        for (const candidateModel of MODEL_CASCADE) {
+          try {
+            const res = await fetch(`${baseUrl}/chat/completions`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${effectiveKey}`
+              },
+              body: JSON.stringify({
+                model: candidateModel,
+                messages: [
+                  {
+                    role: 'user',
+                    content: [
+                      { type: 'text', text: prompt },
+                      { type: 'image_url', image_url: { url: imageInput } }
+                    ]
+                  }
+                ],
+                temperature: 0.1
+              }),
+              signal: AbortSignal.timeout(20000)
+            });
+            if (res.ok) {
+              const data = await res.json();
+              content = data.choices?.[0]?.message?.content || null;
+              if (content) break;
+            } else {
+              console.warn(`[Vision Cascade] Model ${candidateModel} returned ${res.status}, failing over...`);
+            }
+          } catch (e) {
+            console.warn(`[Vision Cascade] Model ${candidateModel} failed:`, e);
           }
-        } catch (e) {
-          console.warn('Proxy vision call failed:', e);
         }
       }
 
@@ -796,24 +820,25 @@ Respond strictly in valid JSON:
 
       let content: string | null = null;
 
-      // Only attempt remote API if a valid non-dummy key is present (starts with AIza or real OpenAI key, not dead render proxy)
-      const hasRealCloudKey = Boolean(apiKey && (apiKey.startsWith('AIza') || (apiKey.startsWith('sk-') && !apiKey.startsWith('cpa_sk_'))));
-      const isDeadProxy = baseUrl && baseUrl.includes('onrender.com');
+      // 1. Try Google native multimodal if official API key is provided
+      if (apiKey && (apiKey.startsWith('AIza') || !baseUrl || baseUrl.includes('generativelanguage.googleapis.com'))) {
+        content = await callGoogleGeminiMultimodal(prompt, base64Photos, apiKey, DEFAULT_MODEL);
+      }
 
-      if (hasRealCloudKey && !isDeadProxy) {
-        if (apiKey.startsWith('AIza') || !baseUrl || baseUrl.includes('generativelanguage.googleapis.com')) {
-          content = await callGoogleGeminiMultimodal(prompt, base64Photos, apiKey, 'gemini-2.0-flash');
-        } else if (baseUrl) {
+      // 2. Try proxy with Model Cascade
+      if (!content && baseUrl && !baseUrl.includes('generativelanguage.googleapis.com')) {
+        const effectiveKey = apiKey || 'cpa_sk_8f7b2c5d9a1e4c3a7f8b9d0e1f2a3b4c';
+        const imageParts = base64Photos.map((url) => ({ type: 'image_url', image_url: { url } }));
+        for (const candidateModel of MODEL_CASCADE) {
           try {
-            const imageParts = base64Photos.map((url) => ({ type: 'image_url', image_url: { url } }));
             const res = await fetch(`${baseUrl}/chat/completions`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
+                'Authorization': `Bearer ${effectiveKey}`
               },
               body: JSON.stringify({
-                model,
+                model: candidateModel,
                 messages: [
                   {
                     role: 'user',
@@ -825,14 +850,17 @@ Respond strictly in valid JSON:
                 ],
                 temperature: 0.1
               }),
-              signal: AbortSignal.timeout(2500)
+              signal: AbortSignal.timeout(20000)
             });
             if (res.ok) {
               const data = await res.json();
               content = data.choices?.[0]?.message?.content || null;
+              if (content) break;
+            } else {
+              console.warn(`[Product Photo Cascade] Model ${candidateModel} returned ${res.status}, failing over...`);
             }
           } catch (e) {
-            console.warn('Vision API proxy call bypassed, using instant optical engine:', e);
+            console.warn(`[Product Photo Cascade] Model ${candidateModel} failed:`, e);
           }
         }
       }
@@ -848,12 +876,16 @@ Respond strictly in valid JSON:
 
           return {
             isMatch: isMatchVal,
-            confidence: `${Math.max(90, Math.round(parsed.confidence || 98))}%`,
+            confidence: isMatchVal
+              ? `${Math.max(90, Math.round(parsed.confidence || 98))}%`
+              : `${Math.min(50, Math.round(parsed.confidence || 35))}%`,
             detectedCategory: detectedCat,
             detectedModel: parsed.detectedModel || declaredItemName,
             featuresVerified: features,
             cosmeticAssessment: parsed.cosmeticAssessment || 'Optimal cosmetic condition, zero panel fractures observed',
-            reason: parsed.reason || `Multi-angle inspection confirms visual features match declared "${declaredItemName}"`,
+            reason: parsed.reason || (isMatchVal
+              ? `Multi-angle inspection confirms visual features match declared "${declaredItemName}"`
+              : `Uploaded photo does not match declared "${declaredItemName}". You can replace the photo or confirm to proceed.`),
             suggestedImei: undefined,
             anglesAudited: anglesCount
           };

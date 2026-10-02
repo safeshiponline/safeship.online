@@ -7,13 +7,9 @@ import { EmailEvent } from './emailTemplates';
  */
 export async function notifyMilestoneEmail(
   deal: SafeDeal,
-  event: EmailEvent
-): Promise<void> {
-  // Policy: Only BOOKING_CONFIRMED and WELCOME emails are dispatched
-  if (event !== 'BOOKING_CONFIRMED' && event !== 'WELCOME') {
-    return;
-  }
-
+  event: EmailEvent,
+  directEmail?: string
+): Promise<{ success: boolean; simulated?: boolean; message?: string }> {
   try {
     const res = await fetch('/api/email/notify', {
       method: 'POST',
@@ -22,13 +18,23 @@ export async function notifyMilestoneEmail(
         dealId: deal.id,
         event,
         deal,
+        email: directEmail || deal.seller?.email,
       }),
     });
+
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      console.warn(`[SafeShip Email] Notification for ${event} returned status ${res.status}:`, err);
+      console.warn(`[SafeShip Email] Notification for ${event} returned status ${res.status}:`, data);
+      return { success: false, message: data.error || `HTTP ${res.status}` };
     }
+
+    return {
+      success: true,
+      simulated: data.simulated,
+      message: data.message || `Email sent successfully for ${event}`,
+    };
   } catch (err) {
     console.warn(`[SafeShip Email] Failed to dispatch ${event} email notification:`, err);
+    return { success: false, message: 'Network or server error while dispatching email' };
   }
 }

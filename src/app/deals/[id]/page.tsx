@@ -15,6 +15,7 @@ import { DriverProfileCard } from '@/components/courier/DriverProfileCard';
 import { PhotoEvidenceVault } from '@/components/deal/PhotoEvidenceVault';
 import { EscrowPaymentModal } from '@/components/deal/EscrowPaymentModal';
 import { DisputeModal } from '@/components/deal/DisputeModal';
+import AutoTriggerButton from '@/components/common/AutoTriggerButton';
 import {
   ShieldCheck,
   ShieldAlert,
@@ -182,6 +183,7 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
                   </div>
                   <button
                     type="button"
+                    id="btn-lock-escrow-desktop"
                     onClick={() => setIsPaymentOpen(true)}
                     className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs tracking-tight shadow-xs transition flex items-center justify-center gap-2 cursor-pointer shrink-0"
                   >
@@ -225,6 +227,32 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
                   <p className="text-[11px] text-zinc-500 leading-relaxed font-medium">
                     ⚠️ <strong>Anti-Scam Protocol:</strong> Do not disclose this OTP over the phone or WhatsApp. Only speak this OTP to the rider after inspecting the unbroken holographic seal at your door.
                   </p>
+
+                  {/* PROMINENT LIVE TRACKING ACCESS WHEN ESCROW IS FUNDED */}
+                  <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs mt-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-[#0066FF] text-white flex items-center justify-center font-black shrink-0 shadow-sm">
+                        <Truck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-900 flex items-center gap-2">
+                          <span>Live Consignment Tracking Active</span>
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                            ● Escrow Secured
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 mt-0.5">
+                          Consignment #{deal.id} &bull; Courier Officer <strong>Rahul K.</strong> dispatched
+                        </p>
+                      </div>
+                    </div>
+                    <Link
+                      href={`/in/track/${deal.id}?escrow_paid=true`}
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-sm cursor-pointer shrink-0"
+                    >
+                      <span>Open Live GPS Tracking &rarr;</span>
+                    </Link>
+                  </div>
                 </div>
               )}
 
@@ -268,6 +296,31 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
                 <div className="text-[11px] text-zinc-500 pt-1">
                   Settlement Destination: <strong className="font-mono text-zinc-950 bg-white px-2 py-0.5 rounded border border-zinc-200">{deal.seller.upiId}</strong>
                 </div>
+
+                {/* Seller Live Tracking Card */}
+                {isVaultLocked && (
+                  <div className="p-3.5 rounded-xl bg-blue-50 border border-blue-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs mt-2">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-[#0066FF] text-white flex items-center justify-center font-bold shrink-0">
+                        <Truck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-slate-900">
+                          Pickup Dispatched &bull; Tracking Active
+                        </div>
+                        <div className="text-[11px] text-slate-600">
+                          Officer <strong>Rahul K.</strong> will call you at scheduled pickup time.
+                        </div>
+                      </div>
+                    </div>
+                    <Link
+                      href={`/in/track/${deal.id}?escrow_paid=true`}
+                      className="px-4 py-2 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold transition flex items-center gap-1 shadow-sm shrink-0"
+                    >
+                      <span>Track Pickup &rarr;</span>
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -348,8 +401,9 @@ export default function DealRoomPage({ params }: { params: Promise<{ id: string 
             </div>
             <button
               type="button"
+              id="btn-lock-escrow-mobile"
               onClick={() => setIsPaymentOpen(true)}
-              className="flex-1 py-3.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs tracking-tight transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer"
+              className="flex-1 py-3.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-bold text-xs tracking-tight transition shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
             >
               <Lock className="w-3.5 h-3.5 text-emerald-400" />
               <span>Lock Escrow via UPI</span>
