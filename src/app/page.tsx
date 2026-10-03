@@ -1149,29 +1149,29 @@ export default function HomePage() {
             },
             {
               step: '02',
-              title: 'Secure Transit',
-              desc: 'Your item is fully insured up to ₹10L and tracked.',
+              title: 'Tamper-Proof Packing',
+              desc: 'Seller records quick packing video & locks serialized security seal.',
               icon: Truck,
               highlight: 'Tamper sealed'
             },
             {
               step: '03',
-              title: 'Doorstep Inspection',
-              desc: 'Buyer inspects for 10 minutes before paying.',
+              title: 'Open-Box Inspection',
+              desc: 'Buyer opens the parcel, powers on device, and tests screen & IMEI.',
               icon: Eye,
-              highlight: '10-min window'
+              highlight: 'Verified unboxing'
             },
             {
               step: '04',
               title: 'Approval / Rejection',
-              desc: 'Power on & test. If rejected, it’s returned to seller at ₹0.',
+              desc: 'Device matches? Approve via OTP. Defect? 100% refund at ₹0.',
               icon: CheckCircle2,
               highlight: 'Zero scam risk'
             },
             {
               step: '05',
-              title: 'Escrow Release',
-              desc: 'Payment is released to seller immediately after approval.',
+              title: 'Instant Payout',
+              desc: 'Funds are transferred directly to seller UPI immediately upon approval.',
               icon: CreditCard,
               highlight: 'Instant payout'
             }
@@ -1220,7 +1220,7 @@ export default function HomePage() {
                 Real Verification at Your Doorstep
               </h3>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Our bonded field officers facilitate an unhurried 10-minute physical audit before payment release. Zero advance risk for buyers; guaranteed instant payout for sellers.
+                Dual video verification and serialized tamper packaging guarantee 100% genuine delivery before payment release. Zero advance risk for buyers; guaranteed instant payout for sellers.
               </p>
             </div>
 
@@ -1228,11 +1228,11 @@ export default function HomePage() {
             <div className="space-y-2.5 text-xs sm:text-sm text-slate-200">
               <div className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
-                <span>IMEI &amp; Serial Number Match (*#06# GSMA verification)</span>
+                <span>IMEI &amp; Serial Number Match (*#06# verified on video)</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
-                <span>Device condition &amp; physical chassis integrity check</span>
+                <span>Serialized tamper-evident security seal (VOID protected)</span>
               </div>
               <div className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
@@ -1240,7 +1240,7 @@ export default function HomePage() {
               </div>
               <div className="flex items-center gap-2.5">
                 <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
-                <span>10-minute buyer approval before OTP payment release</span>
+                <span>Buyer unboxing inspection before payment release</span>
               </div>
             </div>
 
