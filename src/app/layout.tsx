@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     description: 'Inspect electronics for 10 minutes at your doorstep before payment. Escrow settlements powered by RBI-licensed payment aggregators and 100% cargo transit protection.',
     url: siteUrl,
     siteName: 'SafeShip India',
-    images: [{ url: '/images/hero_openbox_16x9.webp', width: 1200, height: 630, alt: 'SafeShip Doorstep Open Box Delivery' }],
+    images: [{ url: '/images/safeship_og_thumbnail.png', width: 1200, height: 630, alt: 'SafeShip Doorstep Open Box Delivery - Verify Then Pay' }],
     locale: 'en_IN',
     type: 'website',
   },
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'SafeShip India | Guaranteed Doorstep Open-Box Delivery',
     description: 'Inspect before you pay. India’s premier open-box verification and escrow delivery network.',
-    images: ['/images/hero_openbox_16x9.webp'],
+    images: ['/images/safeship_og_thumbnail.png'],
   },
   robots: { index: true, follow: true },
   icons: {

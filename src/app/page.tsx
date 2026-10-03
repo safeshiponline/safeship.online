@@ -1001,14 +1001,14 @@ export default function HomePage() {
                       <video
                         ref={heroVideoRef}
                         src="/video/safeship-promo.mp4"
-                        poster="/images/hero_visual_full.webp?v=5"
+                        poster="/images/safeship_video_thumbnail.png"
                         autoPlay
-                        loop
                         muted={isHeroVideoMuted}
                         playsInline
                         preload="auto"
                         onPlay={() => setIsHeroVideoPlaying(true)}
                         onPause={() => setIsHeroVideoPlaying(false)}
+                        onEnded={closeHeroVideo}
                         className="w-full h-full object-cover cursor-pointer"
                         onClick={toggleHeroVideoPlayback}
                       />
@@ -1043,25 +1043,50 @@ export default function HomePage() {
                             e.stopPropagation();
                             closeHeroVideo();
                           }}
-                          title="Back to Photo"
+                          title="Back to Cover"
                           className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-950/80 hover:bg-slate-900 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-md transition-all active:scale-95 cursor-pointer"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
 
-                      {/* Center Play Overlay when Paused */}
+                      {/* Paused State Overlay: Shows Thumbnail Cover with Resume & Replay triggers */}
                       {!isHeroVideoPlaying && (
-                        <button
-                          type="button"
+                        <div
+                          className="absolute inset-0 bg-slate-950/50 backdrop-blur-xs flex flex-col items-center justify-center cursor-pointer transition-opacity z-10 p-4"
                           onClick={toggleHeroVideoPlayback}
-                          className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer transition-opacity z-10"
-                          aria-label="Resume video"
                         >
-                          <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#0066FF] text-white flex items-center justify-center shadow-xl shadow-blue-500/40 transform hover:scale-105 active:scale-95 transition-all">
-                            <Play className="w-6 h-6 sm:w-7 sm:h-7 ml-1 fill-white" />
+                          <img
+                            src="/images/safeship_video_thumbnail.png"
+                            alt="SafeShip Video Cover"
+                            className="absolute inset-0 w-full h-full object-cover opacity-40 select-none pointer-events-none"
+                          />
+
+                          <div className="relative z-10 flex flex-col items-center gap-2.5 transform hover:scale-105 active:scale-95 transition-all">
+                            <div className="relative flex items-center justify-center">
+                              <span className="animate-ping absolute inline-flex h-14 w-14 rounded-full bg-[#0066FF] opacity-40"></span>
+                              <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#0066FF] text-white flex items-center justify-center shadow-xl shadow-blue-500/50 transition">
+                                <Play className="w-6 h-6 sm:w-7 sm:h-7 ml-1 fill-white" />
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-2">
+                              <span className="bg-slate-950/85 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/20 text-white text-[11px] sm:text-xs font-bold shadow-md tracking-tight">
+                                Resume Video
+                              </span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  closeHeroVideo();
+                                }}
+                                className="bg-white/15 hover:bg-white/25 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 text-white text-[10px] sm:text-xs font-semibold shadow-md transition"
+                              >
+                                Back to Cover
+                              </button>
+                            </div>
                           </div>
-                        </button>
+                        </div>
                       )}
                     </div>
                   )}
