@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { SafeShipLogo } from '@/components/common/SafeShipLogo';
@@ -38,7 +38,12 @@ import {
   Headphones,
   Navigation,
   Compass,
-  RefreshCw
+  RefreshCw,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Maximize2
 } from '@/components/common/Icons';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
 import { LiveTickerBar } from '@/components/common/LiveTickerBar';
@@ -67,6 +72,46 @@ export default function HomePage() {
   const [userOrders, setUserOrders] = useState<SafeDeal[]>([]);
   const [isMounted, setIsMounted] = useState<boolean>(false);
   const [showPromoVideo, setShowPromoVideo] = useState<boolean>(false);
+  const heroVideoRef = useRef<HTMLVideoElement | null>(null);
+  const [isHeroVideoMuted, setIsHeroVideoMuted] = useState<boolean>(true);
+  const [isHeroVideoPlaying, setIsHeroVideoPlaying] = useState<boolean>(true);
+
+  const toggleHeroVideoSound = () => {
+    if (heroVideoRef.current) {
+      const nextMuted = !heroVideoRef.current.muted;
+      heroVideoRef.current.muted = nextMuted;
+      setIsHeroVideoMuted(nextMuted);
+      if (!nextMuted) {
+        heroVideoRef.current.play().catch(() => {});
+        setIsHeroVideoPlaying(true);
+      }
+    }
+  };
+
+  const toggleHeroVideoPlayback = () => {
+    if (heroVideoRef.current) {
+      if (heroVideoRef.current.paused) {
+        heroVideoRef.current.play().catch(() => {});
+        setIsHeroVideoPlaying(true);
+      } else {
+        heroVideoRef.current.pause();
+        setIsHeroVideoPlaying(false);
+      }
+    }
+  };
+
+  const playHeroVideoWithSound = () => {
+    if (heroVideoRef.current) {
+      heroVideoRef.current.currentTime = 0;
+      heroVideoRef.current.muted = false;
+      setIsHeroVideoMuted(false);
+      heroVideoRef.current.play().catch(() => {});
+      setIsHeroVideoPlaying(true);
+      heroVideoRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+      setShowPromoVideo(true);
+    }
+  };
 
   // FAQ Accordion State
   const [calcOrigin, setCalcOrigin] = useState<string>('623526'); // Rameshwaram
@@ -779,7 +824,7 @@ export default function HomePage() {
 
               <button
                 type="button"
-                onClick={() => setShowPromoVideo(true)}
+                onClick={playHeroVideoWithSound}
                 className="inline-flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-[11px] sm:text-xs font-extrabold shadow-2xs transition active:scale-95 cursor-pointer group"
               >
                 <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] pl-0.5 group-hover:scale-110 transition shadow-xs">
@@ -863,7 +908,7 @@ export default function HomePage() {
             <div className="hidden sm:flex items-center gap-3 pt-0.5">
               <button
                 type="button"
-                onClick={() => setShowPromoVideo(true)}
+                onClick={playHeroVideoWithSound}
                 className="py-3 sm:py-3.5 px-5 rounded-2xl bg-blue-50/80 hover:bg-blue-100/90 border border-blue-200/90 text-[#0066FF] font-black text-sm sm:text-base shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer group"
               >
                 <span className="w-6 h-6 rounded-full bg-[#0066FF] text-white flex items-center justify-center text-[10px] pl-0.5 group-hover:scale-110 transition shadow-xs shadow-blue-500/30">
@@ -969,19 +1014,79 @@ export default function HomePage() {
           <div className="lg:col-span-6 xl:col-span-7 w-full max-w-lg lg:max-w-none mx-auto">
             <div className="rounded-2xl sm:rounded-3xl bg-white border border-slate-200/90 shadow-xl shadow-slate-200/50 p-1.5 sm:p-3 relative overflow-hidden transition-all duration-300 hover:shadow-2xl">
               <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/70 border border-slate-200/80">
-                {/* Image container using natural proportional scaling */}
-                <div className="relative w-full overflow-hidden bg-white flex items-center justify-center">
-                  <img
-                    src="/images/hero_visual_full.webp?v=5"
-                    alt="SafeShip Doorstep Open Box Inspection with Apple iPhone 15 Pro Max Verification"
-                    className="w-full h-auto max-h-[265px] xs:max-h-[300px] sm:max-h-none object-contain block select-none"
+                {/* 60s High-End Motion Graphics Promo Video Container */}
+                <div className="relative w-full aspect-video bg-[#030712] overflow-hidden flex items-center justify-center group">
+                  <video
+                    ref={heroVideoRef}
+                    src="/video/safeship-promo.mp4"
+                    poster="/video/poster.png"
+                    autoPlay
+                    loop
+                    muted={isHeroVideoMuted}
+                    playsInline
+                    preload="auto"
+                    onPlay={() => setIsHeroVideoPlaying(true)}
+                    onPause={() => setIsHeroVideoPlaying(false)}
+                    className="w-full h-full object-cover select-none cursor-pointer"
+                    onClick={toggleHeroVideoPlayback}
                   />
 
-                  {/* Clean Brand Pill */}
-                  <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-white/95 backdrop-blur-md px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-slate-200/90 text-[10px] sm:text-xs font-bold text-slate-800 flex items-center gap-1.5 shadow-xs">
-                    <span className="w-2 h-2 rounded-full bg-[#0066FF] animate-pulse" />
-                    <span>Doorstep Unboxing Active</span>
+                  {/* Top-Left: Live Explainer Badge */}
+                  <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-slate-950/75 backdrop-blur-md px-2.5 sm:px-3 py-1 rounded-full border border-white/20 text-[10px] sm:text-xs font-bold text-white flex items-center gap-1.5 shadow-md pointer-events-none">
+                    <span className="w-2 h-2 rounded-full bg-[#0066FF] animate-pulse shadow-sm shadow-blue-500" />
+                    <span>SafeShip in 60s</span>
                   </div>
+
+                  {/* Top-Right: Sound Toggle & Expand Controls */}
+                  <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex items-center gap-1.5 z-10">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleHeroVideoSound();
+                      }}
+                      title={isHeroVideoMuted ? 'Unmute video' : 'Mute video'}
+                      className="bg-slate-950/80 hover:bg-slate-900 backdrop-blur-md px-2.5 sm:px-3 py-1 rounded-full border border-white/20 text-[10px] sm:text-xs font-bold text-white flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+                    >
+                      {isHeroVideoMuted ? (
+                        <>
+                          <VolumeX className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                          <span>Tap for Sound</span>
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-pulse" />
+                          <span>Sound On</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowPromoVideo(true);
+                      }}
+                      title="Expand to Fullscreen"
+                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-950/80 hover:bg-slate-900 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-md transition-all active:scale-95 cursor-pointer"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {/* Center Play Overlay when Paused */}
+                  {!isHeroVideoPlaying && (
+                    <button
+                      type="button"
+                      onClick={toggleHeroVideoPlayback}
+                      className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer transition-opacity z-10"
+                      aria-label="Play video"
+                    >
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#0066FF] text-white flex items-center justify-center shadow-xl shadow-blue-500/40 transform hover:scale-105 active:scale-95 transition-all">
+                        <Play className="w-6 h-6 sm:w-7 sm:h-7 ml-1 fill-white" />
+                      </div>
+                    </button>
+                  )}
                 </div>
 
                 {/* Micro Footer inside Preview */}
