@@ -42,8 +42,7 @@ import {
   Play,
   Pause,
   Volume2,
-  VolumeX,
-  Maximize2
+  VolumeX
 } from '@/components/common/Icons';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
 import { LiveTickerBar } from '@/components/common/LiveTickerBar';
@@ -71,7 +70,6 @@ export default function HomePage() {
   const [trackQuery, setTrackQuery] = useState<string>('');
   const [userOrders, setUserOrders] = useState<SafeDeal[]>([]);
   const [isMounted, setIsMounted] = useState<boolean>(false);
-  const [showPromoVideo, setShowPromoVideo] = useState<boolean>(false);
   const heroVideoRef = useRef<HTMLVideoElement | null>(null);
   const [isHeroVideoMuted, setIsHeroVideoMuted] = useState<boolean>(true);
   const [isHeroVideoPlaying, setIsHeroVideoPlaying] = useState<boolean>(true);
@@ -97,19 +95,6 @@ export default function HomePage() {
         heroVideoRef.current.pause();
         setIsHeroVideoPlaying(false);
       }
-    }
-  };
-
-  const playHeroVideoWithSound = () => {
-    if (heroVideoRef.current) {
-      heroVideoRef.current.currentTime = 0;
-      heroVideoRef.current.muted = false;
-      setIsHeroVideoMuted(false);
-      heroVideoRef.current.play().catch(() => {});
-      setIsHeroVideoPlaying(true);
-      heroVideoRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } else {
-      setShowPromoVideo(true);
     }
   };
 
@@ -746,59 +731,6 @@ export default function HomePage() {
         </div>
       )}
 
-      {/* PROMO EXPLAINER VIDEO MODAL */}
-      {showPromoVideo && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-in fade-in duration-200">
-          <div className="relative w-full max-w-4xl bg-[#070B14] border border-blue-500/40 rounded-3xl overflow-hidden shadow-2xl shadow-blue-500/20">
-            {/* Top Modal Header */}
-            <div className="flex items-center justify-between px-5 py-3.5 bg-slate-900/90 border-b border-slate-800">
-              <div className="flex items-center gap-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400" />
-                <span className="text-xs sm:text-sm font-bold text-white tracking-wide">
-                  SafeShip Official Explainer &bull; 60s Motion Graphics
-                </span>
-                <span className="hidden sm:inline text-[11px] bg-blue-600/30 text-blue-400 border border-blue-500/30 px-2 py-0.5 rounded-full font-semibold">
-                  1080p Full HD
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowPromoVideo(false)}
-                className="text-slate-400 hover:text-white p-1.5 rounded-xl hover:bg-slate-800 transition cursor-pointer"
-                aria-label="Close video"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Video Player */}
-            <div className="aspect-video w-full bg-black relative flex items-center justify-center">
-              <video
-                src="/video/safeship-promo.mp4"
-                controls
-                autoPlay
-                playsInline
-                className="w-full h-full object-contain"
-              />
-            </div>
-
-            {/* Modal Footer Trust Bar */}
-            <div className="px-5 py-3 bg-slate-900/80 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
-              <span className="flex items-center gap-1.5 text-slate-300 font-medium">
-                <span>🛡️</span> Zero Scams &bull; RBI Nodal Escrow &bull; 10-Min Doorstep Inspection
-              </span>
-              <a
-                href="/video/safeship-promo.mp4"
-                download="SafeShip_Promo_60s.mp4"
-                className="text-[#38BDF8] hover:text-white font-bold transition flex items-center gap-1"
-              >
-                Download MP4 &darr;
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ========================================================================= */}
       {/* 3. HERO SECTION (LUXURY FINTECH AESTHETICS, AMBIENT DEPTH, PERFECT SCALING) */}
       {/* ========================================================================= */}
@@ -812,7 +744,7 @@ export default function HomePage() {
           {/* Left Hero Content */}
           <div className="lg:col-span-6 xl:col-span-5 space-y-2 sm:space-y-6">
             
-            {/* Eyebrow Pill Badge + Watch 60s Video Button */}
+            {/* Eyebrow Pill Badge */}
             <div className="flex items-center gap-2 flex-wrap">
               <span className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-blue-50/90 border border-blue-200/90 shadow-2xs text-[11px] sm:text-xs font-extrabold text-[#0066FF] tracking-tight">
                 <span className="relative flex h-2 w-2 shrink-0">
@@ -821,17 +753,6 @@ export default function HomePage() {
                 </span>
                 <span>India&apos;s #1 Open-Box &amp; Escrow Platform</span>
               </span>
-
-              <button
-                type="button"
-                onClick={playHeroVideoWithSound}
-                className="inline-flex items-center gap-1.5 px-3 py-1 sm:py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-[11px] sm:text-xs font-extrabold shadow-2xs transition active:scale-95 cursor-pointer group"
-              >
-                <span className="w-4 h-4 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[8px] pl-0.5 group-hover:scale-110 transition shadow-xs">
-                  ▶
-                </span>
-                <span>Watch 60s Explainer</span>
-              </button>
             </div>
 
             {/* Mobile View: Calibrated Bold Headline on Left, Elongated Action Buttons on Right with Zero Collision (sm:hidden) */}
@@ -904,36 +825,25 @@ export default function HomePage() {
               </p>
             </div>
 
-            {/* Desktop Action Buttons: Watch 60s Video, Track Shipment, Book Delivery */}
+            {/* Desktop Action Buttons: Book Delivery & Track Shipment */}
             <div className="hidden sm:flex items-center gap-3 pt-0.5">
-              <button
-                type="button"
-                onClick={playHeroVideoWithSound}
-                className="py-3 sm:py-3.5 px-5 rounded-2xl bg-blue-50/80 hover:bg-blue-100/90 border border-blue-200/90 text-[#0066FF] font-black text-sm sm:text-base shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer group"
-              >
-                <span className="w-6 h-6 rounded-full bg-[#0066FF] text-white flex items-center justify-center text-[10px] pl-0.5 group-hover:scale-110 transition shadow-xs shadow-blue-500/30">
-                  ▶
-                </span>
-                <span>Watch 60s Video</span>
-              </button>
-
-              <Link
-                href="/in/track"
-                className="py-3 sm:py-3.5 px-5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-sm sm:text-base shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
-              >
-                <Search className="w-4 h-4 text-slate-500 shrink-0" />
-                <span>Track Shipment</span>
-              </Link>
-
               <Link
                 href="/in/deals/new?type=send"
-                className="py-3 sm:py-3.5 px-7 rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-sm sm:text-base shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
+                className="py-3.5 px-7 rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-sm sm:text-base shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
               >
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-70"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
                 </span>
                 <span>Book Safe Delivery &rarr;</span>
+              </Link>
+
+              <Link
+                href="/in/track"
+                className="py-3.5 px-5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-sm sm:text-base shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
+              >
+                <Search className="w-4 h-4 text-slate-500 shrink-0" />
+                <span>Track Shipment</span>
               </Link>
             </div>
 
@@ -1031,48 +941,28 @@ export default function HomePage() {
                     onClick={toggleHeroVideoPlayback}
                   />
 
-                  {/* Top-Left: Live Explainer Badge */}
-                  <div className="absolute top-2 left-2 sm:top-3 sm:left-3 bg-slate-950/75 backdrop-blur-md px-2.5 sm:px-3 py-1 rounded-full border border-white/20 text-[10px] sm:text-xs font-bold text-white flex items-center gap-1.5 shadow-md pointer-events-none">
-                    <span className="w-2 h-2 rounded-full bg-[#0066FF] animate-pulse shadow-sm shadow-blue-500" />
-                    <span>SafeShip in 60s</span>
-                  </div>
-
-                  {/* Top-Right: Sound Toggle & Expand Controls */}
-                  <div className="absolute top-2 right-2 sm:top-3 sm:right-3 flex items-center gap-1.5 z-10">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleHeroVideoSound();
-                      }}
-                      title={isHeroVideoMuted ? 'Unmute video' : 'Mute video'}
-                      className="bg-slate-950/80 hover:bg-slate-900 backdrop-blur-md px-2.5 sm:px-3 py-1 rounded-full border border-white/20 text-[10px] sm:text-xs font-bold text-white flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
-                    >
-                      {isHeroVideoMuted ? (
-                        <>
-                          <VolumeX className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          <span>Tap for Sound</span>
-                        </>
-                      ) : (
-                        <>
-                          <Volume2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-pulse" />
-                          <span>Sound On</span>
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowPromoVideo(true);
-                      }}
-                      title="Expand to Fullscreen"
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-950/80 hover:bg-slate-900 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-md transition-all active:scale-95 cursor-pointer"
-                    >
-                      <Maximize2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  {/* Top-Right: Sound Toggle */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleHeroVideoSound();
+                    }}
+                    title={isHeroVideoMuted ? 'Unmute video' : 'Mute video'}
+                    className="absolute top-2.5 right-2.5 sm:top-3.5 sm:right-3.5 bg-slate-950/80 hover:bg-slate-900 backdrop-blur-md px-2.5 sm:px-3 py-1 rounded-full border border-white/20 text-[10px] sm:text-xs font-bold text-white flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer z-10"
+                  >
+                    {isHeroVideoMuted ? (
+                      <>
+                        <VolumeX className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                        <span>Tap for Sound</span>
+                      </>
+                    ) : (
+                      <>
+                        <Volume2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-pulse" />
+                        <span>Sound On</span>
+                      </>
+                    )}
+                  </button>
 
                   {/* Center Play Overlay when Paused */}
                   {!isHeroVideoPlaying && (
