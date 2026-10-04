@@ -948,10 +948,10 @@ export default function HomePage() {
 
           {/* Right Hero Visual Container: High-Converting Doorstep Escrow Card */}
           <div className="lg:col-span-6 xl:col-span-7 w-full max-w-lg lg:max-w-none mx-auto">
-            <div className="rounded-2xl sm:rounded-3xl bg-white border border-slate-200/90 shadow-xl shadow-slate-200/50 p-1.5 sm:p-3 relative overflow-hidden transition-all duration-300 hover:shadow-2xl">
-              <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-gradient-to-b from-slate-50 to-slate-100/70 border border-slate-200/80">
+            <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-b from-white via-white to-slate-50 border border-slate-200/80 shadow-2xl shadow-blue-900/[0.06] p-1.5 sm:p-2.5 relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/[0.12]">
+              <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/70">
                 {/* Media Container: Photo Thumbnail by default, interactive Video on click */}
-                <div className="relative w-full aspect-[16/10] sm:aspect-video bg-[#030712] overflow-hidden flex items-center justify-center group select-none">
+                <div className="relative w-full aspect-[16/10] sm:aspect-video bg-slate-950 overflow-hidden flex items-center justify-center group select-none">
                   {!isHeroVideoActive ? (
                     /* 1. Default State: High-Converting Photo Thumbnail with Play Trigger */
                     <div 
@@ -959,29 +959,44 @@ export default function HomePage() {
                       className="relative w-full h-full cursor-pointer flex items-center justify-center overflow-hidden"
                     >
                       <img
-                        src="/images/hero_visual_full.webp?v=5"
+                        src="/images/hero_visual_full_hd.webp?v=6"
                         alt="SafeShip Doorstep Open Box Inspection with Apple iPhone 15 Pro Max Verification"
-                        className="w-full h-full object-cover sm:object-contain group-hover:scale-[1.02] transition-transform duration-500 block"
+                        className="w-full h-full object-cover object-center group-hover:scale-[1.03] transition-transform duration-700 ease-out block"
                       />
 
-                      {/* Top-Left: Clean Live Badge */}
-                      <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-3.5 bg-white/95 backdrop-blur-md px-2.5 sm:px-3 py-1 rounded-full border border-slate-200/90 text-[10px] sm:text-xs font-bold text-slate-800 flex items-center gap-1.5 shadow-sm">
-                        <span className="w-2 h-2 rounded-full bg-[#0066FF] animate-pulse" />
-                        <span>Doorstep Unboxing Active</span>
+                      {/* Top-Left: Sleek Glass Live Badge */}
+                      <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-3.5 z-10 bg-slate-950/75 hover:bg-slate-950/85 backdrop-blur-xl px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-white/15 text-[10px] sm:text-xs font-semibold text-white/95 flex items-center gap-2 shadow-xl shadow-black/20 select-none transition-all">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+                        </span>
+                        <span className="tracking-tight">Doorstep Unboxing Active</span>
                       </div>
 
-                      {/* Center: Frosted Glass Video Play Affordance */}
-                      <div className="absolute inset-0 bg-slate-950/20 group-hover:bg-slate-950/30 transition-colors flex items-center justify-center">
-                        <div className="flex flex-col items-center gap-2 transform group-hover:scale-105 active:scale-95 transition-all">
+                      {/* Center: Frosted Glass Luxury Video Play Affordance */}
+                      <div className="absolute inset-0 bg-slate-950/20 group-hover:bg-slate-950/30 transition-colors duration-500 flex items-center justify-center">
+                        <div className="flex flex-col items-center gap-2.5 sm:gap-3 transform group-hover:scale-105 active:scale-95 transition-transform duration-300">
+                          {/* Glowing Multi-layer Play Button */}
                           <div className="relative flex items-center justify-center">
-                            <span className="animate-ping absolute inline-flex h-14 w-14 rounded-full bg-[#0066FF] opacity-40"></span>
-                            <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-full bg-[#0066FF] text-white flex items-center justify-center shadow-xl shadow-blue-500/50 group-hover:bg-[#0052FF] transition">
-                              <Play className="w-6 h-6 sm:w-7 sm:h-7 ml-1 fill-white" />
+                            {/* Ambient Breathing Aura */}
+                            <span className="absolute -inset-2.5 sm:-inset-3 rounded-full bg-[#0066FF]/35 blur-xl animate-pulse" />
+                            {/* Ripple Ping Ring */}
+                            <span className="animate-ping absolute inline-flex h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-[#0066FF] opacity-35" />
+
+                            {/* Glassmorphic Outer Specular Ring */}
+                            <div className="relative p-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/40 shadow-[0_12px_40px_rgba(0,102,255,0.5)] group-hover:shadow-[0_16px_50px_rgba(0,102,255,0.7)] transition-all">
+                              {/* Core Gradient Button */}
+                              <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-[#0052FF] via-[#0066FF] to-[#38BDF8] text-white flex items-center justify-center shadow-inner border border-white/30 group-hover:from-[#0047e0] group-hover:to-[#60a5fa] transition-all">
+                                <Play className="w-6 h-6 sm:w-7 sm:h-7 ml-1 fill-white drop-shadow-md text-white" />
+                              </div>
                             </div>
                           </div>
-                          <span className="bg-slate-950/85 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/20 text-white text-[11px] sm:text-xs font-bold shadow-md tracking-tight">
-                            Watch 60s Video
-                          </span>
+
+                          {/* Frosted Glass Pill Tag */}
+                          <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-slate-950/75 hover:bg-slate-950/90 backdrop-blur-xl border border-white/20 text-white text-[10px] sm:text-xs font-semibold shadow-2xl tracking-tight transition-all">
+                            <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+                            <span>Watch 60s Video</span>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1009,7 +1024,7 @@ export default function HomePage() {
                       />
 
                       {/* Top-Right Controls: Sound Toggle + Close/Back to Thumbnail */}
-                      <div className="absolute top-2.5 right-2.5 sm:top-3.5 sm:right-3.5 flex items-center gap-1.5 z-20">
+                      <div className="absolute top-2.5 right-2.5 sm:top-3.5 sm:right-3.5 flex items-center gap-2 z-20">
                         <button
                           type="button"
                           onClick={(e) => {
@@ -1017,7 +1032,7 @@ export default function HomePage() {
                             toggleHeroVideoSound();
                           }}
                           title={isHeroVideoMuted ? 'Unmute video' : 'Mute video'}
-                          className="bg-slate-950/80 hover:bg-slate-900 backdrop-blur-md px-2.5 sm:px-3 py-1 rounded-full border border-white/20 text-[10px] sm:text-xs font-bold text-white flex items-center gap-1.5 shadow-md transition-all active:scale-95 cursor-pointer"
+                          className="bg-slate-950/80 hover:bg-slate-900 backdrop-blur-xl px-3 py-1.5 rounded-full border border-white/20 text-[10px] sm:text-xs font-bold text-white flex items-center gap-1.5 shadow-xl transition-all active:scale-95 cursor-pointer"
                         >
                           {isHeroVideoMuted ? (
                             <>
@@ -1039,7 +1054,7 @@ export default function HomePage() {
                             closeHeroVideo();
                           }}
                           title="Back to Thumbnail"
-                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-950/80 hover:bg-slate-900 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-md transition-all active:scale-95 cursor-pointer"
+                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-950/80 hover:bg-slate-900 backdrop-blur-xl border border-white/20 text-white flex items-center justify-center shadow-xl transition-all active:scale-95 cursor-pointer"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
@@ -1048,20 +1063,24 @@ export default function HomePage() {
                   )}
                 </div>
 
-                {/* Micro Footer inside Preview */}
-                <div className="p-1.5 sm:p-3 bg-white/95 backdrop-blur-xs border-t border-slate-200/80 flex items-center justify-between gap-1 sm:gap-2 text-[10px] sm:text-xs text-slate-600 font-medium">
-                  <span className="flex items-center gap-1 font-semibold text-slate-800">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
+                {/* Micro Specs Bar inside Preview */}
+                <div className="px-3 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-r from-slate-50 via-white to-slate-50 border-t border-slate-200/80 flex items-center justify-between gap-1.5 sm:gap-2 text-[10px] sm:text-xs">
+                  <div className="flex items-center gap-1.5 font-semibold text-slate-800 min-w-0">
+                    <div className="w-5 h-5 rounded-md bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF]" />
+                    </div>
                     <span className="truncate">10-Min Check</span>
-                  </span>
-                  <span className="flex items-center gap-1 font-semibold text-slate-800">
-                    <Lock className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
+                  </div>
+                  <div className="flex items-center gap-1.5 font-semibold text-slate-800 min-w-0">
+                    <div className="w-5 h-5 rounded-md bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
+                      <Lock className="w-3.5 h-3.5 text-[#0066FF]" />
+                    </div>
                     <span className="truncate">RBI Escrow</span>
-                  </span>
-                  <span className="flex items-center gap-1 text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 text-[9px] sm:text-[11px] shrink-0">
+                  </div>
+                  <div className="flex items-center gap-1.5 text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 text-[9px] sm:text-[11px] shrink-0 shadow-xs">
                     <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                     <span>100% Insured</span>
-                  </span>
+                  </div>
                 </div>
               </div>
             </div>
