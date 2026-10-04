@@ -1,5 +1,6 @@
 import React from 'react';
 import { Composition } from 'remotion';
+import { SafeShipMasterPromo } from './SafeShipMasterPromo';
 import { SafeShipPromo35 } from './SafeShipPromo35';
 import { SafeShipPromo } from './SafeShipPromo';
 
@@ -7,9 +8,19 @@ export const RemotionRoot: React.FC = () => {
   return (
     <>
       {/* 
-        SafeShip 35-Second Hyper-Polished Master Promo
-        1080p @ 30 FPS = 1050 Frames (Exact Outship / OpenAI / Sleeko Creative Direction)
+        SafeShip 35-Second Hyper-Polished Master Promo (Flagship)
+        1080p @ 60 FPS = 2100 Frames (Outship / OpenAI / Sleeko Standard)
       */}
+      <Composition
+        id="SafeShipMasterPromo"
+        component={SafeShipMasterPromo}
+        durationInFrames={2100}
+        fps={60}
+        width={1920}
+        height={1080}
+      />
+
+      {/* 30 FPS Variant */}
       <Composition
         id="SafeShipPromo35"
         component={SafeShipPromo35}
