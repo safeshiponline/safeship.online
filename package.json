@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "remotion:studio": "remotion studio src/remotion/index.ts",
-    "remotion:render": "remotion render src/remotion/index.ts SafeShipPromo35 out/safeship_promo_35s.mp4 --codec h264 --crf 16 --fps 30 --pixel-format yuv420p",
+    "remotion:render": "remotion render src/remotion/index.ts SafeShipMasterPromo public/video/safeship-promo.mp4 --codec h264 --fps 60 --pixel-format yuv420p",
     "remotion:render:60": "remotion render src/remotion/index.ts SafeShipPromo out/safeship_promo_1080p.mp4 --codec h264 --crf 16 --fps 30 --pixel-format yuv420p"
   },
   "dependencies": {

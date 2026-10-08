@@ -995,7 +995,7 @@ export default function HomePage() {
                           {/* Frosted Glass Pill Tag */}
                           <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-slate-950/75 hover:bg-slate-950/90 backdrop-blur-xl border border-white/20 text-white text-[10px] sm:text-xs font-semibold shadow-2xl tracking-tight transition-all">
                             <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
-                            <span>Watch 60s Video</span>
+                            <span>Watch 35s Film</span>
                           </div>
                         </div>
                       </div>
@@ -1237,7 +1237,7 @@ export default function HomePage() {
                 className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm border border-slate-700 shadow-sm transition active:scale-95 cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5 fill-white" />
-                <span>Watch 60s Video</span>
+                <span>Watch 35s Film</span>
               </button>
             </div>
           </div>
