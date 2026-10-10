@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1920, height=1080" />
+  <title>SafeShip — Master Product Film (HyperFrames)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    html, body {
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: #06080E;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    #root {
+      position: relative;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+      background: #F8F7F4;
+    }
+
+    .clip {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      overflow: hidden;
+    }
+
+    .scene-stage {
+      position: absolute;
+      inset: 0;
+      width: 1920px;
+      height: 1080px;
+      perspective: 1400px;
+      transform-style: preserve-3d;
+    }
+
+    .serif-italic {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-style: italic;
+      font-weight: 400;
+    }
+
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .word {
+      display: inline-block;
+      will-change: transform, opacity;
+    }
+
+    .canvas-porcelain {
+      background: linear-gradient(180deg, #FFFFFF 0%, #F7F5F0 58%, #EDEAE2 100%);
+      color: #0F172A;
+    }
+
+    .canvas-obsidian {
+      background: linear-gradient(180deg, #0D1322 0%, #070A12 62%, #04060A 100%);
+      color: #F8FAFC;
+    }
+
+    .tech-grid-light {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(15, 23, 42, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(15, 23, 42, 0.04) 1px, transparent 1px);
+      background-size: 64px 64px;
+      pointer-events: none;
+    }
+
+    .tech-grid-dark {
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+      background-size: 64px 64px;
+      pointer-events: none;
+    }
+
+    .surface-light {
+      background: #FFFFFF;
+      border: 1px solid rgba(15, 23, 42, 0.10);
+      box-shadow:
+        0 28px 56px -14px rgba(15, 23, 42, 0.10),
+        0 10px 20px -8px rgba(15, 23, 42, 0.05);
+    }
+
+    .surface-dark {
+      background: #0F172A;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow:
+        0 34px 68px -15px rgba(0, 0, 0, 0.65),
+        0 0 36px -10px rgba(16, 185, 129, 0.18);
+    }
+
+    .hud-topbar {
+      position: absolute;
+      top: 38px;
+      left: 72px;
+      right: 72px;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 40;
+      pointer-events: none;
+    }
+
+    .hud-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .hud-pill-light {
+      background: #FFFFFF;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+      color: #0F172A;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+    }
+
+    .hud-pill-dark {
+      background: #1E293B;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #F8FAFC;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .tactile-cursor {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 90;
+      pointer-events: none;
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      will-change: transform, opacity;
+    }
+
+    .cursor-tag {
+      margin-top: 18px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      color: #FFFFFF;
+      background: #0F172A;
+      box-shadow: 0 10px 24px rgba(15, 23, 42, 0.28);
+      white-space: nowrap;
+    }
+
+    .city-node {
+      position: absolute;
+      width: 280px;
+      padding: 22px 24px;
+      border-radius: 24px;
+      z-index: 15;
+    }
+
+    .iphone-showcase-card {
+      position: absolute;
+      top: 285px;
+      left: 730px;
+      width: 460px;
+      padding: 26px;
+      border-radius: 30px;
+      z-index: 18;
+      transform-style: preserve-3d;
+    }
+
+    .upi-hazard-modal {
+      position: absolute;
+      top: 290px;
+      left: 690px;
+      width: 540px;
+      padding: 30px;
+      border-radius: 32px;
+      z-index: 32;
+      background: #FFFFFF;
+      border: 2px solid rgba(220, 38, 38, 0.35);
+      box-shadow:
+        0 40px 80px -15px rgba(220, 38, 38, 0.22),
+        0 20px 40px -10px rgba(15, 23, 42, 0.12);
+    }
+
+    .fraud-interceptor-banner {
+      position: absolute;
+      top: 685px;
+      left: 590px;
+      width: 740px;
+      padding: 20px 28px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
+      color: #FFFFFF;
+      border: 1px solid rgba(255, 255, 255, 0.28);
+      box-shadow: 0 28px 60px rgba(220, 38, 38, 0.42);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 38;
+    }
+
+    .trust-dock {
+      position: absolute;
+      bottom: 44px;
+      left: 410px;
+      width: 1100px;
+      height: 76px;
+      border-radius: 999px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 50;
+    }
+
+    .trust-step-pill {
+      flex: 1;
+      height: 56px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #475569;
+      position: relative;
+    }
+
+    .step-num-badge {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 800;
+      background: #FFFFFF;
+      color: #0F172A;
+      border: 1px solid rgba(15, 23, 42, 0.12);
+    }
+
+    .outcome-card-wrap {
+      position: relative;
+      width: 1120px;
+      height: 520px;
+      transform-style: preserve-3d;
+    }
+
+    .outcome-face {
+      width: 1120px;
+      height: 520px;
+      border-radius: 36px;
+      padding: 42px 50px;
+    }
+  </style>
+</head>
+<body>
+  <div
+    id="root"
+    data-composition-id="main"
+    data-start="0"
+    data-width="1920"
+    data-height="1080"
+    data-duration="35.04"
+    data-fps="60"
+  >
+    <audio
+      id="voiceover-track"
+      src="assets/safeshippromo_35.wav"
+      data-start="0"
+      data-duration="35.04"
+      data-track-index="1"
+      data-volume="1"
+    ></audio>
+    <audio
+      id="bg-music-track"
+      src="assets/bg-music.mp3"
+      data-start="0"
+      data-duration="35.04"
+      data-track-index="2"
+      data-volume="0.14"
+    ></audio>
+
+    <!-- ===================================================================
+         SCENE 1: THE P2P TRUST GAP HOOK (0.00s -> 9.42s)
+         =================================================================== -->
+    <section id="clip-scene-1" class="clip canvas-porcelain" data-start="0" data-duration="9.42" data-track-index="1">
+      <div class="tech-grid-light"></div>
+      <div id="s1-stage" class="scene-stage" data-layout-allow-overflow>
+        <div class="hud-topbar">
+          <div class="hud-pill hud-pill-light">
+            <span style="width: 9px; height: 9px; border-radius: 99px; background: #DC2626; display: inline-block;"></span>
+            <span>P2P Marketplace Reality Check</span>
+          </div>
+          <div class="hud-pill hud-pill-light mono">
+            <span>OLX • FB MARKETPLACE • WHATSAPP DEALS</span>
+          </div>
+        </div>
+
+        <!-- BEAT 1A: BUYER UPI HAZARD (0.00s - 6.26s) -->
+        <div id="s1a-layer" style="position: absolute; inset: 0;">
+          <div style="position: absolute; top: 96px; left: 120px; right: 120px; text-align: center; z-index: 20;">
+            <h1 style="font-size: 56px; font-weight: 800; line-height: 1.12; letter-spacing: -0.03em; color: #0F172A;">
+              <span class="word s1-w">Buying</span>
+              <span class="word s1-w">an</span>
+              <span class="word s1-w">iPhone</span>
+              <span class="word s1-w">from</span>
+              <span class="word s1-w serif-italic" style="color: #1D4ED8; font-size: 68px; font-weight: 400; padding: 0 6px;">Bangalore</span>
+              <span class="word s1-w">while</span>
+              <span class="word s1-w">sitting</span>
+              <span class="word s1-w">in</span>
+              <span class="word s1-w serif-italic" style="color: #0F172A; font-size: 68px; font-weight: 400; padding: 0 6px;">Delhi?</span>
+            </h1>
+            <p id="s1a-sub" style="margin-top: 14px; font-size: 22px; font-weight: 600; color: #475569;">
+              2,150 km apart • Zero buyer protection on direct instant transfers
+            </p>
+          </div>
+
+          <svg width="1920" height="1080" viewBox="0 0 1920 1080" style="position: absolute; inset: 0; pointer-events: none; z-index: 12;">
+            <defs>
+              <linearGradient id="corridorGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#1D4ED8" />
+                <stop offset="50%" stop-color="#0284C7" />
+                <stop offset="100%" stop-color="#059669" />
+              </linearGradient>
+            </defs>
+            <path d="M 410 520 C 680 390, 1240 390, 1510 520" fill="none" stroke="rgba(15,23,42,0.12)" stroke-width="3" stroke-dasharray="8 8" />
+            <path id="s1-route-active" d="M 410 520 C 680 390, 1240 390, 1510 520" fill="none" stroke="url(#corridorGrad)" stroke-width="5" stroke-linecap="round" stroke-dasharray="1200" stroke-dashoffset="1200" />
+            <path id="s1-route-broken" d="M 410 520 L 660 445 L 720 495 L 960 415 L 1180 485 L 1320 430 L 1510 520" fill="none" stroke="#DC2626" stroke-width="6" stroke-dasharray="18 14" opacity="0" />
+          </svg>
+
+          <!-- Left Node: DELHI -->
+          <div id="s1-node-delhi" class="city-node surface-light" style="top: 440px; left: 130px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <span class="mono" style="font-size: 12px; font-weight: 700; color: #1D4ED8; background: #EFF6FF; padding: 4px 10px; border-radius: 99px;">BUYER TERMINAL</span>
+              <span class="mono" style="font-size: 12px; color: #475569;">28.61° N</span>
+            </div>
+            <div style="font-size: 28px; font-weight: 800; color: #0F172A; letter-spacing: -0.02em;">NEW DELHI</div>
+            <div style="font-size: 14px; font-weight: 600; color: #475569; margin-top: 4px;">You • Ready to pay ₹65,000</div>
+            <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(15,23,42,0.08); display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #0F172A;">
+              <span style="width: 8px; height: 8px; border-radius: 99px; background: #1D4ED8;"></span>
+              <span>UPI App Open</span>
+            </div>
+          </div>
+
+          <!-- Right Node: BANGALORE -->
+          <div id="s1-node-blr" class="city-node surface-light" style="top: 440px; left: 1510px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+              <span class="mono" style="font-size: 12px; font-weight: 700; color: #9A3412; background: #FFEDD5; padding: 4px 10px; border-radius: 99px;">UNVERIFIED SELLER</span>
+              <span class="mono" style="font-size: 12px; color: #475569;">12.97° N</span>
+            </div>
+            <div style="font-size: 28px; font-weight: 800; color: #0F172A; letter-spacing: -0.02em;">BANGALORE</div>
+            <div style="font-size: 14px; font-weight: 600; color: #475569; margin-top: 4px;">Stranger • "Send advance bro"</div>
+            <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(15,23,42,0.08); display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #9A3412;">
+              <span style="width: 8px; height: 8px; border-radius: 99px; background: #9A3412;"></span>
+              <span>Identity Unverified</span>
+            </div>
+          </div>
+
+          <!-- Center Floating 3D iPhone 15 Pro Listing Card -->
+          <div id="s1-iphone-card" class="iphone-showcase-card surface-light">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+              <span style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #1D4ED8; background: #EFF6FF; padding: 5px 12px; border-radius: 99px;">Classified Listing</span>
+              <span class="mono" style="font-size: 13px; font-weight: 700; color: #475569;">2,150 KM AWAY</span>
+            </div>
+
+            <div style="height: 210px; border-radius: 22px; background: linear-gradient(145deg, #0F172A 0%, #1E293B 100%); display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; margin-bottom: 18px;" data-layout-allow-overflow>
+              <div style="width: 112px; height: 182px; border-radius: 22px; border: 3px solid #94A3B8; background: linear-gradient(160deg, #1E1B4B 0%, #0F172A 55%, #0369A1 100%); position: relative; display: flex; flex-direction: column; align-items: center; padding-top: 10px;">
+                <div style="width: 34px; height: 9px; border-radius: 99px; background: #000000;"></div>
+                <div style="margin-top: 26px; font-size: 18px; font-weight: 800; color: #FFFFFF;">9:41</div>
+                <div style="font-size: 9px; font-weight: 600; color: #E0F2FE; margin-top: 2px;">iPhone 15 Pro</div>
+                <div style="margin-top: auto; margin-bottom: 12px; padding: 3px 10px; border-radius: 99px; background: #0F172A; font-size: 8px; font-weight: 700; color: #FFFFFF;">256GB • Titanium</div>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: flex-end; justify-content: space-between;">
+              <div>
+                <div style="font-size: 22px; font-weight: 800; color: #0F172A;">iPhone 15 Pro • 256GB</div>
+                <div style="font-size: 14px; font-weight: 600; color: #475569; margin-top: 2px;">Natural Titanium • Battery 98%</div>
+              </div>
+              <div class="mono" style="font-size: 28px; font-weight: 800; color: #0F172A;">₹65,000</div>
+            </div>
+          </div>
+
+          <!-- UPI Advance Payment Modal -->
+          <div id="s1-upi-modal" class="upi-hazard-modal" style="display: none;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 38px; height: 38px; border-radius: 12px; background: #FEF2F2; border: 1px solid #FECACA; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #B91C1C; font-size: 15px;">UPI</div>
+                <div>
+                  <div style="font-size: 16px; font-weight: 800; color: #0F172A;">Direct Instant Transfer</div>
+                  <div class="mono" style="font-size: 13px; color: #B91C1C; font-weight: 600;">to: stranger_seller99@okaxis</div>
+                </div>
+              </div>
+              <span style="padding: 5px 12px; border-radius: 99px; background: #FEF2F2; color: #B91C1C; font-size: 12px; font-weight: 800; letter-spacing: 0.04em;">UNVERIFIED</span>
+            </div>
+
+            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 20px; padding: 18px 22px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between;">
+              <div>
+                <div style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #475569;">Advance Full Payment</div>
+                <div class="mono" style="font-size: 38px; font-weight: 800; color: #0F172A; margin-top: 2px;">₹65,000.00</div>
+              </div>
+              <div style="text-align: right;">
+                <div style="font-size: 12px; font-weight: 700; color: #B91C1C;">Irreversible Bank Debit</div>
+                <div style="font-size: 12px; color: #475569; margin-top: 2px;">No Chargeback Protection</div>
+              </div>
+            </div>
+
+            <div id="s1-upi-btn" style="height: 58px; border-radius: 16px; background: #0F172A; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 17px; font-weight: 800;">
+              <span>Approve UPI PIN • Send ₹65,000</span>
+            </div>
+          </div>
+
+          <!-- Crimson Hazard Interceptor Slam -->
+          <div id="s1-fraud-banner" class="fraud-interceptor-banner" style="display: none;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+              <div style="width: 48px; height: 48px; border-radius: 14px; background: rgba(0,0,0,0.25); display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900;">✕</div>
+              <div>
+                <div style="font-size: 20px; font-weight: 800;">NEVER SEND ADVANCE MONEY ON UPI</div>
+                <div style="font-size: 14px; font-weight: 600; color: #FFFFFF; margin-top: 2px;">Instant bank transfers cannot be reversed once the seller blocks your number.</div>
+              </div>
+            </div>
+            <div class="mono" style="padding: 8px 14px; border-radius: 10px; background: #450A0A; color: #FFFFFF; font-size: 13px; font-weight: 800;">HIGH FRAUD RISK</div>
+          </div>
+
+          <div id="s1-cursor" class="tactile-cursor" data-layout-allow-overlap data-layout-allow-occlusion>
+            <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+              <path d="M6 4L28 14.5L17.5 18.2L13.8 28.5L6 4Z" fill="#0F172A" stroke="#FFFFFF" stroke-width="2.5" stroke-linejoin="round" />
+            </svg>
+            <div class="cursor-tag">YOU (BUYER)</div>
+          </div>
+        </div>
+
+        <!-- BEAT 1B: SELLER SHIPPING RISK (6.26s - 9.42s) -->
+        <div id="s1b-layer" style="position: absolute; inset: 0; display: none; z-index: 45;">
+          <div style="position: absolute; top: 104px; left: 120px; right: 120px; text-align: center;">
+            <div style="display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border-radius: 99px; background: #FEF2F2; border: 1px solid #FECACA; color: #B91C1C; font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 14px;">
+              <span>THE OTHER SIDE OF THE TRAP • SELLER EXPOSURE</span>
+            </div>
+            <h2 style="font-size: 56px; font-weight: 800; letter-spacing: -0.03em; color: #0F172A; line-height: 1.12;">
+              And never ship your phone hoping a <span class="serif-italic" style="color: #B91C1C; font-size: 66px; font-weight: 400;">stranger</span> will pay.
+            </h2>
+          </div>
+
+          <!-- Left Card: Dispatched Hardware -->
+          <div id="s1b-card-left" class="surface-light" style="position: absolute; top: 280px; left: 180px; width: 740px; height: 560px; border-radius: 34px; padding: 38px; border: 2px solid rgba(220,38,38,0.25);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+              <span style="padding: 6px 14px; border-radius: 99px; background: #FFEDD5; color: #9A3412; font-size: 13px; font-weight: 800;">PARCEL HANDED TO COURIER</span>
+              <span class="mono" style="font-size: 14px; font-weight: 700; color: #B91C1C;">ESCROW SECURITY: ₹0</span>
+            </div>
+
+            <div style="height: 250px; border-radius: 24px; background: #0F172A; padding: 28px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px;">
+              <div>
+                <div class="mono" style="font-size: 13px; font-weight: 700; color: #FCA5A5; letter-spacing: 0.06em;">UNPROTECTED DISPATCH</div>
+                <div style="font-size: 30px; font-weight: 800; color: #FFFFFF; margin-top: 6px;">iPhone 15 Pro Shipped</div>
+                <div style="font-size: 15px; color: #CBD5E1; margin-top: 6px;">Device leaves your custody with zero payment guarantee</div>
+                <div style="margin-top: 20px; display: inline-flex; align-items: center; gap: 10px; padding: 10px 18px; border-radius: 14px; background: #7F1D1D; color: #FFFFFF; font-weight: 800; font-size: 15px;">
+                  <span>⚠ Fake Payment Screenshot Trap</span>
+                </div>
+              </div>
+              <div style="width: 148px; height: 148px; border-radius: 26px; background: #1E293B; border: 2px solid #F87171; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#FCA5A5" stroke-width="1.8">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                  <line x1="12" y1="22.08" x2="12" y2="12" />
+                </svg>
+                <span class="mono" style="font-size: 12px; font-weight: 800; color: #FCA5A5; margin-top: 8px;">IN TRANSIT</span>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 20px 24px; border-radius: 20px; background: #FEF2F2; border: 1px solid #FECACA;">
+              <div>
+                <div style="font-size: 13px; font-weight: 700; color: #7F1D1D; text-transform: uppercase;">Verified Money Collected Upfront</div>
+                <div style="font-size: 15px; font-weight: 600; color: #991B1B; margin-top: 2px;">Seller bears 100% of hardware &amp; courier theft risk</div>
+              </div>
+              <div class="mono" style="font-size: 40px; font-weight: 800; color: #B91C1C;">₹0.00</div>
+            </div>
+          </div>
+
+          <!-- Right Card: Buyer Ghosting -->
+          <div id="s1b-card-right" class="surface-light" style="position: absolute; top: 280px; left: 980px; width: 760px; height: 560px; border-radius: 34px; padding: 38px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 20px; border-bottom: 1px solid rgba(15,23,42,0.08);">
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="width: 48px; height: 48px; border-radius: 99px; background: #E2E8F0; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #1E293B; font-size: 18px;">?</div>
+                <div>
+                  <div style="font-size: 19px; font-weight: 800; color: #0F172A;">"Arjun" (Marketplace Buyer)</div>
+                  <div class="mono" style="font-size: 13px; color: #B91C1C; font-weight: 700;">Last seen: Account Deleted • Number Switched Off</div>
+                </div>
+              </div>
+              <span style="padding: 6px 14px; border-radius: 99px; background: #FEF2F2; color: #B91C1C; font-size: 13px; font-weight: 800;">🚫 BLOCKED</span>
+            </div>
+
+            <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 16px;">
+              <div style="align-self: flex-start; max-width: 78%; padding: 16px 20px; border-radius: 20px 20px 20px 6px; background: #F1F5F9; color: #0F172A; font-size: 16px; font-weight: 600;">
+                "Bro share courier tracking slip first, I'll transfer ₹65,000 the second package reaches my doorstep 🙏"
+              </div>
+
+              <div style="align-self: flex-end; max-width: 78%; padding: 16px 20px; border-radius: 20px 20px 6px 20px; background: #0F172A; color: #FFFFFF; font-size: 16px; font-weight: 600;">
+                "Parcel delivered 2 hours ago! Please send the ₹65,000 now??"
+                <div class="mono" style="font-size: 11px; color: #CBD5E1; text-align: right; margin-top: 6px;">✓ Single Gray Tick • Undelivered</div>
+              </div>
+
+              <div id="s1b-ghost-alert" style="margin-top: 8px; padding: 20px 24px; border-radius: 20px; background: #FEF2F2; border: 1px solid #FCA5A5; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                  <div style="font-size: 18px; font-weight: 800; color: #7F1D1D;">You can no longer message this user</div>
+                  <div style="font-size: 14px; font-weight: 600; color: #991B1C; margin-top: 4px;">Phone lost • ₹65,000 unpaid • Zero legal recovery</div>
+                </div>
+                <div class="mono" style="padding: 8px 14px; border-radius: 12px; background: #B91C1C; color: #FFFFFF; font-size: 13px; font-weight: 800;">SCAMMED</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         SCENE 2: THE SOLUTION — SAFESHIP REVEAL (9.42s -> 12.30s)
+         =================================================================== -->
+    <section id="clip-scene-2" class="clip canvas-obsidian" data-start="9.42" data-duration="2.88" data-track-index="1">
+      <div class="tech-grid-dark"></div>
+      <div id="s2-stage" class="scene-stage" style="display: flex; flex-direction: column; align-items: center; justify-content: center;" data-layout-allow-overflow>
+        <div id="s2-badge" class="hud-pill hud-pill-dark" style="margin-bottom: 28px; border-color: rgba(16, 185, 129, 0.45);">
+          <span style="width: 10px; height: 10px; border-radius: 99px; background: #10B981;"></span>
+          <span style="color: #6EE7B7;">INDIA'S VERIFIED OPEN-BOX ESCROW PROTOCOL</span>
+        </div>
+
+        <div id="s2-shield-emblem" style="width: 184px; height: 184px; border-radius: 44px; background: linear-gradient(145deg, #064E3B 0%, #0F172A 100%); border: 2px solid #10B981; box-shadow: 0 30px 80px rgba(16, 185, 129, 0.32); display: flex; align-items: center; justify-content: center; margin-bottom: 30px;">
+          <img src="assets/safeship_icon.svg" alt="SafeShip Shield" style="width: 112px; height: 112px;" />
+        </div>
+
+        <div id="s2-title" style="font-size: 108px; font-weight: 800; letter-spacing: -0.04em; color: #FFFFFF; line-height: 1; display: flex; align-items: center; gap: 6px;">
+          <span>Safe</span><span style="color: #34D399;">Ship</span>
+        </div>
+
+        <p id="s2-subtitle" style="margin-top: 18px; font-size: 28px; font-weight: 500; color: #CBD5E1; letter-spacing: -0.01em;">
+          Here’s how <span class="serif-italic" style="color: #FFFFFF; font-size: 34px;">zero-trust</span> protection works in 3 simple steps.
+        </p>
+
+        <div id="s2-steps-row" style="margin-top: 48px; display: flex; align-items: center; gap: 22px;">
+          <div class="surface-dark" style="padding: 16px 28px; border-radius: 20px; display: flex; align-items: center; gap: 14px; border-color: rgba(16,185,129,0.4);">
+            <span class="mono" style="font-size: 14px; font-weight: 800; color: #6EE7B7; background: #064E3B; padding: 6px 10px; border-radius: 10px;">01</span>
+            <span style="font-size: 17px; font-weight: 700; color: #FFFFFF;">Escrow Vault Lock</span>
+          </div>
+          <div class="surface-dark" style="padding: 16px 28px; border-radius: 20px; display: flex; align-items: center; gap: 14px; border-color: rgba(59,130,246,0.4);">
+            <span class="mono" style="font-size: 14px; font-weight: 800; color: #93C5FD; background: #1E3A8A; padding: 6px 10px; border-radius: 10px;">02</span>
+            <span style="font-size: 17px; font-weight: 700; color: #FFFFFF;">Insured Express Transit</span>
+          </div>
+          <div class="surface-dark" style="padding: 16px 28px; border-radius: 20px; display: flex; align-items: center; gap: 14px; border-color: rgba(16,185,129,0.4);">
+            <span class="mono" style="font-size: 14px; font-weight: 800; color: #6EE7B7; background: #064E3B; padding: 6px 10px; border-radius: 10px;">03</span>
+            <span style="font-size: 17px; font-weight: 700; color: #FFFFFF;">Open-Box Doorstep Test</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         SCENE 3: THE 3-STEP TRUST LOOP (12.30s -> 24.40s)
+         =================================================================== -->
+    <section id="clip-scene-3" class="clip canvas-porcelain" data-start="12.30" data-duration="12.10" data-track-index="1">
+      <div class="tech-grid-light"></div>
+      <div id="s3-stage" class="scene-stage" data-layout-allow-overflow>
+        <div class="hud-topbar">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="40" height="40" fill="none">
+              <rect x="3.5" y="3.5" width="41" height="41" rx="10.5" fill="#0066FF" />
+              <g transform="translate(24, 24) scale(0.92) translate(-24, -24.6)">
+                <path d="M24 9L37.5 16.8V32.4L24 40.2L10.5 32.4V16.8L24 9Z" fill="white" />
+                <path d="M24 9L37.5 16.8L30 21.2L24 17.7L18 21.2L10.5 16.8L24 9Z" fill="#FFFFFF" />
+                <path d="M10.5 16.8L18 21.2V27.9L10.5 32.4V16.8Z" fill="#E0E7FF" />
+                <path d="M37.5 16.8L30 21.2V27.9L37.5 32.4V16.8Z" fill="#F1F5F9" />
+                <path d="M24 40.2L10.5 32.4L18 27.9L24 31.4L30 27.9L37.5 32.4L24 40.2Z" fill="#CBD5E1" />
+                <path d="M24 18L30 21.5V28.5L24 32L18 28.5V21.5L24 18Z" fill="#0066FF" />
+              </g>
+            </svg>
+            <span style="font-size: 25px; font-weight: 800; color: #0F172A; letter-spacing: -0.03em;">SafeShip</span>
+          </div>
+          <div class="hud-pill hud-pill-light mono">
+            <span style="width: 8px; height: 8px; border-radius: 99px; background: #059669;"></span>
+            <span>ESCROW CONTRACT #SF-88219 • ACTIVE</span>
+          </div>
+        </div>
+
+        <!-- STEP 1 (12.30s -> 17.26s): ESCROW VAULT LOCK -->
+        <div id="s3-step1" style="position: absolute; inset: 0;">
+          <div style="position: absolute; top: 96px; left: 140px; right: 140px; text-align: center;">
+            <div class="mono" style="font-size: 13px; font-weight: 800; color: #047857; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px;">
+              STEP 01 • RING-FENCED ESCROW VAULT
+            </div>
+            <h2 style="font-size: 54px; font-weight: 800; color: #0F172A; letter-spacing: -0.03em; line-height: 1.12;">
+              You pay, but your money stays <span class="serif-italic" style="color: #047857; font-size: 64px; font-weight: 400;">safely locked</span> with us.
+            </h2>
+            <p style="font-size: 21px; font-weight: 600; color: #475569; margin-top: 8px;">
+              The seller sees proof of funds — <strong style="color: #0F172A;">but cannot touch a single rupee yet.</strong>
+            </p>
+          </div>
+
+          <div id="s3-s1-buyer" class="surface-light" style="position: absolute; top: 295px; left: 140px; width: 490px; height: 470px; border-radius: 32px; padding: 34px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px;">
+              <span style="padding: 6px 14px; border-radius: 99px; background: #ECFDF5; color: #047857; font-size: 13px; font-weight: 800;">BUYER DEPOSIT</span>
+              <span class="mono" style="font-size: 13px; font-weight: 700; color: #475569;">UPI / CARDS / NETBANKING</span>
+            </div>
+            <div style="font-size: 15px; font-weight: 700; color: #475569; text-transform: uppercase;">Amount Deposited</div>
+            <div class="mono" style="font-size: 56px; font-weight: 800; color: #0F172A; margin-top: 6px; letter-spacing: -0.03em;">
+              ₹65,000
+            </div>
+            <div style="margin-top: 22px; padding: 18px 20px; border-radius: 20px; background: #F0FDF4; border: 1px solid #BBF7D0;">
+              <div style="font-size: 16px; font-weight: 800; color: #14532D;">
+                ✓ 100% Verified in SafeShip Escrow
+              </div>
+              <div style="font-size: 14px; font-weight: 600; color: #166534; margin-top: 4px;">
+                Instant cryptographic receipt sent to both parties.
+              </div>
+            </div>
+            <div style="margin-top: 24px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 700; color: #475569;">
+              <span>Refund Guarantee</span>
+              <span style="color: #047857;">100% Protected</span>
+            </div>
+          </div>
+
+          <div id="s3-s1-vault" class="surface-dark" style="position: absolute; top: 275px; left: 675px; width: 570px; height: 510px; border-radius: 36px; padding: 38px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border: 2px solid #10B981;">
+            <div style="width: 100%; display: flex; align-items: center; justify-content: space-between;">
+              <span class="mono" style="font-size: 12px; font-weight: 800; color: #6EE7B7; letter-spacing: 0.08em;">SAFESHIP ESCROW VAULT</span>
+              <span class="mono" style="padding: 5px 12px; border-radius: 99px; background: #064E3B; color: #A7F3D0; font-size: 12px; font-weight: 800;">LOCKED • AES-256</span>
+            </div>
+
+            <div style="position: relative; width: 210px; height: 210px; display: flex; align-items: center; justify-content: center;">
+              <svg id="s3-vault-ring" width="210" height="210" viewBox="0 0 210 210" style="position: absolute; inset: 0;">
+                <circle cx="105" cy="105" r="94" fill="none" stroke="rgba(16,185,129,0.25)" stroke-width="3" />
+                <circle cx="105" cy="105" r="82" fill="none" stroke="#10B981" stroke-width="5" stroke-dasharray="28 16" stroke-linecap="round" />
+                <circle cx="105" cy="105" r="66" fill="none" stroke="rgba(96,165,250,0.45)" stroke-width="2" stroke-dasharray="10 10" />
+              </svg>
+              <div style="width: 104px; height: 104px; border-radius: 28px; background: linear-gradient(145deg, #10B981 0%, #047857 100%); display: flex; align-items: center; justify-content: center;">
+                <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+              </div>
+            </div>
+
+            <div style="text-align: center; width: 100%;">
+              <div class="mono" style="font-size: 32px; font-weight: 800; color: #FFFFFF;">₹65,000.00 RING-FENCED</div>
+              <div style="font-size: 14px; font-weight: 600; color: #CBD5E1; margin-top: 6px;">
+                Held in neutral RBI-compliant nodal escrow until buyer doorstep approval
+              </div>
+            </div>
+          </div>
+
+          <div id="s3-s1-seller" class="surface-light" style="position: absolute; top: 295px; left: 1290px; width: 490px; height: 470px; border-radius: 32px; padding: 34px; border: 2px dashed rgba(15,23,42,0.2);">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px;">
+              <span style="padding: 6px 14px; border-radius: 99px; background: #F1F5F9; color: #334155; font-size: 13px; font-weight: 800;">SELLER PAYOUT WALLET</span>
+              <span class="mono" style="padding: 5px 12px; border-radius: 99px; background: #FEF3C7; color: #92400E; font-size: 12px; font-weight: 800;">🔒 FROZEN</span>
+            </div>
+            <div style="font-size: 15px; font-weight: 700; color: #475569; text-transform: uppercase;">Withdrawable Balance Now</div>
+            <div class="mono" style="font-size: 56px; font-weight: 800; color: #475569; margin-top: 6px; letter-spacing: -0.03em;">
+              ₹0.00
+            </div>
+            <div style="margin-top: 22px; padding: 18px 20px; border-radius: 20px; background: #F8FAFC; border: 1px solid #E2E8F0;">
+              <div style="font-size: 16px; font-weight: 800; color: #0F172A;">
+                🚫 Seller Cannot Touch Funds Yet
+              </div>
+              <div style="font-size: 14px; font-weight: 600; color: #475569; margin-top: 4px;">
+                Payout unlocks only after you inspect and approve the phone at your door.
+              </div>
+            </div>
+            <div style="margin-top: 24px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; font-weight: 700; color: #475569;">
+              <span>Release Condition</span>
+              <span class="mono" style="color: #0F172A;">Buyer OTP Approval</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 2 (17.26s -> 20.24s): INSURED EXPRESS TRANSIT -->
+        <div id="s3-step2" style="position: absolute; inset: 0; display: none;">
+          <div style="position: absolute; top: 96px; left: 140px; right: 140px; text-align: center;">
+            <div class="mono" style="font-size: 13px; font-weight: 800; color: #1D4ED8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px;">
+              STEP 02 • TAMPER-EVIDENT EXPRESS LOGISTICS
+            </div>
+            <h2 style="font-size: 54px; font-weight: 800; color: #0F172A; letter-spacing: -0.03em; line-height: 1.12;">
+              Then the seller ships your gadget with <span class="serif-italic" style="color: #1D4ED8; font-size: 64px; font-weight: 400;">express tracking.</span>
+            </h2>
+          </div>
+
+          <div id="s3-s2-card" class="surface-light" style="position: absolute; top: 260px; left: 180px; width: 1560px; height: 520px; border-radius: 36px; padding: 42px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px;">
+              <div style="display: flex; align-items: center; gap: 16px;">
+                <span style="padding: 8px 18px; border-radius: 99px; background: #EFF6FF; color: #1D4ED8; font-size: 14px; font-weight: 800;">BLUEDART AIRPRIORITY • EXPRESS</span>
+                <span class="mono" style="font-size: 16px; font-weight: 700; color: #334155;">AWB #SF-9841204-IN</span>
+              </div>
+              <div class="mono" style="padding: 8px 18px; border-radius: 99px; background: #ECFDF5; color: #047857; font-size: 14px; font-weight: 800;">
+                ● LIVE GPS TELEMETRY • INSURED ₹65,000
+              </div>
+            </div>
+
+            <div style="position: relative; height: 190px; border-radius: 26px; background: #0F172A; padding: 28px 48px; display: flex; align-items: center; justify-content: space-between; overflow: hidden; margin-bottom: 32px;">
+              <div style="z-index: 3;">
+                <div class="mono" style="font-size: 12px; font-weight: 700; color: #93C5FD;">ORIGIN HUB • PICKED UP</div>
+                <div style="font-size: 28px; font-weight: 800; color: #FFFFFF; margin-top: 4px;">BLR • Bangalore</div>
+                <div style="font-size: 13px; color: #CBD5E1; margin-top: 2px;">Seal Serial #TS-4491 Verified</div>
+              </div>
+
+              <svg width="780" height="120" viewBox="0 0 780 120" style="position: relative; z-index: 2;">
+                <path d="M 20 85 Q 390 15 760 85" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="4" stroke-dasharray="10 10" />
+                <path id="s3-transit-path" d="M 20 85 Q 390 15 760 85" fill="none" stroke="#38BDF8" stroke-width="6" stroke-linecap="round" stroke-dasharray="800" stroke-dashoffset="800" />
+              </svg>
+
+              <div style="z-index: 3; text-align: right;">
+                <div class="mono" style="font-size: 12px; font-weight: 700; color: #6EE7B7;">DESTINATION • OUT FOR OPEN-BOX</div>
+                <div style="font-size: 28px; font-weight: 800; color: #FFFFFF; margin-top: 4px;">DEL • New Delhi</div>
+                <div style="font-size: 13px; color: #CBD5E1; margin-top: 2px;">Priority Next-Day Air</div>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px;">
+              <div id="s3-s2-chk1" style="padding: 20px 24px; border-radius: 22px; background: #F8FAFC; border: 1px solid #E2E8F0; display: flex; align-items: center; gap: 16px;">
+                <div style="width: 46px; height: 46px; border-radius: 14px; background: #EFF6FF; color: #1D4ED8; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px;">01</div>
+                <div>
+                  <div style="font-size: 17px; font-weight: 800; color: #0F172A;">Serialized Tamper Seal</div>
+                  <div style="font-size: 13px; font-weight: 600; color: #475569; margin-top: 2px;">Seller packing video + unique seal ID</div>
+                </div>
+              </div>
+
+              <div id="s3-s2-chk2" style="padding: 20px 24px; border-radius: 22px; background: #F8FAFC; border: 1px solid #E2E8F0; display: flex; align-items: center; gap: 16px;">
+                <div style="width: 46px; height: 46px; border-radius: 14px; background: #ECFDF5; color: #047857; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px;">02</div>
+                <div>
+                  <div style="font-size: 17px; font-weight: 800; color: #0F172A;">100% Transit Insurance</div>
+                  <div style="font-size: 13px; font-weight: 600; color: #475569; margin-top: 2px;">Full ₹65,000 value covered door-to-door</div>
+                </div>
+              </div>
+
+              <div id="s3-s2-chk3" style="padding: 20px 24px; border-radius: 22px; background: #F8FAFC; border: 1px solid #E2E8F0; display: flex; align-items: center; gap: 16px;">
+                <div style="width: 46px; height: 46px; border-radius: 14px; background: #EFF6FF; color: #1D4ED8; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 20px;">03</div>
+                <div>
+                  <div style="font-size: 17px; font-weight: 800; color: #0F172A;">Open-Box Courier Mandate</div>
+                  <div style="font-size: 13px; font-weight: 600; color: #475569; margin-top: 2px;">Agent waits while you inspect &amp; test</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- STEP 3 (20.24s -> 24.40s): OPEN-BOX DOORSTEP INSPECTION -->
+        <div id="s3-step3" style="position: absolute; inset: 0; display: none;">
+          <div style="position: absolute; top: 96px; left: 120px; right: 120px; text-align: center;">
+            <div class="mono" style="font-size: 13px; font-weight: 800; color: #047857; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px;">
+              STEP 03 • LIVE DOORSTEP HARDWARE VERIFICATION
+            </div>
+            <h2 style="font-size: 52px; font-weight: 800; color: #0F172A; letter-spacing: -0.03em; line-height: 1.12;">
+              Open the box, turn on the screen, and <span class="serif-italic" style="color: #047857; font-size: 62px; font-weight: 400;">test the phone.</span>
+            </h2>
+          </div>
+
+          <div id="s3-s3-phone" class="surface-dark" style="position: absolute; top: 255px; left: 180px; width: 620px; height: 530px; border-radius: 36px; padding: 36px; display: flex; align-items: center; justify-content: space-between; overflow: hidden;">
+            <div style="width: 220px; height: 440px; border-radius: 38px; border: 5px solid #CBD5E1; background: linear-gradient(165deg, #064E3B 0%, #0F172A 55%, #1E293B 100%); position: relative; overflow: hidden; padding: 18px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="width: 68px; height: 18px; border-radius: 99px; background: #000000; margin: 0 auto;"></div>
+              <div id="s3-laser-bar" style="position: absolute; left: 0; right: 0; top: 40px; height: 4px; background: #34D399;"></div>
+
+              <div style="text-align: center; margin-top: 20px;">
+                <div class="mono" style="font-size: 11px; font-weight: 800; color: #6EE7B7; letter-spacing: 0.08em;">DIAGNOSTIC ACTIVE</div>
+                <div style="font-size: 26px; font-weight: 800; color: #FFFFFF; margin-top: 6px;">iPhone 15 Pro</div>
+                <div class="mono" style="font-size: 12px; color: #A7F3D0; margin-top: 4px;">IMEI: 356789110492811</div>
+              </div>
+
+              <div style="padding: 14px; border-radius: 18px; background: #064E3B; border: 1px solid #10B981; text-align: center;">
+                <div style="font-size: 14px; font-weight: 800; color: #A7F3D0;">✓ ALL CHECKS PASSED</div>
+                <div style="font-size: 11px; color: #ECFDF5; margin-top: 2px;">Genuine Apple Hardware</div>
+              </div>
+            </div>
+
+            <div style="width: 300px;">
+              <span class="mono" style="padding: 6px 12px; border-radius: 99px; background: #064E3B; color: #6EE7B7; font-size: 12px; font-weight: 800;">OPEN-BOX PROTOCOL</span>
+              <div style="font-size: 28px; font-weight: 800; color: #FFFFFF; margin-top: 16px; line-height: 1.2;">
+                Verify Before A Single Rupee Moves
+              </div>
+              <div style="font-size: 15px; color: #CBD5E1; margin-top: 12px; line-height: 1.5;">
+                You hold the physical phone in your hands, power it on, and verify every spec before releasing escrow.
+              </div>
+              <div style="margin-top: 24px; padding: 14px 18px; border-radius: 16px; background: #1E293B; border: 1px solid rgba(255,255,255,0.14); display: flex; align-items: center; justify-content: space-between;">
+                <span style="font-size: 13px; font-weight: 700; color: #E2E8F0;">Inspection Window</span>
+                <span class="mono" style="font-size: 15px; font-weight: 800; color: #6EE7B7;">LIVE AT DOOR</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="position: absolute; top: 255px; left: 840px; width: 900px; height: 530px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div id="s3-diag-1" class="surface-light" style="padding: 26px 32px; border-radius: 26px; display: flex; align-items: center; justify-content: space-between; border-left: 6px solid #059669;">
+              <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="width: 54px; height: 54px; border-radius: 16px; background: #ECFDF5; color: #047857; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900;">✓</div>
+                <div>
+                  <div style="font-size: 21px; font-weight: 800; color: #0F172A;">120Hz ProMotion OLED &amp; FaceID</div>
+                  <div style="font-size: 15px; font-weight: 600; color: #475569; margin-top: 2px;">TrueTone active • Zero dead pixels • Original Apple display</div>
+                </div>
+              </div>
+              <span class="mono" style="padding: 8px 16px; border-radius: 99px; background: #ECFDF5; color: #047857; font-size: 14px; font-weight: 800;">VERIFIED</span>
+            </div>
+
+            <div id="s3-diag-2" class="surface-light" style="padding: 26px 32px; border-radius: 26px; display: flex; align-items: center; justify-content: space-between; border-left: 6px solid #059669;">
+              <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="width: 54px; height: 54px; border-radius: 16px; background: #ECFDF5; color: #047857; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900;">✓</div>
+                <div>
+                  <div style="font-size: 21px; font-weight: 800; color: #0F172A;">IMEI Serial &amp; iCloud Activation Lock</div>
+                  <div style="font-size: 15px; font-weight: 600; color: #475569; margin-top: 2px;">Matches box &amp; invoice • Find My iPhone OFF • Clean carrier status</div>
+                </div>
+              </div>
+              <span class="mono" style="padding: 8px 16px; border-radius: 99px; background: #ECFDF5; color: #047857; font-size: 14px; font-weight: 800;">CLEAN</span>
+            </div>
+
+            <div id="s3-diag-3" class="surface-light" style="padding: 26px 32px; border-radius: 26px; display: flex; align-items: center; justify-content: space-between; border-left: 6px solid #059669;">
+              <div style="display: flex; align-items: center; gap: 20px;">
+                <div style="width: 54px; height: 54px; border-radius: 16px; background: #ECFDF5; color: #047857; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 900;">✓</div>
+                <div>
+                  <div style="font-size: 21px; font-weight: 800; color: #0F172A;">Cameras, Audio &amp; Battery Health (98%)</div>
+                  <div style="font-size: 15px; font-weight: 600; color: #475569; margin-top: 2px;">48MP Main + 5x Telephoto tested • Unopened titanium chassis</div>
+                </div>
+              </div>
+              <span class="mono" style="padding: 8px 16px; border-radius: 99px; background: #ECFDF5; color: #047857; font-size: 14px; font-weight: 800;">PRISTINE</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Persistent 3-Step Progress Dock -->
+        <div class="trust-dock surface-light">
+          <div id="s3-pill-1" class="trust-step-pill">
+            <span class="step-num-badge">01</span>
+            <span>Escrow Vault Lock</span>
+          </div>
+          <div id="s3-pill-2" class="trust-step-pill">
+            <span class="step-num-badge">02</span>
+            <span>Express Insured Transit</span>
+          </div>
+          <div id="s3-pill-3" class="trust-step-pill">
+            <span class="step-num-badge">03</span>
+            <span>Doorstep Open-Box Test</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         SCENE 4: THE DUAL-OUTCOME GUARANTEE (24.40s -> 30.64s)
+         =================================================================== -->
+    <section id="clip-scene-4" class="clip canvas-obsidian" data-start="24.40" data-duration="6.24" data-track-index="1">
+      <div class="tech-grid-dark"></div>
+      <div id="s4-stage" class="scene-stage" style="display: flex; flex-direction: column; align-items: center; justify-content: center;" data-layout-allow-overflow>
+        <div style="text-align: center; margin-bottom: 42px; height: 130px; position: relative; width: 1740px;">
+          <div id="s4-head-happy" style="position: absolute; inset: 0;">
+            <div class="mono" style="font-size: 13px; font-weight: 800; color: #6EE7B7; letter-spacing: 0.08em; margin-bottom: 10px;">
+              OUTCOME A • INSTANT SELLER SETTLEMENT
+            </div>
+            <h2 style="font-size: 56px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.03em; white-space: nowrap;">
+              <span class="serif-italic" style="color: #6EE7B7; font-size: 66px; font-weight: 400;">Happy?</span> You release the payment to the seller.
+            </h2>
+          </div>
+
+          <div id="s4-head-refund" style="position: absolute; inset: 0; display: none;">
+            <div class="mono" style="font-size: 13px; font-weight: 800; color: #93C5FD; letter-spacing: 0.08em; margin-bottom: 10px;">
+              OUTCOME B • ZERO-RISK BUYER PROTECTION
+            </div>
+            <h2 style="font-size: 56px; font-weight: 800; color: #FFFFFF; letter-spacing: -0.03em; white-space: nowrap;">
+              <span class="serif-italic" style="color: #FCA5A5; font-size: 66px; font-weight: 400;">Something wrong?</span> Get 100% of your money right back.
+            </h2>
+          </div>
+        </div>
+
+        <div id="s4-flip-card" class="outcome-card-wrap">
+          <!-- FACE A: HAPPY -> RELEASE PAYMENT -->
+          <div id="s4-face-front" class="outcome-face surface-dark" style="border: 2px solid #10B981; display: flex; flex-direction: column; justify-content: space-between;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <span style="padding: 8px 18px; border-radius: 99px; background: #064E3B; color: #A7F3D0; font-size: 14px; font-weight: 800;">✓ DEVICE APPROVED BY BUYER</span>
+                <span class="mono" style="font-size: 14px; color: #CBD5E1;">OTP #884-920 Verified</span>
+              </div>
+              <span class="mono" style="font-size: 14px; font-weight: 700; color: #6EE7B7;">SETTLEMENT TIME: 1.8 SECONDS</span>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 32px 38px; border-radius: 26px; background: #1E293B; border: 1px solid rgba(255,255,255,0.12);">
+              <div>
+                <div style="font-size: 15px; font-weight: 700; color: #CBD5E1; text-transform: uppercase;">Escrow Payout Dispatched To Seller</div>
+                <div class="mono" style="font-size: 64px; font-weight: 800; color: #FFFFFF; margin-top: 6px; letter-spacing: -0.03em;">₹65,000.00</div>
+                <div style="font-size: 16px; font-weight: 600; color: #6EE7B7; margin-top: 6px;">Credited directly to Seller’s Verified Bank Account via IMPS/UPI</div>
+              </div>
+
+              <div id="s4-approve-btn" style="padding: 24px 36px; border-radius: 22px; background: #059669; color: #FFFFFF; font-size: 20px; font-weight: 800; display: flex; align-items: center; gap: 14px;">
+                <span>⚡ Approve &amp; Release ₹65,000</span>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; color: #CBD5E1;">
+              <span>✓ Buyer keeps verified iPhone 15 Pro</span>
+              <span>✓ Seller gets guaranteed instant payout</span>
+              <span style="color: #6EE7B7;">✓ Zero chargeback fraud</span>
+            </div>
+          </div>
+
+          <!-- FACE B: SOMETHING WRONG -> 100% INSTANT REFUND -->
+          <div id="s4-face-back" class="outcome-face surface-dark" style="border: 2px solid #3B82F6; display: none; flex-direction: column; justify-content: space-between;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="display: flex; align-items: center; gap: 14px;">
+                <span style="padding: 8px 18px; border-radius: 99px; background: #7F1D1D; color: #FECACA; font-size: 14px; font-weight: 800;">✕ DEVICE REJECTED AT DOORSTEP</span>
+                <span class="mono" style="font-size: 14px; color: #CBD5E1;">Handed Back to Courier Immediately</span>
+              </div>
+              <span class="mono" style="font-size: 14px; font-weight: 700; color: #93C5FD;">100% AUTOMATED REVERSAL</span>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 32px 38px; border-radius: 26px; background: #1E293B; border: 1px solid rgba(59,130,246,0.35);">
+              <div>
+                <div style="font-size: 15px; font-weight: 700; color: #93C5FD; text-transform: uppercase;">100% Full Escrow Refund Credited To You</div>
+                <div class="mono" style="font-size: 64px; font-weight: 800; color: #FFFFFF; margin-top: 6px; letter-spacing: -0.03em;">₹65,000.00</div>
+                <div style="font-size: 16px; font-weight: 600; color: #93C5FD; margin-top: 6px;">Returned straight to your original payment source — zero deductions</div>
+              </div>
+
+              <div style="padding: 24px 34px; border-radius: 22px; background: #1D4ED8; color: #FFFFFF; font-size: 19px; font-weight: 800;">
+                <span>↺ 100% Money Refunded Instantly</span>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 15px; font-weight: 600; color: #CBD5E1;">
+              <span>✓ Defective / mismatched item rejected on the spot</span>
+              <span>✓ Insured return shipment to seller</span>
+              <span style="color: #93C5FD;">✓ Zero arguments or disputes</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="s4-cursor" class="tactile-cursor" data-layout-allow-overlap data-layout-allow-occlusion>
+          <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+            <path d="M6 4L28 14.5L17.5 18.2L13.8 28.5L6 4Z" fill="#10B981" stroke="#FFFFFF" stroke-width="2.5" stroke-linejoin="round" />
+          </svg>
+          <div class="cursor-tag" style="background: #10B981; color: #042F2E;">APPROVE &amp; RELEASE</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================================================================
+         SCENE 5: THE FINALE LOCKUP & CTA (30.64s -> 35.04s)
+         =================================================================== -->
+    <section id="clip-scene-5" class="clip canvas-porcelain" data-start="30.64" data-duration="4.40" data-track-index="1">
+      <div class="tech-grid-light"></div>
+      <div id="s5-stage" class="scene-stage" style="display: flex; flex-direction: column; align-items: center; justify-content: center;" data-layout-allow-overflow>
+        <div id="s5-logo-wrap" style="margin-bottom: 30px; display: flex; flex-direction: column; align-items: center;">
+          <img src="assets/safeship_logo_horizontal.svg" alt="SafeShip" style="height: 68px;" />
+        </div>
+
+        <h1 id="s5-headline" style="font-size: 86px; font-weight: 800; color: #0F172A; letter-spacing: -0.035em; text-align: center; line-height: 1.06;">
+          Verify first.<br />
+          <span>Pay only when </span>
+          <span style="position: relative; display: inline-block;">
+            <span class="serif-italic" style="color: #047857; font-size: 98px; font-weight: 400;">satisfied.</span>
+            <svg width="340" height="22" viewBox="0 0 340 22" style="position: absolute; left: 0; bottom: -4px;">
+              <path id="s5-underline" d="M 6 16 Q 170 4 334 14" fill="none" stroke="#059669" stroke-width="6" stroke-linecap="round" stroke-dasharray="350" stroke-dashoffset="350" />
+            </svg>
+          </span>
+        </h1>
+
+        <p id="s5-sub" style="margin-top: 26px; font-size: 23px; font-weight: 600; color: #475569;">
+          Turn any OLX, Facebook Marketplace, or WhatsApp deal into a 100% protected transaction.
+        </p>
+
+        <div id="s5-cta-btn" style="margin-top: 42px; padding: 22px 48px; border-radius: 999px; background: #0F172A; color: #FFFFFF; display: flex; align-items: center; gap: 18px; box-shadow: 0 28px 60px rgba(15, 23, 42, 0.25); border: 2px solid #10B981;">
+          <span style="width: 12px; height: 12px; border-radius: 99px; background: #10B981;"></span>
+          <span class="mono" style="font-size: 28px; font-weight: 800;">safeship.online</span>
+          <span style="padding: 8px 18px; border-radius: 99px; background: #10B981; color: #042F2E; font-size: 16px; font-weight: 800;">Start Escrow Deal →</span>
+        </div>
+
+        <div id="s5-trust-row" style="margin-top: 78px; display: flex; align-items: center; gap: 36px; font-size: 15px; font-weight: 700; color: #475569;">
+          <span>🛡️ 100% Escrow Protected</span>
+          <span>•</span>
+          <span>📦 Doorstep Open-Box Verification</span>
+          <span>•</span>
+          <span>⚡ Instant Seller Payouts</span>
+        </div>
+
+        <div id="s5-cursor" class="tactile-cursor" data-layout-allow-overlap data-layout-allow-occlusion>
+          <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+            <path d="M6 4L28 14.5L17.5 18.2L13.8 28.5L6 4Z" fill="#0F172A" stroke="#FFFFFF" stroke-width="2.5" stroke-linejoin="round" />
+          </svg>
+          <div class="cursor-tag">START NOW</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    window.__timelines = window.__timelines || {};
+
+    const tl = gsap.timeline({ paused: true });
+
+    gsap.set(".s1-w", { y: 36, opacity: 0 });
+    gsap.set("#s1a-sub", { y: 18, opacity: 0 });
+    gsap.set("#s1-node-delhi", { x: -60, opacity: 0, rotateY: 14 });
+    gsap.set("#s1-node-blr", { x: 60, opacity: 0, rotateY: -14 });
+    gsap.set("#s1-iphone-card", { y: 50, opacity: 0, scale: 0.92, rotateX: 10 });
+    gsap.set("#s1-upi-modal", { y: -60, opacity: 0, scale: 0.9, display: "none" });
+    gsap.set("#s1-fraud-banner", { y: 40, opacity: 0, scale: 0.92, display: "none" });
+    gsap.set("#s1-cursor", { x: 1380, y: 820, opacity: 0 });
+
+    gsap.set("#s1b-layer", { opacity: 0, display: "none" });
+    gsap.set("#s1b-card-left", { x: -70, opacity: 0 });
+    gsap.set("#s1b-card-right", { x: 70, opacity: 0 });
+    gsap.set("#s1b-ghost-alert", { scale: 0.92, opacity: 0 });
+
+    gsap.set("#s2-badge", { y: -24, opacity: 0 });
+    gsap.set("#s2-shield-emblem", { scale: 0.5, opacity: 0, rotateY: -35 });
+    gsap.set("#s2-title", { scale: 0.86, opacity: 0 });
+    gsap.set("#s2-subtitle", { y: 24, opacity: 0 });
+    gsap.set("#s2-steps-row", { y: 32, opacity: 0 });
+
+    gsap.set("#s3-step1", { opacity: 1, display: "block" });
+    gsap.set("#s3-step2", { opacity: 0, display: "none" });
+    gsap.set("#s3-step3", { opacity: 0, display: "none" });
+    gsap.set("#s3-s1-buyer", { x: -50, opacity: 0 });
+    gsap.set("#s3-s1-vault", { y: 40, opacity: 0, scale: 0.94 });
+    gsap.set("#s3-s1-seller", { x: 50, opacity: 0 });
+
+    gsap.set("#s3-s2-card", { y: 45, opacity: 0, scale: 0.96 });
+    gsap.set(["#s3-s2-chk1", "#s3-s2-chk2", "#s3-s2-chk3"], { y: 24, opacity: 0 });
+
+    gsap.set("#s3-s3-phone", { x: -50, opacity: 0 });
+    gsap.set(["#s3-diag-1", "#s3-diag-2", "#s3-diag-3"], { x: 60, opacity: 0 });
+
+    gsap.set("#s4-head-happy", { opacity: 1, y: 0, display: "block" });
+    gsap.set("#s4-head-refund", { opacity: 0, y: 24, display: "none" });
+    gsap.set("#s4-flip-card", { rotateY: 0, scale: 0.94, opacity: 0 });
+    gsap.set("#s4-face-front", { display: "flex" });
+    gsap.set("#s4-face-back", { display: "none" });
+    gsap.set("#s4-cursor", { x: 1520, y: 860, opacity: 0 });
+
+    gsap.set("#s5-logo-wrap", { y: -24, opacity: 0 });
+    gsap.set("#s5-headline", { y: 32, opacity: 0, scale: 0.96 });
+    gsap.set("#s5-sub", { y: 20, opacity: 0 });
+    gsap.set("#s5-cta-btn", { y: 28, opacity: 0, scale: 0.92 });
+    gsap.set("#s5-trust-row", { opacity: 0 });
+    gsap.set("#s5-cursor", { x: 1460, y: 920, opacity: 0 });
+
+    /* SCENE 1A: BUYER UPI RISK (0.00s -> 6.26s) */
+    tl.to("#s1-stage", { scale: 1.02, duration: 9.42, ease: "none" }, 0);
+    tl.to(".s1-w", { y: 0, opacity: 1, duration: 0.55, stagger: 0.06, ease: "back.out(1.7)" }, 0.08);
+    tl.to("#s1a-sub", { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 0.65);
+
+    tl.to("#s1-node-delhi", { x: 0, opacity: 1, rotateY: 8, duration: 0.65, ease: "back.out(1.4)" }, 0.35);
+    tl.to("#s1-node-blr", { x: 0, opacity: 1, rotateY: -8, duration: 0.65, ease: "back.out(1.4)" }, 0.50);
+    tl.to("#s1-route-active", { strokeDashoffset: 0, duration: 1.2, ease: "power2.inOut" }, 0.55);
+    tl.to("#s1-iphone-card", { y: 0, opacity: 1, scale: 1, rotateX: 0, duration: 0.75, ease: "back.out(1.5)" }, 0.45);
+
+    // At 2.95s: Fade out iPhone listing card cleanly before UPI modal arrives
+    tl.to("#s1-iphone-card", { scale: 0.88, y: 30, opacity: 0, duration: 0.25, ease: "power2.in" }, 2.90);
+    tl.set("#s1-iphone-card", { display: "none" }, 3.16);
+    tl.set("#s1-upi-modal", { display: "block" }, 3.16);
+    tl.to("#s1-upi-modal", { y: 0, opacity: 1, scale: 1, duration: 0.5, ease: "back.out(1.6)" }, 3.16);
+
+    tl.to("#s1-cursor", { opacity: 1, duration: 0.2 }, 3.35);
+    tl.to("#s1-cursor", { x: 1020, y: 625, duration: 0.95, ease: "power3.inOut" }, 3.40);
+
+    // At 4.50s: Crimson Hazard Interceptor slams in
+    tl.to("#s1-route-active", { opacity: 0, duration: 0.15 }, 4.50);
+    tl.to("#s1-route-broken", { opacity: 1, duration: 0.2 }, 4.50);
+    tl.to("#s1-upi-btn", { backgroundColor: "#B91C1C", duration: 0.2 }, 4.50);
+    tl.to("#s1-upi-modal", { y: -22, scale: 0.97, duration: 0.3, ease: "back.out(2)" }, 4.52);
+    tl.set("#s1-fraud-banner", { display: "flex" }, 4.52);
+    tl.to("#s1-fraud-banner", { y: 0, opacity: 1, scale: 1, duration: 0.45, ease: "back.out(1.8)" }, 4.52);
+
+    /* SCENE 1B: SELLER SHIPPING RISK (6.26s -> 9.42s) */
+    tl.to("#s1a-layer", { opacity: 0, duration: 0.25, ease: "power2.in" }, 6.00);
+    tl.set("#s1a-layer", { display: "none" }, 6.26);
+    tl.set("#s1b-layer", { display: "block" }, 6.26);
+    tl.to("#s1b-layer", { opacity: 1, duration: 0.25 }, 6.26);
+    tl.to("#s1b-card-left", { x: 0, opacity: 1, duration: 0.55, ease: "back.out(1.4)" }, 6.32);
+    tl.to("#s1b-card-right", { x: 0, opacity: 1, duration: 0.55, ease: "back.out(1.4)" }, 6.46);
+    tl.to("#s1b-ghost-alert", { scale: 1, opacity: 1, duration: 0.45, ease: "back.out(1.8)" }, 7.35);
+
+    /* SCENE 2: THE SOLUTION — USE SAFESHIP (9.42s -> 12.30s) */
+    tl.fromTo("#s2-stage", { scale: 0.97 }, { scale: 1.02, duration: 2.88, ease: "none" }, 9.42);
+    tl.to("#s2-badge", { y: 0, opacity: 1, duration: 0.4, ease: "power3.out" }, 9.48);
+    tl.to("#s2-shield-emblem", { scale: 1, opacity: 1, rotateY: 0, duration: 0.65, ease: "back.out(1.8)" }, 9.52);
+    tl.to("#s2-title", { scale: 1, opacity: 1, duration: 0.55, ease: "back.out(1.6)" }, 9.72);
+    tl.to("#s2-subtitle", { y: 0, opacity: 1, duration: 0.5, ease: "power3.out" }, 10.25);
+    tl.to("#s2-steps-row", { y: 0, opacity: 1, duration: 0.55, ease: "back.out(1.4)" }, 10.65);
+
+    /* SCENE 3: THE 3-STEP TRUST LOOP (12.30s -> 24.40s) */
+    tl.fromTo("#s3-stage", { scale: 1.0 }, { scale: 1.02, duration: 12.10, ease: "none" }, 12.30);
+    tl.set("#s3-pill-1", { backgroundColor: "#0F172A", color: "#FFFFFF" }, 12.30);
+
+    // Step 1 (12.30s - 17.26s)
+    tl.to("#s3-s1-buyer", { x: 0, opacity: 1, duration: 0.55, ease: "back.out(1.4)" }, 12.42);
+    tl.to("#s3-s1-vault", { y: 0, opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.6)" }, 12.55);
+    tl.to("#s3-s1-seller", { x: 0, opacity: 1, duration: 0.55, ease: "back.out(1.4)" }, 12.70);
+    tl.to("#s3-vault-ring", { rotation: 180, transformOrigin: "50% 50%", duration: 4.4, ease: "power1.inOut" }, 12.55);
+
+    // Transition Step 1 -> Step 2 at 17.26s
+    tl.to("#s3-step1", { opacity: 0, duration: 0.24, ease: "power2.in" }, 17.00);
+    tl.set("#s3-step1", { display: "none" }, 17.25);
+    tl.set("#s3-pill-1", { backgroundColor: "transparent", color: "#475569" }, 17.26);
+    tl.set("#s3-pill-2", { backgroundColor: "#1D4ED8", color: "#FFFFFF" }, 17.26);
+
+    tl.set("#s3-step2", { display: "block" }, 17.26);
+    tl.to("#s3-step2", { opacity: 1, duration: 0.25 }, 17.26);
+    tl.to("#s3-s2-card", { y: 0, opacity: 1, scale: 1, duration: 0.55, ease: "back.out(1.4)" }, 17.32);
+    tl.to("#s3-transit-path", { strokeDashoffset: 0, duration: 2.1, ease: "power2.inOut" }, 17.50);
+    tl.to("#s3-s2-chk1", { y: 0, opacity: 1, duration: 0.4, ease: "back.out(1.5)" }, 17.75);
+    tl.to("#s3-s2-chk2", { y: 0, opacity: 1, duration: 0.4, ease: "back.out(1.5)" }, 18.15);
+    tl.to("#s3-s2-chk3", { y: 0, opacity: 1, duration: 0.4, ease: "back.out(1.5)" }, 18.55);
+
+    // Transition Step 2 -> Step 3 at 20.24s
+    tl.to("#s3-step2", { opacity: 0, duration: 0.24, ease: "power2.in" }, 19.98);
+    tl.set("#s3-step2", { display: "none" }, 20.23);
+    tl.set("#s3-pill-2", { backgroundColor: "transparent", color: "#475569" }, 20.24);
+    tl.set("#s3-pill-3", { backgroundColor: "#047857", color: "#FFFFFF" }, 20.24);
+
+    tl.set("#s3-step3", { display: "block" }, 20.24);
+    tl.to("#s3-step3", { opacity: 1, duration: 0.25 }, 20.24);
+    tl.to("#s3-s3-phone", { x: 0, opacity: 1, duration: 0.55, ease: "back.out(1.4)" }, 20.32);
+    tl.fromTo("#s3-laser-bar", { y: 0 }, { y: 340, duration: 1.8, repeat: 1, yoyo: true, ease: "sine.inOut" }, 20.45);
+    tl.to("#s3-diag-1", { x: 0, opacity: 1, duration: 0.5, ease: "back.out(1.5)" }, 20.85);
+    tl.to("#s3-diag-2", { x: 0, opacity: 1, duration: 0.5, ease: "back.out(1.5)" }, 21.45);
+    tl.to("#s3-diag-3", { x: 0, opacity: 1, duration: 0.5, ease: "back.out(1.5)" }, 22.05);
+
+    /* SCENE 4: DUAL-OUTCOME GUARANTEE (24.40s -> 30.64s) */
+    tl.to("#s4-flip-card", { scale: 1, opacity: 1, duration: 0.55, ease: "back.out(1.5)" }, 24.48);
+    tl.to("#s4-cursor", { opacity: 1, duration: 0.2 }, 24.75);
+    tl.to("#s4-cursor", { x: 1320, y: 632, duration: 0.75, ease: "power3.inOut" }, 24.80);
+    tl.to("#s4-approve-btn", { scale: 0.95, duration: 0.12 }, 25.58);
+    tl.to("#s4-approve-btn", { scale: 1.04, duration: 0.25, ease: "back.out(2)" }, 25.72);
+    tl.to("#s4-cursor", { opacity: 0, duration: 0.25 }, 26.20);
+
+    // At 27.00s: Clean 3D Y-axis card flip with face swap at 90 degrees (27.35s)
+    tl.to("#s4-head-happy", { opacity: 0, y: -20, duration: 0.28, ease: "power2.in" }, 26.95);
+    tl.set("#s4-head-happy", { display: "none" }, 27.24);
+    tl.set("#s4-head-refund", { display: "block" }, 27.25);
+    tl.to("#s4-head-refund", { opacity: 1, y: 0, duration: 0.4, ease: "back.out(1.5)" }, 27.25);
+
+    tl.to("#s4-flip-card", { rotateY: 90, duration: 0.34, ease: "power2.in" }, 27.00);
+    tl.set("#s4-face-front", { display: "none" }, 27.34);
+    tl.set("#s4-face-back", { display: "flex" }, 27.34);
+    tl.set("#s4-flip-card", { rotateY: -90 }, 27.34);
+    tl.to("#s4-flip-card", { rotateY: 0, duration: 0.42, ease: "back.out(1.4)" }, 27.35);
+
+    /* SCENE 5: FINALE LOCKUP & CTA (30.64s -> 35.04s) */
+    tl.fromTo("#s5-stage", { scale: 0.98 }, { scale: 1.02, duration: 4.40, ease: "none" }, 30.64);
+    tl.to("#s5-logo-wrap", { y: 0, opacity: 1, duration: 0.45, ease: "back.out(1.5)" }, 30.72);
+    tl.to("#s5-headline", { y: 0, opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }, 30.88);
+    tl.to("#s5-underline", { strokeDashoffset: 0, duration: 0.75, ease: "power3.out" }, 31.55);
+    tl.to("#s5-sub", { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" }, 31.75);
+    tl.to("#s5-cta-btn", { y: 0, opacity: 1, scale: 1, duration: 0.55, ease: "back.out(1.7)" }, 32.10);
+    tl.to("#s5-trust-row", { opacity: 1, duration: 0.5 }, 32.45);
+
+    tl.to("#s5-cursor", { opacity: 1, duration: 0.2 }, 32.70);
+    tl.to("#s5-cursor", { x: 1110, y: 720, duration: 0.8, ease: "power3.inOut" }, 32.75);
+    tl.to("#s5-cta-btn", { scale: 0.96, duration: 0.12 }, 33.58);
+    tl.to("#s5-cta-btn", { scale: 1.04, duration: 0.28, ease: "back.out(2)" }, 33.72);
+
+    window.__timelines["main"] = tl;
+  </script>
+</body>
+</html>
