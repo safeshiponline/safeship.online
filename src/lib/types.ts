@@ -40,7 +40,23 @@ export type DeliveryServiceTier =
   | 'PRIORITY_EXPRESS'
   | 'SAME_DAY_DIRECT';
 
-export type PickupSlot = 'MORNING_10_1' | 'AFTERNOON_2_5';
+export type PickupSlot = 'MORNING_10_1' | 'AFTERNOON_2_5' | 'EVENING_5_8' | 'CUSTOM_BUYER_TIME';
+
+export type EscrowCollectionMode =
+  | 'PRIVATE_CHUNKS'
+  | 'SINGLE_FULL_HOLD'
+  | 'DELHIVERY_DOORSTEP_QR';
+
+export interface EscrowChunkPayment {
+  id: string;
+  chunkNumber: number;
+  amount: number;
+  method: 'UPI_GPAY_PHONEPE' | 'SECOND_UPI_BANK' | 'IMPS_NEFT_VAN' | 'CREDIT_DEBIT_CARD' | 'DOORSTEP_QR';
+  methodLabel: string;
+  utr: string;
+  paidAt: string;
+  payerLabel?: string;
+}
 
 export type PaymentPreference = 'PREPAID' | 'PAY_ON_DELIVERY' | 'FINANCE_EMI';
 
@@ -229,6 +245,9 @@ export interface SafeDeal {
   financePlan?: FinancePlan;
   downPayment?: number;
   pickupSlot?: PickupSlot;
+  scheduledPickupDate?: string; // Exact date chosen by buyer/user e.g. 'Tomorrow, Mon 12 Oct 2026'
+  scheduledPickupTimeWindow?: string; // Exact pickup slot/time e.g. '10:00 AM – 01:00 PM' or buyer-given time
+  buyerPreferredDeliveryWindow?: string; // Buyer's preferred delivery slot e.g. '6:00 PM – 9:00 PM (Post-Office)'
   estimatedDeliveryDate?: string;
   middleMileCheckpoints?: {
     id: string;
@@ -334,7 +353,7 @@ export interface SafeDeal {
     photos?: string[];
   };
 
-  // Escrow Vault State (RBI Nodal Account Simulation)
+  // Escrow Vault State (RBI Nodal Account Simulation + Private Multi-Chunk Indian Buyer Support)
   escrowVault: {
     depositedAmount: number;
     isLocked: boolean;
@@ -343,8 +362,12 @@ export interface SafeDeal {
     milestone1Amount: number;
     finalReleasedAt?: string;
     finalAmount: number;
-    paymentMethodUsed?: string; // UPI / Netbanking / RuPay
+    paymentMethodUsed?: string; // UPI / Netbanking / RuPay / Multi-Chunk
     utrNumber?: string; // Indian Bank UTR transaction reference
+    collectionMode?: EscrowCollectionMode;
+    virtualAccountNumber?: string; // Private Dedicated RBI Nodal VAN e.g. SAFESHIP882910
+    virtualAccountIfsc?: string; // e.g. YESB0CMSNOC
+    chunks?: EscrowChunkPayment[];
   };
 
   // Activity & Audit Log

@@ -1,6 +1,6 @@
 'use client';
 
-import { SafeDeal, DealStatus, InspectionChecklist, TamperSeal, FeeSplitOption, ItemCategory, AiDiagnosticReport, DeliveryServiceTier, PickupSlot } from './types';
+import { SafeDeal, DealStatus, InspectionChecklist, TamperSeal, FeeSplitOption, ItemCategory, AiDiagnosticReport, DeliveryServiceTier, PickupSlot, EscrowChunkPayment, EscrowCollectionMode } from './types';
 import { INITIAL_DEALS } from './mockData';
 import { calculateEscrowBreakdown } from './escrowCalculator';
 
@@ -139,6 +139,9 @@ export function createNewDeal(params: {
   financePlan?: SafeDeal['financePlan'];
   downPayment?: number;
   pickupSlot?: SafeDeal['pickupSlot'];
+  scheduledPickupDate?: string;
+  scheduledPickupTimeWindow?: string;
+  buyerPreferredDeliveryWindow?: string;
   estimatedDeliveryDate?: string;
 }): SafeDeal {
   const deals = getStoredDeals();
@@ -170,6 +173,16 @@ export function createNewDeal(params: {
   const buyerPin = Math.floor(100000 + Math.random() * 900000).toString();
   const sellerCode = Math.floor(1000 + Math.random() * 9000).toString();
 
+  const resolvedPickupWindow =
+    params.scheduledPickupTimeWindow ||
+    (params.pickupSlot === 'MORNING_10_1'
+      ? '10:00 AM – 01:00 PM'
+      : params.pickupSlot === 'EVENING_5_8'
+      ? '05:00 PM – 08:00 PM'
+      : '02:00 PM – 05:00 PM');
+
+  const resolvedPickupDate = params.scheduledPickupDate || 'Scheduled Date';
+
   const newDeal: SafeDeal = {
     id: newId,
     trackingId: `SS-TRK-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -186,9 +199,7 @@ export function createNewDeal(params: {
       isDelayed: false,
       reason: '',
       callAttempts: [],
-      nextAttemptScheduled: params.estimatedDeliveryDate
-        ? `Pickup scheduled for today (${params.pickupSlot === 'MORNING_10_1' ? '10:00 AM – 01:00 PM' : '02:00 PM – 05:00 PM'})`
-        : 'Pickup scheduled during selected window',
+      nextAttemptScheduled: `Pickup scheduled for ${resolvedPickupDate} (${resolvedPickupWindow})`,
       callbackRequested: false
     },
     city: params.city,
@@ -233,6 +244,9 @@ export function createNewDeal(params: {
     financePlan: params.financePlan,
     downPayment: params.downPayment,
     pickupSlot: params.pickupSlot || 'MORNING_10_1',
+    scheduledPickupDate: params.scheduledPickupDate,
+    scheduledPickupTimeWindow: resolvedPickupWindow,
+    buyerPreferredDeliveryWindow: params.buyerPreferredDeliveryWindow,
     estimatedDeliveryDate: params.estimatedDeliveryDate,
     middleMileCheckpoints: params.middleMileCheckpoints || [
       {
@@ -260,6 +274,8 @@ export function createNewDeal(params: {
     dimensionsCm: params.dimensionsCm,
     buyerReleasePin: buyerPin,
     sellerPickupCode: sellerCode,
+    upfrontPaid: params.upfrontPaid,
+    paymentId: params.paymentId,
     status: params.upfrontPaid ? 'COURIER_ASSIGNED' : 'PENDING_ACCEPTANCE',
     assignedCourier: {
       id: 'cr_rahul_k',
@@ -287,13 +303,18 @@ export function createNewDeal(params: {
       intactVerifiedAtDelivery: true
     },
     escrowVault: {
-      depositedAmount: params.upfrontPaid || 0,
+      // Stage 1 only took the shipping charge; Item Escrow starts at ₹0 until buyer funds chunks or full hold
+      depositedAmount: 0,
       isLocked: false,
-      depositedAt: params.upfrontPaid ? new Date().toISOString() : undefined,
+      depositedAt: undefined,
       milestone1Amount: 0,
       finalAmount: params.declaredValue,
-      paymentMethodUsed: params.upfrontPaid ? `Razorpay (${params.paymentId || 'rzp_paid'})` : 'Awaiting Payment',
-      utrNumber: `UTR-RZP-${Date.now().toString(36).toUpperCase()}`
+      paymentMethodUsed: 'Awaiting Item Escrow Deposit (Shipping Paid)',
+      utrNumber: `UTR-SHIP-${Date.now().toString(36).toUpperCase()}`,
+      collectionMode: 'PRIVATE_CHUNKS',
+      virtualAccountNumber: `SAFESHIP${newId.replace(/\D/g, '')}88`,
+      virtualAccountIfsc: 'YESB0CMSNOC',
+      chunks: []
     },
     auditTrail: [
       {
@@ -307,15 +328,15 @@ export function createNewDeal(params: {
         id: `aud_${Date.now()}_2`,
         timestamp: new Date().toISOString(),
         actor: 'BUYER' as const,
-        title: `Upfront Delivery Fee Paid (₹${params.upfrontPaid})`,
-        description: `Secured via Razorpay (${params.paymentId || 'Verified'}). Product amount payable upon doorstep open-box inspection.`
+        title: `Stage 1: Only Courier Shipping Charge Paid (₹${params.upfrontPaid})`,
+        description: `Shipping fee secured (${params.paymentId || 'Verified'}). Item escrow of ₹${params.declaredValue.toLocaleString('en-IN')} can now be deposited privately in chunks or locked before dispatch.`
       }] : []),
       {
         id: `aud_${Date.now()}_3`,
         timestamp: new Date().toISOString(),
         actor: 'COURIER',
-        title: 'Pickup Window Scheduled',
-        description: `Consignment queued for pickup during ${params.pickupSlot === 'MORNING_10_1' ? 'Morning (10:00 AM – 01:00 PM)' : 'Afternoon (02:00 PM – 05:00 PM)'} slot. Dedicated Custody Officer allocated 2 hours prior.`
+        title: 'Buyer-Synchronized Pickup & Delivery Scheduled',
+        description: `Pickup scheduled for ${resolvedPickupDate} (${resolvedPickupWindow}). Delivery window: ${params.buyerPreferredDeliveryWindow || 'As per buyer schedule'}.`
       }
     ],
     createdAt: new Date().toISOString(),
@@ -338,6 +359,169 @@ export function createNewDeal(params: {
   return newDeal;
 }
 
+export function addEscrowChunkPayment(
+  dealId: string,
+  chunkAmount: number,
+  method: EscrowChunkPayment['method'] = 'UPI_GPAY_PHONEPE',
+  methodLabel: string = 'UPI App (GPay / PhonePe)',
+  payerLabel?: string
+): SafeDeal | null {
+  const deals = getStoredDeals();
+  const index = deals.findIndex((d) => d.id === dealId);
+  if (index === -1) return null;
+
+  const deal = deals[index];
+  const existingChunks = deal.escrowVault?.chunks || [];
+  const currentDeposited = existingChunks.reduce((sum, c) => sum + c.amount, 0);
+  const remainingBefore = Math.max(0, deal.declaredValue - currentDeposited);
+  const sanitizedAmount = Math.min(remainingBefore, Math.max(1, Math.round(chunkAmount)));
+
+  if (sanitizedAmount <= 0) return deal;
+
+  const utr = `UTR-CHUNK${existingChunks.length + 1}-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+  const newChunk: EscrowChunkPayment = {
+    id: `chk_${Date.now()}_${existingChunks.length + 1}`,
+    chunkNumber: existingChunks.length + 1,
+    amount: sanitizedAmount,
+    method,
+    methodLabel,
+    utr,
+    paidAt: new Date().toISOString(),
+    payerLabel: payerLabel || `Private Tranche #${existingChunks.length + 1}`
+  };
+
+  const updatedChunks = [...existingChunks, newChunk];
+  const newDepositedTotal = updatedChunks.reduce((sum, c) => sum + c.amount, 0);
+  const isFullyFunded = newDepositedTotal >= deal.declaredValue;
+
+  if (isFullyFunded) {
+    deal.status = 'ESCROW_LOCKED';
+  }
+
+  deal.escrowVault = {
+    ...deal.escrowVault,
+    depositedAmount: newDepositedTotal,
+    isLocked: isFullyFunded,
+    depositedAt: new Date().toISOString(),
+    collectionMode: 'PRIVATE_CHUNKS',
+    paymentMethodUsed: isFullyFunded
+      ? `Private Multi-Chunk Escrow (${updatedChunks.length} Tranche${updatedChunks.length > 1 ? 's' : ''})`
+      : `Partial Escrow Funded (${updatedChunks.length} Tranche${updatedChunks.length > 1 ? 's' : ''}: ₹${newDepositedTotal.toLocaleString('en-IN')} / ₹${deal.declaredValue.toLocaleString('en-IN')})`,
+    utrNumber: utr,
+    chunks: updatedChunks
+  };
+
+  deal.auditTrail.unshift({
+    id: `aud_${Date.now()}_chunk_${newChunk.chunkNumber}`,
+    timestamp: new Date().toISOString(),
+    actor: 'BUYER',
+    title: isFullyFunded
+      ? `Final Escrow Chunk #${newChunk.chunkNumber} Paid (₹${sanitizedAmount.toLocaleString('en-IN')}) — 100% Vault Locked!`
+      : `Private Escrow Chunk #${newChunk.chunkNumber} Deposited (₹${sanitizedAmount.toLocaleString('en-IN')})`,
+    description: isFullyFunded
+      ? `Total ₹${newDepositedTotal.toLocaleString('en-IN')} (100% of item value) is now locked in SafeShip RBI Nodal Vault (${deal.escrowVault.virtualAccountNumber}). Courier Rahul K. is cleared for scheduled pickup on ${deal.scheduledPickupDate || 'scheduled date'} (${deal.scheduledPickupTimeWindow || 'selected window'}).`
+      : `Received ₹${sanitizedAmount.toLocaleString('en-IN')} via ${methodLabel} (Ref: ${utr}). Total funded: ₹${newDepositedTotal.toLocaleString('en-IN')} of ₹${deal.declaredValue.toLocaleString('en-IN')} (₹${(deal.declaredValue - newDepositedTotal).toLocaleString('en-IN')} remaining).`
+  });
+
+  deal.updatedAt = new Date().toISOString();
+  deals[index] = deal;
+  saveStoredDeals(deals);
+
+  const orders = getUserOrders();
+  const ordIdx = orders.findIndex((o) => o.id === dealId);
+  if (ordIdx !== -1) {
+    orders[ordIdx] = deal;
+    saveUserOrders(orders);
+  }
+
+  if (typeof window !== 'undefined') {
+    fetch('/api/deals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deal }),
+    }).catch(() => {});
+  }
+
+  return deal;
+}
+
+export function authorizeDelhiveryDoorstepEscrowMode(
+  dealId: string,
+  securityChunkAmount: number = 0
+): SafeDeal | null {
+  const deals = getStoredDeals();
+  const index = deals.findIndex((d) => d.id === dealId);
+  if (index === -1) return null;
+
+  const deal = deals[index];
+  const existingChunks = deal.escrowVault?.chunks || [];
+  let updatedChunks = [...existingChunks];
+
+  if (securityChunkAmount > 0) {
+    const utr = `UTR-SEC-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+    updatedChunks.push({
+      id: `chk_${Date.now()}_sec`,
+      chunkNumber: updatedChunks.length + 1,
+      amount: securityChunkAmount,
+      method: 'UPI_GPAY_PHONEPE',
+      methodLabel: 'Advance Security Chunk (UPI)',
+      utr,
+      paidAt: new Date().toISOString(),
+      payerLabel: 'Pre-Dispatch Security Deposit'
+    });
+  }
+
+  const totalDeposited = updatedChunks.reduce((sum, c) => sum + c.amount, 0);
+  const balanceAtDoorstep = Math.max(0, deal.declaredValue - totalDeposited);
+
+  deal.status = 'ESCROW_LOCKED';
+  deal.escrowVault = {
+    ...deal.escrowVault,
+    depositedAmount: totalDeposited,
+    isLocked: true,
+    depositedAt: new Date().toISOString(),
+    collectionMode: 'DELHIVERY_DOORSTEP_QR',
+    paymentMethodUsed:
+      totalDeposited > 0
+        ? `Hybrid Escrow: ₹${totalDeposited.toLocaleString('en-IN')} Paid + ₹${balanceAtDoorstep.toLocaleString('en-IN')} via Doorstep Dynamic QR`
+        : `Delhivery / SafeShip Doorstep Dynamic QR Escrow (₹${deal.declaredValue.toLocaleString('en-IN')})`,
+    utrNumber: `UTR-QR-AUTH-${Date.now().toString(36).toUpperCase().slice(-6)}`,
+    chunks: updatedChunks
+  };
+
+  deal.auditTrail.unshift({
+    id: `aud_${Date.now()}_doorstep_qr`,
+    timestamp: new Date().toISOString(),
+    actor: 'BUYER',
+    title: 'Delhivery / SafeShip Doorstep Dynamic QR Escrow Authorized',
+    description:
+      totalDeposited > 0
+        ? `₹${totalDeposited.toLocaleString('en-IN')} locked online + remaining ₹${balanceAtDoorstep.toLocaleString('en-IN')} scheduled for collection at buyer's doorstep via SafeShip Nodal Dynamic UPI QR before open-box seal break.`
+        : `Pickup unlocked! Courier will collect ₹${deal.declaredValue.toLocaleString('en-IN')} into SafeShip Nodal Escrow at buyer's doorstep via Dynamic UPI QR (can be scanned in multiple UPI chunks) right before the 10-minute open-box inspection.`
+  });
+
+  deal.updatedAt = new Date().toISOString();
+  deals[index] = deal;
+  saveStoredDeals(deals);
+
+  const orders = getUserOrders();
+  const ordIdx = orders.findIndex((o) => o.id === dealId);
+  if (ordIdx !== -1) {
+    orders[ordIdx] = deal;
+    saveUserOrders(orders);
+  }
+
+  if (typeof window !== 'undefined') {
+    fetch('/api/deals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ deal }),
+    }).catch(() => {});
+  }
+
+  return deal;
+}
+
 export function lockDealEscrowHold(dealId: string, paymentMethod: string = 'SafeShip Nodal Escrow Hold', utr?: string): SafeDeal | null {
   const deals = getStoredDeals();
   const index = deals.findIndex((d) => d.id === dealId);
@@ -345,6 +529,27 @@ export function lockDealEscrowHold(dealId: string, paymentMethod: string = 'Safe
 
   const deal = deals[index];
   const escrowAmount = deal.declaredValue;
+  const existingChunks = deal.escrowVault?.chunks || [];
+  const currentDeposited = existingChunks.reduce((sum, c) => sum + c.amount, 0);
+  const remaining = Math.max(0, escrowAmount - currentDeposited);
+
+  const resolvedUtr = utr || `UTR-HOLD-${Date.now().toString(36).toUpperCase()}`;
+  const updatedChunks: EscrowChunkPayment[] =
+    remaining > 0
+      ? [
+          ...existingChunks,
+          {
+            id: `chk_${Date.now()}_full`,
+            chunkNumber: existingChunks.length + 1,
+            amount: remaining,
+            method: 'IMPS_NEFT_VAN',
+            methodLabel: paymentMethod,
+            utr: resolvedUtr,
+            paidAt: new Date().toISOString(),
+            payerLabel: existingChunks.length > 0 ? 'Final Balance Settlement' : 'Full Single-Shot Escrow Hold'
+          }
+        ]
+      : existingChunks;
 
   deal.status = 'ESCROW_LOCKED';
   deal.escrowVault = {
@@ -353,15 +558,17 @@ export function lockDealEscrowHold(dealId: string, paymentMethod: string = 'Safe
     isLocked: true,
     depositedAt: new Date().toISOString(),
     paymentMethodUsed: paymentMethod,
-    utrNumber: utr || `UTR-HOLD-${Date.now().toString(36).toUpperCase()}`
+    utrNumber: resolvedUtr,
+    collectionMode: updatedChunks.length > 1 ? 'PRIVATE_CHUNKS' : 'SINGLE_FULL_HOLD',
+    chunks: updatedChunks
   };
 
   deal.auditTrail.unshift({
     id: `aud_${Date.now()}_escrow`,
     timestamp: new Date().toISOString(),
     actor: 'BUYER',
-    title: 'Item Escrow Placed on Hold',
-    description: `₹${escrowAmount.toLocaleString('en-IN')} placed on hold in SafeShip RBI-regulated Nodal Account. Released to seller after doorstep unboxing OTP approval.`
+    title: 'Item Escrow Placed on Hold (100% Funded)',
+    description: `₹${escrowAmount.toLocaleString('en-IN')} locked in SafeShip RBI-regulated Nodal Account. Released to seller after doorstep unboxing OTP approval.`
   });
 
   deals[index] = deal;

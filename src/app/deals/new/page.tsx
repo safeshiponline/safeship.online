@@ -44,12 +44,12 @@ import {
   RefreshCw
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
-import { createNewDeal, getUserOrders, lockDealEscrowHold } from '@/lib/store';
+import { createNewDeal, getUserOrders, lockDealEscrowHold, addEscrowChunkPayment, authorizeDelhiveryDoorstepEscrowMode } from '@/lib/store';
 import { analytics } from '@/lib/analytics';
 import { notifyMilestoneEmail } from '@/lib/emailClient';
 import { getSession, UserSession } from '@/lib/auth';
 import { ProductPhotoMatchResult, validateLuhnImei, identifyBrandFromImei } from '@/lib/geminiUnified';
-import { ItemCategory, DeliveryServiceTier, PickupSlot, FeeSplitOption, SafeDeal } from '@/lib/types';
+import { ItemCategory, DeliveryServiceTier, PickupSlot, FeeSplitOption, SafeDeal, EscrowChunkPayment } from '@/lib/types';
 import { resolvePincode, calculateRoadDistance, calculateTierPricing, calculateInsuranceFee, getRealisticTransitDays, reverseGeocodeToIndianLocation } from '@/lib/pincodeService';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
 import AutoTriggerButton from '@/components/common/AutoTriggerButton';
@@ -201,6 +201,11 @@ function CreateShipmentContent() {
   const [isIntercity, setIsIntercity] = useState<boolean>(false);
   const [selectedTier, setSelectedTier] = useState<DeliveryServiceTier>('PRIORITY_EXPRESS');
   const [pickupSlot, setPickupSlot] = useState<PickupSlot>('MORNING_10_1');
+  const [pickupDayChoice, setPickupDayChoice] = useState<'TODAY' | 'TOMORROW' | 'DAY_AFTER' | 'CUSTOM'>('TOMORROW');
+  const [customPickupDate, setCustomPickupDate] = useState<string>('');
+  const [customPickupTimeWindow, setCustomPickupTimeWindow] = useState<string>('11:30 AM – 1:30 PM');
+  const [buyerPreferredDeliverySlot, setBuyerPreferredDeliverySlot] = useState<'MORNING_10_1' | 'AFTERNOON_2_6' | 'EVENING_6_9' | 'CUSTOM_BUYER'>('EVENING_6_9');
+  const [customBuyerDeliveryWindow, setCustomBuyerDeliveryWindow] = useState<string>('7:00 PM – 9:00 PM (After Office)');
 
   const [packageWeight, setPackageWeight] = useState<string>('');
   const [openBoxEnabled, setOpenBoxEnabled] = useState<boolean>(true);
@@ -217,10 +222,16 @@ function CreateShipmentContent() {
   const [isTestProcessing, setIsTestProcessing] = useState<boolean>(false);
   const SIMULATE_PAID_FOR_TESTING = false;
 
-  // Post-payment Escrow Hold Prompt State
+  // Post-payment Escrow Hold & Private Multi-Chunk Deposit Prompt State
   const [createdDealForEscrow, setCreatedDealForEscrow] = useState<SafeDeal | null>(null);
   const [isEscrowHolding, setIsEscrowHolding] = useState<boolean>(false);
   const [escrowHoldSuccess, setEscrowHoldSuccess] = useState<boolean>(false);
+  const [escrowModalTab, setEscrowModalTab] = useState<'PRIVATE_CHUNKS' | 'DELHIVERY_DOORSTEP' | 'FULL_SINGLE'>('PRIVATE_CHUNKS');
+  const [chunkAmountInput, setChunkAmountInput] = useState<number>(25000);
+  const [chunkMethod, setChunkMethod] = useState<EscrowChunkPayment['method']>('UPI_GPAY_PHONEPE');
+  const [copiedPrivateChunkLink, setCopiedPrivateChunkLink] = useState<boolean>(false);
+  const [copiedVanNumber, setCopiedVanNumber] = useState<boolean>(false);
+  const [doorstepSecurityDeposit, setDoorstepSecurityDeposit] = useState<number>(0);
 
   // Field Validation State
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -1290,9 +1301,24 @@ function CreateShipmentContent() {
   const freeDeliveryDiscount = firstOrderDiscount;
   const codCharge = 0;
 
-  // Dynamic Pickup and Delivery Dates
-  const pickupDateObj = new Date();
-  pickupDateObj.setDate(pickupDateObj.getDate() + 1);
+  // Dynamic Pickup and Delivery Dates (Strictly synchronized to buyer/user selection)
+  const pickupDateObj = (() => {
+    const base = new Date();
+    if (pickupDayChoice === 'TODAY') {
+      return base;
+    }
+    if (pickupDayChoice === 'DAY_AFTER') {
+      base.setDate(base.getDate() + 2);
+      return base;
+    }
+    if (pickupDayChoice === 'CUSTOM' && customPickupDate) {
+      const parsed = new Date(`${customPickupDate}T10:00:00`);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
+    base.setDate(base.getDate() + 1);
+    return base;
+  })();
+
   const pickupDateFormatted = pickupDateObj.toLocaleDateString('en-IN', {
     weekday: 'long',
     day: 'numeric',
@@ -1300,12 +1326,30 @@ function CreateShipmentContent() {
     year: 'numeric'
   });
 
+  const resolvedPickupTimeWindow =
+    pickupSlot === 'MORNING_10_1'
+      ? '10:00 AM – 01:00 PM'
+      : pickupSlot === 'AFTERNOON_2_5'
+      ? '02:00 PM – 05:00 PM'
+      : pickupSlot === 'EVENING_5_8'
+      ? '05:00 PM – 08:00 PM'
+      : customPickupTimeWindow.trim() || '11:30 AM – 01:30 PM (Buyer-Scheduled)';
+
+  const resolvedBuyerDeliveryWindow =
+    buyerPreferredDeliverySlot === 'MORNING_10_1'
+      ? '10:00 AM – 01:00 PM (Morning)'
+      : buyerPreferredDeliverySlot === 'AFTERNOON_2_6'
+      ? '02:00 PM – 06:00 PM (Afternoon)'
+      : buyerPreferredDeliverySlot === 'EVENING_6_9'
+      ? '06:00 PM – 09:00 PM (Evening / Post-Work)'
+      : customBuyerDeliveryWindow.trim() || '07:00 PM – 09:00 PM (Buyer Custom Time)';
+
   // Dynamic realistic transit days based on tier and linehaul road distance across India
   const getTransitDays = (tier: DeliveryServiceTier, dist: number): number => {
     return getRealisticTransitDays(tier, dist);
   };
 
-  // Helper to compute single exact calendar delivery date for each tier
+  // Helper to compute single exact calendar delivery date for each tier from the chosen pickup date
   const getDeliveryDateForTier = (tier: DeliveryServiceTier) => {
     const days = getTransitDays(tier, distanceKm || effectiveDistance);
     const d = new Date(pickupDateObj);
@@ -1329,11 +1373,7 @@ function CreateShipmentContent() {
     month: 'short',
     year: 'numeric'
   });
-  const deliveryTimeWindow = selectedTier === 'FASTEST_AIR_RUSH'
-    ? 'By 2:00 PM'
-    : selectedTier === 'PRIORITY_EXPRESS'
-    ? 'By 6:00 PM'
-    : 'By 8:00 PM';
+  const deliveryTimeWindow = resolvedBuyerDeliveryWindow;
 
   const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -1394,7 +1434,10 @@ function CreateShipmentContent() {
         } : undefined,
         serviceTier: selectedTier,
         pickupSlot,
-        estimatedDeliveryDate: deliveryDateFormatted,
+        scheduledPickupDate: pickupDateFormatted,
+        scheduledPickupTimeWindow: resolvedPickupTimeWindow,
+        buyerPreferredDeliveryWindow: resolvedBuyerDeliveryWindow,
+        estimatedDeliveryDate: `${deliveryDateFormatted} (${resolvedBuyerDeliveryWindow})`,
         distanceKm: distanceKm || effectiveDistance,
         routeCorridor,
         isIntercity,
@@ -1442,7 +1485,12 @@ function CreateShipmentContent() {
         localStorage.removeItem('safeship_deal_draft_v2');
       } catch {}
 
-      // Prompt immediately for escrow hold after courier delivery fee is paid
+      // Initialize default smart chunk size for Indian UPI limits (max ₹25,000 or 50% of item value)
+      const defaultChunk = created.declaredValue > 25000 ? 25000 : Math.max(1000, Math.ceil(created.declaredValue / 2));
+      setChunkAmountInput(defaultChunk);
+      setDoorstepSecurityDeposit(Math.min(2000, Math.max(500, Math.round(created.declaredValue * 0.05))));
+
+      // Prompt immediately for Stage 2 Escrow Vault (Private Chunks / Doorstep QR / Full) after Stage 1 Shipping Fee is paid
       setCreatedDealForEscrow(created);
     } catch (e) {
       console.error('Error creating deal record in store:', e);
@@ -1454,12 +1502,80 @@ function CreateShipmentContent() {
     }
   };
 
+  const getChunkMethodLabel = (m: EscrowChunkPayment['method']) => {
+    switch (m) {
+      case 'UPI_GPAY_PHONEPE':
+        return 'Primary UPI App (GPay / PhonePe / Paytm)';
+      case 'SECOND_UPI_BANK':
+        return '2nd Bank Account UPI / Family UPI Split';
+      case 'IMPS_NEFT_VAN':
+        return 'Private RBI Nodal Virtual Account (IMPS / NEFT / RTGS)';
+      case 'CREDIT_DEBIT_CARD':
+        return 'Credit / Debit Card (RuPay / Visa / Mastercard)';
+      default:
+        return 'Doorstep Dynamic UPI QR';
+    }
+  };
+
+  const handleDepositEscrowChunk = (amountOverride?: number) => {
+    if (!createdDealForEscrow) return;
+    const currentDeposited = createdDealForEscrow.escrowVault?.depositedAmount || 0;
+    const remaining = Math.max(0, createdDealForEscrow.declaredValue - currentDeposited);
+    const amountToPay = Math.min(remaining, Math.max(1, amountOverride ?? chunkAmountInput));
+    if (amountToPay <= 0) return;
+
+    setIsEscrowHolding(true);
+    setTimeout(() => {
+      const updated = addEscrowChunkPayment(
+        createdDealForEscrow.id,
+        amountToPay,
+        chunkMethod,
+        getChunkMethodLabel(chunkMethod)
+      );
+      setIsEscrowHolding(false);
+      if (updated) {
+        setCreatedDealForEscrow({ ...updated });
+        const newRemaining = Math.max(0, updated.declaredValue - (updated.escrowVault?.depositedAmount || 0));
+        if (newRemaining > 0) {
+          setChunkAmountInput(Math.min(25000, newRemaining));
+        } else {
+          notifyMilestoneEmail(updated, 'COURIER_ASSIGNED');
+          setEscrowHoldSuccess(true);
+          setTimeout(() => {
+            router.push(`/in/track/${updated.id}?booked=true&escrow_locked=true&escrow_paid=true`);
+          }, 1100);
+        }
+      }
+    }, 550);
+  };
+
+  const handleAuthorizeDoorstepQrEscrow = () => {
+    if (!createdDealForEscrow) return;
+    setIsEscrowHolding(true);
+    setTimeout(() => {
+      const updated = authorizeDelhiveryDoorstepEscrowMode(
+        createdDealForEscrow.id,
+        doorstepSecurityDeposit
+      );
+      setIsEscrowHolding(false);
+      if (updated) {
+        setCreatedDealForEscrow({ ...updated });
+        notifyMilestoneEmail(updated, 'COURIER_ASSIGNED');
+        setEscrowHoldSuccess(true);
+        setTimeout(() => {
+          router.push(`/in/track/${updated.id}?booked=true&escrow_locked=true&escrow_paid=true`);
+        }, 1000);
+      }
+    }, 600);
+  };
+
   const handlePutEscrowOnHold = () => {
     if (!createdDealForEscrow) return;
     setIsEscrowHolding(true);
     setTimeout(() => {
       const updated = lockDealEscrowHold(createdDealForEscrow.id, 'Cashfree PG v3 Escrow Hold');
       if (updated) {
+        setCreatedDealForEscrow({ ...updated });
         notifyMilestoneEmail(updated, 'COURIER_ASSIGNED');
       }
       setIsEscrowHolding(false);
@@ -1490,11 +1606,11 @@ function CreateShipmentContent() {
     const rawPhone = (mode === 'exchange' ? senderPhone : buyerPhone) || senderPhone || '';
     const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10) || '9876543210';
 
-    // Open Cashfree PG v3 Checkout for Courier Shipping Fee:
+    // Open Cashfree PG v3 Checkout ONLY for Stage 1 Courier Shipping Fee:
     openCheckout({
       amountInRupees: upfrontPayableAmount,
-      name: 'SafeShip Courier Booking',
-      description: `Courier Shipping Fee: ₹${upfrontPayableAmount.toLocaleString('en-IN')} for ${itemName || 'Merchandise'} (Item escrow of ₹${itemEscrowAmount.toLocaleString('en-IN')} released to seller after delivery approval)`,
+      name: 'SafeShip Courier Booking (Stage 1: Shipping Only)',
+      description: `Stage 1 Courier Shipping Fee ONLY: ₹${upfrontPayableAmount.toLocaleString('en-IN')} for ${itemName || 'Merchandise'} (Stage 2 Item Escrow of ₹${itemEscrowAmount.toLocaleString('en-IN')} collected separately in private chunks / doorstep QR)`,
       prefill: {
         name: payerName,
         email: 'customer@safeship.online',
@@ -1502,11 +1618,14 @@ function CreateShipmentContent() {
       },
       notes: {
         mode,
-        shippingFeePaid: upfrontPayableAmount.toString(),
-        itemEscrowAmount: itemEscrowAmount.toString(),
+        stage1ShippingFeeOnly: upfrontPayableAmount.toString(),
+        stage2ItemEscrowAmount: itemEscrowAmount.toString(),
         pickupSlot,
-        pickupCallProtocol: 'Delivery boy will call seller at scheduled pickup time',
-        deliveryCallProtocol: 'Delivery boy will call buyer only after successful pickup',
+        scheduledPickupDate: pickupDateFormatted,
+        scheduledPickupTimeWindow: resolvedPickupTimeWindow,
+        buyerPreferredDeliveryWindow: resolvedBuyerDeliveryWindow,
+        pickupCallProtocol: `Delivery boy will call seller during ${resolvedPickupTimeWindow} on ${pickupDateFormatted}`,
+        deliveryCallProtocol: `Delivery boy will call buyer during ${resolvedBuyerDeliveryWindow} on ${deliveryDateFormatted}`,
         estimatedDelivery: deliveryDateFormatted,
         origin: `${pickupLocation} (${pickupPincode})`,
         destination: `${dropLocation} (${dropPincode})`,
@@ -2696,54 +2815,192 @@ function CreateShipmentContent() {
                   </div>
                 </div>
 
-                {/* 3. PICKUP SCHEDULE & TIME-SYNCHRONIZED CALLING PROTOCOL */}
-                <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-[#E2E8F0] shadow-xs space-y-2.5">
+                {/* 3. PICKUP SCHEDULE & BUYER-SYNCHRONIZED DELIVERY TIME */}
+                <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-[#E2E8F0] shadow-xs space-y-3">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
                     <span className="text-xs font-bold text-[#334155] uppercase tracking-wider flex items-center gap-1.5">
                       <Calendar className="w-4 h-4 text-[#0066FF]" />
-                      <span>2. Pickup Schedule &amp; Calling Protocol</span>
+                      <span>2. Pickup Schedule &amp; Buyer-Given Time Protocol</span>
                     </span>
                     <span className="text-[11px] text-slate-500">
-                      Scheduled for: <strong className="text-slate-900">{pickupDateFormatted}</strong> ({pickupCity || 'Jaipur'})
+                      Pickup: <strong className="text-slate-900">{pickupDateFormatted}</strong> ({pickupCity || 'Jaipur'})
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setPickupSlot('MORNING_10_1')}
-                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-between ${
-                        pickupSlot === 'MORNING_10_1'
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      <span>☀️ Morning Slot</span>
-                      <span className="text-[10px] opacity-90">10 AM – 1 PM</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setPickupSlot('AFTERNOON_2_5')}
-                      className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-between ${
-                        pickupSlot === 'AFTERNOON_2_5'
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                          : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      <span>🌤️ Afternoon Slot</span>
-                      <span className="text-[10px] opacity-90">2 PM – 5 PM</span>
-                    </button>
+                  {/* A. Select Exact Pickup Day */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      A. Choose Pickup Day (Synchronized with Seller &amp; Buyer)
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                      {[
+                        { id: 'TODAY' as const, label: '⚡ Today', sub: 'Same-Day Dispatch' },
+                        { id: 'TOMORROW' as const, label: '📅 Tomorrow', sub: 'Recommended' },
+                        { id: 'DAY_AFTER' as const, label: '🗓️ Day After', sub: '+2 Days' },
+                        { id: 'CUSTOM' as const, label: '🎯 Custom Date', sub: 'Buyer Given' },
+                      ].map((dayOpt) => (
+                        <button
+                          key={dayOpt.id}
+                          type="button"
+                          onClick={() => setPickupDayChoice(dayOpt.id)}
+                          className={`py-2 px-2.5 rounded-xl border text-left transition cursor-pointer ${
+                            pickupDayChoice === dayOpt.id
+                              ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          <span className="text-[11px] font-bold block">{dayOpt.label}</span>
+                          <span className="text-[9px] opacity-85 block">{dayOpt.sub}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {pickupDayChoice === 'CUSTOM' && (
+                      <div className="pt-1 flex items-center gap-2">
+                        <label className="text-[11px] font-semibold text-slate-700 shrink-0">
+                          Select Exact Pickup Date:
+                        </label>
+                        <input
+                          type="date"
+                          value={customPickupDate}
+                          min={new Date().toISOString().split('T')[0]}
+                          onChange={(e) => setCustomPickupDate(e.target.value)}
+                          className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-mono text-slate-900 bg-white focus:border-[#0066FF] outline-hidden"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* B. Select Pickup Time Slot */}
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      B. Pickup Time Window
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setPickupSlot('MORNING_10_1')}
+                        className={`py-2 px-2.5 rounded-xl border text-left transition cursor-pointer ${
+                          pickupSlot === 'MORNING_10_1'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span className="text-[11px] font-bold block">☀️ Morning</span>
+                        <span className="text-[10px] opacity-90 block">10 AM – 1 PM</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPickupSlot('AFTERNOON_2_5')}
+                        className={`py-2 px-2.5 rounded-xl border text-left transition cursor-pointer ${
+                          pickupSlot === 'AFTERNOON_2_5'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span className="text-[11px] font-bold block">🌤️ Afternoon</span>
+                        <span className="text-[10px] opacity-90 block">2 PM – 5 PM</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPickupSlot('EVENING_5_8')}
+                        className={`py-2 px-2.5 rounded-xl border text-left transition cursor-pointer ${
+                          pickupSlot === 'EVENING_5_8'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span className="text-[11px] font-bold block">🌆 Evening</span>
+                        <span className="text-[10px] opacity-90 block">5 PM – 8 PM</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPickupSlot('CUSTOM_BUYER_TIME')}
+                        className={`py-2 px-2.5 rounded-xl border text-left transition cursor-pointer ${
+                          pickupSlot === 'CUSTOM_BUYER_TIME'
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
+                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span className="text-[11px] font-bold block">⏱️ Exact Time</span>
+                        <span className="text-[10px] opacity-90 block">Custom Slot</span>
+                      </button>
+                    </div>
+
+                    {pickupSlot === 'CUSTOM_BUYER_TIME' && (
+                      <div className="pt-1 flex flex-col sm:flex-row sm:items-center gap-2">
+                        <label className="text-[11px] font-semibold text-slate-700 shrink-0">
+                          Exact Pickup Time:
+                        </label>
+                        <input
+                          type="text"
+                          value={customPickupTimeWindow}
+                          onChange={(e) => setCustomPickupTimeWindow(e.target.value)}
+                          placeholder="e.g. 11:30 AM – 1:00 PM or 4:15 PM sharp"
+                          className="flex-1 px-3 py-1.5 rounded-xl border border-slate-300 text-xs text-slate-900 bg-white focus:border-[#0066FF] outline-hidden"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* C. Buyer's Preferred Doorstep Delivery Time Window */}
+                  <div className="space-y-1.5 pt-1 border-t border-slate-100">
+                    <div className="flex items-center justify-between flex-wrap gap-1">
+                      <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">
+                        C. Buyer&apos;s Preferred Delivery Time Window ({dropCity || 'Destination'})
+                      </span>
+                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                        Delivers on {deliveryDateFormatted}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                      {[
+                        { id: 'MORNING_10_1' as const, label: '☀️ 10 AM – 1 PM', sub: 'Morning Unboxing' },
+                        { id: 'AFTERNOON_2_6' as const, label: '🌤️ 2 PM – 6 PM', sub: 'Daytime Slot' },
+                        { id: 'EVENING_6_9' as const, label: '🌙 6 PM – 9 PM', sub: 'After Office Hours' },
+                        { id: 'CUSTOM_BUYER' as const, label: '🎯 Buyer Time', sub: 'Exact Time Given' },
+                      ].map((delOpt) => (
+                        <button
+                          key={delOpt.id}
+                          type="button"
+                          onClick={() => setBuyerPreferredDeliverySlot(delOpt.id)}
+                          className={`py-2 px-2.5 rounded-xl border text-left transition cursor-pointer ${
+                            buyerPreferredDeliverySlot === delOpt.id
+                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
+                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          <span className="text-[11px] font-bold block">{delOpt.label}</span>
+                          <span className="text-[9px] opacity-85 block">{delOpt.sub}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {buyerPreferredDeliverySlot === 'CUSTOM_BUYER' && (
+                      <div className="pt-1 flex flex-col sm:flex-row sm:items-center gap-2">
+                        <label className="text-[11px] font-semibold text-slate-700 shrink-0">
+                          Time Given by Buyer:
+                        </label>
+                        <input
+                          type="text"
+                          value={customBuyerDeliveryWindow}
+                          onChange={(e) => setCustomBuyerDeliveryWindow(e.target.value)}
+                          placeholder="e.g. 7:30 PM – 8:30 PM after buyer reaches home"
+                          className="flex-1 px-3 py-1.5 rounded-xl border border-slate-300 text-xs text-slate-900 bg-white focus:border-emerald-600 outline-hidden"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Exact Timeline & Contact Rules */}
                   <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-[11px]">
                     <div className="flex items-start gap-2 text-slate-700">
                       <span className="text-[#0066FF] font-bold shrink-0">📞 Pickup Time Call:</span>
-                      <span>SafeShip delivery boy will call the seller <strong>on the pickup time</strong> ({pickupSlot === 'MORNING_10_1' ? '10 AM – 1 PM' : '2 PM – 5 PM'}) to confirm arrival, inspect parcel specifications, and verify 4-digit Pickup OTP.</span>
+                      <span>SafeShip delivery boy will call the seller <strong>strictly on {pickupDateFormatted} during {resolvedPickupTimeWindow}</strong> to inspect parcel specifications, seal the tamper bag, and verify the 4-digit Pickup OTP.</span>
                     </div>
                     <div className="flex items-start gap-2 text-slate-700">
-                      <span className="text-emerald-700 font-bold shrink-0">📲 Delivery Time Call:</span>
-                      <span>Delivery boy will call the buyer <strong>only after successful pickup</strong> and when reaching near their doorstep ({deliveryDateFormatted}, {deliveryTimeWindow}) for the 10-minute doorstep unboxing.</span>
+                      <span className="text-emerald-700 font-bold shrink-0">📲 Buyer Delivery Call:</span>
+                      <span>Delivery boy will arrive strictly at the <strong>time given by the buyer ({deliveryDateFormatted}, {resolvedBuyerDeliveryWindow})</strong> for the 10-minute doorstep open-box test.</span>
                     </div>
                   </div>
                 </div>
@@ -3174,128 +3431,405 @@ function CreateShipmentContent() {
         </div>
       )}
 
-      {/* 2-STAGE PAYMENT LIFECYCLE: MANDATORY ESCROW HOLD MODAL */}
-      {createdDealForEscrow && (
-        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-white text-[#0F172A] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in zoom-in-95 space-y-5">
-            {/* 2-Stage Progress Stepper */}
-            <div className="space-y-2 pb-3 border-b border-slate-100">
-              <div className="flex items-center justify-between text-[11px] font-bold">
-                <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>1. Courier Fee Paid (₹{createdDealForEscrow.upfrontPaid})</span>
-                </span>
-                <span className="text-indigo-800 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-indigo-600" />
-                  <span>2. Escrow Hold (Mandatory)</span>
-                </span>
-              </div>
-              <div className="flex items-center justify-between pt-1">
-                <div>
-                  <h3 className="font-black text-lg text-slate-900 tracking-tight">
-                    Authorize Escrow to Dispatch Courier
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    Order #{createdDealForEscrow.id} &bull; Destination: {createdDealForEscrow.buyer?.deliveryAddress || dropCity || 'Delhi'}
-                  </p>
+      {/* 2-STAGE PAYMENT LIFECYCLE: STAGE 2 PRIVATE MULTI-CHUNK ESCROW VAULT & DOORSTEP QR MODAL */}
+      {createdDealForEscrow && (() => {
+        const deposited = createdDealForEscrow.escrowVault?.depositedAmount || 0;
+        const target = createdDealForEscrow.declaredValue || 0;
+        const remaining = Math.max(0, target - deposited);
+        const progressPct = target > 0 ? Math.min(100, Math.round((deposited / target) * 100)) : 100;
+        const chunks = createdDealForEscrow.escrowVault?.chunks || [];
+        const vanNumber = createdDealForEscrow.escrowVault?.virtualAccountNumber || `SAFESHIP${createdDealForEscrow.id.replace(/\D/g, '')}88`;
+        const vanIfsc = createdDealForEscrow.escrowVault?.virtualAccountIfsc || 'YESB0CMSNOC';
+        const privateBuyerChunkUrl = typeof window !== 'undefined'
+          ? `${window.location.origin}/in/track/${createdDealForEscrow.id}?booked=true&escrow_chunks=open`
+          : `https://safeship.online/in/track/${createdDealForEscrow.id}?booked=true&escrow_chunks=open`;
+
+        return (
+          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+            <div className="bg-white text-[#0F172A] rounded-3xl max-w-xl w-full p-5 sm:p-7 shadow-2xl border border-slate-200 animate-in zoom-in-95 space-y-4 my-auto max-h-[92vh] overflow-y-auto">
+              {/* 2-Stage Progress Stepper */}
+              <div className="space-y-2 pb-3 border-b border-slate-100">
+                <div className="flex items-center justify-between flex-wrap gap-1.5 text-[11px] font-bold">
+                  <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Stage 1: Only Shipping Fee Paid (₹{createdDealForEscrow.upfrontPaid})</span>
+                  </span>
+                  <span className="text-indigo-800 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>Stage 2: Private Escrow Collection ({progressPct}% Funded)</span>
+                  </span>
                 </div>
+                <div className="flex items-center justify-between pt-1">
+                  <div>
+                    <h3 className="font-black text-base sm:text-lg text-slate-900 tracking-tight">
+                      Fund Item Escrow in Private Chunks or Doorstep QR
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      Order #{createdDealForEscrow.id} &bull; Pickup: <strong>{createdDealForEscrow.scheduledPickupDate || pickupDateFormatted}</strong> ({createdDealForEscrow.scheduledPickupTimeWindow || resolvedPickupTimeWindow})
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/in/track/${createdDealForEscrow.id}?booked=true`)}
+                    className="text-slate-400 hover:text-slate-800 p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer"
+                    title="Continue on live tracking page"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* LIVE ESCROW VAULT PROGRESS BAR CARD */}
+              <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white space-y-3 shadow-md">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider bg-white/15 px-2.5 py-1 rounded-full text-blue-200 border border-white/10 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Private RBI Nodal Vault &bull; {vanNumber}</span>
+                  </span>
+                  <span className="text-[10px] text-emerald-300 font-bold bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded">
+                    {remaining === 0 ? '100% Locked ✓' : `₹${remaining.toLocaleString('en-IN')} Remaining`}
+                  </span>
+                </div>
+
+                <div className="flex items-baseline justify-between gap-2">
+                  <div>
+                    <span className="text-[11px] text-slate-300 block">
+                      Private Escrow Deposited ({chunks.length} {chunks.length === 1 ? 'Chunk' : 'Chunks'}):
+                    </span>
+                    <div className="flex items-baseline gap-2 mt-0.5">
+                      <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-emerald-400">
+                        ₹{deposited.toLocaleString('en-IN')}
+                      </span>
+                      <span className="text-xs text-slate-300 font-mono">
+                        / ₹{target.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[10px] text-indigo-200 block">Buyer Delivery Window:</span>
+                    <span className="text-[11px] font-bold text-white block">
+                      {createdDealForEscrow.buyerPreferredDeliveryWindow || resolvedBuyerDeliveryWindow}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="space-y-1">
+                  <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-400 to-blue-400 rounded-full transition-all duration-500"
+                      style={{ width: `${Math.max(4, progressPct)}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-slate-300">
+                    <span>Stage 1 Shipping Paid: ₹{createdDealForEscrow.upfrontPaid} ✓</span>
+                    <span>{progressPct}% of Item Escrow Funded</span>
+                  </div>
+                </div>
+
+                {/* Chunk History Pills */}
+                {chunks.length > 0 && (
+                  <div className="pt-2 border-t border-white/10 space-y-1">
+                    <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider block">
+                      Verified Private Chunk Ledger:
+                    </span>
+                    <div className="space-y-1 max-h-24 overflow-y-auto pr-1">
+                      {chunks.map((c) => (
+                        <div key={c.id} className="flex items-center justify-between text-[11px] bg-white/10 px-2.5 py-1 rounded-lg">
+                          <span className="font-semibold text-white">
+                            Chunk #{c.chunkNumber}: ₹{c.amount.toLocaleString('en-IN')} <span className="text-slate-300 font-normal">({c.methodLabel})</span>
+                          </span>
+                          <span className="font-mono text-[10px] text-emerald-300">{c.utr} ✓</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 3 ESCROW COLLECTION SYSTEM TABS */}
+              <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-2xl text-[11px] font-bold">
                 <button
                   type="button"
-                  onClick={() => router.push(`/in/track/${createdDealForEscrow.id}?booked=true`)}
-                  className="text-slate-400 hover:text-slate-800 p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer"
-                  title="Pause & view tracking"
+                  onClick={() => setEscrowModalTab('PRIVATE_CHUNKS')}
+                  className={`py-2 px-2 rounded-xl transition cursor-pointer text-center ${
+                    escrowModalTab === 'PRIVATE_CHUNKS'
+                      ? 'bg-[#0066FF] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
                 >
-                  <X className="w-5 h-5" />
+                  🧩 Private Chunks (Indian UPI Split)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEscrowModalTab('DELHIVERY_DOORSTEP')}
+                  className={`py-2 px-2 rounded-xl transition cursor-pointer text-center ${
+                    escrowModalTab === 'DELHIVERY_DOORSTEP'
+                      ? 'bg-[#0066FF] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  🚚 Courier Doorstep Dynamic QR
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEscrowModalTab('FULL_SINGLE')}
+                  className={`py-2 px-2 rounded-xl transition cursor-pointer text-center ${
+                    escrowModalTab === 'FULL_SINGLE'
+                      ? 'bg-[#0066FF] text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  ⚡ Single-Shot Full Hold
                 </button>
               </div>
-            </div>
 
-            {/* MANDATORY WARNING BANNER */}
-            <div className="p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-xs space-y-1.5 animate-in fade-in">
-              <div className="flex items-center gap-2 text-amber-950 font-black">
-                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>Pickup Dispatch Paused: Escrow Hold Required</span>
-              </div>
-              <p className="text-[11px] text-amber-900 leading-relaxed">
-                Courier <strong>Rahul K.</strong> will NOT be dispatched for pickup until the item escrow amount is placed on hold. Escrow ensures zero payment risk for both buyer and seller.
-              </p>
-            </div>
+              {/* TAB 1: PAY IN PRIVATE CHUNKS (BEST FOR LARGE AMOUNTS IN INDIA) */}
+              {escrowModalTab === 'PRIVATE_CHUNKS' && (
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="text-[11px] font-black text-slate-900 block">
+                        Why Pay in Private Chunks? (Built for Indian Buyers)
+                      </span>
+                      <p className="text-[11px] text-slate-600 leading-snug mt-0.5">
+                        Indian banks cap UPI at ₹25,000–₹1,00,000/day. Deposit privately in smaller chunks across multiple UPI apps, bank accounts, or IMPS into your dedicated RBI Nodal Vault.
+                      </p>
+                    </div>
+                  </div>
 
-            {/* PREMIUM ESCROW VAULT CARD */}
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white space-y-3.5 shadow-md">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black uppercase tracking-wider bg-white/15 px-2.5 py-1 rounded-full text-blue-200 border border-white/10 flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>RBI-Regulated Nodal Escrow Vault</span>
-                </span>
-                <span className="text-[10px] text-emerald-300 font-bold bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded">
-                  0% Risk Guarantee
-                </span>
-              </div>
+                  {/* Smart Chunk Preset Pills */}
+                  {remaining > 0 && (
+                    <>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
+                          1. Select Chunk Amount (Remaining: ₹{remaining.toLocaleString('en-IN')})
+                        </label>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                          {[
+                            { label: '₹15,000 Chunk', val: Math.min(15000, remaining) },
+                            { label: '₹25,000 (UPI Safe)', val: Math.min(25000, remaining) },
+                            { label: '50% Split', val: Math.max(1, Math.ceil(remaining / 2)) },
+                            { label: 'Full Remaining', val: remaining },
+                          ].map((preset, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => setChunkAmountInput(preset.val)}
+                              className={`py-1.5 px-2 rounded-xl border text-[11px] font-bold transition cursor-pointer ${
+                                chunkAmountInput === preset.val
+                                  ? 'bg-blue-50 border-[#0066FF] text-[#0066FF] ring-1 ring-blue-300'
+                                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
+                              }`}
+                            >
+                              <span className="block">{preset.label}</span>
+                              <span className="font-mono text-[10px] text-slate-500">₹{preset.val.toLocaleString('en-IN')}</span>
+                            </button>
+                          ))}
+                        </div>
 
-              <div>
-                <span className="text-xs text-slate-300 block">Item: {createdDealForEscrow.title || itemName}</span>
-                <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-3xl font-black font-mono tracking-tight text-white">
-                    ₹{createdDealForEscrow.declaredValue.toLocaleString('en-IN')}
-                  </span>
-                  <span className="text-xs text-indigo-300 font-semibold">Held Safely in Escrow</span>
+                        {/* Custom Chunk Amount Input */}
+                        <div className="flex items-center gap-2 pt-1">
+                          <span className="text-xs font-bold text-slate-700 shrink-0">Custom Chunk (₹):</span>
+                          <input
+                            type="number"
+                            min={100}
+                            max={remaining}
+                            value={chunkAmountInput || ''}
+                            onChange={(e) => setChunkAmountInput(Math.min(remaining, Math.max(0, Number(e.target.value))))}
+                            className="flex-1 px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-xs font-mono font-bold text-slate-900 focus:border-[#0066FF] outline-hidden"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Payment Method for this Chunk */}
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
+                          2. Choose Private Payment Rail for This Chunk
+                        </label>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {[
+                            { id: 'UPI_GPAY_PHONEPE' as const, label: '📱 Primary UPI (GPay/PhonePe)' },
+                            { id: 'SECOND_UPI_BANK' as const, label: '🏦 2nd Bank / Family UPI' },
+                            { id: 'IMPS_NEFT_VAN' as const, label: '🔐 Private Virtual A/C (IMPS/RTGS)' },
+                            { id: 'CREDIT_DEBIT_CARD' as const, label: '💳 Credit / Debit Card' },
+                          ].map((m) => (
+                            <button
+                              key={m.id}
+                              type="button"
+                              onClick={() => setChunkMethod(m.id)}
+                              className={`py-2 px-2.5 rounded-xl border text-left text-[11px] font-semibold transition cursor-pointer ${
+                                chunkMethod === m.id
+                                  ? 'bg-slate-900 text-white border-slate-900'
+                                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              {m.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Dedicated Virtual Account Box (when IMPS/NEFT selected) */}
+                      {chunkMethod === 'IMPS_NEFT_VAN' && (
+                        <div className="p-2.5 rounded-xl bg-indigo-50 border border-indigo-200 text-[11px] flex items-center justify-between gap-2">
+                          <div>
+                            <span className="font-bold text-indigo-950 block">Dedicated Deal Virtual A/C (Zero Limit IMPS/NEFT):</span>
+                            <span className="font-mono text-indigo-800">A/C: <strong>{vanNumber}</strong> &bull; IFSC: <strong>{vanIfsc}</strong></span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(`Account: ${vanNumber}, IFSC: ${vanIfsc}`);
+                              setCopiedVanNumber(true);
+                              setTimeout(() => setCopiedVanNumber(false), 2500);
+                            }}
+                            className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-[10px] font-bold cursor-pointer shrink-0"
+                          >
+                            {copiedVanNumber ? 'Copied ✓' : 'Copy VAN'}
+                          </button>
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        disabled={isEscrowHolding || escrowHoldSuccess || chunkAmountInput <= 0}
+                        onClick={() => handleDepositEscrowChunk()}
+                        className="w-full py-3.5 px-5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-black text-xs sm:text-sm tracking-wide shadow-md shadow-blue-500/25 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-60"
+                      >
+                        {isEscrowHolding ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>Recording Private Chunk (₹{chunkAmountInput.toLocaleString('en-IN')})...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-4 h-4" />
+                            <span>
+                              Deposit Private Chunk #{chunks.length + 1} (₹{chunkAmountInput.toLocaleString('en-IN')})
+                              {chunkAmountInput >= remaining ? ' & Dispatch Courier' : ''}
+                            </span>
+                          </>
+                        )}
+                      </button>
+                    </>
+                  )}
+
+                  {/* Share Private Buyer Chunk Link (if Seller booked & Buyer is paying from their phone) */}
+                  <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
+                    <span className="text-[11px] text-slate-600">
+                      Buyer paying from another phone? Send private chunk link:
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(privateBuyerChunkUrl);
+                          setCopiedPrivateChunkLink(true);
+                          setTimeout(() => setCopiedPrivateChunkLink(false), 2500);
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-[11px] font-bold text-slate-800 flex items-center gap-1 cursor-pointer"
+                      >
+                        <Copy className="w-3 h-3" />
+                        <span>{copiedPrivateChunkLink ? 'Copied! ✓' : 'Copy Buyer Link'}</span>
+                      </button>
+                      <a
+                        href={`https://wa.me/?text=${encodeURIComponent(
+                          `Hi ${createdDealForEscrow.buyer?.name || 'there'}! Stage 1 courier shipping (₹${createdDealForEscrow.upfrontPaid}) is booked for "${createdDealForEscrow.title}" (#${createdDealForEscrow.id}). You can deposit the ₹${createdDealForEscrow.declaredValue.toLocaleString('en-IN')} escrow privately in chunks (UPI / IMPS / Split) before pickup here: ${privateBuyerChunkUrl}`
+                        )}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>💬 WhatsApp Buyer</span>
+                      </a>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <div className="space-y-2 text-xs text-slate-200 border-t border-white/10 pt-3">
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-400 font-bold shrink-0">✓</span>
-                  <span><strong>Zero Payout to Seller upfront:</strong> Amount is released only after the 10-minute doorstep unboxing and buyer OTP approval.</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-emerald-400 font-bold shrink-0">✓</span>
-                  <span><strong>100% Instant Refund:</strong> If rejected, the full ₹{createdDealForEscrow.declaredValue.toLocaleString('en-IN')} returns directly to the buyer.</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <span className="text-blue-300 font-bold shrink-0">📞</span>
-                  <span><strong>Synchronized Call:</strong> Officer Rahul K. will call seller on the scheduled pickup slot ({createdDealForEscrow.pickupSlot === 'MORNING_10_1' ? '10:00 AM – 01:00 PM' : '02:00 PM – 05:00 PM'}).</span>
-                </div>
-              </div>
-            </div>
+              {/* TAB 2: DELHIVERY / SAFESHIP DOORSTEP DYNAMIC QR ESCROW */}
+              {escrowModalTab === 'DELHIVERY_DOORSTEP' && (
+                <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-3 text-xs">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-black text-emerald-950">
+                        Delhivery / SafeShip Doorstep Dynamic QR Escrow
+                      </span>
+                      <span className="text-[10px] font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full">
+                        Zero COD Surcharge
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-emerald-900 leading-relaxed">
+                      Standard courier cash-on-delivery (COD) caps at ₹25k–₹50k and delays seller payout by 7 days. Instead, our field officer carries a <strong>SafeShip Nodal Dynamic UPI QR</strong> to the buyer&apos;s doorstep on <strong>{deliveryDateFormatted} ({resolvedBuyerDeliveryWindow})</strong>:
+                    </p>
+                  </div>
 
-            {/* ACTION BUTTONS */}
-            <div className="space-y-2.5 pt-1">
-              <button
-                type="button"
-                disabled={isEscrowHolding || escrowHoldSuccess}
-                onClick={handlePutEscrowOnHold}
-                className="w-full py-4 px-5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-black text-sm tracking-wide shadow-lg shadow-blue-500/25 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-75"
-              >
-                {isEscrowHolding ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Securing ₹{createdDealForEscrow.declaredValue.toLocaleString('en-IN')} in RBI Vault...</span>
-                  </>
-                ) : escrowHoldSuccess ? (
-                  <>
-                    <Check className="w-4 h-4 text-emerald-300" />
-                    <span>Escrow Secured! Dispatched Rahul K. ✓</span>
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-4 h-4" />
-                    <span>Authorize Escrow Hold (₹{createdDealForEscrow.declaredValue.toLocaleString('en-IN')}) &amp; Dispatch Courier</span>
-                  </>
-                )}
-              </button>
+                  <div className="space-y-1.5 text-[11px] text-slate-700 bg-white p-3 rounded-xl border border-emerald-200">
+                    <div><strong>1. Shipping Paid Now:</strong> Only ₹{createdDealForEscrow.upfrontPaid} shipping fee is taken today.</div>
+                    <div><strong>2. Doorstep Multi-Scan QR:</strong> Before breaking the tamper seal at delivery, the buyer scans the Dynamic QR on the courier&apos;s handheld terminal (can even scan in 2–3 UPI chunks from different phones/banks!).</div>
+                    <div><strong>3. Instant 4-Sec Seller Payout:</strong> Once the 10-minute open-box inspection passes and buyer enters the OTP, the escrow releases to the seller&apos;s UPI/Bank in 4 seconds.</div>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isEscrowHolding || escrowHoldSuccess}
+                    onClick={handleAuthorizeDoorstepQrEscrow}
+                    className="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm tracking-wide shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-60"
+                  >
+                    {isEscrowHolding ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Activating Doorstep Dynamic QR Escrow...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Truck className="w-4 h-4" />
+                        <span>Schedule Pickup Now &amp; Collect ₹{remaining.toLocaleString('en-IN')} Escrow via Doorstep QR</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* TAB 3: SINGLE-SHOT FULL HOLD */}
+              {escrowModalTab === 'FULL_SINGLE' && (
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
+                  <p className="text-[11px] text-slate-600 leading-relaxed">
+                    Have high-limit NetBanking, RTGS, or Corporate Card? Lock the entire remaining <strong>₹{remaining.toLocaleString('en-IN')}</strong> in a single transaction right now.
+                  </p>
+                  <button
+                    type="button"
+                    disabled={isEscrowHolding || escrowHoldSuccess}
+                    onClick={handlePutEscrowOnHold}
+                    className="w-full py-3.5 px-5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-black text-xs sm:text-sm tracking-wide shadow-md shadow-blue-500/25 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-75"
+                  >
+                    {isEscrowHolding ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Securing ₹{remaining.toLocaleString('en-IN')} in RBI Vault...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4" />
+                        <span>Authorize Full Escrow Hold (₹{remaining.toLocaleString('en-IN')}) &amp; Dispatch Courier</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
 
               <button
                 type="button"
                 onClick={() => router.push(`/in/track/${createdDealForEscrow.id}?booked=true`)}
-                className="w-full py-2.5 px-4 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-semibold text-xs text-center transition cursor-pointer"
+                className="w-full py-2 px-4 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-semibold text-xs text-center transition cursor-pointer"
               >
-                Keep Pickup on Hold &amp; View Live Tracking &rarr;
+                Continue to Live Tracking Console (Pay Remaining Chunks Later) &rarr;
               </button>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Enterprise Footer - Clean & Minimal on Selling Console */}
       <EnterpriseFooter hideServiceabilityBanner={true} />
