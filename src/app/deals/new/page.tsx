@@ -1546,7 +1546,7 @@ function CreateShipmentContent() {
       // Default to 50/50 split amount if device value > ₹10, otherwise full amount
       const defaultSplit = created.declaredValue > 10 ? Math.ceil(created.declaredValue / 2) : created.declaredValue;
       setChunkAmountInput(defaultSplit);
-      setEscrowModalTab(created.declaredValue > 10 ? 'PRIVATE_CHUNKS' : 'FULL_SINGLE');
+      setEscrowModalTab((prev) => (created.declaredValue <= 10 ? 'FULL_SINGLE' : prev));
       setDoorstepSecurityDeposit(Math.min(2000, Math.max(500, Math.round(created.declaredValue * 0.05))));
 
       // Prompt immediately for Mandatory Device Value Escrow after Shipping Fee is paid
@@ -1610,13 +1610,13 @@ function CreateShipmentContent() {
     }, 500);
   };
 
-  const handleAuthorizeDoorstepQrEscrow = () => {
+  const handleAuthorizeDoorstepQrEscrow = (advanceOverride: number = 0) => {
     if (!createdDealForEscrow) return;
     setIsEscrowHolding(true);
     setTimeout(() => {
       const updated = authorizeDelhiveryDoorstepEscrowMode(
         createdDealForEscrow.id,
-        doorstepSecurityDeposit
+        advanceOverride
       );
       setIsEscrowHolding(false);
       if (updated) {
@@ -3104,18 +3104,53 @@ function CreateShipmentContent() {
                       </span>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-200/70 flex items-center justify-between gap-2">
-                      <div>
-                        <span className="text-xs font-bold text-[#0F172A] block">
-                          Step 2: Mandatory Device Escrow
-                        </span>
-                        <span className="text-[11px] text-slate-600 block">
-                          Collected next {itemEscrowAmount > 10 ? '• Full or 50/50 Split' : ''}
+                    <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200/80 space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <span className="text-xs font-bold text-[#0F172A] block">
+                            Step 2: Device Value Escrow (After Delivery Fee)
+                          </span>
+                          <span className="text-[11px] text-slate-600 block">
+                            Mandatory • Released to seller only after open-box approval
+                          </span>
+                        </div>
+                        <span className="text-sm font-bold font-mono text-[#0066FF] shrink-0">
+                          ₹{itemEscrowAmount.toLocaleString('en-IN')}
                         </span>
                       </div>
-                      <span className="text-sm font-bold font-mono text-[#0066FF] shrink-0">
-                        ₹{itemEscrowAmount.toLocaleString('en-IN')}
-                      </span>
+
+                      {itemEscrowAmount > 10 && (
+                        <div className="grid grid-cols-2 gap-1.5 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setEscrowModalTab('PRIVATE_CHUNKS')}
+                            className={`py-2 px-2.5 rounded-lg border text-left transition cursor-pointer ${
+                              escrowModalTab === 'PRIVATE_CHUNKS'
+                                ? 'bg-[#0066FF] text-white border-[#0066FF] shadow-2xs'
+                                : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300'
+                            }`}
+                          >
+                            <span className="text-[11px] font-bold block">50% / 50% Chunks</span>
+                            <span className={`text-[10px] font-mono block ${escrowModalTab === 'PRIVATE_CHUNKS' ? 'text-blue-100' : 'text-slate-500'}`}>
+                              ₹{Math.ceil(itemEscrowAmount / 2).toLocaleString('en-IN')} × 2
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEscrowModalTab('FULL_SINGLE')}
+                            className={`py-2 px-2.5 rounded-lg border text-left transition cursor-pointer ${
+                              escrowModalTab !== 'PRIVATE_CHUNKS'
+                                ? 'bg-[#0066FF] text-white border-[#0066FF] shadow-2xs'
+                                : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300'
+                            }`}
+                          >
+                            <span className="text-[11px] font-bold block">100% Full Hold</span>
+                            <span className={`text-[10px] font-mono block ${escrowModalTab !== 'PRIVATE_CHUNKS' ? 'text-blue-100' : 'text-slate-500'}`}>
+                              ₹{itemEscrowAmount.toLocaleString('en-IN')} once
+                            </span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -3436,20 +3471,9 @@ function CreateShipmentContent() {
                 )}
               </div>
 
-              {/* Payment Mode Switcher: Full Amount vs 50/50 Split (whenever target > ₹10) */}
+              {/* Payment Mode Switcher: 50/50 Chunks vs Full Amount (whenever target > ₹10) */}
               {canSplit5050 && !isFullyFunded && (
                 <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl">
-                  <button
-                    type="button"
-                    onClick={() => setEscrowModalTab('FULL_SINGLE')}
-                    className={`py-2.5 px-3 rounded-lg text-xs font-bold transition cursor-pointer ${
-                      escrowModalTab !== 'PRIVATE_CHUNKS'
-                        ? 'bg-white text-[#0066FF] shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
-                  >
-                    Pay Full (₹{remaining.toLocaleString('en-IN')})
-                  </button>
                   <button
                     type="button"
                     onClick={() => {
@@ -3462,10 +3486,21 @@ function CreateShipmentContent() {
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
-                    <span>Split 50 / 50</span>
+                    <span>50% / 50% Chunks</span>
                     <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#0066FF] text-white">
                       ₹{firstHalfAmount.toLocaleString('en-IN')} × 2
                     </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEscrowModalTab('FULL_SINGLE')}
+                    className={`py-2.5 px-3 rounded-lg text-xs font-bold transition cursor-pointer ${
+                      escrowModalTab !== 'PRIVATE_CHUNKS'
+                        ? 'bg-white text-[#0066FF] shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    100% Full Hold (₹{remaining.toLocaleString('en-IN')})
                   </button>
                 </div>
               )}
@@ -3495,7 +3530,7 @@ function CreateShipmentContent() {
 
                   {canSplit5050 && (
                     <p className="text-center text-xs text-slate-500">
-                      Amount too large for one account or sharing with a friend?{' '}
+                      Prefer paying in 50/50 chunks now or after delivery?{' '}
                       <button
                         type="button"
                         onClick={() => {
@@ -3504,39 +3539,41 @@ function CreateShipmentContent() {
                         }}
                         className="text-[#0066FF] font-bold underline underline-offset-2 cursor-pointer"
                       >
-                        Split 50/50 (₹{firstHalfAmount.toLocaleString('en-IN')} each)
+                        Switch to 50% / 50% Chunks (₹{firstHalfAmount.toLocaleString('en-IN')} × 2)
                       </button>
                     </p>
                   )}
                 </div>
               )}
 
-              {/* MODE B: 50 / 50 SPLIT (Available when device value > ₹10) */}
+              {/* MODE B: 50 / 50 CHUNKS (Available when device value > ₹10) */}
               {escrowModalTab === 'PRIVATE_CHUNKS' && canSplit5050 && !isFullyFunded && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {/* First 50% Card */}
                     <div
-                      className={`p-4 rounded-2xl border transition ${
+                      className={`p-4 rounded-2xl border transition flex flex-col justify-between ${
                         isFirstHalfPaid
                           ? 'bg-emerald-50/60 border-emerald-200'
                           : 'bg-blue-50/30 border-[#0066FF] ring-1 ring-[#0066FF]/20'
                       }`}
                     >
-                      <div className="flex items-center justify-between text-xs mb-1.5">
-                        <span className="font-bold text-slate-700">Part 1 &bull; First 50%</span>
-                        {isFirstHalfPaid ? (
-                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                            Paid ✓
-                          </span>
-                        ) : (
-                          <span className="text-[11px] font-bold text-[#0066FF] bg-blue-100/80 px-2 py-0.5 rounded-full">
-                            Due Now
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xl font-black font-mono text-[#0F172A] mb-3">
-                        ₹{firstHalfAmount.toLocaleString('en-IN')}
+                      <div>
+                        <div className="flex items-center justify-between text-xs mb-1.5">
+                          <span className="font-bold text-slate-700">Chunk 1 &bull; First 50%</span>
+                          {isFirstHalfPaid ? (
+                            <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                              Paid ✓
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-bold text-[#0066FF] bg-blue-100/80 px-2 py-0.5 rounded-full">
+                              50% Chunk
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xl font-black font-mono text-[#0F172A] mb-3">
+                          ₹{firstHalfAmount.toLocaleString('en-IN')}
+                        </div>
                       </div>
                       {isFirstHalfPaid ? (
                         <div className="w-full py-2.5 px-3 rounded-xl bg-emerald-100/80 text-emerald-800 text-xs font-bold text-center flex items-center justify-center gap-1.5">
@@ -3560,7 +3597,7 @@ function CreateShipmentContent() {
                             </>
                           ) : (
                             <>
-                              <span>Pay First 50%</span>
+                              <span>Pay 1st 50% Now</span>
                               <ArrowRight className="w-3.5 h-3.5" />
                             </>
                           )}
@@ -3570,83 +3607,120 @@ function CreateShipmentContent() {
 
                     {/* Second 50% Card */}
                     <div
-                      className={`p-4 rounded-2xl border transition ${
+                      className={`p-4 rounded-2xl border transition flex flex-col justify-between ${
                         isFirstHalfPaid
                           ? 'bg-blue-50/30 border-[#0066FF] ring-1 ring-[#0066FF]/20'
                           : 'bg-slate-50 border-slate-200'
                       }`}
                     >
-                      <div className="flex items-center justify-between text-xs mb-1.5">
-                        <span className="font-bold text-slate-700">Part 2 &bull; Second 50%</span>
-                        <span className="text-[11px] font-semibold text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded-full">
-                          {isFirstHalfPaid ? 'Final 50%' : 'You or Friend'}
-                        </span>
+                      <div>
+                        <div className="flex items-center justify-between text-xs mb-1.5">
+                          <span className="font-bold text-slate-700">Chunk 2 &bull; Second 50%</span>
+                          <span className="text-[11px] font-semibold text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded-full">
+                            {isFirstHalfPaid ? 'Now or Delivery' : 'At Delivery / Co-Payer'}
+                          </span>
+                        </div>
+                        <div className="text-xl font-black font-mono text-[#0F172A] mb-3">
+                          ₹{(isFirstHalfPaid ? remaining : secondHalfAmount).toLocaleString('en-IN')}
+                        </div>
                       </div>
-                      <div className="text-xl font-black font-mono text-[#0F172A] mb-3">
-                        ₹{(isFirstHalfPaid ? remaining : secondHalfAmount).toLocaleString('en-IN')}
-                      </div>
-                      <button
-                        type="button"
-                        disabled={isEscrowHolding || !isFirstHalfPaid}
-                        onClick={() => {
-                          setChunkMethod('SECOND_UPI_BANK');
-                          handleDepositEscrowChunk(remaining);
-                        }}
-                        className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
-                          isFirstHalfPaid
-                            ? 'bg-[#0066FF] hover:bg-[#0052FF] text-white cursor-pointer shadow-sm'
-                            : 'bg-slate-200 text-slate-500 cursor-not-allowed'
-                        }`}
-                      >
-                        {isEscrowHolding && isFirstHalfPaid ? (
-                          <>
-                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                            <span>Completing...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Pay Second 50%</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </>
+                      <div className="space-y-1.5">
+                        <button
+                          type="button"
+                          disabled={isEscrowHolding || !isFirstHalfPaid}
+                          onClick={() => {
+                            setChunkMethod('SECOND_UPI_BANK');
+                            handleDepositEscrowChunk(remaining);
+                          }}
+                          className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
+                            isFirstHalfPaid
+                              ? 'bg-[#0066FF] hover:bg-[#0052FF] text-white cursor-pointer shadow-sm'
+                              : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                          }`}
+                        >
+                          {isEscrowHolding && isFirstHalfPaid ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Completing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Pay 2nd 50% Now</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </>
+                          )}
+                        </button>
+                        {isFirstHalfPaid && (
+                          <button
+                            type="button"
+                            disabled={isEscrowHolding}
+                            onClick={() => handleAuthorizeDoorstepQrEscrow(0)}
+                            className="w-full py-2 px-3 rounded-xl border border-[#0066FF]/40 bg-white hover:bg-blue-50 text-[#0066FF] text-[11px] font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                          >
+                            <span>Pay 2nd 50% at Delivery</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
                         )}
-                      </button>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Share 50% Split Link with a Friend / Co-Payer */}
-                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div>
-                      <span className="text-xs font-bold text-[#0F172A] block">
-                        Splitting with a friend or second phone?
-                      </span>
-                      <span className="text-[11px] text-slate-500 block mt-0.5">
-                        Share this saved order link so they can pay the ₹{(isFirstHalfPaid ? remaining : secondHalfAmount).toLocaleString('en-IN')} half.
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                  {/* Option to Pay 50% / 50% Chunks at Delivery (Doorstep Open-Box QR) + Co-Payer Link */}
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-200/70">
+                      <div>
+                        <span className="text-xs font-bold text-[#0F172A] block">
+                          Want to pay 50% / 50% chunks at delivery?
+                        </span>
+                        <span className="text-[11px] text-slate-500 block mt-0.5">
+                          Pay {isFirstHalfPaid ? `the remaining 50% (₹${remaining.toLocaleString('en-IN')})` : `two 50% chunks (₹${firstHalfAmount.toLocaleString('en-IN')} × 2)`} at doorstep Open-Box delivery via live tracking or Delhivery QR.
+                        </span>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText(savedOrderUrl);
-                          setCopiedPrivateChunkLink(true);
-                          setTimeout(() => setCopiedPrivateChunkLink(false), 2500);
-                        }}
-                        className="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-xs font-bold text-slate-800 flex items-center gap-1.5 cursor-pointer transition"
+                        disabled={isEscrowHolding}
+                        onClick={() => handleAuthorizeDoorstepQrEscrow(0)}
+                        className="px-3.5 py-2.5 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition shrink-0"
                       >
-                        <Copy className="w-3.5 h-3.5 text-[#0066FF]" />
-                        <span>{copiedPrivateChunkLink ? 'Copied ✓' : 'Copy 50% Link'}</span>
+                        <span>{isFirstHalfPaid ? 'Pay 2nd 50% at Delivery' : 'Pay 50/50 at Delivery'}</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
                       </button>
-                      <a
-                        href={`https://wa.me/?text=${encodeURIComponent(
-                          `Hey! I've booked our SafeShip order #${createdDealForEscrow.id} for "${createdDealForEscrow.title}" and paid the shipping. Here is the 50/50 split link to pay the ₹${(isFirstHalfPaid ? remaining : secondHalfAmount).toLocaleString('en-IN')} half into escrow: ${savedOrderUrl}`
-                        )}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition"
-                      >
-                        <Share2 className="w-3.5 h-3.5" />
-                        <span>WhatsApp</span>
-                      </a>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div>
+                        <span className="text-xs font-bold text-[#0F172A] block">
+                          Splitting with a friend or second phone?
+                        </span>
+                        <span className="text-[11px] text-slate-500 block mt-0.5">
+                          Share this saved order link so they can pay the ₹{(isFirstHalfPaid ? remaining : secondHalfAmount).toLocaleString('en-IN')} half.
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(savedOrderUrl);
+                            setCopiedPrivateChunkLink(true);
+                            setTimeout(() => setCopiedPrivateChunkLink(false), 2500);
+                          }}
+                          className="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-xs font-bold text-slate-800 flex items-center gap-1.5 cursor-pointer transition"
+                        >
+                          <Copy className="w-3.5 h-3.5 text-[#0066FF]" />
+                          <span>{copiedPrivateChunkLink ? 'Copied ✓' : 'Copy 50% Link'}</span>
+                        </button>
+                        <a
+                          href={`https://wa.me/?text=${encodeURIComponent(
+                            `Hey! I've booked our SafeShip order #${createdDealForEscrow.id} for "${createdDealForEscrow.title}" and paid the shipping. Here is the 50/50 split link to pay the ₹${(isFirstHalfPaid ? remaining : secondHalfAmount).toLocaleString('en-IN')} half into escrow: ${savedOrderUrl}`
+                          )}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition"
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                          <span>WhatsApp</span>
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </div>
