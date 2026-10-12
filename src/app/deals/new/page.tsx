@@ -969,6 +969,7 @@ function CreateShipmentContent() {
     if (!hasAnyUserEntry) return;
 
     try {
+      const compactPhotos = uploadedPhotos.filter((p) => typeof p === 'string' && p.length < 120000).slice(0, 2);
       const draftData = {
         mode,
         selectedCategory,
@@ -976,9 +977,9 @@ function CreateShipmentContent() {
         condition,
         declaredValue,
         includedItems,
-        uploadedPhotos,
-        productPhoto,
-        backsidePhoto,
+        uploadedPhotos: compactPhotos,
+        productPhoto: productPhoto && productPhoto.length < 120000 ? productPhoto : null,
+        backsidePhoto: null,
         manualImei,
         photoMatchResult,
         imeiAuditReport,
@@ -1026,8 +1027,8 @@ function CreateShipmentContent() {
         savedAt: new Date().toISOString()
       };
       localStorage.setItem('safeship_deal_draft_v2', JSON.stringify(draftData));
-    } catch (e) {
-      console.warn('Failed auto-saving deal draft:', e);
+    } catch {
+      // Ignore draft quota warning
     }
   }, [
     mode,
@@ -1319,48 +1320,107 @@ function CreateShipmentContent() {
   const freeDeliveryDiscount = firstOrderDiscount;
   const codCharge = 0;
 
-  // Dynamic Pickup and Delivery Dates (Strictly synchronized to buyer/user selection)
+  // Dynamic Realistic 2-Option Schedule (Calculated from current local time possibility)
+  const currentLocalHour = new Date().getHours();
+  // Same-day pickup is only possible before 3:00 PM (15:00); after 3:00 PM, Tomorrow & Day After are offered
+  const isTodayPickupPossible = currentLocalHour < 15;
+
+  const realisticPickupDateOptions = (() => {
+    const firstDate = new Date();
+    const secondDate = new Date();
+    if (isTodayPickupPossible) {
+      secondDate.setDate(secondDate.getDate() + 1);
+      return [
+        {
+          id: 'TODAY' as const,
+          label: 'Today',
+          dateText: firstDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }),
+        },
+        {
+          id: 'TOMORROW' as const,
+          label: 'Tomorrow',
+          dateText: secondDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }),
+        },
+      ];
+    } else {
+      firstDate.setDate(firstDate.getDate() + 1);
+      secondDate.setDate(secondDate.getDate() + 2);
+      return [
+        {
+          id: 'TOMORROW' as const,
+          label: 'Tomorrow',
+          dateText: firstDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }),
+        },
+        {
+          id: 'DAY_AFTER' as const,
+          label: secondDate.toLocaleDateString('en-IN', { weekday: 'long' }),
+          dateText: secondDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+        },
+      ];
+    }
+  })();
+
+  const effectivePickupDayChoice = realisticPickupDateOptions.some((o) => o.id === pickupDayChoice)
+    ? pickupDayChoice
+    : realisticPickupDateOptions[0].id;
+
+  // 2 Realistic Pickup Time Windows (If Today is chosen and it's already >= 10 AM, Morning slot has passed)
+  const isMorningSlotPassedToday = effectivePickupDayChoice === 'TODAY' && currentLocalHour >= 10;
+  const realisticPickupTimeOptions = isMorningSlotPassedToday
+    ? [
+        { id: 'AFTERNOON_2_5' as const, label: '02:00 PM – 05:00 PM', sub: 'Afternoon Slot' },
+        { id: 'EVENING_5_8' as const, label: '05:00 PM – 08:00 PM', sub: 'Evening Slot' },
+      ]
+    : [
+        { id: 'MORNING_10_1' as const, label: '10:00 AM – 01:00 PM', sub: 'Morning Slot' },
+        { id: 'AFTERNOON_2_5' as const, label: '02:00 PM – 05:00 PM', sub: 'Afternoon Slot' },
+      ];
+
+  const effectivePickupSlot = realisticPickupTimeOptions.some((o) => o.id === pickupSlot)
+    ? pickupSlot
+    : realisticPickupTimeOptions[0].id;
+
+  // 2 Realistic Buyer Delivery Windows on Arrival Date
+  const realisticBuyerDeliveryOptions = [
+    { id: 'MORNING_10_1' as const, label: '10:00 AM – 02:00 PM', sub: 'Daytime Delivery' },
+    { id: 'EVENING_6_9' as const, label: '04:00 PM – 08:00 PM', sub: 'Evening Delivery' },
+  ];
+
+  const effectiveBuyerDeliverySlot = realisticBuyerDeliveryOptions.some((o) => o.id === buyerPreferredDeliverySlot)
+    ? buyerPreferredDeliverySlot
+    : realisticBuyerDeliveryOptions[0].id;
+
   const pickupDateObj = (() => {
     const base = new Date();
-    if (pickupDayChoice === 'TODAY') {
+    if (effectivePickupDayChoice === 'TODAY') {
       return base;
     }
-    if (pickupDayChoice === 'DAY_AFTER') {
+    if (effectivePickupDayChoice === 'DAY_AFTER') {
       base.setDate(base.getDate() + 2);
       return base;
-    }
-    if (pickupDayChoice === 'CUSTOM' && customPickupDate) {
-      const parsed = new Date(`${customPickupDate}T10:00:00`);
-      if (!isNaN(parsed.getTime())) return parsed;
     }
     base.setDate(base.getDate() + 1);
     return base;
   })();
 
   const pickupDateFormatted = pickupDateObj.toLocaleDateString('en-IN', {
-    weekday: 'long',
+    weekday: 'short',
     day: 'numeric',
     month: 'short',
     year: 'numeric'
   });
 
   const resolvedPickupTimeWindow =
-    pickupSlot === 'MORNING_10_1'
+    effectivePickupSlot === 'MORNING_10_1'
       ? '10:00 AM – 01:00 PM'
-      : pickupSlot === 'AFTERNOON_2_5'
+      : effectivePickupSlot === 'AFTERNOON_2_5'
       ? '02:00 PM – 05:00 PM'
-      : pickupSlot === 'EVENING_5_8'
-      ? '05:00 PM – 08:00 PM'
-      : customPickupTimeWindow.trim() || '11:30 AM – 01:30 PM (Buyer-Scheduled)';
+      : '05:00 PM – 08:00 PM';
 
   const resolvedBuyerDeliveryWindow =
-    buyerPreferredDeliverySlot === 'MORNING_10_1'
-      ? '10:00 AM – 01:00 PM (Morning)'
-      : buyerPreferredDeliverySlot === 'AFTERNOON_2_6'
-      ? '02:00 PM – 06:00 PM (Afternoon)'
-      : buyerPreferredDeliverySlot === 'EVENING_6_9'
-      ? '06:00 PM – 09:00 PM (Evening / Post-Work)'
-      : customBuyerDeliveryWindow.trim() || '07:00 PM – 09:00 PM (Buyer Custom Time)';
+    effectiveBuyerDeliverySlot === 'MORNING_10_1'
+      ? '10:00 AM – 02:00 PM (Daytime)'
+      : '04:00 PM – 08:00 PM (Evening)';
 
   // Dynamic realistic transit days based on tier and linehaul road distance across India
   const getTransitDays = (tier: DeliveryServiceTier, dist: number): number => {
@@ -1386,7 +1446,7 @@ function CreateShipmentContent() {
 
   const deliveryDateObj = getDeliveryDateForTier(selectedTier);
   const deliveryDateFormatted = deliveryDateObj.toLocaleDateString('en-IN', {
-    weekday: 'long',
+    weekday: 'short',
     day: 'numeric',
     month: 'short',
     year: 'numeric'
@@ -1415,6 +1475,11 @@ function CreateShipmentContent() {
 
   const completeDealCreation = (paymentId: string, upfrontAmountPaid: number) => {
     try {
+      // Free up draft storage first so saving the order never hits localStorage quota
+      try {
+        localStorage.removeItem('safeship_deal_draft_v2');
+      } catch {}
+
       const insurancePolicyNumber = `POL-SAFESHIP-TRANSIT-2026-${Date.now().toString(36).toUpperCase()}`;
 
       const created = createNewDeal({
@@ -1423,7 +1488,7 @@ function CreateShipmentContent() {
         category: (selectedCategory || 'SMARTPHONES_TABLETS') as ItemCategory,
         declaredValue,
         condition: condition as any,
-        itemPhotos: uploadedPhotos,
+        itemPhotos: uploadedPhotos.slice(0, 2),
         sellerName: senderName.trim(),
         sellerEmail: senderEmail.trim() || session?.email || `${senderName.toLowerCase().replace(/\s+/g, '')}@safeship.online`,
         sellerPhone: senderPhone.trim().startsWith('+91') ? senderPhone.trim() : `+91 ${senderPhone.trim()}`,
@@ -1451,7 +1516,7 @@ function CreateShipmentContent() {
           photos: []
         } : undefined,
         serviceTier: selectedTier,
-        pickupSlot,
+        pickupSlot: effectivePickupSlot,
         scheduledPickupDate: pickupDateFormatted,
         scheduledPickupTimeWindow: resolvedPickupTimeWindow,
         buyerPreferredDeliveryWindow: resolvedBuyerDeliveryWindow,
@@ -1500,7 +1565,6 @@ function CreateShipmentContent() {
       notifyMilestoneEmail(created, 'BOOKING_CONFIRMED');
 
       try {
-        localStorage.removeItem('safeship_deal_draft_v2');
         localStorage.setItem('safeship_pending_escrow_deal_id', created.id);
       } catch {}
 
@@ -1512,8 +1576,7 @@ function CreateShipmentContent() {
 
       // Prompt immediately for Mandatory Device Value Escrow after Shipping Fee is paid
       setCreatedDealForEscrow(created);
-    } catch (e) {
-      console.error('Error creating deal record in store:', e);
+    } catch {
       const fallbackId = `SS${Math.floor(10000 + Math.random() * 90000)}`;
       try {
         localStorage.removeItem('safeship_deal_draft_v2');
@@ -2650,19 +2713,19 @@ function CreateShipmentContent() {
         {/* =================================================================== */}
         {currentStep === 4 && (
           <div className="space-y-6 animate-in fade-in">
-            {/* Minimal Header */}
+            {/* Clean SafeShip Branded Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-4 border-b border-slate-200/80">
               <div>
-                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900">
+                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#0F172A]">
                   {mode === 'exchange' ? 'Review & Schedule Exchange' : 'Review & Schedule Shipment'}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                  Step 1: Pay shipping to save your order and lock schedule. Step 2: Lock mandatory device value in RBI Escrow.
+                  Step 1: Pay shipping fee to save order &amp; lock schedule. Step 2: Mandatory device value escrow.
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-medium self-start sm:self-auto">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>RBI Nodal Escrow</span>
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0066FF] text-xs font-semibold self-start sm:self-auto">
+                <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF]" />
+                <span>SafeShip RBI Nodal Escrow</span>
               </div>
             </div>
 
@@ -2670,15 +2733,15 @@ function CreateShipmentContent() {
               {/* LEFT COLUMN */}
               <div className="lg:col-span-7 space-y-5">
                 {/* 1. Minimal Device Summary */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 flex items-center justify-between gap-4">
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center shrink-0">
+                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0066FF] flex items-center justify-center shrink-0">
                       <Smartphone className="w-5 h-5" />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-sm text-slate-900 truncate">{itemName || 'Device'}</span>
-                        <span className="text-xs font-mono font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
+                        <span className="font-bold text-sm text-[#0F172A] truncate">{itemName || 'Device'}</span>
+                        <span className="text-xs font-mono font-bold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
                           ₹{declaredValue.toLocaleString('en-IN')}
                         </span>
                       </div>
@@ -2687,47 +2750,44 @@ function CreateShipmentContent() {
                       </div>
                     </div>
                   </div>
-                  <span className="text-[11px] text-emerald-700 font-medium bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/70 shrink-0 hidden sm:inline-flex items-center gap-1">
-                    <Check className="w-3 h-3" />
-                    <span>Open-Box Included</span>
+                  <span className="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/80 shrink-0 hidden sm:inline-flex items-center gap-1">
+                    <Check className="w-3 h-3 text-emerald-600" />
+                    <span>Open-Box Verified</span>
                   </span>
                 </div>
 
-                {/* 2. Delivery Speed (Minimal 3-Tier Cards) */}
-                <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 space-y-3.5">
+                {/* 2. Transit Speed — Only 2 Realistic Options */}
+                <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-3.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
-                      1. Transit Speed
+                    <span className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
+                      1. Select Transit Speed
                     </span>
                     {isFirstOrder && (
-                      <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                      <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-2 py-0.5 rounded-md">
                         ₹99 First-Order Discount Applied
                       </span>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {([
                       {
                         id: 'STANDARD_GROUND' as const,
-                        title: 'Standard Ground',
-                        desc: 'Surface linehaul',
+                        title: 'Standard Surface',
+                        desc: 'Insured highway linehaul',
                         price: tierPricing.STANDARD_GROUND.totalUpfront,
                       },
                       {
-                        id: 'PRIORITY_EXPRESS' as const,
-                        title: 'Priority Express',
-                        desc: 'Recommended corridor',
-                        price: tierPricing.PRIORITY_EXPRESS.totalUpfront,
-                      },
-                      {
                         id: 'FASTEST_AIR_RUSH' as const,
-                        title: 'Express Air',
-                        desc: 'Next cargo flight',
+                        title: 'SafeShip Express Air',
+                        desc: 'Next cargo flight priority',
                         price: tierPricing.FASTEST_AIR_RUSH.totalUpfront,
                       },
                     ]).map((t) => {
-                      const active = selectedTier === t.id;
+                      const isExpress = t.id === 'FASTEST_AIR_RUSH';
+                      const active = isExpress
+                        ? selectedTier !== 'STANDARD_GROUND'
+                        : selectedTier === 'STANDARD_GROUND';
                       const netPrice = isFirstOrder ? Math.max(1, t.price - FIRST_ORDER_DISCOUNT) : t.price;
                       return (
                         <button
@@ -2735,29 +2795,28 @@ function CreateShipmentContent() {
                           type="button"
                           id={`tier-card-${t.id}`}
                           onClick={() => setSelectedTier(t.id)}
-                          className={`p-3.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between gap-3 ${
+                          className={`p-4 rounded-xl border text-left transition cursor-pointer flex items-center justify-between gap-3 ${
                             active
-                              ? 'border-slate-900 bg-slate-900/[0.02] ring-1 ring-slate-900'
+                              ? 'border-[#0066FF] bg-blue-50/40 ring-1 ring-[#0066FF]'
                               : 'border-slate-200 hover:border-slate-300 bg-white'
                           }`}
                         >
                           <div>
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="text-xs font-semibold text-slate-900">{t.title}</span>
-                              {active && <Check className="w-3.5 h-3.5 text-slate-900 shrink-0" />}
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-xs sm:text-sm font-bold text-[#0F172A]">{t.title}</span>
+                              {active && <Check className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />}
                             </div>
                             <span className="text-[11px] text-slate-500 block mt-0.5">
-                              Arrives {getDeliveryDateShort(t.id)}
+                              Arrives {getDeliveryDateShort(t.id)} &bull; {t.desc}
                             </span>
                           </div>
-                          <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                            <span className="text-[10px] text-slate-400">{t.desc}</span>
-                            <div className="flex items-baseline gap-1">
-                              {isFirstOrder && (
-                                <span className="text-[10px] text-slate-400 line-through font-mono">₹{t.price}</span>
-                              )}
-                              <span className="text-sm font-semibold text-slate-900 font-mono">₹{netPrice}</span>
-                            </div>
+                          <div className="text-right shrink-0">
+                            {isFirstOrder && (
+                              <span className="text-[10px] text-slate-400 line-through font-mono block">₹{t.price}</span>
+                            )}
+                            <span className={`text-base font-bold font-mono ${active ? 'text-[#0066FF]' : 'text-[#0F172A]'}`}>
+                              ₹{netPrice}
+                            </span>
                           </div>
                         </button>
                       );
@@ -2765,140 +2824,129 @@ function CreateShipmentContent() {
                   </div>
                 </div>
 
-                {/* 3. Schedule (Minimal Apple/Stripe Style) */}
-                <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 space-y-4">
+                {/* 3. Schedule — Only 2 Realistic Options for Pickup Date, Pickup Time & Delivery Time */}
+                <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
-                      2. Pickup &amp; Buyer Delivery Schedule
+                    <span className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
+                      2. Pickup &amp; Delivery Schedule
                     </span>
-                    <span className="text-xs text-slate-500">
-                      {pickupDateFormatted}
+                    <span className="text-[11px] font-medium text-[#0066FF] bg-blue-50 px-2.5 py-0.5 rounded-full">
+                      Live Slot Availability
                     </span>
                   </div>
 
-                  {/* Pickup Day + Time */}
+                  {/* A. Pickup Date (Only 2 Realistic Options) */}
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-slate-700 block">
-                      Seller Pickup Window ({pickupCity || 'Origin'})
-                    </label>
-                    <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-xl">
-                      {[
-                        { id: 'TODAY' as const, label: 'Today' },
-                        { id: 'TOMORROW' as const, label: 'Tomorrow' },
-                        { id: 'DAY_AFTER' as const, label: 'Day After' },
-                        { id: 'CUSTOM' as const, label: 'Custom Date' },
-                      ].map((d) => (
-                        <button
-                          key={d.id}
-                          type="button"
-                          onClick={() => setPickupDayChoice(d.id)}
-                          className={`py-1.5 px-2 rounded-lg text-xs font-medium transition cursor-pointer ${
-                            pickupDayChoice === d.id
-                              ? 'bg-white text-slate-900 shadow-2xs'
-                              : 'text-slate-600 hover:text-slate-900'
-                          }`}
-                        >
-                          {d.label}
-                        </button>
-                      ))}
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-semibold text-slate-700">
+                        Pickup Date ({pickupCity || 'Seller Origin'})
+                      </label>
+                      {!isTodayPickupPossible && (
+                        <span className="text-[10px] text-slate-400">
+                          Today&apos;s cutoff passed &bull; Showing next available days
+                        </span>
+                      )}
                     </div>
-
-                    {pickupDayChoice === 'CUSTOM' && (
-                      <input
-                        type="date"
-                        value={customPickupDate}
-                        min={new Date().toISOString().split('T')[0]}
-                        onChange={(e) => setCustomPickupDate(e.target.value)}
-                        className="w-full sm:w-auto px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-mono text-slate-900 bg-white focus:border-slate-900 outline-hidden"
-                      />
-                    )}
-
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1">
-                      {[
-                        { id: 'MORNING_10_1' as const, label: '10 AM – 1 PM' },
-                        { id: 'AFTERNOON_2_5' as const, label: '2 PM – 5 PM' },
-                        { id: 'EVENING_5_8' as const, label: '5 PM – 8 PM' },
-                        { id: 'CUSTOM_BUYER_TIME' as const, label: 'Custom Time' },
-                      ].map((slot) => (
-                        <button
-                          key={slot.id}
-                          type="button"
-                          onClick={() => setPickupSlot(slot.id)}
-                          className={`py-2 px-2.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
-                            pickupSlot === slot.id
-                              ? 'border-slate-900 bg-slate-900 text-white'
-                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                          }`}
-                        >
-                          {slot.label}
-                        </button>
-                      ))}
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {realisticPickupDateOptions.map((d) => {
+                        const active = effectivePickupDayChoice === d.id;
+                        return (
+                          <button
+                            key={d.id}
+                            type="button"
+                            onClick={() => setPickupDayChoice(d.id)}
+                            className={`py-2.5 px-3.5 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${
+                              active
+                                ? 'border-[#0066FF] bg-blue-50/40 text-[#0F172A] ring-1 ring-[#0066FF]'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                            }`}
+                          >
+                            <div>
+                              <span className="text-xs font-bold block">{d.label}</span>
+                              <span className="text-[11px] text-slate-500 block">{d.dateText}</span>
+                            </div>
+                            {active && <Check className="w-4 h-4 text-[#0066FF] shrink-0" />}
+                          </button>
+                        );
+                      })}
                     </div>
-
-                    {pickupSlot === 'CUSTOM_BUYER_TIME' && (
-                      <input
-                        type="text"
-                        value={customPickupTimeWindow}
-                        onChange={(e) => setCustomPickupTimeWindow(e.target.value)}
-                        placeholder="Enter exact pickup time (e.g. 11:30 AM – 1:00 PM)"
-                        className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 bg-white focus:border-slate-900 outline-hidden"
-                      />
-                    )}
                   </div>
 
-                  {/* Buyer Preferred Delivery Time */}
+                  {/* B. Pickup Time Window (Only 2 Realistic Options) */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-slate-700 block">
+                      Pickup Time Window
+                    </label>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {realisticPickupTimeOptions.map((slot) => {
+                        const active = effectivePickupSlot === slot.id;
+                        return (
+                          <button
+                            key={slot.id}
+                            type="button"
+                            onClick={() => setPickupSlot(slot.id)}
+                            className={`py-2.5 px-3.5 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${
+                              active
+                                ? 'border-[#0066FF] bg-blue-50/40 text-[#0F172A] ring-1 ring-[#0066FF]'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                            }`}
+                          >
+                            <div>
+                              <span className="text-xs font-bold block">{slot.label}</span>
+                              <span className="text-[11px] text-slate-500 block">{slot.sub}</span>
+                            </div>
+                            {active && <Check className="w-4 h-4 text-[#0066FF] shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* C. Buyer Delivery Window (Only 2 Realistic Options) */}
                   <div className="space-y-2 pt-3 border-t border-slate-100">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-medium text-slate-700">
-                        Buyer Delivery Window ({dropCity || 'Destination'})
+                      <label className="text-xs font-semibold text-slate-700">
+                        Buyer Delivery Time ({dropCity || 'Destination'})
                       </label>
-                      <span className="text-[11px] text-slate-500">
-                        Est. {deliveryDateFormatted}
+                      <span className="text-[11px] font-medium text-emerald-700">
+                        Arrives {deliveryDateFormatted}
                       </span>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                      {[
-                        { id: 'MORNING_10_1' as const, label: '10 AM – 1 PM' },
-                        { id: 'AFTERNOON_2_6' as const, label: '2 PM – 6 PM' },
-                        { id: 'EVENING_6_9' as const, label: '6 PM – 9 PM' },
-                        { id: 'CUSTOM_BUYER' as const, label: 'Custom Time' },
-                      ].map((del) => (
-                        <button
-                          key={del.id}
-                          type="button"
-                          onClick={() => setBuyerPreferredDeliverySlot(del.id)}
-                          className={`py-2 px-2.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
-                            buyerPreferredDeliverySlot === del.id
-                              ? 'border-slate-900 bg-slate-900 text-white'
-                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                          }`}
-                        >
-                          {del.label}
-                        </button>
-                      ))}
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {realisticBuyerDeliveryOptions.map((del) => {
+                        const active = effectiveBuyerDeliverySlot === del.id;
+                        return (
+                          <button
+                            key={del.id}
+                            type="button"
+                            onClick={() => setBuyerPreferredDeliverySlot(del.id)}
+                            className={`py-2.5 px-3.5 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${
+                              active
+                                ? 'border-[#0066FF] bg-blue-50/40 text-[#0F172A] ring-1 ring-[#0066FF]'
+                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                            }`}
+                          >
+                            <div>
+                              <span className="text-xs font-bold block">{del.label}</span>
+                              <span className="text-[11px] text-slate-500 block">{del.sub}</span>
+                            </div>
+                            {active && <Check className="w-4 h-4 text-[#0066FF] shrink-0" />}
+                          </button>
+                        );
+                      })}
                     </div>
-
-                    {buyerPreferredDeliverySlot === 'CUSTOM_BUYER' && (
-                      <input
-                        type="text"
-                        value={customBuyerDeliveryWindow}
-                        onChange={(e) => setCustomBuyerDeliveryWindow(e.target.value)}
-                        placeholder="Enter time given by buyer (e.g. 7:30 PM after office)"
-                        className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 bg-white focus:border-slate-900 outline-hidden"
-                      />
-                    )}
                   </div>
-
-                  <p className="text-[11px] text-slate-500 pt-1">
-                    Courier calls seller on <strong className="text-slate-700 font-medium">{pickupDateFormatted} ({resolvedPickupTimeWindow})</strong> for pickup and delivers to buyer on <strong className="text-slate-700 font-medium">{deliveryDateFormatted} ({resolvedBuyerDeliveryWindow})</strong>.
-                  </p>
                 </div>
 
                 {/* 4. Optional Transit Protection */}
                 <div
                   id="card-transit-insurance"
                   onClick={() => setIncludeInsurance(!includeInsurance)}
-                  className="bg-white rounded-2xl p-4 border border-slate-200/90 flex items-center justify-between gap-3 cursor-pointer select-none hover:border-slate-300 transition"
+                  className={`bg-white rounded-2xl p-4 border flex items-center justify-between gap-3 cursor-pointer select-none transition ${
+                    includeInsurance
+                      ? 'border-[#0066FF]/40 bg-blue-50/20'
+                      : 'border-slate-200/90 hover:border-slate-300'
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <input
@@ -2907,10 +2955,10 @@ function CreateShipmentContent() {
                       checked={includeInsurance}
                       onChange={(e) => setIncludeInsurance(e.target.checked)}
                       onClick={(e) => e.stopPropagation()}
-                      className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-0 cursor-pointer"
+                      className="w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-[#0066FF] cursor-pointer"
                     />
                     <div>
-                      <span className="text-xs font-semibold text-slate-900 block">
+                      <span className="text-xs font-bold text-[#0F172A] block">
                         Transit Damage &amp; Loss Protection
                       </span>
                       <span className="text-[11px] text-slate-500 block">
@@ -2918,7 +2966,7 @@ function CreateShipmentContent() {
                       </span>
                     </div>
                   </div>
-                  <span className={`text-xs font-mono font-semibold ${includeInsurance ? 'text-slate-900' : 'text-slate-400 line-through'}`}>
+                  <span className={`text-xs font-mono font-bold ${includeInsurance ? 'text-[#0066FF]' : 'text-slate-400 line-through'}`}>
                     +₹{calculatedInsuranceFee}
                   </span>
                 </div>
@@ -2927,47 +2975,47 @@ function CreateShipmentContent() {
                   <button
                     type="button"
                     onClick={() => goToStep(3)}
-                    className="py-2 px-3.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium text-xs transition cursor-pointer hover:bg-slate-50 inline-flex items-center gap-1.5"
+                    className="py-2 px-3.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer hover:bg-slate-50 inline-flex items-center gap-1.5"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Back</span>
+                    <span>Back to Addresses</span>
                   </button>
                 </div>
               </div>
 
-              {/* RIGHT COLUMN: Clean Institutional Summary */}
+              {/* RIGHT COLUMN: SafeShip Branded Payment Summary */}
               <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-20">
                 <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs space-y-4">
                   <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                    <span className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
+                    <span className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
                       Payment Summary
                     </span>
-                    <span className="text-[11px] font-medium text-slate-500">
-                      2-Step Protection
+                    <span className="text-[11px] font-semibold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded-md">
+                      2-Step Escrow
                     </span>
                   </div>
 
                   {/* Step 1 Breakdown */}
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between text-slate-600">
-                      <span>Courier Shipping ({activeTierBreakdown.tierLabel})</span>
-                      <span className="font-mono text-slate-900">₹{fullDeliveryFee}</span>
+                      <span>Courier Shipping ({selectedTier === 'STANDARD_GROUND' ? 'Standard Surface' : 'Express Air'})</span>
+                      <span className="font-mono font-semibold text-[#0F172A]">₹{fullDeliveryFee}</span>
                     </div>
                     {isFirstOrder && firstOrderDiscount > 0 && (
-                      <div className="flex justify-between text-emerald-700">
+                      <div className="flex justify-between text-emerald-700 font-medium">
                         <span>First-Order Discount</span>
                         <span className="font-mono">-₹{firstOrderDiscount}</span>
                       </div>
                     )}
                     <div className="flex justify-between text-slate-600">
                       <span>Transit Protection</span>
-                      <span className="font-mono text-slate-900">
+                      <span className="font-mono font-semibold text-[#0F172A]">
                         {includeInsurance ? `₹${calculatedInsuranceFee}` : '₹0'}
                       </span>
                     </div>
                     <div className="flex justify-between text-slate-600">
                       <span>10-Min Open-Box Verification</span>
-                      <span className="text-emerald-700 font-medium">Free</span>
+                      <span className="text-emerald-700 font-semibold">Free</span>
                     </div>
                   </div>
 
@@ -2975,28 +3023,28 @@ function CreateShipmentContent() {
                   <div className="pt-3 border-t border-slate-100 space-y-3">
                     <div className="flex items-baseline justify-between">
                       <div>
-                        <span className="text-sm font-semibold text-slate-900 block">
+                        <span className="text-sm font-bold text-[#0F172A] block">
                           Step 1: Shipping Fee (Due Now)
                         </span>
                         <span className="text-[11px] text-slate-500">
-                          Saves your order &amp; reserves courier slot
+                          Saves your order &amp; locks pickup slot
                         </span>
                       </div>
-                      <span className="text-2xl font-bold text-slate-900 font-mono tracking-tight">
+                      <span className="text-2xl font-black text-[#0066FF] font-mono tracking-tight">
                         ₹{upfrontShippingCharge.toLocaleString('en-IN')}
                       </span>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2">
+                    <div className="p-3 rounded-xl bg-blue-50/50 border border-blue-200/70 flex items-center justify-between gap-2">
                       <div>
-                        <span className="text-xs font-semibold text-slate-800 block">
+                        <span className="text-xs font-bold text-[#0F172A] block">
                           Step 2: Mandatory Device Escrow
                         </span>
-                        <span className="text-[11px] text-slate-500 block">
-                          Collected right after shipping {itemEscrowAmount > 10 ? '• 50/50 split available' : ''}
+                        <span className="text-[11px] text-slate-600 block">
+                          Collected next {itemEscrowAmount > 10 ? '• Full or 50/50 Split' : ''}
                         </span>
                       </div>
-                      <span className="text-sm font-semibold font-mono text-slate-900 shrink-0">
+                      <span className="text-sm font-bold font-mono text-[#0066FF] shrink-0">
                         ₹{itemEscrowAmount.toLocaleString('en-IN')}
                       </span>
                     </div>
@@ -3021,7 +3069,7 @@ function CreateShipmentContent() {
                       id="chk-shipping-terms"
                       checked={agreeTerms}
                       onChange={(e) => setAgreeTerms(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-0 cursor-pointer shrink-0"
+                      className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-[#0066FF] cursor-pointer shrink-0"
                     />
                     <span className="text-[11px] text-slate-500 leading-relaxed">
                       I agree to pay ₹{upfrontShippingCharge.toLocaleString('en-IN')} shipping now to save this order, followed by the mandatory ₹{itemEscrowAmount.toLocaleString('en-IN')} device escrow deposit (released to seller only after doorstep open-box approval).
@@ -3032,7 +3080,7 @@ function CreateShipmentContent() {
                     <button
                       type="button"
                       onClick={() => goToStep(3)}
-                      className="lg:hidden py-3.5 px-4 rounded-xl bg-white border border-slate-200 text-slate-800 font-medium text-xs transition cursor-pointer hover:bg-slate-50 shrink-0"
+                      className="lg:hidden py-3.5 px-4 rounded-xl bg-white border border-slate-200 text-slate-800 font-semibold text-xs transition cursor-pointer hover:bg-slate-50 shrink-0"
                     >
                       Back
                     </button>
@@ -3041,10 +3089,10 @@ function CreateShipmentContent() {
                       id="btn-confirm-booking"
                       disabled={payingWithGateway || isTestProcessing || !agreeTerms}
                       onClick={handleConfirmBooking}
-                      className={`flex-1 py-3.5 px-5 rounded-xl text-white font-semibold text-sm transition flex items-center justify-center gap-2 cursor-pointer ${
+                      className={`flex-1 py-3.5 px-5 rounded-xl text-white font-bold text-sm transition flex items-center justify-center gap-2 cursor-pointer ${
                         payingWithGateway || isTestProcessing || !agreeTerms
                           ? 'bg-slate-300 cursor-not-allowed text-slate-500'
-                          : 'bg-[#0F172A] hover:bg-slate-800 shadow-xs active:scale-99'
+                          : 'bg-[#0066FF] hover:bg-[#0052FF] shadow-md shadow-blue-500/20 active:scale-99'
                       }`}
                     >
                       {payingWithGateway || isTestProcessing ? (
@@ -3232,40 +3280,40 @@ function CreateShipmentContent() {
           : `https://safeship.online/in/track/${createdDealForEscrow.id}?booked=true&split=5050`;
 
         return (
-          <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-            <div className="bg-white text-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200/90 animate-in zoom-in-95 space-y-6 my-auto">
+          <div className="fixed inset-0 z-50 bg-[#0F172A]/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-white text-[#0F172A] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in zoom-in-95 space-y-6 my-auto">
               
               {/* Top Saved Order & Mandatory Step Header (No Close/Cancel Button) */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-[11px] font-semibold">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-[11px] font-bold">
                     <Check className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Order #{createdDealForEscrow.id} Saved &bull; Shipping Paid (₹{createdDealForEscrow.upfrontPaid})</span>
                   </span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[11px] font-semibold">
-                    <Lock className="w-3 h-3 text-slate-500" />
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0066FF] text-[11px] font-bold">
+                    <Lock className="w-3 h-3 text-[#0066FF]" />
                     <span>Step 2 of 2 &bull; Mandatory</span>
                   </span>
                 </div>
 
                 <div>
-                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                  <h3 className="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
                     Deposit Device Value into Escrow
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
-                    Your order is saved. To dispatch the courier for <strong className="text-slate-700">{createdDealForEscrow.title}</strong>, lock the device value in SafeShip Escrow. Funds are only released to the seller after you inspect and accept the device at delivery.
+                    Your order is saved. Lock the device value for <strong className="text-[#0F172A]">{createdDealForEscrow.title}</strong> in SafeShip RBI Escrow to dispatch the courier. Funds are released to the seller only after open-box approval.
                   </p>
                 </div>
               </div>
 
-              {/* Minimal Vault Summary Card */}
-              <div className="p-5 rounded-2xl bg-slate-950 text-white space-y-4">
+              {/* SafeShip Branded Vault Summary Card */}
+              <div className="p-5 rounded-2xl bg-[#0F172A] text-white space-y-4 shadow-md">
                 <div className="flex items-center justify-between text-xs text-slate-400">
-                  <span className="flex items-center gap-1.5 font-medium text-slate-300">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    <span>SafeShip Escrow Vault</span>
+                  <span className="flex items-center gap-1.5 font-semibold text-white">
+                    <ShieldCheck className="w-4 h-4 text-[#10B981]" />
+                    <span>SafeShip RBI Nodal Vault</span>
                   </span>
-                  <span className="font-mono text-[11px] text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 px-2 py-0.5 rounded-md">
+                  <span className="font-mono text-[11px] text-emerald-300 bg-emerald-950/90 border border-emerald-700/60 px-2.5 py-0.5 rounded-full font-semibold">
                     {isFullyFunded ? '100% Funded ✓' : `${progressPct}% Funded`}
                   </span>
                 </div>
@@ -3275,7 +3323,7 @@ function CreateShipmentContent() {
                     <span className="text-[11px] uppercase tracking-wider text-slate-400 block">
                       Remaining to Lock
                     </span>
-                    <span className="text-3xl font-bold font-mono tracking-tight text-white mt-0.5 block">
+                    <span className="text-3xl font-black font-mono tracking-tight text-white mt-0.5 block">
                       ₹{remaining.toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -3283,7 +3331,7 @@ function CreateShipmentContent() {
                     <span className="text-[11px] uppercase tracking-wider text-slate-400 block">
                       Total Device Value
                     </span>
-                    <span className="text-base font-semibold font-mono text-slate-300 mt-0.5 block">
+                    <span className="text-base font-bold font-mono text-slate-300 mt-0.5 block">
                       ₹{target.toLocaleString('en-IN')}
                     </span>
                   </div>
@@ -3291,9 +3339,9 @@ function CreateShipmentContent() {
 
                 {/* Progress Bar */}
                 <div className="space-y-1.5">
-                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+                      className="h-full bg-gradient-to-r from-[#0066FF] to-[#10B981] rounded-full transition-all duration-500"
                       style={{ width: `${Math.max(4, progressPct)}%` }}
                     />
                   </div>
@@ -3305,14 +3353,14 @@ function CreateShipmentContent() {
 
                 {/* Recorded Payment History */}
                 {chunks.length > 0 && (
-                  <div className="pt-3 border-t border-slate-800/80 space-y-1.5">
+                  <div className="pt-3 border-t border-slate-800 space-y-1.5">
                     {chunks.map((c) => (
                       <div key={c.id} className="flex items-center justify-between text-xs text-slate-300">
                         <span className="flex items-center gap-1.5">
                           <Check className="w-3.5 h-3.5 text-emerald-400" />
                           <span>Part {c.chunkNumber} Paid: <strong className="text-white font-mono">₹{c.amount.toLocaleString('en-IN')}</strong></span>
                         </span>
-                        <span className="font-mono text-[11px] text-slate-400">{c.utr}</span>
+                        <span className="font-mono text-[11px] text-emerald-300">{c.utr}</span>
                       </div>
                     ))}
                   </div>
@@ -3325,9 +3373,9 @@ function CreateShipmentContent() {
                   <button
                     type="button"
                     onClick={() => setEscrowModalTab('FULL_SINGLE')}
-                    className={`py-2.5 px-3 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    className={`py-2.5 px-3 rounded-lg text-xs font-bold transition cursor-pointer ${
                       escrowModalTab !== 'PRIVATE_CHUNKS'
-                        ? 'bg-white text-slate-900 shadow-xs'
+                        ? 'bg-white text-[#0066FF] shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
@@ -3339,14 +3387,14 @@ function CreateShipmentContent() {
                       setEscrowModalTab('PRIVATE_CHUNKS');
                       setChunkAmountInput(isFirstHalfPaid ? remaining : firstHalfAmount);
                     }}
-                    className={`py-2.5 px-3 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                    className={`py-2.5 px-3 rounded-lg text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
                       escrowModalTab === 'PRIVATE_CHUNKS'
-                        ? 'bg-white text-slate-900 shadow-xs'
+                        ? 'bg-white text-[#0066FF] shadow-xs'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                   >
                     <span>Split 50 / 50</span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-white">
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#0066FF] text-white">
                       ₹{firstHalfAmount.toLocaleString('en-IN')} × 2
                     </span>
                   </button>
@@ -3360,7 +3408,7 @@ function CreateShipmentContent() {
                     type="button"
                     disabled={isEscrowHolding || escrowHoldSuccess}
                     onClick={handlePutEscrowOnHold}
-                    className="w-full py-4 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] disabled:opacity-60 shadow-sm"
+                    className="w-full py-4 px-5 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm transition flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] disabled:opacity-60 shadow-md shadow-blue-500/20"
                   >
                     {isEscrowHolding ? (
                       <>
@@ -3385,7 +3433,7 @@ function CreateShipmentContent() {
                           setEscrowModalTab('PRIVATE_CHUNKS');
                           setChunkAmountInput(isFirstHalfPaid ? remaining : firstHalfAmount);
                         }}
-                        className="text-slate-900 font-semibold underline underline-offset-2 cursor-pointer"
+                        className="text-[#0066FF] font-bold underline underline-offset-2 cursor-pointer"
                       >
                         Split 50/50 (₹{firstHalfAmount.toLocaleString('en-IN')} each)
                       </button>
@@ -3403,26 +3451,26 @@ function CreateShipmentContent() {
                       className={`p-4 rounded-2xl border transition ${
                         isFirstHalfPaid
                           ? 'bg-emerald-50/60 border-emerald-200'
-                          : 'bg-white border-slate-900 ring-1 ring-slate-900/10'
+                          : 'bg-blue-50/30 border-[#0066FF] ring-1 ring-[#0066FF]/20'
                       }`}
                     >
                       <div className="flex items-center justify-between text-xs mb-1.5">
-                        <span className="font-semibold text-slate-600">Part 1 &bull; First 50%</span>
+                        <span className="font-bold text-slate-700">Part 1 &bull; First 50%</span>
                         {isFirstHalfPaid ? (
-                          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                          <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
                             Paid ✓
                           </span>
                         ) : (
-                          <span className="text-[11px] font-semibold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">
+                          <span className="text-[11px] font-bold text-[#0066FF] bg-blue-100/80 px-2 py-0.5 rounded-full">
                             Due Now
                           </span>
                         )}
                       </div>
-                      <div className="text-xl font-bold font-mono text-slate-900 mb-3">
+                      <div className="text-xl font-black font-mono text-[#0F172A] mb-3">
                         ₹{firstHalfAmount.toLocaleString('en-IN')}
                       </div>
                       {isFirstHalfPaid ? (
-                        <div className="w-full py-2.5 px-3 rounded-xl bg-emerald-100/80 text-emerald-800 text-xs font-semibold text-center flex items-center justify-center gap-1.5">
+                        <div className="w-full py-2.5 px-3 rounded-xl bg-emerald-100/80 text-emerald-800 text-xs font-bold text-center flex items-center justify-center gap-1.5">
                           <Check className="w-3.5 h-3.5" />
                           <span>First 50% Locked</span>
                         </div>
@@ -3434,7 +3482,7 @@ function CreateShipmentContent() {
                             setChunkMethod('UPI_GPAY_PHONEPE');
                             handleDepositEscrowChunk(firstHalfAmount);
                           }}
-                          className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                          className="w-full py-2.5 px-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-sm"
                         >
                           {isEscrowHolding ? (
                             <>
@@ -3455,17 +3503,17 @@ function CreateShipmentContent() {
                     <div
                       className={`p-4 rounded-2xl border transition ${
                         isFirstHalfPaid
-                          ? 'bg-white border-slate-900 ring-1 ring-slate-900/10'
+                          ? 'bg-blue-50/30 border-[#0066FF] ring-1 ring-[#0066FF]/20'
                           : 'bg-slate-50 border-slate-200'
                       }`}
                     >
                       <div className="flex items-center justify-between text-xs mb-1.5">
-                        <span className="font-semibold text-slate-600">Part 2 &bull; Second 50%</span>
+                        <span className="font-bold text-slate-700">Part 2 &bull; Second 50%</span>
                         <span className="text-[11px] font-semibold text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded-full">
                           {isFirstHalfPaid ? 'Final 50%' : 'You or Friend'}
                         </span>
                       </div>
-                      <div className="text-xl font-bold font-mono text-slate-900 mb-3">
+                      <div className="text-xl font-black font-mono text-[#0F172A] mb-3">
                         ₹{(isFirstHalfPaid ? remaining : secondHalfAmount).toLocaleString('en-IN')}
                       </div>
                       <button
@@ -3475,9 +3523,9 @@ function CreateShipmentContent() {
                           setChunkMethod('SECOND_UPI_BANK');
                           handleDepositEscrowChunk(remaining);
                         }}
-                        className={`w-full py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 ${
+                        className={`w-full py-2.5 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 ${
                           isFirstHalfPaid
-                            ? 'bg-slate-900 hover:bg-slate-800 text-white cursor-pointer'
+                            ? 'bg-[#0066FF] hover:bg-[#0052FF] text-white cursor-pointer shadow-sm'
                             : 'bg-slate-200 text-slate-500 cursor-not-allowed'
                         }`}
                       >
@@ -3499,7 +3547,7 @@ function CreateShipmentContent() {
                   {/* Share 50% Split Link with a Friend / Co-Payer */}
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                      <span className="text-xs font-semibold text-slate-900 block">
+                      <span className="text-xs font-bold text-[#0F172A] block">
                         Splitting with a friend or second phone?
                       </span>
                       <span className="text-[11px] text-slate-500 block mt-0.5">
@@ -3514,9 +3562,9 @@ function CreateShipmentContent() {
                           setCopiedPrivateChunkLink(true);
                           setTimeout(() => setCopiedPrivateChunkLink(false), 2500);
                         }}
-                        className="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-xs font-semibold text-slate-800 flex items-center gap-1.5 cursor-pointer transition"
+                        className="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-xs font-bold text-slate-800 flex items-center gap-1.5 cursor-pointer transition"
                       >
-                        <Copy className="w-3.5 h-3.5" />
+                        <Copy className="w-3.5 h-3.5 text-[#0066FF]" />
                         <span>{copiedPrivateChunkLink ? 'Copied ✓' : 'Copy 50% Link'}</span>
                       </button>
                       <a
@@ -3525,10 +3573,10 @@ function CreateShipmentContent() {
                         )}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition"
+                        className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 cursor-pointer transition"
                       >
                         <Share2 className="w-3.5 h-3.5" />
-                        <span>Share</span>
+                        <span>WhatsApp</span>
                       </a>
                     </div>
                   </div>

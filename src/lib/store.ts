@@ -7,25 +7,47 @@ import { calculateEscrowBreakdown } from './escrowCalculator';
 const STORAGE_KEY = 'safeship_india_deals_v2';
 const USER_ORDERS_KEY = 'safeship_user_orders_v1';
 
+function compactDealsForStorage(deals: SafeDeal[], maxDeals = 15, stripAllBase64 = false): SafeDeal[] {
+  return deals.slice(0, maxDeals).map((deal, idx) => {
+    const keepCompactPhotos = !stripAllBase64 && idx < 2;
+    const filteredPhotos = Array.isArray(deal.itemPhotos)
+      ? deal.itemPhotos
+          .slice(0, 2)
+          .filter((p) => typeof p === 'string' && (!p.startsWith('data:') || (keepCompactPhotos && p.length < 150000)))
+      : [];
+    return {
+      ...deal,
+      itemPhotos: filteredPhotos,
+    };
+  });
+}
+
 export function getUserOrders(): SafeDeal[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(USER_ORDERS_KEY);
     if (!raw) return [];
     return JSON.parse(raw);
-  } catch (err) {
-    console.error('Failed to read user orders from localStorage:', err);
+  } catch {
     return [];
   }
 }
 
 export function saveUserOrders(orders: SafeDeal[]): void {
   if (typeof window === 'undefined') return;
+  const compacted = compactDealsForStorage(orders, 12, false);
   try {
-    localStorage.setItem(USER_ORDERS_KEY, JSON.stringify(orders));
-    window.dispatchEvent(new CustomEvent('safeship_user_orders_updated', { detail: orders }));
-  } catch (err) {
-    console.error('Failed to save user orders to localStorage:', err);
+    localStorage.setItem(USER_ORDERS_KEY, JSON.stringify(compacted));
+    window.dispatchEvent(new CustomEvent('safeship_user_orders_updated', { detail: compacted }));
+  } catch {
+    try {
+      localStorage.removeItem('safeship_deal_draft_v2');
+      const minimal = compactDealsForStorage(orders, 6, true);
+      localStorage.setItem(USER_ORDERS_KEY, JSON.stringify(minimal));
+      window.dispatchEvent(new CustomEvent('safeship_user_orders_updated', { detail: minimal }));
+    } catch {
+      // Silently ignore if browser storage is completely disabled
+    }
   }
 }
 
@@ -38,8 +60,8 @@ function syncDealToUserOrders(deal: SafeDeal) {
       orders[idx] = deal;
       saveUserOrders([...orders]);
     }
-  } catch (err) {
-    console.error('Failed to sync deal to user orders:', err);
+  } catch {
+    // Ignore sync error
   }
 }
 
@@ -48,23 +70,31 @@ export function getStoredDeals(): SafeDeal[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_DEALS));
+      const initialCompacted = compactDealsForStorage(INITIAL_DEALS, 12, true);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(initialCompacted));
       return INITIAL_DEALS;
     }
     return JSON.parse(raw);
-  } catch (err) {
-    console.error('Failed to read from localStorage:', err);
+  } catch {
     return INITIAL_DEALS;
   }
 }
 
 export function saveStoredDeals(deals: SafeDeal[]): void {
   if (typeof window === 'undefined') return;
+  const compacted = compactDealsForStorage(deals, 12, false);
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(deals));
-    window.dispatchEvent(new CustomEvent('safeship_deals_updated', { detail: deals }));
-  } catch (err) {
-    console.error('Failed to save to localStorage:', err);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(compacted));
+    window.dispatchEvent(new CustomEvent('safeship_deals_updated', { detail: compacted }));
+  } catch {
+    try {
+      localStorage.removeItem('safeship_deal_draft_v2');
+      const minimal = compactDealsForStorage(deals, 6, true);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(minimal));
+      window.dispatchEvent(new CustomEvent('safeship_deals_updated', { detail: minimal }));
+    } catch {
+      // Silently ignore if storage quota cannot be recovered
+    }
   }
 }
 
