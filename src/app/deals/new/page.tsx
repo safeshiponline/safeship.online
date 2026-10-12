@@ -1320,61 +1320,39 @@ function CreateShipmentContent() {
   const freeDeliveryDiscount = firstOrderDiscount;
   const codCharge = 0;
 
-  // Dynamic Realistic 2-Option Schedule (Calculated from current local time possibility)
-  const currentLocalHour = new Date().getHours();
-  // Same-day pickup is only possible before 3:00 PM (15:00); after 3:00 PM, Tomorrow & Day After are offered
-  const isTodayPickupPossible = currentLocalHour < 15;
-
-  const realisticPickupDateOptions = (() => {
-    const firstDate = new Date();
-    const secondDate = new Date();
-    if (isTodayPickupPossible) {
-      secondDate.setDate(secondDate.getDate() + 1);
-      return [
-        {
-          id: 'TODAY' as const,
-          label: 'Today',
-          dateText: firstDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }),
-        },
-        {
-          id: 'TOMORROW' as const,
-          label: 'Tomorrow',
-          dateText: secondDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }),
-        },
-      ];
-    } else {
-      firstDate.setDate(firstDate.getDate() + 1);
-      secondDate.setDate(secondDate.getDate() + 2);
-      return [
-        {
-          id: 'TOMORROW' as const,
-          label: 'Tomorrow',
-          dateText: firstDate.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }),
-        },
-        {
-          id: 'DAY_AFTER' as const,
-          label: secondDate.toLocaleDateString('en-IN', { weekday: 'long' }),
-          dateText: secondDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
-        },
-      ];
-    }
+  // Dynamic Realistic 2-Option Schedule:
+  // Pickup Date has 2 options: "Tomorrow" and "Custom Date"
+  const tomorrowDateObj = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d;
   })();
+  const tomorrowIsoMin = tomorrowDateObj.toISOString().split('T')[0];
+
+  const realisticPickupDateOptions = [
+    {
+      id: 'TOMORROW' as const,
+      label: 'Tomorrow',
+      dateText: tomorrowDateObj.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }),
+    },
+    {
+      id: 'CUSTOM' as const,
+      label: 'Custom Date',
+      dateText: customPickupDate
+        ? new Date(`${customPickupDate}T10:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })
+        : 'Pick from calendar',
+    },
+  ];
 
   const effectivePickupDayChoice = realisticPickupDateOptions.some((o) => o.id === pickupDayChoice)
     ? pickupDayChoice
-    : realisticPickupDateOptions[0].id;
+    : 'TOMORROW';
 
-  // 2 Realistic Pickup Time Windows (If Today is chosen and it's already >= 10 AM, Morning slot has passed)
-  const isMorningSlotPassedToday = effectivePickupDayChoice === 'TODAY' && currentLocalHour >= 10;
-  const realisticPickupTimeOptions = isMorningSlotPassedToday
-    ? [
-        { id: 'AFTERNOON_2_5' as const, label: '02:00 PM – 05:00 PM', sub: 'Afternoon Slot' },
-        { id: 'EVENING_5_8' as const, label: '05:00 PM – 08:00 PM', sub: 'Evening Slot' },
-      ]
-    : [
-        { id: 'MORNING_10_1' as const, label: '10:00 AM – 01:00 PM', sub: 'Morning Slot' },
-        { id: 'AFTERNOON_2_5' as const, label: '02:00 PM – 05:00 PM', sub: 'Afternoon Slot' },
-      ];
+  // 2 Realistic Pickup Time Windows
+  const realisticPickupTimeOptions = [
+    { id: 'MORNING_10_1' as const, label: '10:00 AM – 01:00 PM', sub: 'Morning Slot' },
+    { id: 'AFTERNOON_2_5' as const, label: '02:00 PM – 05:00 PM', sub: 'Afternoon Slot' },
+  ];
 
   const effectivePickupSlot = realisticPickupTimeOptions.some((o) => o.id === pickupSlot)
     ? pickupSlot
@@ -1391,14 +1369,11 @@ function CreateShipmentContent() {
     : realisticBuyerDeliveryOptions[0].id;
 
   const pickupDateObj = (() => {
+    if (effectivePickupDayChoice === 'CUSTOM' && customPickupDate) {
+      const parsed = new Date(`${customPickupDate}T10:00:00`);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
     const base = new Date();
-    if (effectivePickupDayChoice === 'TODAY') {
-      return base;
-    }
-    if (effectivePickupDayChoice === 'DAY_AFTER') {
-      base.setDate(base.getDate() + 2);
-      return base;
-    }
     base.setDate(base.getDate() + 1);
     return base;
   })();
@@ -2913,17 +2888,15 @@ function CreateShipmentContent() {
                     </span>
                   </div>
 
-                  {/* A. Pickup Date (Only 2 Realistic Options) */}
+                  {/* A. Pickup Date (Tomorrow or Custom Date) */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-semibold text-slate-700">
                         Pickup Date ({pickupCity || 'Seller Origin'})
                       </label>
-                      {!isTodayPickupPossible && (
-                        <span className="text-[10px] text-slate-400">
-                          Today&apos;s cutoff passed &bull; Showing next available days
-                        </span>
-                      )}
+                      <span className="text-[11px] font-medium text-slate-500">
+                        {pickupDateFormatted}
+                      </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2.5">
                       {realisticPickupDateOptions.map((d) => {
@@ -2932,7 +2905,12 @@ function CreateShipmentContent() {
                           <button
                             key={d.id}
                             type="button"
-                            onClick={() => setPickupDayChoice(d.id)}
+                            onClick={() => {
+                              setPickupDayChoice(d.id);
+                              if (d.id === 'CUSTOM' && !customPickupDate) {
+                                setCustomPickupDate(tomorrowIsoMin);
+                              }
+                            }}
                             className={`py-2.5 px-3.5 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${
                               active
                                 ? 'border-[#0066FF] bg-blue-50/40 text-[#0F172A] ring-1 ring-[#0066FF]'
@@ -2948,6 +2926,19 @@ function CreateShipmentContent() {
                         );
                       })}
                     </div>
+
+                    {effectivePickupDayChoice === 'CUSTOM' && (
+                      <div className="pt-1 flex items-center gap-2.5">
+                        <span className="text-xs font-semibold text-slate-600 shrink-0">Select Date:</span>
+                        <input
+                          type="date"
+                          value={customPickupDate || tomorrowIsoMin}
+                          min={tomorrowIsoMin}
+                          onChange={(e) => setCustomPickupDate(e.target.value)}
+                          className="px-3 py-2 rounded-xl border border-[#0066FF]/50 text-xs font-mono font-semibold text-[#0F172A] bg-blue-50/20 focus:border-[#0066FF] outline-hidden cursor-pointer"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* B. Pickup Time Window (Only 2 Realistic Options) */}
