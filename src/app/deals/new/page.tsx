@@ -2756,71 +2756,149 @@ function CreateShipmentContent() {
                   </span>
                 </div>
 
-                {/* 2. Transit Speed — Only 2 Realistic Options */}
-                <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-3.5">
+                {/* 2. Delivery Speed (3-Tier Shipping Options) */}
+                <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-[#E2E8F0] shadow-xs space-y-2.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
-                      1. Select Transit Speed
+                    <span className="text-xs font-bold text-[#334155] uppercase tracking-wider flex items-center gap-1.5">
+                      <Zap className="w-4 h-4 text-[#0066FF]" />
+                      <span>1. Select Delivery Speed</span>
                     </span>
-                    {isFirstOrder && (
-                      <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/70 px-2 py-0.5 rounded-md">
-                        ₹99 First-Order Discount Applied
-                      </span>
-                    )}
+                    <span className="text-[11px] text-slate-400">
+                      Est. {deliveryDateFormatted}
+                    </span>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {([
-                      {
-                        id: 'STANDARD_GROUND' as const,
-                        title: 'Standard Surface',
-                        desc: 'Insured highway linehaul',
-                        price: tierPricing.STANDARD_GROUND.totalUpfront,
-                      },
-                      {
-                        id: 'FASTEST_AIR_RUSH' as const,
-                        title: 'SafeShip Express Air',
-                        desc: 'Next cargo flight priority',
-                        price: tierPricing.FASTEST_AIR_RUSH.totalUpfront,
-                      },
-                    ]).map((t) => {
-                      const isExpress = t.id === 'FASTEST_AIR_RUSH';
-                      const active = isExpress
-                        ? selectedTier !== 'STANDARD_GROUND'
-                        : selectedTier === 'STANDARD_GROUND';
-                      const netPrice = isFirstOrder ? Math.max(1, t.price - FIRST_ORDER_DISCOUNT) : t.price;
-                      return (
-                        <button
-                          key={t.id}
-                          type="button"
-                          id={`tier-card-${t.id}`}
-                          onClick={() => setSelectedTier(t.id)}
-                          className={`p-4 rounded-xl border text-left transition cursor-pointer flex items-center justify-between gap-3 ${
-                            active
-                              ? 'border-[#0066FF] bg-blue-50/40 ring-1 ring-[#0066FF]'
-                              : 'border-slate-200 hover:border-slate-300 bg-white'
-                          }`}
-                        >
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-xs sm:text-sm font-bold text-[#0F172A]">{t.title}</span>
-                              {active && <Check className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />}
-                            </div>
-                            <span className="text-[11px] text-slate-500 block mt-0.5">
-                              Arrives {getDeliveryDateShort(t.id)} &bull; {t.desc}
-                            </span>
-                          </div>
-                          <div className="text-right shrink-0">
-                            {isFirstOrder && (
-                              <span className="text-[10px] text-slate-400 line-through font-mono block">₹{t.price}</span>
+                  {/* First-Order ₹99 Discount Banner */}
+                  {isFirstOrder && (
+                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-gradient-to-r from-blue-50 to-emerald-50 border border-blue-200 text-slate-800 text-xs font-medium animate-in fade-in">
+                      <span className="text-base shrink-0">🎁</span>
+                      <span><strong>First Order Perk:</strong> Flat ₹99 discount automatically applied below — no coupon code required!</span>
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {/* Tier 1: Standard Ground */}
+                    <div
+                      id="tier-card-STANDARD_GROUND"
+                      onClick={() => setSelectedTier('STANDARD_GROUND')}
+                      className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
+                        selectedTier === 'STANDARD_GROUND'
+                          ? 'bg-emerald-50/70 border-emerald-600 ring-2 ring-emerald-300 shadow-sm'
+                          : 'bg-white border-[#E2E8F0] hover:border-emerald-300'
+                      }`}
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                          <span className="text-sm font-black text-slate-900">📦 Standard Ground</span>
+                          <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full uppercase">
+                            Delivers {getDeliveryDateShort('STANDARD_GROUND')} ({getTransitDays('STANDARD_GROUND', distanceKm || effectiveDistance)} Days)
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 leading-tight">
+                          Reliable surface linehaul network with doorstep unboxing.
+                        </p>
+                      </div>
+                      <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                        <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
+                        <div className="text-right shrink-0">
+                          <div className="flex items-baseline gap-1.5 justify-end">
+                            {isFirstOrder ? (
+                              <>
+                                <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
+                                <span className="text-base font-black text-slate-900 font-mono">₹{Math.max(1, tierPricing.STANDARD_GROUND.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
+                              </>
+                            ) : (
+                              <span className="text-base font-black text-slate-900 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
                             )}
-                            <span className={`text-base font-bold font-mono ${active ? 'text-[#0066FF]' : 'text-[#0F172A]'}`}>
-                              ₹{netPrice}
-                            </span>
                           </div>
-                        </button>
-                      );
-                    })}
+                          <span className="text-[10px] text-emerald-700 font-semibold block">
+                            {isFirstOrder ? '₹99 First Order Off' : 'Surface Linehaul'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tier 2: Priority Express */}
+                    <div
+                      id="tier-card-PRIORITY_EXPRESS"
+                      onClick={() => setSelectedTier('PRIORITY_EXPRESS')}
+                      className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
+                        selectedTier === 'PRIORITY_EXPRESS'
+                          ? 'bg-blue-50/70 border-[#0066FF] ring-2 ring-blue-300 shadow-sm'
+                          : 'bg-white border-[#E2E8F0] hover:border-blue-300'
+                      }`}
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                          <span className="text-sm font-black text-slate-900">🚀 Priority Express</span>
+                          <span className="text-[9px] font-bold bg-blue-100 text-[#0066FF] border border-blue-200 px-2 py-0.5 rounded-full uppercase">
+                            Delivers {getDeliveryDateShort('PRIORITY_EXPRESS')} ({getTransitDays('PRIORITY_EXPRESS', distanceKm || effectiveDistance)} Days)
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 leading-tight">
+                          Priority expressway &amp; commercial air corridor.
+                        </p>
+                      </div>
+                      <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                        <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
+                        <div className="text-right shrink-0">
+                          <div className="flex items-baseline gap-1.5 justify-end">
+                            {isFirstOrder ? (
+                              <>
+                                <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
+                                <span className="text-base font-black text-blue-700 font-mono">₹{Math.max(1, tierPricing.PRIORITY_EXPRESS.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
+                              </>
+                            ) : (
+                              <span className="text-base font-black text-blue-700 font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-blue-700 font-semibold block">
+                            {isFirstOrder ? '₹99 First Order Off' : 'Express Linehaul'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tier 3: Express Air */}
+                    <div
+                      id="tier-card-FASTEST_AIR_RUSH"
+                      onClick={() => setSelectedTier('FASTEST_AIR_RUSH')}
+                      className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
+                        selectedTier === 'FASTEST_AIR_RUSH'
+                          ? 'bg-amber-50/60 border-amber-500 ring-2 ring-amber-300 shadow-sm'
+                          : 'bg-white border-[#E2E8F0] hover:border-amber-300'
+                      }`}
+                    >
+                      <div className="space-y-1 min-w-0">
+                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
+                          <span className="text-sm font-black text-slate-900">⚡ Express Air</span>
+                          <span className="text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-full shadow-2xs uppercase">
+                            Delivers {getDeliveryDateShort('FASTEST_AIR_RUSH')} ({getTransitDays('FASTEST_AIR_RUSH', distanceKm || effectiveDistance)} Days)
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 leading-tight">
+                          Next commercial cargo flight &amp; express dispatch.
+                        </p>
+                      </div>
+                      <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                        <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
+                        <div className="text-right shrink-0">
+                          <div className="flex items-baseline gap-1.5 justify-end">
+                            {isFirstOrder ? (
+                              <>
+                                <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
+                                <span className="text-base font-black text-amber-700 font-mono">₹{Math.max(1, tierPricing.FASTEST_AIR_RUSH.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
+                              </>
+                            ) : (
+                              <span className="text-base font-black text-amber-700 font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-amber-700 font-semibold block">
+                            {isFirstOrder ? '₹99 First Order Off' : 'Air Linehaul'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -2998,7 +3076,7 @@ function CreateShipmentContent() {
                   {/* Step 1 Breakdown */}
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between text-slate-600">
-                      <span>Courier Shipping ({selectedTier === 'STANDARD_GROUND' ? 'Standard Surface' : 'Express Air'})</span>
+                      <span>Courier Shipping ({activeTierBreakdown.tierLabel})</span>
                       <span className="font-mono font-semibold text-[#0F172A]">₹{fullDeliveryFee}</span>
                     </div>
                     {isFirstOrder && firstOrderDiscount > 0 && (
