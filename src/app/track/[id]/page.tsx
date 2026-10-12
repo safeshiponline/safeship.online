@@ -123,8 +123,11 @@ function TrackingContent({
         setDeal({ ...updated });
         const nextRem = Math.max(0, updated.declaredValue - (updated.escrowVault?.depositedAmount || 0));
         if (nextRem > 0) {
-          setTrackChunkAmount(Math.min(25000, nextRem));
+          setTrackChunkAmount(nextRem);
         } else {
+          try {
+            localStorage.removeItem('safeship_pending_escrow_deal_id');
+          } catch {}
           notifyMilestoneEmail(updated, 'COURIER_ASSIGNED');
           setEscrowHoldSuccess(true);
           setEmailAlertSentToast(true);
@@ -141,6 +144,9 @@ function TrackingContent({
       const updated = authorizeDelhiveryDoorstepEscrowMode(deal.id, 0);
       setIsEscrowHolding(false);
       if (updated) {
+        try {
+          localStorage.removeItem('safeship_pending_escrow_deal_id');
+        } catch {}
         setDeal({ ...updated });
         notifyMilestoneEmail(updated, 'COURIER_ASSIGNED');
         setEscrowHoldSuccess(true);
@@ -156,6 +162,9 @@ function TrackingContent({
     setTimeout(() => {
       const updated = lockDealEscrowHold(deal.id, 'Cashfree PG v3 Escrow Hold');
       if (updated) {
+        try {
+          localStorage.removeItem('safeship_pending_escrow_deal_id');
+        } catch {}
         setDeal(updated);
         notifyMilestoneEmail(updated, 'COURIER_ASSIGNED');
       }
@@ -698,154 +707,168 @@ function TrackingContent({
           </div>
         </div>
 
-        {/* 2-STAGE PAYMENT LIFECYCLE: PRIVATE MULTI-CHUNK ESCROW VAULT & DOORSTEP QR BANNER */}
+        {/* MANDATORY STEP 2: DEVICE VALUE ESCROW COLLECTION (FULL OR 50/50 SPLIT > ₹10) */}
         {!deal.escrowVault?.isLocked ? (() => {
           const deposited = deal.escrowVault?.depositedAmount || 0;
           const target = deal.declaredValue || 0;
           const remaining = Math.max(0, target - deposited);
           const progressPct = target > 0 ? Math.min(100, Math.round((deposited / target) * 100)) : 100;
           const chunks = deal.escrowVault?.chunks || [];
-          const vanNumber = deal.escrowVault?.virtualAccountNumber || `SAFESHIP${deal.id.replace(/\D/g, '')}88`;
-          const vanIfsc = deal.escrowVault?.virtualAccountIfsc || 'YESB0CMSNOC';
+          const canSplit5050 = target > 10;
+          const firstHalfAmount = Math.ceil(target / 2);
+          const secondHalfAmount = Math.max(0, target - firstHalfAmount);
+          const isFirstHalfPaid = deposited >= firstHalfAmount;
 
           return (
-            <div className="rounded-3xl border-2 border-amber-300 bg-amber-50/80 p-5 sm:p-6 shadow-sm space-y-4 animate-in fade-in">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div className="flex items-start gap-3.5">
-                  <div className="w-11 h-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
-                    <Lock className="w-6 h-6 text-white" />
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 sm:p-8 shadow-sm space-y-6 animate-in fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-slate-100">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-semibold">
+                      <Check className="w-3 h-3 text-emerald-600" />
+                      <span>Order #{deal.id} Saved &bull; Shipping Paid (₹{deal.upfrontPaid || upfrontFee})</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[11px] font-semibold">
+                      <Lock className="w-3 h-3 text-slate-500" />
+                      <span>Mandatory Device Escrow ({progressPct}% Funded)</span>
+                    </span>
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-black uppercase tracking-wider bg-amber-200 text-amber-950 px-2.5 py-0.5 rounded-full">
-                        Stage 1 Shipping Paid (₹{deal.upfrontPaid || upfrontFee}) &bull; Stage 2 Escrow ({progressPct}% Funded)
-                      </span>
-                      <span className="text-sm font-black text-amber-950">
-                        Deposit Item Escrow in Private Chunks (₹{remaining.toLocaleString('en-IN')} Remaining of ₹{target.toLocaleString('en-IN')})
-                      </span>
-                    </div>
-                    <p className="text-xs text-amber-900 leading-relaxed max-w-2xl">
-                      Built for Indian buyers: bypass ₹25k/₹1L bank UPI caps by funding your private RBI Nodal Vault (<strong>A/C: {vanNumber} &bull; IFSC: {vanIfsc}</strong>) in chunks across multiple UPI apps, bank accounts, or IMPS. Pickup is scheduled for <strong>{getActualPickupSchedule().fullSchedule}</strong>.
-                    </p>
-                  </div>
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+                    Deposit Device Value into SafeShip Escrow
+                  </h2>
+                  <p className="text-xs text-slate-500 max-w-2xl leading-relaxed">
+                    Device value is held in SafeShip Escrow and is only released after the buyer inspects and accepts the item at delivery ({getActualPickupSchedule().fullSchedule}).
+                  </p>
                 </div>
 
-                <div className="text-right shrink-0 bg-white px-4 py-2.5 rounded-2xl border border-amber-200">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase block">Private Vault Balance</span>
-                  <span className="text-lg font-black font-mono text-emerald-600">
-                    ₹{deposited.toLocaleString('en-IN')}
+                <div className="text-left sm:text-right shrink-0 bg-slate-950 text-white px-5 py-3.5 rounded-2xl">
+                  <span className="text-[10px] font-medium text-slate-400 uppercase tracking-wider block">Remaining to Lock</span>
+                  <span className="text-2xl font-bold font-mono text-white">
+                    ₹{remaining.toLocaleString('en-IN')}
                   </span>
-                  <span className="text-xs font-mono text-slate-400"> / ₹{target.toLocaleString('en-IN')}</span>
+                  <span className="text-xs font-mono text-slate-400 block">
+                    of ₹{target.toLocaleString('en-IN')} total
+                  </span>
                 </div>
               </div>
 
               {/* Progress Bar */}
-              <div className="w-full h-2.5 bg-amber-200/70 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-emerald-500 to-blue-600 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.max(4, progressPct)}%` }}
-                />
-              </div>
-
-              {/* Verified Chunks List */}
-              {chunks.length > 0 && (
-                <div className="p-3 rounded-2xl bg-white border border-amber-200 space-y-1.5">
-                  <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider block">
-                    Verified Private Chunk Deposits ({chunks.length}):
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              <div className="space-y-1.5">
+                <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.max(4, progressPct)}%` }}
+                  />
+                </div>
+                {chunks.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pt-1">
                     {chunks.map((c) => (
-                      <div key={c.id} className="flex items-center justify-between text-xs bg-emerald-50/70 border border-emerald-200 px-3 py-1.5 rounded-xl">
-                        <span className="font-bold text-emerald-950">
-                          Chunk #{c.chunkNumber}: ₹{c.amount.toLocaleString('en-IN')} <span className="font-normal text-slate-600">({c.methodLabel})</span>
-                        </span>
-                        <span className="font-mono text-[10px] text-emerald-700 font-bold">{c.utr} ✓</span>
-                      </div>
+                      <span key={c.id} className="inline-flex items-center gap-1.5 text-xs bg-emerald-50 border border-emerald-200 text-emerald-900 px-3 py-1 rounded-lg font-medium">
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Part {c.chunkNumber}: ₹{c.amount.toLocaleString('en-IN')} ({c.utr})</span>
+                      </span>
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
-              {/* Interactive Chunk Selector & Payment Controls */}
-              <div className="p-4 rounded-2xl bg-white border border-amber-200 space-y-3">
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {[
-                    { label: '₹15,000 Chunk', val: Math.min(15000, remaining) },
-                    { label: '₹25,000 (UPI Safe)', val: Math.min(25000, remaining) },
-                    { label: '50% Split Chunk', val: Math.max(1, Math.ceil(remaining / 2)) },
-                    { label: 'Full Remaining', val: remaining },
-                  ].map((preset, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setTrackChunkAmount(preset.val)}
-                      className={`py-2 px-3 rounded-xl border text-left text-xs transition cursor-pointer ${
-                        trackChunkAmount === preset.val
-                          ? 'bg-blue-50 border-[#0066FF] text-[#0066FF] font-bold ring-1 ring-blue-300'
-                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100 font-semibold'
-                      }`}
-                    >
-                      <span className="block text-[11px]">{preset.label}</span>
-                      <span className="font-mono text-[10px] text-slate-500">₹{preset.val.toLocaleString('en-IN')}</span>
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                  <div className="flex items-center gap-2 flex-1">
-                    <span className="text-xs font-bold text-slate-700 shrink-0">Chunk Amount (₹):</span>
-                    <input
-                      type="number"
-                      min={100}
-                      max={remaining}
-                      value={trackChunkAmount || ''}
-                      onChange={(e) => setTrackChunkAmount(Math.min(remaining, Math.max(0, Number(e.target.value))))}
-                      className="w-32 px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-mono font-bold text-slate-900 focus:border-[#0066FF] outline-hidden"
-                    />
-                    <select
-                      value={trackChunkMethod}
-                      onChange={(e) => setTrackChunkMethod(e.target.value as EscrowChunkPayment['method'])}
-                      className="flex-1 px-3 py-2 rounded-xl bg-slate-50 border border-slate-300 text-xs font-semibold text-slate-800 outline-hidden"
-                    >
-                      <option value="UPI_GPAY_PHONEPE">📱 Primary UPI (GPay / PhonePe)</option>
-                      <option value="SECOND_UPI_BANK">🏦 2nd Bank Account UPI / Family UPI</option>
-                      <option value="IMPS_NEFT_VAN">🔐 Private Virtual A/C (IMPS / NEFT)</option>
-                      <option value="CREDIT_DEBIT_CARD">💳 Credit / Debit Card</option>
-                    </select>
+              {/* Clean Payment Options: Full Amount vs 50/50 Split */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Option 1: Pay Full Remaining */}
+                <div className="p-5 rounded-2xl border border-slate-200 bg-slate-50/60 flex flex-col justify-between space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Single Payment</span>
+                      <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">Instant Dispatch</span>
+                    </div>
+                    <div className="text-2xl font-bold font-mono text-slate-900 mt-1">
+                      ₹{remaining.toLocaleString('en-IN')}
+                    </div>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Lock the full remaining device value in a single payment to immediately dispatch the field courier.
+                    </p>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={isEscrowHolding || escrowHoldSuccess || trackChunkAmount <= 0}
-                      onClick={() => handleDepositChunkOnTracking()}
-                      className="py-2.5 px-4 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95 disabled:opacity-60"
-                    >
-                      {isEscrowHolding ? (
-                        <>
-                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                          <span>Depositing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="w-3.5 h-3.5" />
-                          <span>Pay ₹{trackChunkAmount.toLocaleString('en-IN')} Chunk #{chunks.length + 1}</span>
-                        </>
-                      )}
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={isEscrowHolding || escrowHoldSuccess}
-                      onClick={handleAuthorizeDoorstepQrOnTracking}
-                      className="py-2.5 px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm active:scale-95 disabled:opacity-60"
-                      title="Collect remaining escrow at buyer's doorstep via SafeShip Nodal Dynamic UPI QR before open-box inspection"
-                    >
-                      <Truck className="w-3.5 h-3.5" />
-                      <span>Collect via Doorstep Dynamic QR</span>
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    disabled={isEscrowHolding || escrowHoldSuccess}
+                    onClick={handlePutEscrowHold}
+                    className="w-full py-3.5 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+                  >
+                    {isEscrowHolding ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Securing ₹{remaining.toLocaleString('en-IN')}...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4" />
+                        <span>Pay Full ₹{remaining.toLocaleString('en-IN')} Now</span>
+                      </>
+                    )}
+                  </button>
                 </div>
+
+                {/* Option 2: 50 / 50 Split (Available when target > ₹10) */}
+                {canSplit5050 && (
+                  <div className="p-5 rounded-2xl border border-slate-200 bg-white flex flex-col justify-between space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold uppercase tracking-wider text-slate-500">50 / 50 Split</span>
+                        <span className="text-xs font-mono font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
+                          ₹{firstHalfAmount.toLocaleString('en-IN')} × 2
+                        </span>
+                      </div>
+                      <div className="text-2xl font-bold font-mono text-slate-900 mt-1">
+                        ₹{(isFirstHalfPaid ? remaining : firstHalfAmount).toLocaleString('en-IN')}{' '}
+                        <span className="text-xs font-sans font-normal text-slate-500">
+                          ({isFirstHalfPaid ? 'Part 2 of 2' : 'Part 1 of 2'})
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        {isFirstHalfPaid
+                          ? 'First 50% is locked! Complete the remaining 50% from your second account or co-payer to dispatch.'
+                          : 'Too large for one account or splitting with a friend? Pay 50% now and 50% from a second account or friend link.'}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        disabled={isEscrowHolding || escrowHoldSuccess}
+                        onClick={() => {
+                          setTrackChunkMethod(isFirstHalfPaid ? 'SECOND_UPI_BANK' : 'UPI_GPAY_PHONEPE');
+                          handleDepositChunkOnTracking(isFirstHalfPaid ? remaining : firstHalfAmount);
+                        }}
+                        className="flex-1 py-3.5 px-4 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                      >
+                        {isEscrowHolding ? (
+                          <>
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                            <span>Processing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>
+                              {isFirstHalfPaid
+                                ? `Pay Second 50% (₹${remaining.toLocaleString('en-IN')})`
+                                : `Pay First 50% (₹${firstHalfAmount.toLocaleString('en-IN')})`}
+                            </span>
+                          </>
+                        )}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={copyTrackingLink}
+                        className="py-3.5 px-3.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                        title="Copy 50/50 Split Link for a Friend"
+                      >
+                        {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                        <span>{copied ? 'Copied' : '50% Link'}</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           );
@@ -857,7 +880,7 @@ function TrackingContent({
               </div>
               <div>
                 <span>
-                  Stage 2 Escrow Authorized ({deal.escrowVault?.paymentMethodUsed || `₹${deal.declaredValue.toLocaleString('en-IN')} in RBI Nodal Vault`})
+                  Device Value Locked in SafeShip Escrow ({deal.escrowVault?.paymentMethodUsed || `₹${deal.declaredValue.toLocaleString('en-IN')}`})
                 </span>
                 <p className="text-[11px] text-emerald-700 font-normal">
                   Field Officer Rahul K. scheduled for <strong>{getActualPickupSchedule().fullSchedule}</strong> &bull; Buyer Delivery Window: <strong>{deal.buyerPreferredDeliveryWindow || 'As per buyer schedule'}</strong> &bull; 4-digit Pickup OTP: <strong>{deal.sellerPickupCode}</strong>.

@@ -44,7 +44,7 @@ import {
   RefreshCw
 } from '@/components/common/Icons';
 import { useRazorpay } from '@/lib/useRazorpay';
-import { createNewDeal, getUserOrders, lockDealEscrowHold, addEscrowChunkPayment, authorizeDelhiveryDoorstepEscrowMode } from '@/lib/store';
+import { createNewDeal, getDealById, getUserOrders, lockDealEscrowHold, addEscrowChunkPayment, authorizeDelhiveryDoorstepEscrowMode } from '@/lib/store';
 import { analytics } from '@/lib/analytics';
 import { notifyMilestoneEmail } from '@/lib/emailClient';
 import { getSession, UserSession } from '@/lib/auth';
@@ -218,9 +218,11 @@ function CreateShipmentContent() {
   // Subtle non-refundable courier shipping fee agreement
   const [agreeTerms, setAgreeTerms] = useState<boolean>(true);
 
-  // Live Payment Mode: Cashfree PG v3 active (pass ?demo=true in URL for sandbox/testing)
+  // Live Payment Mode: Cashfree PG v3 active in production; automatically disabled on localhost for testing
   const [isTestProcessing, setIsTestProcessing] = useState<boolean>(false);
-  const SIMULATE_PAID_FOR_TESTING = false;
+  const SIMULATE_PAID_FOR_TESTING =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
   // Post-payment Escrow Hold & Private Multi-Chunk Deposit Prompt State
   const [createdDealForEscrow, setCreatedDealForEscrow] = useState<SafeDeal | null>(null);
@@ -745,15 +747,31 @@ function CreateShipmentContent() {
 
   useEffect(() => {
     const reqStep = searchParams.get('step');
+    const resumeId = searchParams.get('resume_escrow');
 
-    // Form Draft Persistence: restore from localStorage if exists
+    // Form Draft & Saved Pending-Escrow Order Persistence
     if (searchParams.get('reset') === '1') {
       try {
         localStorage.removeItem('safeship_deal_draft_v2');
+        localStorage.removeItem('safeship_pending_escrow_deal_id');
       } catch {}
     } else if (!draftRestoredOnceRef.current) {
       draftRestoredOnceRef.current = true;
       try {
+        // 1. If a shipping-paid order is saved and awaiting mandatory device escrow, restore it immediately
+        const pendingDealId = resumeId || localStorage.getItem('safeship_pending_escrow_deal_id');
+        if (pendingDealId) {
+          const savedDeal = getDealById(pendingDealId);
+          if (savedDeal && !savedDeal.escrowVault?.isLocked) {
+            const rem = Math.max(0, savedDeal.declaredValue - (savedDeal.escrowVault?.depositedAmount || 0));
+            setChunkAmountInput(savedDeal.declaredValue > 10 ? Math.ceil(rem / 2) : rem);
+            setEscrowModalTab(savedDeal.declaredValue > 10 ? 'PRIVATE_CHUNKS' : 'FULL_SINGLE');
+            setCreatedDealForEscrow(savedDeal);
+          } else {
+            localStorage.removeItem('safeship_pending_escrow_deal_id');
+          }
+        }
+
         const rawDraft = localStorage.getItem('safeship_deal_draft_v2');
         if (rawDraft) {
           const draft = JSON.parse(rawDraft);
@@ -1483,14 +1501,16 @@ function CreateShipmentContent() {
 
       try {
         localStorage.removeItem('safeship_deal_draft_v2');
+        localStorage.setItem('safeship_pending_escrow_deal_id', created.id);
       } catch {}
 
-      // Initialize default smart chunk size for Indian UPI limits (max ₹25,000 or 50% of item value)
-      const defaultChunk = created.declaredValue > 25000 ? 25000 : Math.max(1000, Math.ceil(created.declaredValue / 2));
-      setChunkAmountInput(defaultChunk);
+      // Default to 50/50 split amount if device value > ₹10, otherwise full amount
+      const defaultSplit = created.declaredValue > 10 ? Math.ceil(created.declaredValue / 2) : created.declaredValue;
+      setChunkAmountInput(defaultSplit);
+      setEscrowModalTab(created.declaredValue > 10 ? 'PRIVATE_CHUNKS' : 'FULL_SINGLE');
       setDoorstepSecurityDeposit(Math.min(2000, Math.max(500, Math.round(created.declaredValue * 0.05))));
 
-      // Prompt immediately for Stage 2 Escrow Vault (Private Chunks / Doorstep QR / Full) after Stage 1 Shipping Fee is paid
+      // Prompt immediately for Mandatory Device Value Escrow after Shipping Fee is paid
       setCreatedDealForEscrow(created);
     } catch (e) {
       console.error('Error creating deal record in store:', e);
@@ -1505,13 +1525,13 @@ function CreateShipmentContent() {
   const getChunkMethodLabel = (m: EscrowChunkPayment['method']) => {
     switch (m) {
       case 'UPI_GPAY_PHONEPE':
-        return 'Primary UPI App (GPay / PhonePe / Paytm)';
+        return 'UPI (GPay / PhonePe / Paytm)';
       case 'SECOND_UPI_BANK':
-        return '2nd Bank Account UPI / Family UPI Split';
+        return '50/50 Co-Payer / 2nd Bank UPI';
       case 'IMPS_NEFT_VAN':
-        return 'Private RBI Nodal Virtual Account (IMPS / NEFT / RTGS)';
+        return 'RBI Nodal Bank Transfer (IMPS / NEFT)';
       case 'CREDIT_DEBIT_CARD':
-        return 'Credit / Debit Card (RuPay / Visa / Mastercard)';
+        return 'Credit / Debit Card';
       default:
         return 'Doorstep Dynamic UPI QR';
     }
@@ -1537,16 +1557,19 @@ function CreateShipmentContent() {
         setCreatedDealForEscrow({ ...updated });
         const newRemaining = Math.max(0, updated.declaredValue - (updated.escrowVault?.depositedAmount || 0));
         if (newRemaining > 0) {
-          setChunkAmountInput(Math.min(25000, newRemaining));
+          setChunkAmountInput(newRemaining);
         } else {
+          try {
+            localStorage.removeItem('safeship_pending_escrow_deal_id');
+          } catch {}
           notifyMilestoneEmail(updated, 'COURIER_ASSIGNED');
           setEscrowHoldSuccess(true);
           setTimeout(() => {
             router.push(`/in/track/${updated.id}?booked=true&escrow_locked=true&escrow_paid=true`);
-          }, 1100);
+          }, 900);
         }
       }
-    }, 550);
+    }, 500);
   };
 
   const handleAuthorizeDoorstepQrEscrow = () => {
@@ -1559,14 +1582,17 @@ function CreateShipmentContent() {
       );
       setIsEscrowHolding(false);
       if (updated) {
+        try {
+          localStorage.removeItem('safeship_pending_escrow_deal_id');
+        } catch {}
         setCreatedDealForEscrow({ ...updated });
         notifyMilestoneEmail(updated, 'COURIER_ASSIGNED');
         setEscrowHoldSuccess(true);
         setTimeout(() => {
           router.push(`/in/track/${updated.id}?booked=true&escrow_locked=true&escrow_paid=true`);
-        }, 1000);
+        }, 900);
       }
-    }, 600);
+    }, 500);
   };
 
   const handlePutEscrowOnHold = () => {
@@ -1575,6 +1601,9 @@ function CreateShipmentContent() {
     setTimeout(() => {
       const updated = lockDealEscrowHold(createdDealForEscrow.id, 'Cashfree PG v3 Escrow Hold');
       if (updated) {
+        try {
+          localStorage.removeItem('safeship_pending_escrow_deal_id');
+        } catch {}
         setCreatedDealForEscrow({ ...updated });
         notifyMilestoneEmail(updated, 'COURIER_ASSIGNED');
       }
@@ -1582,8 +1611,8 @@ function CreateShipmentContent() {
       setEscrowHoldSuccess(true);
       setTimeout(() => {
         router.push(`/in/track/${createdDealForEscrow.id}?booked=true&escrow_locked=true&escrow_paid=true`);
-      }, 1000);
-    }, 700);
+      }, 900);
+    }, 550);
   };
 
   const handleConfirmBooking = () => {
@@ -2620,620 +2649,390 @@ function CreateShipmentContent() {
         {/* STEP 4: SERVICE TIER SELECTION, SCHEDULE & SHIPPING FEE            */}
         {/* =================================================================== */}
         {currentStep === 4 && (
-          <div className="space-y-5 animate-in fade-in">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b border-slate-200">
+          <div className="space-y-6 animate-in fade-in">
+            {/* Minimal Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-4 border-b border-slate-200/80">
               <div>
-                <h2 className="text-xl sm:text-2xl font-black text-[#0F172A]">
-                  {mode === 'exchange' ? 'Review & Book 2-Way Exchange' : 'Review & Confirm Escrow Booking'}
+                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-slate-900">
+                  {mode === 'exchange' ? 'Review & Schedule Exchange' : 'Review & Schedule Shipment'}
                 </h2>
-                <p className="text-xs sm:text-sm text-[#64748B] mt-0.5">
-                  100% funds held in RBI Nodal Escrow &bull; Released to seller only after 10-minute doorstep unboxing approval.
+                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                  Step 1: Pay shipping to save your order and lock schedule. Step 2: Lock mandatory device value in RBI Escrow.
                 </p>
               </div>
-              <div className="flex items-center gap-2 self-start sm:self-auto">
-                <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>RBI Nodal Escrow Protected</span>
-                </span>
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-medium self-start sm:self-auto">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>RBI Nodal Escrow</span>
               </div>
             </div>
 
-            {/* Desktop 2-Column Layout */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-              {/* LEFT COLUMN: Consignment Info, Delivery Speed, Pickup Protocol, Cargo Insurance, Guarantee */}
-              <div className="lg:col-span-7 space-y-4">
-                {/* 1. CONSIGNMENT CONTEXT BAR */}
-                <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-[#E2E8F0] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0066FF] flex items-center justify-center shrink-0 font-bold">
+              {/* LEFT COLUMN */}
+              <div className="lg:col-span-7 space-y-5">
+                {/* 1. Minimal Device Summary */}
+                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center shrink-0">
                       <Smartphone className="w-5 h-5" />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="font-black text-slate-900 truncate">{itemName || 'Merchandise'}</span>
-                        <span className="font-mono font-bold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded text-[11px]">
+                        <span className="font-semibold text-sm text-slate-900 truncate">{itemName || 'Device'}</span>
+                        <span className="text-xs font-mono font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded-md">
                           ₹{declaredValue.toLocaleString('en-IN')}
                         </span>
                       </div>
-                      <div className="text-[11px] text-slate-500 truncate flex items-center gap-1.5 mt-0.5">
-                        <span>IMEI/Serial: <strong className="font-mono text-slate-700">{manualImei || 'Verified'}</strong></span>
-                        <span>&bull;</span>
-                        <span>{pickupCity || 'Jaipur'} &rarr; {dropCity || 'Delhi'} ({(distanceKm || effectiveDistance).toLocaleString('en-IN')} km)</span>
+                      <div className="text-xs text-slate-500 truncate mt-0.5">
+                        {pickupCity || 'Origin'} &rarr; {dropCity || 'Destination'} ({(distanceKm || effectiveDistance).toLocaleString('en-IN')} km) &bull; Serial: {manualImei || 'Verified'}
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
-                    <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Open-Box Verified</span>
-                    </span>
-                  </div>
+                  <span className="text-[11px] text-emerald-700 font-medium bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/70 shrink-0 hidden sm:inline-flex items-center gap-1">
+                    <Check className="w-3 h-3" />
+                    <span>Open-Box Included</span>
+                  </span>
                 </div>
 
-                {/* 2. DELIVERY SPEED (3 Clean Tiers: Standard Ground, Priority Express, Express Air) */}
-                <div className="space-y-2">
+                {/* 2. Delivery Speed (Minimal 3-Tier Cards) */}
+                <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 space-y-3.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#334155] uppercase tracking-wider block">
-                      1. Delivery Speed (3 Service Tiers)
+                    <span className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
+                      1. Transit Speed
                     </span>
-                    <span className="text-[11px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                      Calculated for {(distanceKm || effectiveDistance).toLocaleString('en-IN')} km
-                    </span>
+                    {isFirstOrder && (
+                      <span className="text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                        ₹99 First-Order Discount Applied
+                      </span>
+                    )}
                   </div>
 
-                  {isFirstOrder && (
-                    <div className="flex items-center gap-2 p-2.5 rounded-xl bg-gradient-to-r from-blue-50 to-emerald-50 border border-blue-200 text-slate-800 text-xs font-medium animate-in fade-in">
-                      <span className="text-base shrink-0">🎁</span>
-                      <span><strong>First Order Perk:</strong> Flat ₹99 discount automatically applied below — no coupon code required!</span>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    {/* Tier 1: Standard Ground */}
-                    <div
-                      id="tier-card-STANDARD_GROUND"
-                      onClick={() => setSelectedTier('STANDARD_GROUND')}
-                      className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
-                        selectedTier === 'STANDARD_GROUND'
-                          ? 'bg-emerald-50/70 border-emerald-600 ring-2 ring-emerald-300 shadow-sm'
-                          : 'bg-white border-[#E2E8F0] hover:border-emerald-300'
-                      }`}
-                    >
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                          <span className="text-sm font-black text-slate-900">📦 Standard Ground</span>
-                          <span className="text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full uppercase">
-                            Delivers {getDeliveryDateShort('STANDARD_GROUND')} ({getTransitDays('STANDARD_GROUND', distanceKm || effectiveDistance)} Days)
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 leading-tight">
-                          Reliable surface linehaul network with doorstep unboxing.
-                        </p>
-                      </div>
-                      <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                        <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
-                        <div className="text-right shrink-0">
-                          <div className="flex items-baseline gap-1.5 justify-end">
-                            {isFirstOrder ? (
-                              <>
-                                <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
-                                <span className="text-base font-black text-slate-900 font-mono">₹{Math.max(1, tierPricing.STANDARD_GROUND.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
-                              </>
-                            ) : (
-                              <span className="text-base font-black text-slate-900 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-emerald-700 font-semibold block">
-                            {isFirstOrder ? '₹99 First Order Off' : 'Surface Linehaul'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Tier 2: Priority Express */}
-                    <div
-                      id="tier-card-PRIORITY_EXPRESS"
-                      onClick={() => setSelectedTier('PRIORITY_EXPRESS')}
-                      className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
-                        selectedTier === 'PRIORITY_EXPRESS'
-                          ? 'bg-blue-50/70 border-[#0066FF] ring-2 ring-blue-300 shadow-sm'
-                          : 'bg-white border-[#E2E8F0] hover:border-blue-300'
-                      }`}
-                    >
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                          <span className="text-sm font-black text-slate-900">🚀 Priority Express</span>
-                          <span className="text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full uppercase">
-                            Delivers {getDeliveryDateShort('PRIORITY_EXPRESS')} ({getTransitDays('PRIORITY_EXPRESS', distanceKm || effectiveDistance)} Days)
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 leading-tight">
-                          Priority expressway &amp; commercial air corridor.
-                        </p>
-                      </div>
-                      <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                        <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
-                        <div className="text-right shrink-0">
-                          <div className="flex items-baseline gap-1.5 justify-end">
-                            {isFirstOrder ? (
-                              <>
-                                <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
-                                <span className="text-base font-black text-blue-700 font-mono">₹{Math.max(1, tierPricing.PRIORITY_EXPRESS.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
-                              </>
-                            ) : (
-                              <span className="text-base font-black text-blue-700 font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-blue-700 font-semibold block">
-                            {isFirstOrder ? '₹99 First Order Off' : 'Express Linehaul'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Tier 3: Express Air */}
-                    <div
-                      id="tier-card-FASTEST_AIR_RUSH"
-                      onClick={() => setSelectedTier('FASTEST_AIR_RUSH')}
-                      className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
-                        selectedTier === 'FASTEST_AIR_RUSH'
-                          ? 'bg-amber-50/60 border-amber-500 ring-2 ring-amber-300 shadow-sm'
-                          : 'bg-white border-[#E2E8F0] hover:border-amber-300'
-                      }`}
-                    >
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                          <span className="text-sm font-black text-slate-900">⚡ Express Air</span>
-                          <span className="text-[9px] font-black bg-gradient-to-r from-amber-500 to-orange-500 text-white px-2 py-0.5 rounded-full shadow-2xs uppercase">
-                            Delivers {getDeliveryDateShort('FASTEST_AIR_RUSH')} ({getTransitDays('FASTEST_AIR_RUSH', distanceKm || effectiveDistance)} Days)
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 leading-tight">
-                          Next commercial cargo flight &amp; express dispatch.
-                        </p>
-                      </div>
-                      <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                        <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
-                        <div className="text-right shrink-0">
-                          <div className="flex items-baseline gap-1.5 justify-end">
-                            {isFirstOrder ? (
-                              <>
-                                <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
-                                <span className="text-base font-black text-amber-700 font-mono">₹{Math.max(1, tierPricing.FASTEST_AIR_RUSH.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
-                              </>
-                            ) : (
-                              <span className="text-base font-black text-amber-700 font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-amber-700 font-semibold block">
-                            {isFirstOrder ? '₹99 First Order Off' : 'Air Linehaul'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. PICKUP SCHEDULE & BUYER-SYNCHRONIZED DELIVERY TIME */}
-                <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-[#E2E8F0] shadow-xs space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                    <span className="text-xs font-bold text-[#334155] uppercase tracking-wider flex items-center gap-1.5">
-                      <Calendar className="w-4 h-4 text-[#0066FF]" />
-                      <span>2. Pickup Schedule &amp; Buyer-Given Time Protocol</span>
-                    </span>
-                    <span className="text-[11px] text-slate-500">
-                      Pickup: <strong className="text-slate-900">{pickupDateFormatted}</strong> ({pickupCity || 'Jaipur'})
-                    </span>
-                  </div>
-
-                  {/* A. Select Exact Pickup Day */}
-                  <div className="space-y-1.5">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                      A. Choose Pickup Day (Synchronized with Seller &amp; Buyer)
-                    </span>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                      {[
-                        { id: 'TODAY' as const, label: '⚡ Today', sub: 'Same-Day Dispatch' },
-                        { id: 'TOMORROW' as const, label: '📅 Tomorrow', sub: 'Recommended' },
-                        { id: 'DAY_AFTER' as const, label: '🗓️ Day After', sub: '+2 Days' },
-                        { id: 'CUSTOM' as const, label: '🎯 Custom Date', sub: 'Buyer Given' },
-                      ].map((dayOpt) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    {([
+                      {
+                        id: 'STANDARD_GROUND' as const,
+                        title: 'Standard Ground',
+                        desc: 'Surface linehaul',
+                        price: tierPricing.STANDARD_GROUND.totalUpfront,
+                      },
+                      {
+                        id: 'PRIORITY_EXPRESS' as const,
+                        title: 'Priority Express',
+                        desc: 'Recommended corridor',
+                        price: tierPricing.PRIORITY_EXPRESS.totalUpfront,
+                      },
+                      {
+                        id: 'FASTEST_AIR_RUSH' as const,
+                        title: 'Express Air',
+                        desc: 'Next cargo flight',
+                        price: tierPricing.FASTEST_AIR_RUSH.totalUpfront,
+                      },
+                    ]).map((t) => {
+                      const active = selectedTier === t.id;
+                      const netPrice = isFirstOrder ? Math.max(1, t.price - FIRST_ORDER_DISCOUNT) : t.price;
+                      return (
                         <button
-                          key={dayOpt.id}
+                          key={t.id}
                           type="button"
-                          onClick={() => setPickupDayChoice(dayOpt.id)}
-                          className={`py-2 px-2.5 rounded-xl border text-left transition cursor-pointer ${
-                            pickupDayChoice === dayOpt.id
-                              ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          id={`tier-card-${t.id}`}
+                          onClick={() => setSelectedTier(t.id)}
+                          className={`p-3.5 rounded-xl border text-left transition cursor-pointer flex flex-col justify-between gap-3 ${
+                            active
+                              ? 'border-slate-900 bg-slate-900/[0.02] ring-1 ring-slate-900'
+                              : 'border-slate-200 hover:border-slate-300 bg-white'
                           }`}
                         >
-                          <span className="text-[11px] font-bold block">{dayOpt.label}</span>
-                          <span className="text-[9px] opacity-85 block">{dayOpt.sub}</span>
+                          <div>
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-xs font-semibold text-slate-900">{t.title}</span>
+                              {active && <Check className="w-3.5 h-3.5 text-slate-900 shrink-0" />}
+                            </div>
+                            <span className="text-[11px] text-slate-500 block mt-0.5">
+                              Arrives {getDeliveryDateShort(t.id)}
+                            </span>
+                          </div>
+                          <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
+                            <span className="text-[10px] text-slate-400">{t.desc}</span>
+                            <div className="flex items-baseline gap-1">
+                              {isFirstOrder && (
+                                <span className="text-[10px] text-slate-400 line-through font-mono">₹{t.price}</span>
+                              )}
+                              <span className="text-sm font-semibold text-slate-900 font-mono">₹{netPrice}</span>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. Schedule (Minimal Apple/Stripe Style) */}
+                <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
+                      2. Pickup &amp; Buyer Delivery Schedule
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {pickupDateFormatted}
+                    </span>
+                  </div>
+
+                  {/* Pickup Day + Time */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-slate-700 block">
+                      Seller Pickup Window ({pickupCity || 'Origin'})
+                    </label>
+                    <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-100 rounded-xl">
+                      {[
+                        { id: 'TODAY' as const, label: 'Today' },
+                        { id: 'TOMORROW' as const, label: 'Tomorrow' },
+                        { id: 'DAY_AFTER' as const, label: 'Day After' },
+                        { id: 'CUSTOM' as const, label: 'Custom Date' },
+                      ].map((d) => (
+                        <button
+                          key={d.id}
+                          type="button"
+                          onClick={() => setPickupDayChoice(d.id)}
+                          className={`py-1.5 px-2 rounded-lg text-xs font-medium transition cursor-pointer ${
+                            pickupDayChoice === d.id
+                              ? 'bg-white text-slate-900 shadow-2xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          {d.label}
                         </button>
                       ))}
                     </div>
 
                     {pickupDayChoice === 'CUSTOM' && (
-                      <div className="pt-1 flex items-center gap-2">
-                        <label className="text-[11px] font-semibold text-slate-700 shrink-0">
-                          Select Exact Pickup Date:
-                        </label>
-                        <input
-                          type="date"
-                          value={customPickupDate}
-                          min={new Date().toISOString().split('T')[0]}
-                          onChange={(e) => setCustomPickupDate(e.target.value)}
-                          className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-mono text-slate-900 bg-white focus:border-[#0066FF] outline-hidden"
-                        />
-                      </div>
+                      <input
+                        type="date"
+                        value={customPickupDate}
+                        min={new Date().toISOString().split('T')[0]}
+                        onChange={(e) => setCustomPickupDate(e.target.value)}
+                        className="w-full sm:w-auto px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-mono text-slate-900 bg-white focus:border-slate-900 outline-hidden"
+                      />
                     )}
-                  </div>
 
-                  {/* B. Select Pickup Time Slot */}
-                  <div className="space-y-1.5">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                      B. Pickup Time Window
-                    </span>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setPickupSlot('MORNING_10_1')}
-                        className={`py-2 px-2.5 rounded-xl border text-left transition cursor-pointer ${
-                          pickupSlot === 'MORNING_10_1'
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        <span className="text-[11px] font-bold block">☀️ Morning</span>
-                        <span className="text-[10px] opacity-90 block">10 AM – 1 PM</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPickupSlot('AFTERNOON_2_5')}
-                        className={`py-2 px-2.5 rounded-xl border text-left transition cursor-pointer ${
-                          pickupSlot === 'AFTERNOON_2_5'
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        <span className="text-[11px] font-bold block">🌤️ Afternoon</span>
-                        <span className="text-[10px] opacity-90 block">2 PM – 5 PM</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPickupSlot('EVENING_5_8')}
-                        className={`py-2 px-2.5 rounded-xl border text-left transition cursor-pointer ${
-                          pickupSlot === 'EVENING_5_8'
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        <span className="text-[11px] font-bold block">🌆 Evening</span>
-                        <span className="text-[10px] opacity-90 block">5 PM – 8 PM</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPickupSlot('CUSTOM_BUYER_TIME')}
-                        className={`py-2 px-2.5 rounded-xl border text-left transition cursor-pointer ${
-                          pickupSlot === 'CUSTOM_BUYER_TIME'
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-xs'
-                            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        <span className="text-[11px] font-bold block">⏱️ Exact Time</span>
-                        <span className="text-[10px] opacity-90 block">Custom Slot</span>
-                      </button>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1">
+                      {[
+                        { id: 'MORNING_10_1' as const, label: '10 AM – 1 PM' },
+                        { id: 'AFTERNOON_2_5' as const, label: '2 PM – 5 PM' },
+                        { id: 'EVENING_5_8' as const, label: '5 PM – 8 PM' },
+                        { id: 'CUSTOM_BUYER_TIME' as const, label: 'Custom Time' },
+                      ].map((slot) => (
+                        <button
+                          key={slot.id}
+                          type="button"
+                          onClick={() => setPickupSlot(slot.id)}
+                          className={`py-2 px-2.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
+                            pickupSlot === slot.id
+                              ? 'border-slate-900 bg-slate-900 text-white'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+                          }`}
+                        >
+                          {slot.label}
+                        </button>
+                      ))}
                     </div>
 
                     {pickupSlot === 'CUSTOM_BUYER_TIME' && (
-                      <div className="pt-1 flex flex-col sm:flex-row sm:items-center gap-2">
-                        <label className="text-[11px] font-semibold text-slate-700 shrink-0">
-                          Exact Pickup Time:
-                        </label>
-                        <input
-                          type="text"
-                          value={customPickupTimeWindow}
-                          onChange={(e) => setCustomPickupTimeWindow(e.target.value)}
-                          placeholder="e.g. 11:30 AM – 1:00 PM or 4:15 PM sharp"
-                          className="flex-1 px-3 py-1.5 rounded-xl border border-slate-300 text-xs text-slate-900 bg-white focus:border-[#0066FF] outline-hidden"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        value={customPickupTimeWindow}
+                        onChange={(e) => setCustomPickupTimeWindow(e.target.value)}
+                        placeholder="Enter exact pickup time (e.g. 11:30 AM – 1:00 PM)"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 bg-white focus:border-slate-900 outline-hidden"
+                      />
                     )}
                   </div>
 
-                  {/* C. Buyer's Preferred Doorstep Delivery Time Window */}
-                  <div className="space-y-1.5 pt-1 border-t border-slate-100">
-                    <div className="flex items-center justify-between flex-wrap gap-1">
-                      <span className="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block">
-                        C. Buyer&apos;s Preferred Delivery Time Window ({dropCity || 'Destination'})
-                      </span>
-                      <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        Delivers on {deliveryDateFormatted}
+                  {/* Buyer Preferred Delivery Time */}
+                  <div className="space-y-2 pt-3 border-t border-slate-100">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-medium text-slate-700">
+                        Buyer Delivery Window ({dropCity || 'Destination'})
+                      </label>
+                      <span className="text-[11px] text-slate-500">
+                        Est. {deliveryDateFormatted}
                       </span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                       {[
-                        { id: 'MORNING_10_1' as const, label: '☀️ 10 AM – 1 PM', sub: 'Morning Unboxing' },
-                        { id: 'AFTERNOON_2_6' as const, label: '🌤️ 2 PM – 6 PM', sub: 'Daytime Slot' },
-                        { id: 'EVENING_6_9' as const, label: '🌙 6 PM – 9 PM', sub: 'After Office Hours' },
-                        { id: 'CUSTOM_BUYER' as const, label: '🎯 Buyer Time', sub: 'Exact Time Given' },
-                      ].map((delOpt) => (
+                        { id: 'MORNING_10_1' as const, label: '10 AM – 1 PM' },
+                        { id: 'AFTERNOON_2_6' as const, label: '2 PM – 6 PM' },
+                        { id: 'EVENING_6_9' as const, label: '6 PM – 9 PM' },
+                        { id: 'CUSTOM_BUYER' as const, label: 'Custom Time' },
+                      ].map((del) => (
                         <button
-                          key={delOpt.id}
+                          key={del.id}
                           type="button"
-                          onClick={() => setBuyerPreferredDeliverySlot(delOpt.id)}
-                          className={`py-2 px-2.5 rounded-xl border text-left transition cursor-pointer ${
-                            buyerPreferredDeliverySlot === delOpt.id
-                              ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                              : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
+                          onClick={() => setBuyerPreferredDeliverySlot(del.id)}
+                          className={`py-2 px-2.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
+                            buyerPreferredDeliverySlot === del.id
+                              ? 'border-slate-900 bg-slate-900 text-white'
+                              : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
                           }`}
                         >
-                          <span className="text-[11px] font-bold block">{delOpt.label}</span>
-                          <span className="text-[9px] opacity-85 block">{delOpt.sub}</span>
+                          {del.label}
                         </button>
                       ))}
                     </div>
 
                     {buyerPreferredDeliverySlot === 'CUSTOM_BUYER' && (
-                      <div className="pt-1 flex flex-col sm:flex-row sm:items-center gap-2">
-                        <label className="text-[11px] font-semibold text-slate-700 shrink-0">
-                          Time Given by Buyer:
-                        </label>
-                        <input
-                          type="text"
-                          value={customBuyerDeliveryWindow}
-                          onChange={(e) => setCustomBuyerDeliveryWindow(e.target.value)}
-                          placeholder="e.g. 7:30 PM – 8:30 PM after buyer reaches home"
-                          className="flex-1 px-3 py-1.5 rounded-xl border border-slate-300 text-xs text-slate-900 bg-white focus:border-emerald-600 outline-hidden"
-                        />
-                      </div>
+                      <input
+                        type="text"
+                        value={customBuyerDeliveryWindow}
+                        onChange={(e) => setCustomBuyerDeliveryWindow(e.target.value)}
+                        placeholder="Enter time given by buyer (e.g. 7:30 PM after office)"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-900 bg-white focus:border-slate-900 outline-hidden"
+                      />
                     )}
                   </div>
 
-                  {/* Exact Timeline & Contact Rules */}
-                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-[11px]">
-                    <div className="flex items-start gap-2 text-slate-700">
-                      <span className="text-[#0066FF] font-bold shrink-0">📞 Pickup Time Call:</span>
-                      <span>SafeShip delivery boy will call the seller <strong>strictly on {pickupDateFormatted} during {resolvedPickupTimeWindow}</strong> to inspect parcel specifications, seal the tamper bag, and verify the 4-digit Pickup OTP.</span>
-                    </div>
-                    <div className="flex items-start gap-2 text-slate-700">
-                      <span className="text-emerald-700 font-bold shrink-0">📲 Buyer Delivery Call:</span>
-                      <span>Delivery boy will arrive strictly at the <strong>time given by the buyer ({deliveryDateFormatted}, {resolvedBuyerDeliveryWindow})</strong> for the 10-minute doorstep open-box test.</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4. CARGO TRANSIT INSURANCE CHECKBOX CARD */}
-                <div
-                  id="card-transit-insurance"
-                  onClick={() => setIncludeInsurance(!includeInsurance)}
-                  className={`p-3.5 sm:p-4 rounded-2xl border transition-all cursor-pointer select-none ${
-                    includeInsurance
-                      ? 'bg-blue-50/70 border-[#0066FF] ring-1 ring-blue-200'
-                      : 'bg-white border-[#E2E8F0] hover:border-slate-300'
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-2.5">
-                      <input
-                        type="checkbox"
-                        id="chk-transit-insurance"
-                        checked={includeInsurance}
-                        onChange={(e) => setIncludeInsurance(e.target.checked)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-0 cursor-pointer"
-                      />
-                      <div>
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <label
-                            htmlFor="chk-transit-insurance"
-                            className="text-xs font-black text-slate-900 cursor-pointer"
-                          >
-                            Comprehensive In-Transit Cargo Protection
-                          </label>
-                          <span className="text-[9px] font-black bg-blue-600 text-white px-1.5 py-0.5 rounded uppercase">
-                            Recommended
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-slate-500 mt-0.5 leading-snug">
-                          Full coverage against transit loss or physical damage during linehaul transit.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <span
-                        className={`text-xs font-mono font-black block ${
-                          includeInsurance ? 'text-[#0066FF]' : 'text-slate-400 line-through'
-                        }`}
-                      >
-                        +₹{calculatedInsuranceFee}
-                      </span>
-                      <span className="text-[10px] text-slate-500 block">
-                        {includeInsurance ? `(~0.5% of ₹${declaredValue.toLocaleString('en-IN')})` : 'Opted Out'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 5. SAFESHIP DOORSTEP VERIFICATION & ESCROW GUARANTEE */}
-                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50/80 to-blue-50/80 border border-emerald-200/80 text-xs space-y-1.5">
-                  <div className="flex items-center gap-2 text-emerald-900 font-bold">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>SafeShip 2-Stage Escrow &amp; Doorstep Unboxing Guarantee</span>
-                  </div>
-                  <p className="text-[11px] text-slate-600 leading-relaxed">
-                    You only pay the courier shipping fee (<strong>₹{upfrontShippingCharge.toLocaleString('en-IN')}</strong>) now to dispatch the delivery boy. The item escrow money (<strong>₹{itemEscrowAmount.toLocaleString('en-IN')}</strong>) is held safely in RBI Nodal Escrow and given to the seller only after your 10-minute doorstep unboxing approval and OTP entry. If rejected, item money is 100% refunded.
+                  <p className="text-[11px] text-slate-500 pt-1">
+                    Courier calls seller on <strong className="text-slate-700 font-medium">{pickupDateFormatted} ({resolvedPickupTimeWindow})</strong> for pickup and delivers to buyer on <strong className="text-slate-700 font-medium">{deliveryDateFormatted} ({resolvedBuyerDeliveryWindow})</strong>.
                   </p>
                 </div>
 
-                {/* Desktop Back button */}
-                <div className="hidden lg:block pt-1">
+                {/* 4. Optional Transit Protection */}
+                <div
+                  id="card-transit-insurance"
+                  onClick={() => setIncludeInsurance(!includeInsurance)}
+                  className="bg-white rounded-2xl p-4 border border-slate-200/90 flex items-center justify-between gap-3 cursor-pointer select-none hover:border-slate-300 transition"
+                >
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="chk-transit-insurance"
+                      checked={includeInsurance}
+                      onChange={(e) => setIncludeInsurance(e.target.checked)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-0 cursor-pointer"
+                    />
+                    <div>
+                      <span className="text-xs font-semibold text-slate-900 block">
+                        Transit Damage &amp; Loss Protection
+                      </span>
+                      <span className="text-[11px] text-slate-500 block">
+                        Insures full ₹{declaredValue.toLocaleString('en-IN')} device value during transit
+                      </span>
+                    </div>
+                  </div>
+                  <span className={`text-xs font-mono font-semibold ${includeInsurance ? 'text-slate-900' : 'text-slate-400 line-through'}`}>
+                    +₹{calculatedInsuranceFee}
+                  </span>
+                </div>
+
+                <div className="hidden lg:block">
                   <button
                     type="button"
                     onClick={() => goToStep(3)}
-                    className="py-2.5 px-4 rounded-xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50 flex items-center gap-1.5"
+                    className="py-2 px-3.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-medium text-xs transition cursor-pointer hover:bg-slate-50 inline-flex items-center gap-1.5"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Back to Addresses &amp; Details</span>
+                    <span>Back</span>
                   </button>
                 </div>
               </div>
 
-              {/* RIGHT COLUMN: Unified Escrow Breakdown, Terms, Payment Button, Trust Badges (Sticky on desktop) */}
+              {/* RIGHT COLUMN: Clean Institutional Summary */}
               <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-20">
-                {/* 3. UNIFIED ORDER & ESCROW BREAKDOWN */}
-                <div className="bg-white rounded-3xl p-4 sm:p-5 border border-[#E2E8F0] shadow-sm space-y-3.5">
-                  <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
-                    <div>
-                      <span className="text-xs font-black text-slate-800 uppercase tracking-wider block">
-                        Shipping Fee &amp; Escrow Breakdown
-                      </span>
-                      <span className="text-[10px] text-slate-500">
-                        Shipping paid first &bull; Escrow given to seller post-delivery
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                      RBI Regulated
+                <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <span className="text-xs font-semibold text-slate-900 uppercase tracking-wider">
+                      Payment Summary
+                    </span>
+                    <span className="text-[11px] font-medium text-slate-500">
+                      2-Step Protection
                     </span>
                   </div>
 
-                  <div className="space-y-2.5 text-xs">
-                    {/* SECTION A: Payable Today (Courier Shipping) */}
-                    <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">
-                      <span className="text-[10px] font-bold text-[#0066FF] uppercase tracking-wider block">
-                        1. Courier Shipping Charge (Payable Today)
-                      </span>
-                      
-                      <div className="flex justify-between items-center text-slate-600">
-                        <span>Courier Shipping ({activeTierBreakdown.tierLabel}):</span>
-                        <span className="font-mono font-semibold text-slate-900">
-                          ₹{fullDeliveryFee}
-                        </span>
-                      </div>
-
-                      {isFirstOrder && firstOrderDiscount > 0 && (
-                        <div className="flex justify-between items-center text-emerald-700">
-                          <span className="flex items-center gap-1">
-                            <span>🎉</span>
-                            <span>First-Order Auto Discount:</span>
-                          </span>
-                          <span className="font-mono font-bold text-emerald-700">
-                            -₹{firstOrderDiscount}
-                          </span>
-                        </div>
-                      )}
-
-                      <div className="flex justify-between items-center text-slate-600">
-                        <span>Cargo Transit Protection:</span>
-                        <span className="font-mono font-semibold">
-                          {includeInsurance ? (
-                            <span className="text-blue-700 font-bold">+₹{calculatedInsuranceFee}</span>
-                          ) : (
-                            <span className="text-slate-400 font-normal">Opted Out (₹0)</span>
-                          )}
-                        </span>
-                      </div>
-
-                      <div className="flex justify-between items-center text-slate-600">
-                        <span>Doorstep Open-Box Inspection:</span>
-                        <span className="font-semibold text-emerald-600">INCLUDED FREE (₹0)</span>
-                      </div>
+                  {/* Step 1 Breakdown */}
+                  <div className="space-y-2 text-xs">
+                    <div className="flex justify-between text-slate-600">
+                      <span>Courier Shipping ({activeTierBreakdown.tierLabel})</span>
+                      <span className="font-mono text-slate-900">₹{fullDeliveryFee}</span>
                     </div>
-
-                    {/* SECTION B: Escrow Money (Given to Seller After Delivery) */}
-                    <div className="p-2.5 rounded-xl bg-blue-50/50 border border-blue-200/80 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">
-                          2. Item Escrow Money (Given to Seller After Delivery)
-                        </span>
-                        <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded">
-                          Doorstep Protected
-                        </span>
+                    {isFirstOrder && firstOrderDiscount > 0 && (
+                      <div className="flex justify-between text-emerald-700">
+                        <span>First-Order Discount</span>
+                        <span className="font-mono">-₹{firstOrderDiscount}</span>
                       </div>
-                      <div className="flex justify-between items-center pt-0.5">
-                        <span className="text-slate-700 font-semibold">Merchandise Valuation:</span>
-                        <span className="font-mono font-bold text-slate-900 text-sm">
-                          ₹{itemEscrowAmount.toLocaleString('en-IN')}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-500 leading-tight">
-                        Held safely in RBI Nodal Escrow &bull; Released to seller only upon your 10-minute doorstep unboxing approval (100% refunded if rejected).
-                      </p>
-                    </div>
-
-                    {/* Guaranteed Delivery Date */}
-                    <div className="flex justify-between items-center text-slate-600 pt-0.5">
-                      <span>Guaranteed Delivery:</span>
-                      <span className="font-bold text-slate-900 text-[11px] flex items-center gap-1">
-                        <span>{deliveryDateFormatted}</span>
-                        <span className="text-[9px] font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
-                          {deliveryTimeWindow}
-                        </span>
+                    )}
+                    <div className="flex justify-between text-slate-600">
+                      <span>Transit Protection</span>
+                      <span className="font-mono text-slate-900">
+                        {includeInsurance ? `₹${calculatedInsuranceFee}` : '₹0'}
                       </span>
                     </div>
+                    <div className="flex justify-between text-slate-600">
+                      <span>10-Min Open-Box Verification</span>
+                      <span className="text-emerald-700 font-medium">Free</span>
+                    </div>
+                  </div>
 
-                    {/* Prominent Payable Today */}
-                    <div className="pt-3 border-t border-slate-200 flex items-center justify-between gap-2">
+                  {/* Due Now vs Mandatory Device Escrow */}
+                  <div className="pt-3 border-t border-slate-100 space-y-3">
+                    <div className="flex items-baseline justify-between">
                       <div>
-                        <span className="text-xs font-black text-[#0F172A] block">
-                          Payable Today:
+                        <span className="text-sm font-semibold text-slate-900 block">
+                          Step 1: Shipping Fee (Due Now)
                         </span>
-                        <span className="text-[10px] text-slate-500 block">
-                          Courier shipping &amp; linehaul fee
-                        </span>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-2xl sm:text-3xl font-black text-[#0066FF] font-mono tracking-tight block">
-                          ₹{upfrontShippingCharge.toLocaleString('en-IN')}
-                        </span>
-                        <span className="text-[10px] text-emerald-600 font-bold block">
-                          {isFirstOrder && firstOrderDiscount > 0 ? '✓ ₹99 Welcome Off Applied' : '✓ Zero Platform Fee'}
+                        <span className="text-[11px] text-slate-500">
+                          Saves your order &amp; reserves courier slot
                         </span>
                       </div>
+                      <span className="text-2xl font-bold text-slate-900 font-mono tracking-tight">
+                        ₹{upfrontShippingCharge.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2">
+                      <div>
+                        <span className="text-xs font-semibold text-slate-800 block">
+                          Step 2: Mandatory Device Escrow
+                        </span>
+                        <span className="text-[11px] text-slate-500 block">
+                          Collected right after shipping {itemEscrowAmount > 10 ? '• 50/50 split available' : ''}
+                        </span>
+                      </div>
+                      <span className="text-sm font-semibold font-mono text-slate-900 shrink-0">
+                        ₹{itemEscrowAmount.toLocaleString('en-IN')}
+                      </span>
                     </div>
                   </div>
-                </div>
 
-                {/* Payment Error Alert */}
-                {paymentGatewayError && (
-                  <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between animate-in fade-in">
-                    <span>⚠️ {paymentGatewayError}</span>
-                    <button
-                      type="button"
-                      onClick={clearPaymentGatewayError}
-                      className="text-[10px] font-bold underline hover:text-rose-900 cursor-pointer ml-2"
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                )}
+                  {paymentGatewayError && (
+                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between">
+                      <span>{paymentGatewayError}</span>
+                      <button
+                        type="button"
+                        onClick={clearPaymentGatewayError}
+                        className="text-[11px] font-semibold underline ml-2 cursor-pointer"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  )}
 
-                {/* Escrow Agreement & Shipping Terms Checkbox */}
-                <div className="flex items-start gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-200 select-none">
-                  <input
-                    type="checkbox"
-                    id="chk-shipping-terms"
-                    checked={agreeTerms}
-                    onChange={(e) => setAgreeTerms(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-0 cursor-pointer shrink-0"
-                  />
-                  <label
-                    htmlFor="chk-shipping-terms"
-                    className="text-[11px] text-slate-600 transition cursor-pointer leading-tight"
-                  >
-                    I authorize paying the courier shipping fee (<strong>₹{upfrontShippingCharge.toLocaleString('en-IN')}</strong>) today to dispatch the delivery boy. I understand the item escrow money (<strong>₹{itemEscrowAmount.toLocaleString('en-IN')}</strong>) is held in RBI Nodal Escrow and will be given to the seller after delivery approval (or 100% refunded if rejected at doorstep).
+                  <label className="flex items-start gap-2.5 pt-1 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      id="chk-shipping-terms"
+                      checked={agreeTerms}
+                      onChange={(e) => setAgreeTerms(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-0 cursor-pointer shrink-0"
+                    />
+                    <span className="text-[11px] text-slate-500 leading-relaxed">
+                      I agree to pay ₹{upfrontShippingCharge.toLocaleString('en-IN')} shipping now to save this order, followed by the mandatory ₹{itemEscrowAmount.toLocaleString('en-IN')} device escrow deposit (released to seller only after doorstep open-box approval).
+                    </span>
                   </label>
-                </div>
 
-                {/* ACTION BUTTONS */}
-                <div className="space-y-2">
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 pt-1">
                     <button
                       type="button"
                       onClick={() => goToStep(3)}
-                      className="lg:hidden py-3.5 px-4 rounded-2xl bg-white border border-[#CBD5E1] text-[#0F172A] font-semibold text-xs transition cursor-pointer hover:bg-slate-50 shrink-0"
+                      className="lg:hidden py-3.5 px-4 rounded-xl bg-white border border-slate-200 text-slate-800 font-medium text-xs transition cursor-pointer hover:bg-slate-50 shrink-0"
                     >
                       Back
                     </button>
@@ -3242,47 +3041,31 @@ function CreateShipmentContent() {
                       id="btn-confirm-booking"
                       disabled={payingWithGateway || isTestProcessing || !agreeTerms}
                       onClick={handleConfirmBooking}
-                      className={`flex-1 py-4 px-6 rounded-2xl text-white font-black text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer ${
+                      className={`flex-1 py-3.5 px-5 rounded-xl text-white font-semibold text-sm transition flex items-center justify-center gap-2 cursor-pointer ${
                         payingWithGateway || isTestProcessing || !agreeTerms
-                          ? 'bg-slate-300 cursor-not-allowed text-slate-500 shadow-none'
-                          : 'bg-[#0066FF] hover:bg-[#0052FF] shadow-blue-600/30 active:scale-98'
+                          ? 'bg-slate-300 cursor-not-allowed text-slate-500'
+                          : 'bg-[#0F172A] hover:bg-slate-800 shadow-xs active:scale-99'
                       }`}
                     >
                       {payingWithGateway || isTestProcessing ? (
                         <>
                           <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                          <span>Authorizing Payment (Testing Mode — Paid ✓)...</span>
+                          <span>Saving Order...</span>
                         </>
                       ) : (
                         <>
-                          <Lock className="w-4 h-4 text-white" />
-                          <span>Pay ₹{upfrontShippingCharge.toLocaleString('en-IN')} Shipping Fee &amp; Schedule Pickup</span>
+                          <span>Pay ₹{upfrontShippingCharge.toLocaleString('en-IN')} Shipping &amp; Continue</span>
                           <ArrowRight className="w-4 h-4" />
                         </>
                       )}
                     </button>
                   </div>
 
-                  {/* Test Mode Indicator & Payment Trust Badges */}
                   {SIMULATE_PAID_FOR_TESTING && (
-                    <div className="text-center pt-0.5">
-                      <span className="text-[10px] font-bold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
-                        <span>🧪</span>
-                        <span>Test Mode Active: Bypasses gateway and proceeds directly as paid</span>
-                      </span>
-                    </div>
+                    <p className="text-[11px] text-center text-slate-400">
+                      Localhost test mode active — payment gateway bypassed
+                    </p>
                   )}
-
-                  <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-[11px] text-slate-500">
-                    <span className="inline-flex items-center gap-1 font-semibold text-slate-700">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                      Cashfree PG v3
-                    </span>
-                    <span>•</span>
-                    <span>UPI (GPay, PhonePe, Paytm)</span>
-                    <span>•</span>
-                    <span>Cards &amp; NetBanking</span>
-                  </div>
                 </div>
               </div>
             </div>
@@ -3431,401 +3214,344 @@ function CreateShipmentContent() {
         </div>
       )}
 
-      {/* 2-STAGE PAYMENT LIFECYCLE: STAGE 2 PRIVATE MULTI-CHUNK ESCROW VAULT & DOORSTEP QR MODAL */}
+      {/* MANDATORY STEP 2: DEVICE VALUE ESCROW COLLECTION (UNCANCELLABLE, SAVED ORDER, 50/50 SPLIT > ₹10) */}
       {createdDealForEscrow && (() => {
         const deposited = createdDealForEscrow.escrowVault?.depositedAmount || 0;
         const target = createdDealForEscrow.declaredValue || 0;
         const remaining = Math.max(0, target - deposited);
         const progressPct = target > 0 ? Math.min(100, Math.round((deposited / target) * 100)) : 100;
         const chunks = createdDealForEscrow.escrowVault?.chunks || [];
-        const vanNumber = createdDealForEscrow.escrowVault?.virtualAccountNumber || `SAFESHIP${createdDealForEscrow.id.replace(/\D/g, '')}88`;
-        const vanIfsc = createdDealForEscrow.escrowVault?.virtualAccountIfsc || 'YESB0CMSNOC';
-        const privateBuyerChunkUrl = typeof window !== 'undefined'
-          ? `${window.location.origin}/in/track/${createdDealForEscrow.id}?booked=true&escrow_chunks=open`
-          : `https://safeship.online/in/track/${createdDealForEscrow.id}?booked=true&escrow_chunks=open`;
+        const canSplit5050 = target > 10;
+        const firstHalfAmount = Math.ceil(target / 2);
+        const secondHalfAmount = Math.max(0, target - firstHalfAmount);
+        const isFirstHalfPaid = deposited >= firstHalfAmount;
+        const isFullyFunded = remaining <= 0 || escrowHoldSuccess;
+
+        const savedOrderUrl = typeof window !== 'undefined'
+          ? `${window.location.origin}/in/track/${createdDealForEscrow.id}?booked=true&split=5050`
+          : `https://safeship.online/in/track/${createdDealForEscrow.id}?booked=true&split=5050`;
 
         return (
-          <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-            <div className="bg-white text-[#0F172A] rounded-3xl max-w-xl w-full p-5 sm:p-7 shadow-2xl border border-slate-200 animate-in zoom-in-95 space-y-4 my-auto max-h-[92vh] overflow-y-auto">
-              {/* 2-Stage Progress Stepper */}
-              <div className="space-y-2 pb-3 border-b border-slate-100">
-                <div className="flex items-center justify-between flex-wrap gap-1.5 text-[11px] font-bold">
-                  <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
+          <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-white text-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200/90 animate-in zoom-in-95 space-y-6 my-auto">
+              
+              {/* Top Saved Order & Mandatory Step Header (No Close/Cancel Button) */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-[11px] font-semibold">
                     <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Stage 1: Only Shipping Fee Paid (₹{createdDealForEscrow.upfrontPaid})</span>
+                    <span>Order #{createdDealForEscrow.id} Saved &bull; Shipping Paid (₹{createdDealForEscrow.upfrontPaid})</span>
                   </span>
-                  <span className="text-indigo-800 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-full flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Stage 2: Private Escrow Collection ({progressPct}% Funded)</span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[11px] font-semibold">
+                    <Lock className="w-3 h-3 text-slate-500" />
+                    <span>Step 2 of 2 &bull; Mandatory</span>
                   </span>
                 </div>
-                <div className="flex items-center justify-between pt-1">
-                  <div>
-                    <h3 className="font-black text-base sm:text-lg text-slate-900 tracking-tight">
-                      Fund Item Escrow in Private Chunks or Doorstep QR
-                    </h3>
-                    <p className="text-xs text-slate-500">
-                      Order #{createdDealForEscrow.id} &bull; Pickup: <strong>{createdDealForEscrow.scheduledPickupDate || pickupDateFormatted}</strong> ({createdDealForEscrow.scheduledPickupTimeWindow || resolvedPickupTimeWindow})
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/in/track/${createdDealForEscrow.id}?booked=true`)}
-                    className="text-slate-400 hover:text-slate-800 p-1.5 rounded-xl hover:bg-slate-100 transition cursor-pointer"
-                    title="Continue on live tracking page"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
+
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                    Deposit Device Value into Escrow
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
+                    Your order is saved. To dispatch the courier for <strong className="text-slate-700">{createdDealForEscrow.title}</strong>, lock the device value in SafeShip Escrow. Funds are only released to the seller after you inspect and accept the device at delivery.
+                  </p>
                 </div>
               </div>
 
-              {/* LIVE ESCROW VAULT PROGRESS BAR CARD */}
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white space-y-3 shadow-md">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <span className="text-[10px] font-black uppercase tracking-wider bg-white/15 px-2.5 py-1 rounded-full text-blue-200 border border-white/10 flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Private RBI Nodal Vault &bull; {vanNumber}</span>
+              {/* Minimal Vault Summary Card */}
+              <div className="p-5 rounded-2xl bg-slate-950 text-white space-y-4">
+                <div className="flex items-center justify-between text-xs text-slate-400">
+                  <span className="flex items-center gap-1.5 font-medium text-slate-300">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>SafeShip Escrow Vault</span>
                   </span>
-                  <span className="text-[10px] text-emerald-300 font-bold bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded">
-                    {remaining === 0 ? '100% Locked ✓' : `₹${remaining.toLocaleString('en-IN')} Remaining`}
+                  <span className="font-mono text-[11px] text-emerald-400 bg-emerald-950/80 border border-emerald-800/60 px-2 py-0.5 rounded-md">
+                    {isFullyFunded ? '100% Funded ✓' : `${progressPct}% Funded`}
                   </span>
                 </div>
 
-                <div className="flex items-baseline justify-between gap-2">
+                <div className="flex items-baseline justify-between">
                   <div>
-                    <span className="text-[11px] text-slate-300 block">
-                      Private Escrow Deposited ({chunks.length} {chunks.length === 1 ? 'Chunk' : 'Chunks'}):
+                    <span className="text-[11px] uppercase tracking-wider text-slate-400 block">
+                      Remaining to Lock
                     </span>
-                    <div className="flex items-baseline gap-2 mt-0.5">
-                      <span className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-emerald-400">
-                        ₹{deposited.toLocaleString('en-IN')}
-                      </span>
-                      <span className="text-xs text-slate-300 font-mono">
-                        / ₹{target.toLocaleString('en-IN')}
-                      </span>
-                    </div>
+                    <span className="text-3xl font-bold font-mono tracking-tight text-white mt-0.5 block">
+                      ₹{remaining.toLocaleString('en-IN')}
+                    </span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[10px] text-indigo-200 block">Buyer Delivery Window:</span>
-                    <span className="text-[11px] font-bold text-white block">
-                      {createdDealForEscrow.buyerPreferredDeliveryWindow || resolvedBuyerDeliveryWindow}
+                    <span className="text-[11px] uppercase tracking-wider text-slate-400 block">
+                      Total Device Value
+                    </span>
+                    <span className="text-base font-semibold font-mono text-slate-300 mt-0.5 block">
+                      ₹{target.toLocaleString('en-IN')}
                     </span>
                   </div>
                 </div>
 
                 {/* Progress Bar */}
-                <div className="space-y-1">
-                  <div className="w-full h-2.5 bg-white/10 rounded-full overflow-hidden">
+                <div className="space-y-1.5">
+                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-emerald-400 to-blue-400 rounded-full transition-all duration-500"
+                      className="h-full bg-emerald-400 rounded-full transition-all duration-500"
                       style={{ width: `${Math.max(4, progressPct)}%` }}
                     />
                   </div>
-                  <div className="flex justify-between text-[10px] text-slate-300">
-                    <span>Stage 1 Shipping Paid: ₹{createdDealForEscrow.upfrontPaid} ✓</span>
-                    <span>{progressPct}% of Item Escrow Funded</span>
+                  <div className="flex justify-between text-[11px] text-slate-400">
+                    <span>Deposited: ₹{deposited.toLocaleString('en-IN')}</span>
+                    <span>Pickup: {createdDealForEscrow.scheduledPickupDate || pickupDateFormatted}</span>
                   </div>
                 </div>
 
-                {/* Chunk History Pills */}
+                {/* Recorded Payment History */}
                 {chunks.length > 0 && (
-                  <div className="pt-2 border-t border-white/10 space-y-1">
-                    <span className="text-[10px] font-bold text-emerald-300 uppercase tracking-wider block">
-                      Verified Private Chunk Ledger:
-                    </span>
-                    <div className="space-y-1 max-h-24 overflow-y-auto pr-1">
-                      {chunks.map((c) => (
-                        <div key={c.id} className="flex items-center justify-between text-[11px] bg-white/10 px-2.5 py-1 rounded-lg">
-                          <span className="font-semibold text-white">
-                            Chunk #{c.chunkNumber}: ₹{c.amount.toLocaleString('en-IN')} <span className="text-slate-300 font-normal">({c.methodLabel})</span>
-                          </span>
-                          <span className="font-mono text-[10px] text-emerald-300">{c.utr} ✓</span>
-                        </div>
-                      ))}
-                    </div>
+                  <div className="pt-3 border-t border-slate-800/80 space-y-1.5">
+                    {chunks.map((c) => (
+                      <div key={c.id} className="flex items-center justify-between text-xs text-slate-300">
+                        <span className="flex items-center gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>Part {c.chunkNumber} Paid: <strong className="text-white font-mono">₹{c.amount.toLocaleString('en-IN')}</strong></span>
+                        </span>
+                        <span className="font-mono text-[11px] text-slate-400">{c.utr}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
 
-              {/* 3 ESCROW COLLECTION SYSTEM TABS */}
-              <div className="grid grid-cols-3 gap-1.5 p-1 bg-slate-100 rounded-2xl text-[11px] font-bold">
-                <button
-                  type="button"
-                  onClick={() => setEscrowModalTab('PRIVATE_CHUNKS')}
-                  className={`py-2 px-2 rounded-xl transition cursor-pointer text-center ${
-                    escrowModalTab === 'PRIVATE_CHUNKS'
-                      ? 'bg-[#0066FF] text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  🧩 Private Chunks (Indian UPI Split)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEscrowModalTab('DELHIVERY_DOORSTEP')}
-                  className={`py-2 px-2 rounded-xl transition cursor-pointer text-center ${
-                    escrowModalTab === 'DELHIVERY_DOORSTEP'
-                      ? 'bg-[#0066FF] text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  🚚 Courier Doorstep Dynamic QR
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEscrowModalTab('FULL_SINGLE')}
-                  className={`py-2 px-2 rounded-xl transition cursor-pointer text-center ${
-                    escrowModalTab === 'FULL_SINGLE'
-                      ? 'bg-[#0066FF] text-white shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  ⚡ Single-Shot Full Hold
-                </button>
-              </div>
-
-              {/* TAB 1: PAY IN PRIVATE CHUNKS (BEST FOR LARGE AMOUNTS IN INDIA) */}
-              {escrowModalTab === 'PRIVATE_CHUNKS' && (
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span className="text-[11px] font-black text-slate-900 block">
-                        Why Pay in Private Chunks? (Built for Indian Buyers)
-                      </span>
-                      <p className="text-[11px] text-slate-600 leading-snug mt-0.5">
-                        Indian banks cap UPI at ₹25,000–₹1,00,000/day. Deposit privately in smaller chunks across multiple UPI apps, bank accounts, or IMPS into your dedicated RBI Nodal Vault.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Smart Chunk Preset Pills */}
-                  {remaining > 0 && (
-                    <>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
-                          1. Select Chunk Amount (Remaining: ₹{remaining.toLocaleString('en-IN')})
-                        </label>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                          {[
-                            { label: '₹15,000 Chunk', val: Math.min(15000, remaining) },
-                            { label: '₹25,000 (UPI Safe)', val: Math.min(25000, remaining) },
-                            { label: '50% Split', val: Math.max(1, Math.ceil(remaining / 2)) },
-                            { label: 'Full Remaining', val: remaining },
-                          ].map((preset, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              onClick={() => setChunkAmountInput(preset.val)}
-                              className={`py-1.5 px-2 rounded-xl border text-[11px] font-bold transition cursor-pointer ${
-                                chunkAmountInput === preset.val
-                                  ? 'bg-blue-50 border-[#0066FF] text-[#0066FF] ring-1 ring-blue-300'
-                                  : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-100'
-                              }`}
-                            >
-                              <span className="block">{preset.label}</span>
-                              <span className="font-mono text-[10px] text-slate-500">₹{preset.val.toLocaleString('en-IN')}</span>
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Custom Chunk Amount Input */}
-                        <div className="flex items-center gap-2 pt-1">
-                          <span className="text-xs font-bold text-slate-700 shrink-0">Custom Chunk (₹):</span>
-                          <input
-                            type="number"
-                            min={100}
-                            max={remaining}
-                            value={chunkAmountInput || ''}
-                            onChange={(e) => setChunkAmountInput(Math.min(remaining, Math.max(0, Number(e.target.value))))}
-                            className="flex-1 px-3 py-1.5 rounded-xl bg-white border border-slate-300 text-xs font-mono font-bold text-slate-900 focus:border-[#0066FF] outline-hidden"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Payment Method for this Chunk */}
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-bold text-slate-600 uppercase tracking-wider block">
-                          2. Choose Private Payment Rail for This Chunk
-                        </label>
-                        <div className="grid grid-cols-2 gap-1.5">
-                          {[
-                            { id: 'UPI_GPAY_PHONEPE' as const, label: '📱 Primary UPI (GPay/PhonePe)' },
-                            { id: 'SECOND_UPI_BANK' as const, label: '🏦 2nd Bank / Family UPI' },
-                            { id: 'IMPS_NEFT_VAN' as const, label: '🔐 Private Virtual A/C (IMPS/RTGS)' },
-                            { id: 'CREDIT_DEBIT_CARD' as const, label: '💳 Credit / Debit Card' },
-                          ].map((m) => (
-                            <button
-                              key={m.id}
-                              type="button"
-                              onClick={() => setChunkMethod(m.id)}
-                              className={`py-2 px-2.5 rounded-xl border text-left text-[11px] font-semibold transition cursor-pointer ${
-                                chunkMethod === m.id
-                                  ? 'bg-slate-900 text-white border-slate-900'
-                                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
-                              }`}
-                            >
-                              {m.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Dedicated Virtual Account Box (when IMPS/NEFT selected) */}
-                      {chunkMethod === 'IMPS_NEFT_VAN' && (
-                        <div className="p-2.5 rounded-xl bg-indigo-50 border border-indigo-200 text-[11px] flex items-center justify-between gap-2">
-                          <div>
-                            <span className="font-bold text-indigo-950 block">Dedicated Deal Virtual A/C (Zero Limit IMPS/NEFT):</span>
-                            <span className="font-mono text-indigo-800">A/C: <strong>{vanNumber}</strong> &bull; IFSC: <strong>{vanIfsc}</strong></span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(`Account: ${vanNumber}, IFSC: ${vanIfsc}`);
-                              setCopiedVanNumber(true);
-                              setTimeout(() => setCopiedVanNumber(false), 2500);
-                            }}
-                            className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-[10px] font-bold cursor-pointer shrink-0"
-                          >
-                            {copiedVanNumber ? 'Copied ✓' : 'Copy VAN'}
-                          </button>
-                        </div>
-                      )}
-
-                      <button
-                        type="button"
-                        disabled={isEscrowHolding || escrowHoldSuccess || chunkAmountInput <= 0}
-                        onClick={() => handleDepositEscrowChunk()}
-                        className="w-full py-3.5 px-5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-black text-xs sm:text-sm tracking-wide shadow-md shadow-blue-500/25 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-60"
-                      >
-                        {isEscrowHolding ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 animate-spin" />
-                            <span>Recording Private Chunk (₹{chunkAmountInput.toLocaleString('en-IN')})...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Lock className="w-4 h-4" />
-                            <span>
-                              Deposit Private Chunk #{chunks.length + 1} (₹{chunkAmountInput.toLocaleString('en-IN')})
-                              {chunkAmountInput >= remaining ? ' & Dispatch Courier' : ''}
-                            </span>
-                          </>
-                        )}
-                      </button>
-                    </>
-                  )}
-
-                  {/* Share Private Buyer Chunk Link (if Seller booked & Buyer is paying from their phone) */}
-                  <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                    <span className="text-[11px] text-slate-600">
-                      Buyer paying from another phone? Send private chunk link:
+              {/* Payment Mode Switcher: Full Amount vs 50/50 Split (whenever target > ₹10) */}
+              {canSplit5050 && !isFullyFunded && (
+                <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-100 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => setEscrowModalTab('FULL_SINGLE')}
+                    className={`py-2.5 px-3 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                      escrowModalTab !== 'PRIVATE_CHUNKS'
+                        ? 'bg-white text-slate-900 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Pay Full (₹{remaining.toLocaleString('en-IN')})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEscrowModalTab('PRIVATE_CHUNKS');
+                      setChunkAmountInput(isFirstHalfPaid ? remaining : firstHalfAmount);
+                    }}
+                    className={`py-2.5 px-3 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-1.5 ${
+                      escrowModalTab === 'PRIVATE_CHUNKS'
+                        ? 'bg-white text-slate-900 shadow-xs'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <span>Split 50 / 50</span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-white">
+                      ₹{firstHalfAmount.toLocaleString('en-IN')} × 2
                     </span>
-                    <div className="flex items-center gap-1.5">
+                  </button>
+                </div>
+              )}
+
+              {/* MODE A: PAY FULL AMOUNT */}
+              {(escrowModalTab !== 'PRIVATE_CHUNKS' || !canSplit5050) && !isFullyFunded && (
+                <div className="space-y-4">
+                  <button
+                    type="button"
+                    disabled={isEscrowHolding || escrowHoldSuccess}
+                    onClick={handlePutEscrowOnHold}
+                    className="w-full py-4 px-5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99] disabled:opacity-60 shadow-sm"
+                  >
+                    {isEscrowHolding ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        <span>Securing ₹{remaining.toLocaleString('en-IN')} in Escrow...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4" />
+                        <span>Pay ₹{remaining.toLocaleString('en-IN')} &amp; Dispatch Courier</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+
+                  {canSplit5050 && (
+                    <p className="text-center text-xs text-slate-500">
+                      Amount too large for one account or sharing with a friend?{' '}
                       <button
                         type="button"
                         onClick={() => {
-                          navigator.clipboard.writeText(privateBuyerChunkUrl);
+                          setEscrowModalTab('PRIVATE_CHUNKS');
+                          setChunkAmountInput(isFirstHalfPaid ? remaining : firstHalfAmount);
+                        }}
+                        className="text-slate-900 font-semibold underline underline-offset-2 cursor-pointer"
+                      >
+                        Split 50/50 (₹{firstHalfAmount.toLocaleString('en-IN')} each)
+                      </button>
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* MODE B: 50 / 50 SPLIT (Available when device value > ₹10) */}
+              {escrowModalTab === 'PRIVATE_CHUNKS' && canSplit5050 && !isFullyFunded && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* First 50% Card */}
+                    <div
+                      className={`p-4 rounded-2xl border transition ${
+                        isFirstHalfPaid
+                          ? 'bg-emerald-50/60 border-emerald-200'
+                          : 'bg-white border-slate-900 ring-1 ring-slate-900/10'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <span className="font-semibold text-slate-600">Part 1 &bull; First 50%</span>
+                        {isFirstHalfPaid ? (
+                          <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                            Paid ✓
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-semibold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-full">
+                            Due Now
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xl font-bold font-mono text-slate-900 mb-3">
+                        ₹{firstHalfAmount.toLocaleString('en-IN')}
+                      </div>
+                      {isFirstHalfPaid ? (
+                        <div className="w-full py-2.5 px-3 rounded-xl bg-emerald-100/80 text-emerald-800 text-xs font-semibold text-center flex items-center justify-center gap-1.5">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>First 50% Locked</span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={isEscrowHolding}
+                          onClick={() => {
+                            setChunkMethod('UPI_GPAY_PHONEPE');
+                            handleDepositEscrowChunk(firstHalfAmount);
+                          }}
+                          className="w-full py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
+                        >
+                          {isEscrowHolding ? (
+                            <>
+                              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                              <span>Processing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Pay First 50%</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Second 50% Card */}
+                    <div
+                      className={`p-4 rounded-2xl border transition ${
+                        isFirstHalfPaid
+                          ? 'bg-white border-slate-900 ring-1 ring-slate-900/10'
+                          : 'bg-slate-50 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between text-xs mb-1.5">
+                        <span className="font-semibold text-slate-600">Part 2 &bull; Second 50%</span>
+                        <span className="text-[11px] font-semibold text-slate-600 bg-slate-200/70 px-2 py-0.5 rounded-full">
+                          {isFirstHalfPaid ? 'Final 50%' : 'You or Friend'}
+                        </span>
+                      </div>
+                      <div className="text-xl font-bold font-mono text-slate-900 mb-3">
+                        ₹{(isFirstHalfPaid ? remaining : secondHalfAmount).toLocaleString('en-IN')}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={isEscrowHolding || !isFirstHalfPaid}
+                        onClick={() => {
+                          setChunkMethod('SECOND_UPI_BANK');
+                          handleDepositEscrowChunk(remaining);
+                        }}
+                        className={`w-full py-2.5 px-3 rounded-xl text-xs font-semibold transition flex items-center justify-center gap-1.5 ${
+                          isFirstHalfPaid
+                            ? 'bg-slate-900 hover:bg-slate-800 text-white cursor-pointer'
+                            : 'bg-slate-200 text-slate-500 cursor-not-allowed'
+                        }`}
+                      >
+                        {isEscrowHolding && isFirstHalfPaid ? (
+                          <>
+                            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                            <span>Completing...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Pay Second 50%</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Share 50% Split Link with a Friend / Co-Payer */}
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <span className="text-xs font-semibold text-slate-900 block">
+                        Splitting with a friend or second phone?
+                      </span>
+                      <span className="text-[11px] text-slate-500 block mt-0.5">
+                        Share this saved order link so they can pay the ₹{(isFirstHalfPaid ? remaining : secondHalfAmount).toLocaleString('en-IN')} half.
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(savedOrderUrl);
                           setCopiedPrivateChunkLink(true);
                           setTimeout(() => setCopiedPrivateChunkLink(false), 2500);
                         }}
-                        className="px-2.5 py-1.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-[11px] font-bold text-slate-800 flex items-center gap-1 cursor-pointer"
+                        className="px-3 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-100 text-xs font-semibold text-slate-800 flex items-center gap-1.5 cursor-pointer transition"
                       >
-                        <Copy className="w-3 h-3" />
-                        <span>{copiedPrivateChunkLink ? 'Copied! ✓' : 'Copy Buyer Link'}</span>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>{copiedPrivateChunkLink ? 'Copied ✓' : 'Copy 50% Link'}</span>
                       </button>
                       <a
                         href={`https://wa.me/?text=${encodeURIComponent(
-                          `Hi ${createdDealForEscrow.buyer?.name || 'there'}! Stage 1 courier shipping (₹${createdDealForEscrow.upfrontPaid}) is booked for "${createdDealForEscrow.title}" (#${createdDealForEscrow.id}). You can deposit the ₹${createdDealForEscrow.declaredValue.toLocaleString('en-IN')} escrow privately in chunks (UPI / IMPS / Split) before pickup here: ${privateBuyerChunkUrl}`
+                          `Hey! I've booked our SafeShip order #${createdDealForEscrow.id} for "${createdDealForEscrow.title}" and paid the shipping. Here is the 50/50 split link to pay the ₹${(isFirstHalfPaid ? remaining : secondHalfAmount).toLocaleString('en-IN')} half into escrow: ${savedOrderUrl}`
                         )}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-2.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+                        className="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition"
                       >
-                        <span>💬 WhatsApp Buyer</span>
+                        <Share2 className="w-3.5 h-3.5" />
+                        <span>Share</span>
                       </a>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* TAB 2: DELHIVERY / SAFESHIP DOORSTEP DYNAMIC QR ESCROW */}
-              {escrowModalTab === 'DELHIVERY_DOORSTEP' && (
-                <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-3 text-xs">
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="text-[11px] font-black text-emerald-950">
-                        Delhivery / SafeShip Doorstep Dynamic QR Escrow
-                      </span>
-                      <span className="text-[10px] font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full">
-                        Zero COD Surcharge
-                      </span>
-                    </div>
-                    <p className="text-[11px] text-emerald-900 leading-relaxed">
-                      Standard courier cash-on-delivery (COD) caps at ₹25k–₹50k and delays seller payout by 7 days. Instead, our field officer carries a <strong>SafeShip Nodal Dynamic UPI QR</strong> to the buyer&apos;s doorstep on <strong>{deliveryDateFormatted} ({resolvedBuyerDeliveryWindow})</strong>:
-                    </p>
+              {/* Success State when 100% Funded */}
+              {isFullyFunded && (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-1">
+                  <div className="text-sm font-bold text-emerald-900">
+                    100% Device Value Locked in Escrow ✓
                   </div>
-
-                  <div className="space-y-1.5 text-[11px] text-slate-700 bg-white p-3 rounded-xl border border-emerald-200">
-                    <div><strong>1. Shipping Paid Now:</strong> Only ₹{createdDealForEscrow.upfrontPaid} shipping fee is taken today.</div>
-                    <div><strong>2. Doorstep Multi-Scan QR:</strong> Before breaking the tamper seal at delivery, the buyer scans the Dynamic QR on the courier&apos;s handheld terminal (can even scan in 2–3 UPI chunks from different phones/banks!).</div>
-                    <div><strong>3. Instant 4-Sec Seller Payout:</strong> Once the 10-minute open-box inspection passes and buyer enters the OTP, the escrow releases to the seller&apos;s UPI/Bank in 4 seconds.</div>
-                  </div>
-
-                  <button
-                    type="button"
-                    disabled={isEscrowHolding || escrowHoldSuccess}
-                    onClick={handleAuthorizeDoorstepQrEscrow}
-                    className="w-full py-3.5 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs sm:text-sm tracking-wide shadow-md shadow-emerald-600/20 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-60"
-                  >
-                    {isEscrowHolding ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Activating Doorstep Dynamic QR Escrow...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Truck className="w-4 h-4" />
-                        <span>Schedule Pickup Now &amp; Collect ₹{remaining.toLocaleString('en-IN')} Escrow via Doorstep QR</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              )}
-
-              {/* TAB 3: SINGLE-SHOT FULL HOLD */}
-              {escrowModalTab === 'FULL_SINGLE' && (
-                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 text-xs">
-                  <p className="text-[11px] text-slate-600 leading-relaxed">
-                    Have high-limit NetBanking, RTGS, or Corporate Card? Lock the entire remaining <strong>₹{remaining.toLocaleString('en-IN')}</strong> in a single transaction right now.
+                  <p className="text-xs text-emerald-700">
+                    Dispatching courier &amp; redirecting to your live order console...
                   </p>
-                  <button
-                    type="button"
-                    disabled={isEscrowHolding || escrowHoldSuccess}
-                    onClick={handlePutEscrowOnHold}
-                    className="w-full py-3.5 px-5 rounded-2xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-black text-xs sm:text-sm tracking-wide shadow-md shadow-blue-500/25 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 disabled:opacity-75"
-                  >
-                    {isEscrowHolding ? (
-                      <>
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                        <span>Securing ₹{remaining.toLocaleString('en-IN')} in RBI Vault...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="w-4 h-4" />
-                        <span>Authorize Full Escrow Hold (₹{remaining.toLocaleString('en-IN')}) &amp; Dispatch Courier</span>
-                      </>
-                    )}
-                  </button>
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={() => router.push(`/in/track/${createdDealForEscrow.id}?booked=true`)}
-                className="w-full py-2 px-4 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 font-semibold text-xs text-center transition cursor-pointer"
-              >
-                Continue to Live Tracking Console (Pay Remaining Chunks Later) &rarr;
-              </button>
+              {/* Footer Trust Note — No Cancel / Skip button because device value escrow is mandatory */}
+              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                <span>100% Refundable on Open-Box Rejection</span>
+                <span>Saved Order #{createdDealForEscrow.id}</span>
+              </div>
             </div>
           </div>
         );
