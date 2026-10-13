@@ -762,13 +762,18 @@ function CreateShipmentContent() {
         const pendingDealId = resumeId || localStorage.getItem('safeship_pending_escrow_deal_id');
         if (pendingDealId) {
           const savedDeal = getDealById(pendingDealId);
-          if (savedDeal && !savedDeal.escrowVault?.isLocked) {
-            const rem = Math.max(0, savedDeal.declaredValue - (savedDeal.escrowVault?.depositedAmount || 0));
+          const rem = savedDeal ? Math.max(0, (savedDeal.declaredValue || 0) - (savedDeal.escrowVault?.depositedAmount || 0)) : 0;
+          if (savedDeal && !savedDeal.escrowVault?.isLocked && (savedDeal.declaredValue || 0) > 0 && rem > 0) {
             setChunkAmountInput(savedDeal.declaredValue > 10 ? Math.ceil(rem / 2) : rem);
             setEscrowModalTab(savedDeal.declaredValue > 10 ? 'PRIVATE_CHUNKS' : 'FULL_SINGLE');
             setCreatedDealForEscrow(savedDeal);
           } else {
-            localStorage.removeItem('safeship_pending_escrow_deal_id');
+            try {
+              localStorage.removeItem('safeship_pending_escrow_deal_id');
+            } catch {}
+            if (savedDeal && resumeId) {
+              router.push(`/in/track/${savedDeal.id}?booked=true`);
+            }
           }
         }
 
@@ -1539,6 +1544,15 @@ function CreateShipmentContent() {
       analytics.trackEscrowPaymentSuccess(created.id, paymentId, upfrontAmountPaid);
       notifyMilestoneEmail(created, 'BOOKING_CONFIRMED');
 
+      if (!created.declaredValue || created.declaredValue <= 0) {
+        try {
+          localStorage.removeItem('safeship_pending_escrow_deal_id');
+        } catch {}
+        notifyMilestoneEmail(created, 'COURIER_ASSIGNED');
+        router.push(`/in/track/${created.id}?booked=true`);
+        return;
+      }
+
       try {
         localStorage.setItem('safeship_pending_escrow_deal_id', created.id);
       } catch {}
@@ -1652,6 +1666,25 @@ function CreateShipmentContent() {
       }, 900);
     }, 550);
   };
+
+  // Auto-redirect to live tracking if escrow is funded or has zero remaining balance so user is never stuck
+  useEffect(() => {
+    if (!createdDealForEscrow) return;
+    const target = createdDealForEscrow.declaredValue || 0;
+    const deposited = createdDealForEscrow.escrowVault?.depositedAmount || 0;
+    const remaining = Math.max(0, target - deposited);
+    const fullyFunded = target <= 0 || remaining <= 0 || escrowHoldSuccess;
+
+    if (fullyFunded) {
+      try {
+        localStorage.removeItem('safeship_pending_escrow_deal_id');
+      } catch {}
+      const timer = setTimeout(() => {
+        router.push(`/in/track/${createdDealForEscrow.id}?booked=true&escrow_locked=true&escrow_paid=true`);
+      }, 850);
+      return () => clearTimeout(timer);
+    }
+  }, [createdDealForEscrow, escrowHoldSuccess, router]);
 
   const handleConfirmBooking = () => {
     clearPaymentGatewayError();
@@ -3328,7 +3361,7 @@ function CreateShipmentContent() {
         const firstHalfAmount = Math.ceil(target / 2);
         const secondHalfAmount = Math.max(0, target - firstHalfAmount);
         const isFirstHalfPaid = deposited >= firstHalfAmount;
-        const isFullyFunded = remaining <= 0 || escrowHoldSuccess;
+        const isFullyFunded = (target > 0 && remaining <= 0) || target <= 0 || escrowHoldSuccess;
 
         const savedOrderUrl = typeof window !== 'undefined'
           ? `${window.location.origin}/in/track/${createdDealForEscrow.id}?booked=true&split=5050`
@@ -3338,17 +3371,33 @@ function CreateShipmentContent() {
           <div className="fixed inset-0 z-50 bg-[#0F172A]/80 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
             <div className="bg-white text-[#0F172A] rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-in zoom-in-95 space-y-6 my-auto">
               
-              {/* Top Saved Order & Mandatory Step Header (No Close/Cancel Button) */}
+              {/* Top Saved Order & Mandatory Step Header */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-[11px] font-bold">
-                    <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Order #{createdDealForEscrow.id} Saved &bull; Shipping Paid (₹{createdDealForEscrow.upfrontPaid})</span>
-                  </span>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0066FF] text-[11px] font-bold">
-                    <Lock className="w-3 h-3 text-[#0066FF]" />
-                    <span>Step 2 of 2 &bull; Mandatory</span>
-                  </span>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200/80 text-emerald-700 text-[11px] font-bold">
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Order #{createdDealForEscrow.id} Saved &bull; Shipping Paid (₹{createdDealForEscrow.upfrontPaid})</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0066FF] text-[11px] font-bold">
+                      <Lock className="w-3 h-3 text-[#0066FF]" />
+                      <span>Step 2 of 2 &bull; Mandatory</span>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        localStorage.removeItem('safeship_pending_escrow_deal_id');
+                      } catch {}
+                      setCreatedDealForEscrow(null);
+                      router.push(`/in/track/${createdDealForEscrow.id}?booked=true`);
+                    }}
+                    className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer shrink-0"
+                    title="Close and view order tracking"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
                 </div>
 
                 <div>
@@ -3679,20 +3728,47 @@ function CreateShipmentContent() {
 
               {/* Success State when 100% Funded */}
               {isFullyFunded && (
-                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-1">
-                  <div className="text-sm font-bold text-emerald-900">
-                    100% Device Value Locked in Escrow ✓
+                <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3 animate-in fade-in">
+                  <div className="space-y-1">
+                    <div className="text-sm font-bold text-emerald-900">
+                      100% Device Value Locked in Escrow ✓
+                    </div>
+                    <p className="text-xs text-emerald-700">
+                      Dispatching courier &amp; redirecting to your live order console...
+                    </p>
                   </div>
-                  <p className="text-xs text-emerald-700">
-                    Dispatching courier &amp; redirecting to your live order console...
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      try {
+                        localStorage.removeItem('safeship_pending_escrow_deal_id');
+                      } catch {}
+                      router.push(`/in/track/${createdDealForEscrow.id}?booked=true&escrow_locked=true&escrow_paid=true`);
+                    }}
+                    className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-emerald-600/20 active:scale-99 transition"
+                  >
+                    <span>Go to Live Tracking Console</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
                 </div>
               )}
 
-              {/* Footer Trust Note — No Cancel / Skip button because device value escrow is mandatory */}
+              {/* Footer Trust Note & Direct Tracking Link */}
               <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
                 <span>100% Refundable on Open-Box Rejection</span>
-                <span>Saved Order #{createdDealForEscrow.id}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try {
+                      localStorage.removeItem('safeship_pending_escrow_deal_id');
+                    } catch {}
+                    setCreatedDealForEscrow(null);
+                    router.push(`/in/track/${createdDealForEscrow.id}?booked=true`);
+                  }}
+                  className="text-[#0066FF] hover:underline font-semibold cursor-pointer"
+                >
+                  Pay at Delivery / View Order &rarr;
+                </button>
               </div>
             </div>
           </div>
