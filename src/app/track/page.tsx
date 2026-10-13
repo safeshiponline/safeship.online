@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Navbar } from '@/components/common/Navbar';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
-import { getStoredDeals, getUserOrders } from '@/lib/store';
+import { getStoredDeals, getUserOrders, normalizeDealQuery } from '@/lib/store';
 import { SafeDeal } from '@/lib/types';
 import { formatINR } from '@/lib/escrowCalculator';
 import {
@@ -38,7 +38,8 @@ export default function PublicTrackingSearchPage() {
 
   const handleTrack = (e: React.FormEvent) => {
     e.preventDefault();
-    const clean = searchId.trim();
+    const { normalized } = normalizeDealQuery(searchId);
+    const clean = normalized || searchId.trim();
     if (!clean) {
       setErrorMsg('Please enter a valid Tracking ID or Consignment ID');
       return;

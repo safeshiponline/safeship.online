@@ -98,25 +98,82 @@ export function saveStoredDeals(deals: SafeDeal[]): void {
   }
 }
 
+export function normalizeDealQuery(raw: string): {
+  normalized: string;
+  cleanedAlphaNum: string;
+  digitsOnly: string;
+} {
+  if (!raw) return { normalized: '', cleanedAlphaNum: '', digitsOnly: '' };
+  let s = String(raw).trim();
+  try {
+    s = decodeURIComponent(s);
+  } catch {}
+  // Extract ID if full tracking URL was pasted (e.g., https://safeship.online/in/track/SS58257)
+  if (s.includes('/track/')) {
+    const parts = s.split('/track/');
+    s = parts[parts.length - 1].split('?')[0].split('#')[0];
+  }
+  // Strip leading '#', spaces, trailing punctuation
+  s = s.replace(/^[#\s]+/, '').replace(/[/\s]+$/, '').trim();
+  const normalized = s.toLowerCase();
+  const cleanedAlphaNum = normalized.replace(/[^a-z0-9]/g, '');
+  const digitsOnly = s.replace(/\D/g, '');
+
+  return { normalized, cleanedAlphaNum, digitsOnly };
+}
+
 export function getDealById(id: string): SafeDeal | undefined {
   if (!id) return undefined;
-  const target = id.trim().toLowerCase();
+  const { normalized, cleanedAlphaNum, digitsOnly } = normalizeDealQuery(id);
+  if (!normalized && !cleanedAlphaNum) return undefined;
 
-  // 1. Check user orders first
-  const userOrders = getUserOrders();
-  const userFound = userOrders.find((d) => d.id.toLowerCase() === target || d.trackingId?.toLowerCase() === target);
-  if (userFound) return userFound;
+  const allDeals = [
+    ...getUserOrders(),
+    ...getStoredDeals(),
+    ...INITIAL_DEALS
+  ];
 
-  // 2. Check stored deals
-  const deals = getStoredDeals();
-  const found = deals.find((d) => d.id.toLowerCase() === target || d.trackingId?.toLowerCase() === target);
-  if (found) return found;
+  // 1. Exact match on id or trackingId
+  const exact = allDeals.find(
+    (d) => d.id.toLowerCase() === normalized || (d.trackingId && d.trackingId.toLowerCase() === normalized)
+  );
+  if (exact) return exact;
 
-  // 3. Check demo INITIAL_DEALS (e.g. SS48291)
-  const initFound = INITIAL_DEALS.find((d) => d.id.toLowerCase() === target || d.trackingId?.toLowerCase() === target);
-  if (initFound) return initFound;
+  // 2. Alphanumeric match (e.g. user entered "ss-58257", "#ss58257", or "ss 58257")
+  if (cleanedAlphaNum) {
+    const alphaMatch = allDeals.find((d) => {
+      const dIdClean = d.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const dTrkClean = (d.trackingId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      return dIdClean === cleanedAlphaNum || dTrkClean === cleanedAlphaNum;
+    });
+    if (alphaMatch) return alphaMatch;
+  }
 
-  // If not found anywhere, return undefined so a proper "Not Found" UI is shown.
+  // 3. Numeric match (e.g. user entered "58257" for "SS58257", or "492100" for "SS-TRK-492100")
+  if (digitsOnly && digitsOnly.length >= 4) {
+    const digitMatch = allDeals.find((d) => {
+      const dDigits = d.id.replace(/\D/g, '');
+      const trkDigits = (d.trackingId || '').replace(/\D/g, '');
+      return dDigits === digitsOnly || trkDigits === digitsOnly;
+    });
+    if (digitMatch) return digitMatch;
+  }
+
+  // 4. Barcode / Seal / Invoice / Virtual Account match
+  const sealMatch = allDeals.find((d) => {
+    const barcode = (d.tamperSeal?.barcode || '').toLowerCase();
+    const sealId = (d.tamperSeal?.sealId || '').toLowerCase();
+    const inv = (d.billingInfo?.invoiceNumber || '').toLowerCase();
+    const van = (d.escrowVault?.virtualAccountNumber || '').toLowerCase();
+    return (
+      (barcode && barcode.includes(normalized)) ||
+      (sealId && sealId.includes(normalized)) ||
+      (inv && inv.includes(normalized)) ||
+      (van && van.includes(normalized))
+    );
+  });
+  if (sealMatch) return sealMatch;
+
   return undefined;
 }
 
@@ -306,7 +363,7 @@ export function createNewDeal(params: {
     sellerPickupCode: sellerCode,
     upfrontPaid: params.upfrontPaid,
     paymentId: params.paymentId,
-    status: params.upfrontPaid ? 'COURIER_ASSIGNED' : 'PENDING_ACCEPTANCE',
+    status: params.upfrontPaid ? (params.declaredValue > 0 ? 'ESCROW_PENDING' : 'COURIER_ASSIGNED') : 'PENDING_ACCEPTANCE',
     assignedCourier: {
       id: 'cr_rahul_k',
       name: 'Rahul K.',
@@ -422,10 +479,14 @@ export function addEscrowChunkPayment(
 
   const updatedChunks = [...existingChunks, newChunk];
   const newDepositedTotal = updatedChunks.reduce((sum, c) => sum + c.amount, 0);
+  const halfTarget = Math.ceil(deal.declaredValue / 2);
+  const isHalfFunded = newDepositedTotal >= halfTarget;
   const isFullyFunded = newDepositedTotal >= deal.declaredValue;
 
   if (isFullyFunded) {
     deal.status = 'ESCROW_LOCKED';
+  } else if (isHalfFunded && (deal.status === 'ESCROW_PENDING' || deal.status === 'DRAFT' || deal.status === 'PENDING_ACCEPTANCE')) {
+    deal.status = 'COURIER_ASSIGNED';
   }
 
   deal.escrowVault = {
@@ -447,10 +508,14 @@ export function addEscrowChunkPayment(
     actor: 'BUYER',
     title: isFullyFunded
       ? `Final Escrow Chunk #${newChunk.chunkNumber} Paid (₹${sanitizedAmount.toLocaleString('en-IN')}) — 100% Vault Locked!`
+      : isHalfFunded
+      ? `Escrow Chunk #${newChunk.chunkNumber} Paid (₹${sanitizedAmount.toLocaleString('en-IN')}) — Pre-Pickup 50% Met!`
       : `Private Escrow Chunk #${newChunk.chunkNumber} Deposited (₹${sanitizedAmount.toLocaleString('en-IN')})`,
     description: isFullyFunded
-      ? `Total ₹${newDepositedTotal.toLocaleString('en-IN')} (100% of item value) is now locked in SafeShip RBI Nodal Vault (${deal.escrowVault.virtualAccountNumber}). Courier Rahul K. is cleared for scheduled pickup on ${deal.scheduledPickupDate || 'scheduled date'} (${deal.scheduledPickupTimeWindow || 'selected window'}).`
-      : `Received ₹${sanitizedAmount.toLocaleString('en-IN')} via ${methodLabel} (Ref: ${utr}). Total funded: ₹${newDepositedTotal.toLocaleString('en-IN')} of ₹${deal.declaredValue.toLocaleString('en-IN')} (₹${(deal.declaredValue - newDepositedTotal).toLocaleString('en-IN')} remaining).`
+      ? `Total ₹${newDepositedTotal.toLocaleString('en-IN')} (100% of item value) is now locked in SafeShip RBI Nodal Vault (${deal.escrowVault.virtualAccountNumber}). Field Officer Rahul K. is cleared for scheduled pickup on ${deal.scheduledPickupDate || 'scheduled date'} (${deal.scheduledPickupTimeWindow || 'selected window'}).`
+      : isHalfFunded
+      ? `Pre-pickup 50% escrow threshold (₹${halfTarget.toLocaleString('en-IN')}) satisfied! Field Officer Rahul K. is now dispatched for scheduled pickup. The remaining ₹${(deal.declaredValue - newDepositedTotal).toLocaleString('en-IN')} is due before doorstep open-box inspection.`
+      : `Received ₹${sanitizedAmount.toLocaleString('en-IN')} via ${methodLabel} (Ref: ${utr}). Total funded: ₹${newDepositedTotal.toLocaleString('en-IN')} of ₹${deal.declaredValue.toLocaleString('en-IN')} (₹${(deal.declaredValue - newDepositedTotal).toLocaleString('en-IN')} remaining). At least 50% required before pickup dispatch.`
   });
 
   deal.updatedAt = new Date().toISOString();

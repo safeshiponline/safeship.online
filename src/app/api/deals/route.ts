@@ -25,8 +25,52 @@ export async function GET(request: Request) {
   const id = searchParams.get('id');
 
   if (id) {
-    const key = id.trim().toLowerCase();
-    const deal = serverDeals.get(key) || INITIAL_DEALS.find((d) => d.id.toLowerCase() === key || d.trackingId?.toLowerCase() === key);
+    let raw = id.trim();
+    try {
+      raw = decodeURIComponent(raw);
+    } catch {}
+    if (raw.includes('/track/')) {
+      const parts = raw.split('/track/');
+      raw = parts[parts.length - 1].split('?')[0].split('#')[0];
+    }
+    raw = raw.replace(/^[#\s]+/, '').replace(/[/\s]+$/, '').trim();
+    const key = raw.toLowerCase();
+    const cleanAlpha = key.replace(/[^a-z0-9]/g, '');
+    const cleanDigits = key.replace(/\D/g, '');
+
+    const allServerDeals = Array.from(new Set([...serverDeals.values(), ...INITIAL_DEALS]));
+
+    // 1. Direct key match
+    let deal = serverDeals.get(key) || allServerDeals.find((d) => d.id.toLowerCase() === key || d.trackingId?.toLowerCase() === key);
+
+    // 2. Alphanumeric stripped match
+    if (!deal && cleanAlpha) {
+      deal = allServerDeals.find((d) => {
+        const dId = d.id.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const dTrk = (d.trackingId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        return dId === cleanAlpha || dTrk === cleanAlpha;
+      });
+    }
+
+    // 3. Digits-only match (e.g. 58257 -> SS58257)
+    if (!deal && cleanDigits && cleanDigits.length >= 4) {
+      deal = allServerDeals.find((d) => {
+        const dDigits = d.id.replace(/\D/g, '');
+        const trkDigits = (d.trackingId || '').replace(/\D/g, '');
+        return dDigits === cleanDigits || trkDigits === cleanDigits;
+      });
+    }
+
+    // 4. Seal barcode or invoice match
+    if (!deal) {
+      deal = allServerDeals.find((d) => {
+        const barcode = (d.tamperSeal?.barcode || '').toLowerCase();
+        const sealId = (d.tamperSeal?.sealId || '').toLowerCase();
+        const inv = (d.billingInfo?.invoiceNumber || '').toLowerCase();
+        return barcode.includes(key) || sealId.includes(key) || inv.includes(key);
+      });
+    }
+
     if (!deal) {
       return NextResponse.json({ error: 'Deal not found' }, { status: 404 });
     }

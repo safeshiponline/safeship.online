@@ -3,7 +3,7 @@
 import React, { use, useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getDealById, requestSellerCallback, advanceDealMilestone, updateDealDetails, rescheduleDealPickup, lockDealEscrowHold, addEscrowChunkPayment, authorizeDelhiveryDoorstepEscrowMode } from '@/lib/store';
+import { getDealById, getUserOrders, normalizeDealQuery, requestSellerCallback, advanceDealMilestone, updateDealDetails, rescheduleDealPickup, lockDealEscrowHold, addEscrowChunkPayment, authorizeDelhiveryDoorstepEscrowMode } from '@/lib/store';
 import { notifyMilestoneEmail } from '@/lib/emailClient';
 import { reverseGeocodeToIndianLocation } from '@/lib/pincodeService';
 import { SafeDeal, PickupSlot, EscrowChunkPayment } from '@/lib/types';
@@ -412,9 +412,20 @@ function TrackingContent({
     }
   };
 
+  const [recentOrders, setRecentOrders] = useState<SafeDeal[]>([]);
+
+  useEffect(() => {
+    try {
+      setRecentOrders(getUserOrders().slice(0, 3));
+    } catch {}
+  }, []);
+
   useEffect(() => {
     setIsLoading(true);
-    const loaded = getDealById(resolvedParams.id);
+    const { normalized } = normalizeDealQuery(resolvedParams.id);
+    const queryKey = normalized || resolvedParams.id;
+    const loaded = getDealById(queryKey) || getDealById(resolvedParams.id);
+
     if (loaded) {
       setDeal(loaded);
       setBuyerFormName(loaded.buyer?.name || '');
@@ -426,7 +437,7 @@ function TrackingContent({
       analytics.trackTrackingViewed(loaded.id, loaded.status);
       setIsLoading(false);
     } else {
-      fetch(`/api/deals?id=${encodeURIComponent(resolvedParams.id)}`)
+      fetch(`/api/deals?id=${encodeURIComponent(queryKey)}`)
         .then((res) => (res.ok ? res.json() : null))
         .then((serverDeal) => {
           if (serverDeal && serverDeal.id) {
@@ -468,7 +479,7 @@ function TrackingContent({
     return (
       <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col antialiased selection:bg-[#0066FF] selection:text-white">
         <Navbar />
-        <main className="flex-1 max-w-md w-full mx-auto px-4 py-16 flex flex-col items-center justify-center text-center">
+        <main className="flex-1 max-w-md w-full mx-auto px-4 py-14 flex flex-col items-center justify-center text-center">
           <div className="w-16 h-16 rounded-3xl bg-[#EFF6FF] text-[#0066FF] border border-[#BFDBFE] flex items-center justify-center mb-4 shadow-xs">
             <Package className="w-8 h-8" />
           </div>
@@ -482,14 +493,16 @@ function TrackingContent({
           </h1>
 
           <p className="text-xs text-[#64748B] mt-2 leading-relaxed max-w-sm">
-            We couldn&apos;t find any active delivery matching tracking ID <strong className="text-[#0F172A] font-bold">&quot;{resolvedParams.id}&quot;</strong>. Please verify the tracking number or search below.
+            We couldn&apos;t find any active delivery matching tracking ID <strong className="text-[#0F172A] font-bold">&quot;{resolvedParams.id}&quot;</strong>. Please check the ID or select from your recent orders below.
           </p>
 
           {/* Quick Lookup Form */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              if (searchId.trim()) router.push(`/in/track/${searchId.trim()}`);
+              const { normalized } = normalizeDealQuery(searchId);
+              const target = normalized || searchId.trim();
+              if (target) router.push(`/in/track/${encodeURIComponent(target)}`);
             }}
             className="mt-6 w-full space-y-2.5"
           >
@@ -498,7 +511,7 @@ function TrackingContent({
                 type="text"
                 value={searchId}
                 onChange={(e) => setSearchId(e.target.value)}
-                placeholder="Enter Tracking ID (e.g. SS48291)"
+                placeholder="Enter Tracking ID (e.g. SS58257 or SS-TRK-492100)"
                 className="w-full px-4 py-3 rounded-2xl bg-white border border-[#CBD5E1] text-xs font-mono text-[#0F172A] focus:border-[#0066FF] outline-hidden shadow-xs"
               />
             </div>
@@ -509,6 +522,35 @@ function TrackingContent({
               Search Tracking &rarr;
             </button>
           </form>
+
+          {/* Recent Orders Quick-Links */}
+          {recentOrders.length > 0 && (
+            <div className="mt-6 w-full text-left space-y-2">
+              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
+                Your Recent Bookings:
+              </span>
+              <div className="space-y-2">
+                {recentOrders.map((o) => (
+                  <button
+                    key={o.id}
+                    type="button"
+                    onClick={() => router.push(`/in/track/${o.id}`)}
+                    className="w-full p-3.5 rounded-2xl bg-white border border-slate-200 hover:border-[#0066FF] hover:bg-blue-50/30 text-left transition flex items-center justify-between cursor-pointer shadow-2xs group"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-slate-900 truncate">#{o.id} &bull; {o.title}</span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 font-mono block mt-0.5 truncate">
+                        ₹{(o.declaredValue || 0).toLocaleString('en-IN')} &bull; Status: {o.status}
+                      </span>
+                    </div>
+                    <ArrowRight className="w-4 h-4 text-[#0066FF] shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="mt-6 pt-5 border-t border-[#E2E8F0] w-full flex flex-col gap-2.5">
             <Link
@@ -536,13 +578,26 @@ function TrackingContent({
   const halfRescheduleFee = Math.max(49, Math.round(upfrontFee / 2));
   const effectiveStage = getEffectiveStage();
 
+  const targetDeviceVal = deal.declaredValue || 0;
+  const halfDepositNeeded = Math.ceil(targetDeviceVal / 2);
+  const currentDeposited = deal.escrowVault?.depositedAmount || 0;
+  const isHalfPaidForPickup =
+    targetDeviceVal <= 0 ||
+    currentDeposited >= halfDepositNeeded ||
+    Boolean(deal.escrowVault?.isLocked);
+
   const getStatusStep = () => {
+    // SafeShip Policy: At least 50% must be deposited before Field Officer Rahul K. is dispatched for pickup
+    if (!isHalfPaidForPickup) {
+      return 1;
+    }
+
     switch (deal.status) {
       case 'DRAFT':
       case 'PENDING_ACCEPTANCE':
       case 'ESCROW_PENDING':
-      case 'ESCROW_LOCKED':
         return 1;
+      case 'ESCROW_LOCKED':
       case 'COURIER_ASSIGNED':
       case 'PICKUP_DELAYED_SELLER':
       case 'PICKUP_FAILED':
@@ -569,7 +624,7 @@ function TrackingContent({
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-6 sm:py-9 space-y-6">
         
         {/* ESCROW PAID / SECURED CELEBRATION BANNER */}
-        {isEscrowPaid && (
+        {isEscrowPaid && isHalfPaidForPickup && (
           <div className="rounded-2xl border-2 border-emerald-300 bg-emerald-50 p-4 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-black shrink-0 shadow-xs">
@@ -594,6 +649,40 @@ function TrackingContent({
             >
               {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
               <span>{copied ? 'Tracking Link Copied!' : 'Copy Tracking Link'}</span>
+            </button>
+          </div>
+        )}
+
+        {/* PRE-PICKUP 50% ESCROW BANNER (WHEN LESS THAN 50% FUNDED) */}
+        {!isHalfPaidForPickup && targetDeviceVal > 0 && (
+          <div className="rounded-2xl border-2 border-amber-300 bg-amber-50 p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-black shrink-0 shadow-xs">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="text-sm font-black text-amber-950 flex items-center gap-2 flex-wrap">
+                  <span>Pre-Pickup Escrow Required (At least 50% &bull; ₹{halfDepositNeeded.toLocaleString('en-IN')})</span>
+                  <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-2 py-0.5 rounded-full">
+                    Pickup Dispatch On Hold
+                  </span>
+                </div>
+                <p className="text-xs text-amber-800 leading-relaxed">
+                  Shipping fee is paid! SafeShip policy requires at least 50% (₹{halfDepositNeeded.toLocaleString('en-IN')}) locked in escrow before Field Officer <strong>Rahul K.</strong> is dispatched for pickup. The remaining 50% is due before delivery / doorstep open-box inspection.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              disabled={isEscrowHolding}
+              onClick={() => {
+                setTrackChunkMethod('UPI_GPAY_PHONEPE');
+                handleDepositChunkOnTracking(halfDepositNeeded);
+              }}
+              className="w-full sm:w-auto px-5 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 shrink-0 shadow-sm cursor-pointer active:scale-95 disabled:opacity-60"
+            >
+              <Lock className="w-4 h-4" />
+              <span>Pay 1st 50% (₹{halfDepositNeeded.toLocaleString('en-IN')}) &bull; Dispatch Pickup</span>
             </button>
           </div>
         )}
@@ -689,7 +778,11 @@ function TrackingContent({
           <div className="grid grid-cols-5 gap-2 text-center">
             {[
               { num: 1, title: 'Booking Confirmed', desc: `₹${deal.upfrontPaid || upfrontFee} Paid` },
-              { num: 2, title: 'Officer Dispatched', desc: 'Rahul K. Assigned' },
+              {
+                num: 2,
+                title: isHalfPaidForPickup ? 'Officer Dispatched' : 'Pickup Pending',
+                desc: isHalfPaidForPickup ? 'Rahul K. Assigned' : `Requires 50% (₹${halfDepositNeeded.toLocaleString('en-IN')})`
+              },
               { num: 3, title: 'Pickup Verified', desc: 'Tamper Bag Sealed' },
               { num: 4, title: 'Linehaul Transit', desc: 'Highway Telemetry' },
               { num: 5, title: 'Open-Box Inspection', desc: 'Verify & Settle' },
@@ -799,46 +892,61 @@ function TrackingContent({
                       </div>
                       <p className="text-xs text-slate-600 mt-1">
                         {isFirstHalfPaid
-                          ? '1st 50% chunk is locked! Pay the final 50% chunk now or at doorstep Open-Box delivery.'
-                          : 'Pay in two easy 50% / 50% chunks — pay 1st 50% now and 2nd 50% at delivery (or split with a friend).'}
+                          ? '1st 50% chunk is locked! Field Officer Rahul K. is dispatched for pickup. Pay the 2nd 50% chunk now or at doorstep Open-Box delivery.'
+                          : 'SafeShip Policy: At least 50% (₹' + firstHalfAmount.toLocaleString('en-IN') + ') must be deposited before Field Officer Rahul K. is dispatched for pickup. The 2nd 50% is due before delivery.'}
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        disabled={isEscrowHolding || escrowHoldSuccess}
-                        onClick={() => {
-                          setTrackChunkMethod(isFirstHalfPaid ? 'SECOND_UPI_BANK' : 'UPI_GPAY_PHONEPE');
-                          handleDepositChunkOnTracking(isFirstHalfPaid ? remaining : firstHalfAmount);
-                        }}
-                        className="flex-1 py-3.5 px-4 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-sm"
-                      >
-                        {isEscrowHolding ? (
-                          <>
-                            <RefreshCw className="w-4 h-4 animate-spin" />
-                            <span>Processing...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>
-                              {isFirstHalfPaid
-                                ? `Pay 2nd 50% Chunk (₹${remaining.toLocaleString('en-IN')})`
-                                : `Pay 1st 50% Chunk (₹${firstHalfAmount.toLocaleString('en-IN')})`}
-                            </span>
-                          </>
-                        )}
-                      </button>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={isEscrowHolding || escrowHoldSuccess}
+                          onClick={() => {
+                            setTrackChunkMethod(isFirstHalfPaid ? 'SECOND_UPI_BANK' : 'UPI_GPAY_PHONEPE');
+                            handleDepositChunkOnTracking(isFirstHalfPaid ? remaining : firstHalfAmount);
+                          }}
+                          className="flex-1 py-3.5 px-4 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white text-xs sm:text-sm font-bold transition flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 shadow-sm"
+                        >
+                          {isEscrowHolding ? (
+                            <>
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                              <span>Processing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Lock className="w-4 h-4" />
+                              <span>
+                                {isFirstHalfPaid
+                                  ? `Pay 2nd 50% Chunk (₹${remaining.toLocaleString('en-IN')}) • Due Before Delivery`
+                                  : `Pay 1st 50% Chunk (₹${firstHalfAmount.toLocaleString('en-IN')}) • Dispatch Pickup`}
+                              </span>
+                            </>
+                          )}
+                        </button>
 
-                      <button
-                        type="button"
-                        onClick={copyTrackingLink}
-                        className="py-3.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shrink-0"
-                        title="Copy 50/50 Split Link for a Friend"
-                      >
-                        {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                        <span>{copied ? 'Copied' : '50% Link'}</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={copyTrackingLink}
+                          className="py-3.5 px-3.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer shrink-0"
+                          title="Copy 50/50 Split Link for a Friend"
+                        >
+                          {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                          <span>{copied ? 'Copied' : '50% Link'}</span>
+                        </button>
+                      </div>
+
+                      {isFirstHalfPaid && (
+                        <button
+                          type="button"
+                          disabled={isEscrowHolding}
+                          onClick={handleAuthorizeDoorstepQrOnTracking}
+                          className="w-full py-2.5 px-3 rounded-xl border border-[#0066FF]/30 bg-white hover:bg-blue-50 text-[#0066FF] text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <span>Pay 2nd 50% at Doorstep Open-Box Delivery via Delhivery QR</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}

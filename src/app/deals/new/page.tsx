@@ -3405,7 +3405,7 @@ function CreateShipmentContent() {
                     Deposit Device Value into Escrow
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
-                    Your order is saved. Lock the device value for <strong className="text-[#0F172A]">{createdDealForEscrow.title}</strong> in SafeShip RBI Escrow to dispatch the courier. Funds are released to the seller only after open-box approval.
+                    Order saved &amp; shipping paid. SafeShip policy requires <strong>at least 50% (₹{firstHalfAmount.toLocaleString('en-IN')})</strong> locked in escrow before Field Officer Rahul K. is dispatched for pickup. The final 50% is due before delivery.
                   </p>
                 </div>
               </div>
@@ -3522,7 +3522,7 @@ function CreateShipmentContent() {
                     ) : (
                       <>
                         <Lock className="w-4 h-4" />
-                        <span>Pay ₹{remaining.toLocaleString('en-IN')} &amp; Dispatch Courier</span>
+                        <span>Pay 100% ₹{remaining.toLocaleString('en-IN')} &amp; Dispatch Courier</span>
                         <ArrowRight className="w-4 h-4" />
                       </>
                     )}
@@ -3530,7 +3530,7 @@ function CreateShipmentContent() {
 
                   {canSplit5050 && (
                     <p className="text-center text-xs text-slate-500">
-                      Prefer paying in 50/50 chunks now or after delivery?{' '}
+                      Prefer paying 50% before pickup and 50% before delivery?{' '}
                       <button
                         type="button"
                         onClick={() => {
@@ -3560,14 +3560,14 @@ function CreateShipmentContent() {
                     >
                       <div>
                         <div className="flex items-center justify-between text-xs mb-1.5">
-                          <span className="font-bold text-slate-700">Chunk 1 &bull; First 50%</span>
+                          <span className="font-bold text-slate-700">Chunk 1 &bull; 50%</span>
                           {isFirstHalfPaid ? (
                             <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
                               Paid ✓
                             </span>
                           ) : (
-                            <span className="text-[11px] font-bold text-[#0066FF] bg-blue-100/80 px-2 py-0.5 rounded-full">
-                              50% Chunk
+                            <span className="text-[11px] font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                              Required Before Pickup
                             </span>
                           )}
                         </div>
@@ -3578,7 +3578,7 @@ function CreateShipmentContent() {
                       {isFirstHalfPaid ? (
                         <div className="w-full py-2.5 px-3 rounded-xl bg-emerald-100/80 text-emerald-800 text-xs font-bold text-center flex items-center justify-center gap-1.5">
                           <Check className="w-3.5 h-3.5" />
-                          <span>First 50% Locked</span>
+                          <span>Pickup Dispatched ✓</span>
                         </div>
                       ) : (
                         <button
@@ -3597,7 +3597,7 @@ function CreateShipmentContent() {
                             </>
                           ) : (
                             <>
-                              <span>Pay 1st 50% Now</span>
+                              <span>Pay 1st 50% &bull; Dispatch Pickup</span>
                               <ArrowRight className="w-3.5 h-3.5" />
                             </>
                           )}
@@ -3667,25 +3667,41 @@ function CreateShipmentContent() {
 
                   {/* Option to Pay 50% / 50% Chunks at Delivery (Doorstep Open-Box QR) + Co-Payer Link */}
                   <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-200/70">
-                      <div>
-                        <span className="text-xs font-bold text-[#0F172A] block">
-                          Want to pay 50% / 50% chunks at delivery?
-                        </span>
-                        <span className="text-[11px] text-slate-500 block mt-0.5">
-                          Pay {isFirstHalfPaid ? `the remaining 50% (₹${remaining.toLocaleString('en-IN')})` : `two 50% chunks (₹${firstHalfAmount.toLocaleString('en-IN')} × 2)`} at doorstep Open-Box delivery via live tracking or Delhivery QR.
+                    {isFirstHalfPaid ? (
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-200/70">
+                        <div>
+                          <span className="text-xs font-bold text-[#0F172A] block">
+                            Pay final 50% chunk at delivery?
+                          </span>
+                          <span className="text-[11px] text-slate-500 block mt-0.5">
+                            Chunk 1 is locked! Pay the remaining ₹{remaining.toLocaleString('en-IN')} at doorstep Open-Box delivery via Delhivery Dynamic QR.
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={isEscrowHolding}
+                          onClick={() => handleAuthorizeDoorstepQrEscrow(0)}
+                          className="px-3.5 py-2.5 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition shrink-0"
+                        >
+                          <span>Pay 2nd 50% at Delivery</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-3 border-b border-slate-200/70">
+                        <div>
+                          <span className="text-xs font-bold text-[#0F172A] block">
+                            SafeShip Pre-Pickup Escrow Policy
+                          </span>
+                          <span className="text-[11px] text-slate-500 block mt-0.5">
+                            At least 50% (₹{firstHalfAmount.toLocaleString('en-IN')}) must be paid to dispatch Field Officer Rahul K. for pickup. The 2nd 50% is due before delivery.
+                          </span>
+                        </div>
+                        <span className="text-[11px] font-mono font-bold text-amber-800 bg-amber-100 border border-amber-300 px-3 py-1.5 rounded-xl shrink-0">
+                          Chunk 1 Required
                         </span>
                       </div>
-                      <button
-                        type="button"
-                        disabled={isEscrowHolding}
-                        onClick={() => handleAuthorizeDoorstepQrEscrow(0)}
-                        className="px-3.5 py-2.5 rounded-xl bg-[#0F172A] hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition shrink-0"
-                      >
-                        <span>{isFirstHalfPaid ? 'Pay 2nd 50% at Delivery' : 'Pay 50/50 at Delivery'}</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    )}
 
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                       <div>
@@ -3767,7 +3783,7 @@ function CreateShipmentContent() {
                   }}
                   className="text-[#0066FF] hover:underline font-semibold cursor-pointer"
                 >
-                  Pay at Delivery / View Order &rarr;
+                  Go to Live Tracking Console &rarr;
                 </button>
               </div>
             </div>
