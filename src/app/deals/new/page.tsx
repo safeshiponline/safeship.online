@@ -2695,12 +2695,12 @@ function CreateShipmentContent() {
                   {mode === 'exchange' ? 'Review & Schedule Exchange' : 'Review & Schedule Shipment'}
                 </h2>
                 <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                  Step 1: Pay shipping fee to save order &amp; lock schedule. Step 2: Mandatory device value escrow.
+                  Select delivery speed, schedule pickup, and pay shipping charge to book courier.
                 </p>
               </div>
               <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0066FF] text-xs font-semibold self-start sm:self-auto">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF]" />
-                <span>SafeShip RBI Nodal Escrow</span>
+                <span>Verified Courier Dispatch</span>
               </div>
             </div>
 
@@ -3060,11 +3060,11 @@ function CreateShipmentContent() {
                       Payment Summary
                     </span>
                     <span className="text-[11px] font-semibold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded-md">
-                      2-Step Escrow
+                      Shipping Charge
                     </span>
                   </div>
 
-                  {/* Step 1 Breakdown */}
+                  {/* Cost Breakdown */}
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between text-slate-600">
                       <span>Courier Shipping ({activeTierBreakdown.tierLabel})</span>
@@ -3083,74 +3083,25 @@ function CreateShipmentContent() {
                       </span>
                     </div>
                     <div className="flex justify-between text-slate-600">
-                      <span>10-Min Open-Box Verification</span>
-                      <span className="text-emerald-700 font-semibold">Free</span>
+                      <span>Doorstep Open-Box Audit</span>
+                      <span className="text-emerald-700 font-semibold">Included</span>
                     </div>
                   </div>
 
-                  {/* Due Now vs Mandatory Device Escrow */}
-                  <div className="pt-3 border-t border-slate-100 space-y-3">
+                  {/* Total Shipping Charge Due Now */}
+                  <div className="pt-3 border-t border-slate-100 space-y-1">
                     <div className="flex items-baseline justify-between">
                       <div>
                         <span className="text-sm font-bold text-[#0F172A] block">
-                          Step 1: Shipping Fee (Due Now)
+                          Total Shipping Charge
                         </span>
                         <span className="text-[11px] text-slate-500">
-                          Saves your order &amp; locks pickup slot
+                          Locks courier pickup slot &amp; generates AWB
                         </span>
                       </div>
                       <span className="text-2xl font-black text-[#0066FF] font-mono tracking-tight">
                         ₹{upfrontShippingCharge.toLocaleString('en-IN')}
                       </span>
-                    </div>
-
-                    <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200/80 space-y-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <div>
-                          <span className="text-xs font-bold text-[#0F172A] block">
-                            Step 2: Device Value Escrow (After Delivery Fee)
-                          </span>
-                          <span className="text-[11px] text-slate-600 block">
-                            Mandatory • Released to seller only after open-box approval
-                          </span>
-                        </div>
-                        <span className="text-sm font-bold font-mono text-[#0066FF] shrink-0">
-                          ₹{itemEscrowAmount.toLocaleString('en-IN')}
-                        </span>
-                      </div>
-
-                      {itemEscrowAmount > 10 && (
-                        <div className="grid grid-cols-2 gap-1.5 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => setEscrowModalTab('PRIVATE_CHUNKS')}
-                            className={`py-2 px-2.5 rounded-lg border text-left transition cursor-pointer ${
-                              escrowModalTab === 'PRIVATE_CHUNKS'
-                                ? 'bg-[#0066FF] text-white border-[#0066FF] shadow-2xs'
-                                : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300'
-                            }`}
-                          >
-                            <span className="text-[11px] font-bold block">50% / 50% Chunks</span>
-                            <span className={`text-[10px] font-mono block ${escrowModalTab === 'PRIVATE_CHUNKS' ? 'text-blue-100' : 'text-slate-500'}`}>
-                              ₹{Math.ceil(itemEscrowAmount / 2).toLocaleString('en-IN')} × 2
-                            </span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setEscrowModalTab('FULL_SINGLE')}
-                            className={`py-2 px-2.5 rounded-lg border text-left transition cursor-pointer ${
-                              escrowModalTab !== 'PRIVATE_CHUNKS'
-                                ? 'bg-[#0066FF] text-white border-[#0066FF] shadow-2xs'
-                                : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300'
-                            }`}
-                          >
-                            <span className="text-[11px] font-bold block">100% Full Hold</span>
-                            <span className={`text-[10px] font-mono block ${escrowModalTab !== 'PRIVATE_CHUNKS' ? 'text-blue-100' : 'text-slate-500'}`}>
-                              ₹{itemEscrowAmount.toLocaleString('en-IN')} once
-                            </span>
-                          </button>
-                        </div>
-                      )}
                     </div>
                   </div>
 
@@ -3176,7 +3127,7 @@ function CreateShipmentContent() {
                       className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-[#0066FF] cursor-pointer shrink-0"
                     />
                     <span className="text-[11px] text-slate-500 leading-relaxed">
-                      I agree to pay ₹{upfrontShippingCharge.toLocaleString('en-IN')} shipping now to save this order, followed by the mandatory ₹{itemEscrowAmount.toLocaleString('en-IN')} device escrow deposit (released to seller only after doorstep open-box approval).
+                      I confirm the pickup schedule and agree to pay the ₹{upfrontShippingCharge.toLocaleString('en-IN')} shipping charge to book the courier.
                     </span>
                   </label>
 
@@ -3202,11 +3153,11 @@ function CreateShipmentContent() {
                       {payingWithGateway || isTestProcessing ? (
                         <>
                           <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                          <span>Saving Order...</span>
+                          <span>Booking Courier...</span>
                         </>
                       ) : (
                         <>
-                          <span>Pay ₹{upfrontShippingCharge.toLocaleString('en-IN')} Shipping &amp; Continue</span>
+                          <span>Pay ₹{upfrontShippingCharge.toLocaleString('en-IN')} Shipping Charge</span>
                           <ArrowRight className="w-4 h-4" />
                         </>
                       )}

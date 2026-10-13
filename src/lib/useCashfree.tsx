@@ -98,6 +98,32 @@ export function useCashfree() {
   const openCheckout = useCallback(async (options: CashfreePaymentOptions) => {
     setLoading(true);
     setError(null);
+
+    // Localhost-only bypass: Disable actual payment gateway when testing on localhost / 127.0.0.1
+    const isLocalhost =
+      typeof window !== 'undefined' &&
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+    if (isLocalhost) {
+      const dismissLocalBridge = showBrandedLoadingBridge('Localhost Test Mode: Simulating Payment...');
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          dismissLocalBridge();
+          setLoading(false);
+          const mockId = `LOCAL_TEST_${Date.now().toString(36).toUpperCase()}`;
+          const mockOrder = {
+            orderId: options.orderId || `ORD_${mockId}`,
+            cfOrderId: mockId,
+            paymentSessionId: `SESSION_${mockId}`,
+          };
+          if (options.onSuccess) {
+            options.onSuccess(mockOrder);
+          }
+          resolve(mockOrder);
+        }, 450);
+      });
+    }
+
     const dismissBridge = showBrandedLoadingBridge();
 
     try {
