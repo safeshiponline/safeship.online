@@ -125,10 +125,10 @@ export const DriverProfileCard: React.FC<DriverProfileCardProps> = ({ courier, s
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="font-bold text-sm text-[#0F172A]">{driver.name}</span>
-              <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-600 bg-amber-50 px-1.5 py-0.2 rounded-md border border-amber-200/60">
-                ★ {driver.rating.toFixed(2)}
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-200/80">
+                <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                <span>KYC Verified Officer</span>
               </span>
-              <span className="text-[11px] text-[#64748B]">({driver.completedDeliveries} deliveries)</span>
             </div>
 
             <div className="mt-1 text-xs text-[#475569] flex items-center gap-1.5 flex-wrap">

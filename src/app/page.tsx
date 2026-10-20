@@ -53,8 +53,50 @@ import {
   Zap
 } from '@/components/common/Icons';
 import EnterpriseFooter from '@/components/common/EnterpriseFooter';
-import { LiveTickerBar } from '@/components/common/LiveTickerBar';
 import { PartnerMarquee } from '@/components/common/PartnerMarquee';
+
+const HERO_TAGLINES = [
+  "India's #1 Open-Box & Escrow Platform",
+  "10-Min Doorstep Unboxing • Verify Before Paying",
+  "100% RBI-Compliant Nodal Escrow Protection",
+  "PAN-India Insured Delivery Across 19,000+ PINs",
+  "Reject On The Spot For ₹0 If Item Doesn't Match"
+];
+
+const HOME_DEVICE_PRESETS = [
+  {
+    id: 'phones',
+    title: 'Phones',
+    subtitle: 'iPhone, Galaxy, Pixel',
+    image: '/images/preset_phones.webp',
+    category: 'SMARTPHONES_TABLETS',
+    href: '/in/deals/new?type=send&cat=SMARTPHONES_TABLETS&preset=phones&step=2',
+  },
+  {
+    id: 'laptops',
+    title: 'Laptops',
+    subtitle: 'MacBook, XPS, ROG',
+    image: '/images/preset_laptops.webp',
+    category: 'LAPTOPS_COMPUTERS',
+    href: '/in/deals/new?type=send&cat=LAPTOPS_COMPUTERS&preset=laptops&step=2',
+  },
+  {
+    id: 'tablets',
+    title: 'Tablets',
+    subtitle: 'iPad Pro, Galaxy Tab',
+    image: '/images/preset_tablets.webp',
+    category: 'SMARTPHONES_TABLETS',
+    href: '/in/deals/new?type=send&cat=SMARTPHONES_TABLETS&preset=tablets&step=2',
+  },
+  {
+    id: 'wearables',
+    title: 'Watches & Audio',
+    subtitle: 'Watch Ultra, AirPods, Cameras',
+    image: '/images/preset_wearables.webp',
+    category: 'LUXURY_WATCHES',
+    href: '/in/deals/new?type=send&cat=LUXURY_WATCHES&preset=wearables&step=2',
+  },
+];
 
 export default function HomePage() {
   const router = useRouter();
@@ -78,13 +120,22 @@ export default function HomePage() {
   const [trackQuery, setTrackQuery] = useState<string>('');
   const [userOrders, setUserOrders] = useState<SafeDeal[]>([]);
   const [isMounted, setIsMounted] = useState<boolean>(false);
+  const [heroTaglineIdx, setHeroTaglineIdx] = useState<number>(0);
   const heroVideoRef = useRef<HTMLVideoElement | null>(null);
   const [isHeroVideoActive, setIsHeroVideoActive] = useState<boolean>(false);
   const [isHeroVideoMuted, setIsHeroVideoMuted] = useState<boolean>(false);
   const [isHeroVideoPlaying, setIsHeroVideoPlaying] = useState<boolean>(false);
 
+  useEffect(() => {
+    const taglineInterval = setInterval(() => {
+      setHeroTaglineIdx((prev) => (prev + 1) % HERO_TAGLINES.length);
+    }, 3800);
+    return () => clearInterval(taglineInterval);
+  }, []);
+
   const startHeroVideo = () => {
     setIsHeroVideoActive(true);
+    setIsHeroVideoPlaying(true);
     setTimeout(() => {
       if (heroVideoRef.current) {
         if (heroVideoRef.current.ended) {
@@ -99,9 +150,22 @@ export default function HomePage() {
             heroVideoRef.current.play().catch(() => {});
           }
         });
-        setIsHeroVideoPlaying(true);
       }
     }, 60);
+  };
+
+  const toggleHeroVideoPlayPause = () => {
+    if (!heroVideoRef.current) return;
+    if (heroVideoRef.current.paused || heroVideoRef.current.ended) {
+      if (heroVideoRef.current.ended) {
+        heroVideoRef.current.currentTime = 0;
+      }
+      heroVideoRef.current.play().catch(() => {});
+      setIsHeroVideoPlaying(true);
+    } else {
+      heroVideoRef.current.pause();
+      setIsHeroVideoPlaying(false);
+    }
   };
 
   const closeHeroVideo = () => {
@@ -110,18 +174,6 @@ export default function HomePage() {
     }
     setIsHeroVideoActive(false);
     setIsHeroVideoPlaying(false);
-  };
-
-  const toggleHeroVideoSound = () => {
-    if (heroVideoRef.current) {
-      const nextMuted = !heroVideoRef.current.muted;
-      heroVideoRef.current.muted = nextMuted;
-      setIsHeroVideoMuted(nextMuted);
-      if (!nextMuted) {
-        heroVideoRef.current.play().catch(() => {});
-        setIsHeroVideoPlaying(true);
-      }
-    }
   };
 
   // FAQ Accordion State
@@ -376,8 +428,8 @@ export default function HomePage() {
               title="Check Delivery Availability & Pincode"
             >
               <span className="relative flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0066FF]"></span>
               </span>
               <MapPin className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#0066FF] group-hover:scale-110 transition-transform shrink-0" />
               <div className="flex items-center gap-1">
@@ -432,14 +484,9 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* ========================================================================= */}
-      {/* 2. REAL-TIME NATIONAL LOGISTICS TICKER RIBBON                             */}
-      {/* ========================================================================= */}
-      <LiveTickerBar />
-
       {/* CHECK DELIVERY AVAILABILITY & PINCODE SERVICEABILITY MODAL */}
       {showAvailabilityModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
           <div className="bg-white rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-[#E2E8F0] animate-in zoom-in-95 max-h-[90vh] overflow-y-auto space-y-4">
             
             {/* Modal Header */}
@@ -470,8 +517,8 @@ export default function HomePage() {
 
             {/* Notification / Success Toast */}
             {availabilityToast && (
-              <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold px-3.5 py-2.5 rounded-2xl flex items-center gap-2 animate-in fade-in">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <div className="bg-blue-50 border border-blue-200 text-[#0F172A] text-xs font-semibold px-3.5 py-2.5 rounded-2xl flex items-center gap-2 animate-in fade-in">
+                <CheckCircle2 className="w-4 h-4 text-[#0066FF] shrink-0" />
                 <span>{availabilityToast}</span>
               </div>
             )}
@@ -480,14 +527,14 @@ export default function HomePage() {
             {userLocation && (
               <div className="bg-blue-50/70 border border-blue-100 rounded-2xl p-3 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  <span className="w-2 h-2 rounded-full bg-[#0066FF] shrink-0" />
                   <div className="truncate text-xs">
                     <span className="text-slate-500">Current Hub: </span>
                     <strong className="text-slate-900">{userLocation.city} {userLocation.pincode ? `(${userLocation.pincode})` : ''}</strong>
                     {userLocation.hubName && <span className="text-blue-600 ml-1 hidden sm:inline">• {userLocation.hubName}</span>}
                   </div>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-md shrink-0">
+                <span className="text-[10px] font-bold text-[#0066FF] bg-blue-100/80 px-2 py-0.5 rounded-md shrink-0">
                   Active
                 </span>
               </div>
@@ -571,7 +618,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => handleCheckPincode(pincodeQuery)}
-                  className="px-4 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 active:scale-95 text-white text-xs font-bold transition cursor-pointer shrink-0 shadow-xs"
+                  className="px-4 py-2.5 rounded-2xl bg-black hover:bg-neutral-800 active:scale-95 text-white text-xs font-bold transition cursor-pointer shrink-0 shadow-xs"
                 >
                   Check
                 </button>
@@ -580,11 +627,11 @@ export default function HomePage() {
 
             {/* Verified Pincode Serviceability Result Card */}
             {pincodeCheckResult && (
-              <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 space-y-3 animate-in fade-in">
+              <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-4 space-y-3 animate-in fade-in">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-bold tracking-wide uppercase mb-1">
-                      <Check className="w-3 h-3 text-emerald-600" />
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-100 text-[#0066FF] text-[10px] font-bold tracking-wide uppercase mb-1">
+                      <Check className="w-3 h-3 text-[#0066FF]" />
                       100% Serviceable Hub
                     </span>
                     <h4 className="text-sm font-bold text-slate-900">
@@ -596,21 +643,21 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-700 pt-1 border-t border-emerald-200/60">
+                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-700 pt-1 border-t border-blue-200/60">
                   <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
                     <span>10-Min Open-Box Unboxing</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
                     <span>Doorstep Escrow Payout</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
                     <span>Tamper-Evident Packaging</span>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
                     <span>Full Transit Insurance</span>
                   </div>
                 </div>
@@ -618,7 +665,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => handleConfirmLocation(pincodeCheckResult)}
-                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full py-2.5 px-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] active:scale-95 text-white font-bold text-xs shadow-sm transition flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Check className="w-4 h-4" />
                   <span>Deliver to {pincodeCheckResult.city} ({pincodeCheckResult.pincode}) &amp; Auto-Fill</span>
@@ -759,26 +806,33 @@ export default function HomePage() {
 
       {/* ========================================================================= */}
       {/* 3. HERO SECTION (LUXURY FINTECH AESTHETICS, AMBIENT DEPTH, PERFECT SCALING) */}
-      {/* ========================================================================= */}
-      <section className="relative w-full max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-2 sm:pt-10 pb-3.5 sm:pb-14 overflow-hidden">
+      <section className="relative w-full max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-2 sm:pt-8 pb-2.5 sm:pb-10 overflow-hidden">
         {/* Subtle Ambient Radial Glows */}
         <div className="absolute -top-24 -right-16 w-80 sm:w-96 h-80 sm:h-96 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/2 -left-20 w-72 h-72 bg-emerald-400/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 -left-20 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-8 lg:gap-12 items-center relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-6 lg:gap-x-10 lg:gap-y-5 items-center relative z-10">
           
           {/* Left Hero Content */}
-          <div className="lg:col-span-6 xl:col-span-5 space-y-2 sm:space-y-6">
+          <div className="lg:col-span-6 xl:col-span-5 space-y-2 sm:space-y-5">
             
-            {/* Eyebrow Pill Badge */}
+            {/* Eyebrow Pill Badge (Dynamic Switching Tagline) */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-blue-50/90 border border-blue-200/90 shadow-2xs text-[11px] sm:text-xs font-extrabold text-[#0066FF] tracking-tight">
+              <button
+                type="button"
+                onClick={() => setHeroTaglineIdx((prev) => (prev + 1) % HERO_TAGLINES.length)}
+                title="Click to switch tagline"
+                className="group inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-blue-50/95 hover:bg-blue-100/80 border border-blue-200/90 shadow-2xs text-[11px] sm:text-xs font-extrabold text-[#0066FF] tracking-tight transition-all active:scale-95 cursor-pointer"
+              >
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0066FF]"></span>
                 </span>
-                <span>India&apos;s #1 Open-Box &amp; Escrow Platform</span>
-              </span>
+                <span key={heroTaglineIdx} className="animate-in fade-in duration-300 text-left">
+                  {HERO_TAGLINES[heroTaglineIdx]}
+                </span>
+                <RefreshCw className="w-3 h-3 text-[#0066FF]/60 group-hover:text-[#0066FF] group-hover:rotate-180 transition-transform duration-300 shrink-0 ml-0.5" />
+              </button>
             </div>
 
             {/* Mobile View: Calibrated Bold Headline on Left, Elongated Action Buttons on Right with Zero Collision (sm:hidden) */}
@@ -812,17 +866,17 @@ export default function HomePage() {
                 >
                   <span className="relative flex h-2 w-2 shrink-0">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-70"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
                   </span>
                   <span className="whitespace-nowrap">Book Delivery &rarr;</span>
                 </Link>
               </div>
             </div>
 
-            {/* Mobile View: Hero Subtext Full-Width Under Headline & Buttons with Emerald Trust Accent (sm:hidden) */}
+            {/* Mobile View: Hero Subtext Full-Width Under Headline & Buttons with Brand Blue Accent (sm:hidden) */}
             <div className="block sm:hidden space-y-1 text-slate-600 leading-snug pt-0.5">
               <p className="font-extrabold text-slate-900 flex items-center gap-1.5 text-[12.5px] xs:text-[13.5px]">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs shadow-emerald-500/50"></span>
+                <span className="w-2 h-2 rounded-full bg-[#0066FF] shrink-0 shadow-xs shadow-[#0066FF]/40"></span>
                 <span>The safest way to ship &amp; buy electronics across India.</span>
               </p>
               <p className="text-slate-600 text-[11px] xs:text-[12px] leading-normal font-normal pl-3.5">
@@ -832,7 +886,7 @@ export default function HomePage() {
 
             {/* Desktop View: Full Headline (hidden sm:block) */}
             <div className="hidden sm:block space-y-0.5 sm:space-y-1">
-              <h1 className="text-5xl lg:text-[58px] font-black tracking-[-0.035em] text-[#0F172A] leading-[1.10]">
+              <h1 className="text-5xl lg:text-[58px] font-black tracking-[-0.035em] text-[#0F172A] leading-[1.08]">
                 <span className="block">Open Box Delivery</span>
                 <span className="block">&amp; Safe Shipping.</span>
                 <span className="block bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
@@ -852,14 +906,14 @@ export default function HomePage() {
             </div>
 
             {/* Desktop Action Buttons: Book Delivery & Track Shipment */}
-            <div className="hidden sm:flex items-center gap-3 pt-0.5">
+            <div className="hidden sm:flex items-center gap-3 pt-1">
               <Link
                 href="/in/deals/new?type=send"
                 className="py-3.5 px-7 rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-sm sm:text-base shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
               >
                 <span className="relative flex h-2 w-2 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-70"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
                 </span>
                 <span>Book Safe Delivery &rarr;</span>
               </Link>
@@ -873,146 +927,73 @@ export default function HomePage() {
               </Link>
             </div>
 
-            {/* Mobile: Ultra-Clean 1-Row 4-Column Trust Strip (Saves ~80px vertical space) */}
+            {/* Mobile: Ultra-Clean 1-Row 4-Column Trust Strip (Unified Brand Blue & Slate) */}
             <div className="grid grid-cols-4 gap-1.5 sm:hidden pt-0.5">
-              <div className="flex flex-col items-center text-center p-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
+              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
                 <ShieldCheck className="w-4 h-4 text-[#0066FF] mb-0.5 shrink-0" />
-                <span className="text-[11px] xs:text-[12px] font-bold text-slate-900 leading-tight">Bank Escrow</span>
-                <span className="text-[9px] xs:text-[9.5px] text-slate-500 font-medium leading-none mt-0.5">100% Locked</span>
+                <span className="text-[10.5px] xs:text-[11.5px] font-bold text-slate-900 leading-tight">Bank Escrow</span>
+                <span className="text-[9px] text-slate-500 font-medium leading-none mt-0.5">100% Locked</span>
               </div>
-              <div className="flex flex-col items-center text-center p-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
-                <Truck className="w-4 h-4 text-indigo-600 mb-0.5 shrink-0" />
-                <span className="text-[11px] xs:text-[12px] font-bold text-slate-900 leading-tight">PAN India</span>
-                <span className="text-[9px] xs:text-[9.5px] text-slate-500 font-medium leading-none mt-0.5">19k+ PINs</span>
+              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
+                <Truck className="w-4 h-4 text-[#0066FF] mb-0.5 shrink-0" />
+                <span className="text-[10.5px] xs:text-[11.5px] font-bold text-slate-900 leading-tight">PAN India</span>
+                <span className="text-[9px] text-slate-500 font-medium leading-none mt-0.5">19k+ PINs</span>
               </div>
-              <div className="flex flex-col items-center text-center p-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
-                <Star className="w-4 h-4 text-amber-500 fill-amber-400 mb-0.5 shrink-0" />
-                <span className="text-[11px] xs:text-[12px] font-bold text-slate-900 leading-tight">4.9 Rating</span>
-                <span className="text-[9px] xs:text-[9.5px] text-slate-500 font-medium leading-none mt-0.5">50k+ Verified</span>
+              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
+                <Eye className="w-4 h-4 text-[#0066FF] mb-0.5 shrink-0" />
+                <span className="text-[10.5px] xs:text-[11.5px] font-bold text-slate-900 leading-tight">10-Min Check</span>
+                <span className="text-[9px] text-slate-500 font-medium leading-none mt-0.5">Open-Box Audit</span>
               </div>
-              <div className="flex flex-col items-center text-center p-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
-                <Headphones className="w-4 h-4 text-emerald-600 mb-0.5 shrink-0" />
-                <span className="text-[11px] xs:text-[12px] font-bold text-slate-900 leading-tight">24/7 Desk</span>
-                <span className="text-[9px] xs:text-[9.5px] text-slate-500 font-medium leading-none mt-0.5">Live Support</span>
-              </div>
-            </div>
-
-            {/* Desktop: Spacious 4-Card Trust Grid */}
-            <div className="hidden sm:grid sm:grid-cols-4 gap-2.5 pt-4">
-              {/* Prop 1: Bank-Secured Escrow */}
-              <div className="p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2.5 shadow-2xs">
-                <div className="w-8 h-8 rounded-lg bg-blue-100/70 text-[#0066FF] flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-900 truncate">Bank Escrow</div>
-                  <div className="text-[10px] text-slate-500 truncate">Funds 100% locked</div>
-                </div>
-              </div>
-
-              {/* Prop 2: PAN India Delivery */}
-              <div className="p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2.5 shadow-2xs">
-                <div className="w-8 h-8 rounded-lg bg-indigo-100/70 text-indigo-600 flex items-center justify-center shrink-0">
-                  <Truck className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-900 truncate">PAN India</div>
-                  <div className="text-[10px] text-slate-500 truncate">19,000+ PINs</div>
-                </div>
-              </div>
-
-              {/* Prop 3: Trusted by 50,000+ */}
-              <div className="p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2.5 shadow-2xs">
-                <div className="w-8 h-8 rounded-lg bg-amber-100/70 text-amber-500 flex items-center justify-center shrink-0">
-                  <Star className="w-4 h-4 fill-amber-400" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-900 truncate">4.9 Rating</div>
-                  <div className="text-[10px] text-slate-500 truncate">50k+ verified</div>
-                </div>
-              </div>
-
-              {/* Prop 4: Real People Support */}
-              <div className="p-2.5 rounded-xl bg-slate-50/90 hover:bg-white border border-slate-200/70 transition flex items-center gap-2.5 shadow-2xs">
-                <div className="w-8 h-8 rounded-lg bg-emerald-100/70 text-emerald-600 flex items-center justify-center shrink-0">
-                  <Headphones className="w-4 h-4" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs font-bold text-slate-900 truncate">24/7 Support</div>
-                  <div className="text-[10px] text-slate-500 truncate">Live desk</div>
-                </div>
+              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
+                <Headphones className="w-4 h-4 text-[#0066FF] mb-0.5 shrink-0" />
+                <span className="text-[10.5px] xs:text-[11.5px] font-bold text-slate-900 leading-tight">24/7 Desk</span>
+                <span className="text-[9px] text-slate-500 font-medium leading-none mt-0.5">Live Support</span>
               </div>
             </div>
 
           </div>
 
-          {/* Right Hero Visual Container: High-Converting Doorstep Escrow Card */}
+          {/* Right Hero Visual Container: High-Converting Doorstep Escrow Card (Clean Without Bottom Tag Bar) */}
           <div className="lg:col-span-6 xl:col-span-7 w-full max-w-lg lg:max-w-none mx-auto">
-            <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-b from-white via-white to-slate-50 border border-slate-200/80 shadow-2xl shadow-blue-900/[0.06] p-1.5 sm:p-2.5 relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/[0.12]">
-              <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/70">
-                {/* Media Container: Photo Thumbnail by default, interactive Video on click */}
-                <div className="relative w-full aspect-[16/10] sm:aspect-video bg-slate-950 overflow-hidden flex items-center justify-center group select-none">
+            <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-b from-white via-white to-slate-50 border border-slate-200/80 shadow-2xl shadow-blue-900/[0.06] p-1.5 sm:p-2 relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/[0.12]">
+              <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-black border border-slate-200/70">
+                {/* Media Container: High-Definition WebP Thumbnail by default, interactive Video on click */}
+                <div className="relative w-full aspect-[16/10] sm:aspect-video bg-black overflow-hidden flex items-center justify-center group select-none">
                   {!isHeroVideoActive ? (
-                    /* 1. Default State: High-Converting Photo Thumbnail with Play Trigger */
+                    /* 1. Default State: High-Converting WebP Photo Thumbnail with Minimal Play Button Only */
                     <div 
                       onClick={startHeroVideo}
                       className="relative w-full h-full cursor-pointer flex items-center justify-center overflow-hidden"
                     >
                       <img
-                        src="/images/hero_visual_full_hd.webp?v=6"
-                        alt="SafeShip Doorstep Open Box Inspection with Apple iPhone 15 Pro Max Verification"
+                        src="/images/safeship_video_thumbnail.webp"
+                        alt="SafeShip Doorstep Open Box Inspection with Apple iPhone Verification"
                         className="w-full h-full object-cover object-center group-hover:scale-[1.03] transition-transform duration-700 ease-out block"
                       />
 
-                      {/* Top-Left: Sleek Glass Live Badge */}
-                      <div className="absolute top-2.5 left-2.5 sm:top-3.5 sm:left-3.5 z-10 bg-slate-950/75 hover:bg-slate-950/85 backdrop-blur-xl px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full border border-white/15 text-[10px] sm:text-xs font-semibold text-white/95 flex items-center gap-2 shadow-xl shadow-black/20 select-none transition-all">
-                        <span className="relative flex h-2 w-2">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 shadow-[0_0_8px_#34d399]" />
-                        </span>
-                        <span className="tracking-tight">Doorstep Unboxing Active</span>
-                      </div>
-
-                      {/* Center: Frosted Glass Luxury Video Play Affordance */}
-                      <div className="absolute inset-0 bg-slate-950/20 group-hover:bg-slate-950/30 transition-colors duration-500 flex items-center justify-center">
-                        <div className="flex flex-col items-center gap-2.5 sm:gap-3 transform group-hover:scale-105 active:scale-95 transition-transform duration-300">
-                          {/* Glowing Multi-layer Play Button */}
-                          <div className="relative flex items-center justify-center">
-                            {/* Ambient Breathing Aura */}
-                            <span className="absolute -inset-2.5 sm:-inset-3 rounded-full bg-[#0066FF]/35 blur-xl animate-pulse" />
-                            {/* Ripple Ping Ring */}
-                            <span className="animate-ping absolute inline-flex h-14 w-14 sm:h-16 sm:w-16 rounded-full bg-[#0066FF] opacity-35" />
-
-                            {/* Glassmorphic Outer Specular Ring */}
-                            <div className="relative p-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/40 shadow-[0_12px_40px_rgba(0,102,255,0.5)] group-hover:shadow-[0_16px_50px_rgba(0,102,255,0.7)] transition-all">
-                              {/* Core Gradient Button */}
-                              <div className="w-13 h-13 sm:w-16 sm:h-16 rounded-full bg-gradient-to-tr from-[#0052FF] via-[#0066FF] to-[#38BDF8] text-white flex items-center justify-center shadow-inner border border-white/30 group-hover:from-[#0047e0] group-hover:to-[#60a5fa] transition-all">
-                                <Play className="w-6 h-6 sm:w-7 sm:h-7 ml-1 fill-white drop-shadow-md text-white" />
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Frosted Glass Pill Tag */}
-                          <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-slate-950/75 hover:bg-slate-950/90 backdrop-blur-xl border border-white/20 text-white text-[10px] sm:text-xs font-semibold shadow-2xl tracking-tight transition-all">
-                            <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
-                            <span>Watch 35s Film</span>
+                      {/* Center: Minimal Sleek Play Affordance Only */}
+                      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-500 flex items-center justify-center">
+                        <div className="relative flex items-center justify-center transform group-hover:scale-108 active:scale-95 transition-transform duration-300">
+                          <span className="absolute -inset-2 rounded-full bg-black/30 blur-lg opacity-80" />
+                          <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/75 hover:bg-black/90 backdrop-blur-md text-white flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.45)] border border-white/30 transition-all">
+                            <Play className="w-5 h-5 sm:w-6 sm:h-6 ml-0.5 fill-white text-white" />
                           </div>
                         </div>
                       </div>
                     </div>
                   ) : (
-                    /* 2. Active State: Video Playing with Full Audio & Controls */
+                    /* 2. Active State: Video Playing with Minimal Play/Pause Button Only */
                     <div className="relative w-full h-full bg-black flex items-center justify-center">
                       <video
                         ref={heroVideoRef}
-                        src="/video/safeship-promo.mp4"
-                        poster="/images/safeship_video_thumbnail.png"
+                        src="/video/safeship_promo_47s.mp4"
+                        poster="/images/safeship_video_thumbnail.webp"
                         autoPlay
                         muted={isHeroVideoMuted}
                         playsInline
                         preload="auto"
                         onPlay={() => setIsHeroVideoPlaying(true)}
-                        onPause={closeHeroVideo}
+                        onPause={() => setIsHeroVideoPlaying(false)}
                         onEnded={() => {
                           if (heroVideoRef.current) {
                             heroVideoRef.current.currentTime = 0;
@@ -1020,68 +1001,76 @@ export default function HomePage() {
                           closeHeroVideo();
                         }}
                         className="w-full h-full object-cover cursor-pointer"
-                        onClick={closeHeroVideo}
+                        onClick={toggleHeroVideoPlayPause}
                       />
 
-                      {/* Top-Right Controls: Sound Toggle + Close/Back to Thumbnail */}
-                      <div className="absolute top-2.5 right-2.5 sm:top-3.5 sm:right-3.5 flex items-center gap-2 z-20">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleHeroVideoSound();
-                          }}
-                          title={isHeroVideoMuted ? 'Unmute video' : 'Mute video'}
-                          className="bg-slate-950/80 hover:bg-slate-900 backdrop-blur-xl px-3 py-1.5 rounded-full border border-white/20 text-[10px] sm:text-xs font-bold text-white flex items-center gap-1.5 shadow-xl transition-all active:scale-95 cursor-pointer"
-                        >
-                          {isHeroVideoMuted ? (
-                            <>
-                              <VolumeX className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                              <span>Tap for Sound</span>
-                            </>
-                          ) : (
-                            <>
-                              <Volume2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 animate-pulse" />
-                              <span>Sound On</span>
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            closeHeroVideo();
-                          }}
-                          title="Back to Thumbnail"
-                          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-slate-950/80 hover:bg-slate-900 backdrop-blur-xl border border-white/20 text-white flex items-center justify-center shadow-xl transition-all active:scale-95 cursor-pointer"
-                        >
-                          <X className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                      {/* Minimal Play/Pause Control Button Only (No Sound or Close Icons) */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleHeroVideoPlayPause();
+                        }}
+                        title={isHeroVideoPlaying ? 'Pause video' : 'Play video'}
+                        aria-label={isHeroVideoPlaying ? 'Pause video' : 'Play video'}
+                        className="absolute bottom-3 right-3 sm:bottom-3.5 sm:right-3.5 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/75 hover:bg-black/90 backdrop-blur-md border border-white/25 text-white flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
+                      >
+                        {isHeroVideoPlaying ? (
+                          <Pause className="w-4 h-4 sm:w-4.5 sm:h-4.5 fill-white text-white" />
+                        ) : (
+                          <Play className="w-4 h-4 sm:w-4.5 sm:h-4.5 ml-0.5 fill-white text-white" />
+                        )}
+                      </button>
                     </div>
                   )}
                 </div>
+              </div>
+            </div>
+          </div>
 
-                {/* Micro Specs Bar inside Preview */}
-                <div className="px-3 py-2 sm:px-4 sm:py-2.5 bg-gradient-to-r from-slate-50 via-white to-slate-50 border-t border-slate-200/80 flex items-center justify-between gap-1.5 sm:gap-2 text-[10px] sm:text-xs">
-                  <div className="flex items-center gap-1.5 font-semibold text-slate-800 min-w-0">
-                    <div className="w-5 h-5 rounded-md bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF]" />
-                    </div>
-                    <span className="truncate">10-Min Check</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 font-semibold text-slate-800 min-w-0">
-                    <div className="w-5 h-5 rounded-md bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
-                      <Lock className="w-3.5 h-3.5 text-[#0066FF]" />
-                    </div>
-                    <span className="truncate">RBI Escrow</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-emerald-700 font-bold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200 text-[9px] sm:text-[11px] shrink-0 shadow-xs">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>100% Insured</span>
-                  </div>
-                </div>
+          {/* Desktop: Full-Width 4-Card Trust Strip Stretched to the End Corner of the Video (Unified Brand Palette) */}
+          <div className="hidden sm:grid sm:grid-cols-4 lg:col-span-12 gap-3 lg:gap-4 pt-1">
+            {/* Prop 1: Bank-Secured Escrow */}
+            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/80 hover:border-blue-200 transition flex items-center gap-3 shadow-2xs">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4.5 h-4.5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs sm:text-[13px] font-extrabold text-slate-900">Bank Escrow</div>
+                <div className="text-[11px] text-slate-500 font-medium">Funds 100% locked in RBI nodal</div>
+              </div>
+            </div>
+
+            {/* Prop 2: PAN India Delivery */}
+            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/80 hover:border-blue-200 transition flex items-center gap-3 shadow-2xs">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <Truck className="w-4.5 h-4.5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs sm:text-[13px] font-extrabold text-slate-900">PAN India</div>
+                <div className="text-[11px] text-slate-500 font-medium">19,000+ serviceable PIN codes</div>
+              </div>
+            </div>
+
+            {/* Prop 3: 10-Min Doorstep Open-Box Audit */}
+            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/80 hover:border-blue-200 transition flex items-center gap-3 shadow-2xs">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <Eye className="w-4.5 h-4.5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs sm:text-[13px] font-extrabold text-slate-900">10-Min Open-Box</div>
+                <div className="text-[11px] text-slate-500 font-medium">Verify boot &amp; IMEI before paying</div>
+              </div>
+            </div>
+
+            {/* Prop 4: Real People Support */}
+            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/80 hover:border-blue-200 transition flex items-center gap-3 shadow-2xs">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <Headphones className="w-4.5 h-4.5" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs sm:text-[13px] font-extrabold text-slate-900">24/7 Support</div>
+                <div className="text-[11px] text-slate-500 font-medium">Live human escrow desk</div>
               </div>
             </div>
           </div>
@@ -1090,9 +1079,74 @@ export default function HomePage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 4. TRUSTED PARTNER LOGOS STRIP - CONTINUOUS LOOPING MOVING MARQUEE         */}
+      {/* 4. TRUSTED PARTNER LOGOS STRIP - COMPACT MARQUEE                          */}
       {/* ========================================================================= */}
       <PartnerMarquee />
+
+      {/* ========================================================================= */}
+      {/* 4B. DEVICE PRESETS: SHOP & SELL ELECTRONICS SAFELY (DIRECT TO DETAILS)    */}
+      {/* ========================================================================= */}
+      <section className="w-full max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-4 sm:pt-7 pb-2 sm:pb-4">
+        <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
+          <h2 className="text-[15px] sm:text-xl font-extrabold text-[#0F172A] tracking-tight">
+            Shop &amp; Sell Electronics Safely
+          </h2>
+          <Link
+            href="/in/deals/new?type=send&step=2"
+            className="inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-[#0066FF] hover:text-[#0052FF] transition shrink-0"
+          >
+            <span>All Categories</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        {/* 4 Symmetrical Device Category Cards (2x2 on mobile, 4-col on desktop) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
+          {HOME_DEVICE_PRESETS.map((preset) => (
+            <Link
+              key={preset.id}
+              href={preset.href}
+              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-[#F8FAFC] to-[#EFF6FF]/60 hover:from-white hover:to-blue-50/80 border border-slate-200/90 hover:border-[#0066FF]/45 px-3.5 py-2.5 sm:px-4 sm:py-3.5 shadow-2xs hover:shadow-md transition-all duration-200 flex items-center justify-between gap-2 cursor-pointer"
+            >
+              <div className="min-w-0 flex flex-col justify-center z-10">
+                <div className="inline-flex items-center gap-0.5 text-[13px] sm:text-[15px] font-extrabold text-[#0F172A] group-hover:text-[#0066FF] transition-colors">
+                  <span className="truncate">{preset.title}</span>
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#0066FF] group-hover:translate-x-0.5 transition-all shrink-0" />
+                </div>
+                <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate mt-0.5">
+                  {preset.subtitle}
+                </span>
+              </div>
+              <div className="w-14 h-11 sm:w-16 sm:h-13 shrink-0 flex items-center justify-end">
+                <img
+                  src={preset.image}
+                  alt={preset.title}
+                  className="max-w-full max-h-full object-contain group-hover:scale-108 transition-transform duration-300 drop-shadow-xs"
+                  loading="eager"
+                />
+              </div>
+            </Link>
+          ))}
+        </div>
+
+        {/* Quick Sub-Category Pills for Extra Electronics */}
+        <div className="mt-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+          {[
+            { label: 'Cameras & Lenses', href: '/in/deals/new?type=send&category=camera&step=2' },
+            { label: 'PS5 & Gaming Consoles', href: '/in/deals/new?type=send&category=gaming&step=2' },
+            { label: 'AirPods & Audio', href: '/in/deals/new?type=send&category=watch_audio&step=2' },
+            { label: '2-Way Device Exchange ⇄', href: '/in/deals/new?type=exchange&step=1' },
+          ].map((pill) => (
+            <Link
+              key={pill.label}
+              href={pill.href}
+              className="px-3 py-1.5 rounded-full bg-white hover:bg-[#0066FF] text-slate-700 hover:text-white border border-slate-200/90 hover:border-[#0066FF] text-[11px] font-bold whitespace-nowrap transition-all shadow-2xs shrink-0"
+            >
+              {pill.label}
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* ========================================================================= */}
       {/* 5. HOW SAFESHIP WORKS: 5-STEP MILESTONE FLOW & DOORSTEP VERIFICATION SPOTLIGHT */}
@@ -1182,47 +1236,47 @@ export default function HomePage() {
           })}
         </div>
 
-        {/* Real Verification at Your Doorstep Feature Card (Panel 2 Bottom from Mockup) */}
-        <div className="rounded-3xl bg-gradient-to-br from-slate-900 via-[#0B132B] to-slate-950 text-white p-6 sm:p-8 lg:p-10 border border-slate-800 shadow-xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        {/* Real Verification at Your Doorstep Feature Card (Pure Black, Mobile Optimized) */}
+        <div className="rounded-3xl bg-black text-white p-5 sm:p-8 lg:p-10 border border-neutral-800 shadow-2xl grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center">
           
           {/* Left: Content & Bullet Points */}
-          <div className="lg:col-span-6 space-y-6">
+          <div className="lg:col-span-6 space-y-5 sm:space-y-6">
             <div className="space-y-2">
-              <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#0066FF] bg-blue-500/20 border border-blue-400/30 px-3 py-1 rounded-full inline-block">
+              <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-[#60A5FA] bg-[#0066FF]/15 border border-[#0066FF]/35 px-3 py-1 rounded-full inline-block">
                 Doorstep Transparency
               </span>
-              <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white leading-tight">
+              <h3 className="text-xl sm:text-3xl lg:text-4xl font-black tracking-tight text-white leading-tight">
                 Real Verification at Your Doorstep
               </h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              <p className="text-xs sm:text-sm text-neutral-300 leading-relaxed">
                 Dual video verification and serialized tamper packaging guarantee 100% genuine delivery before payment release. Zero advance risk for buyers; guaranteed instant payout for sellers.
               </p>
             </div>
 
             {/* Checklist items */}
-            <div className="space-y-2.5 text-xs sm:text-sm text-slate-200">
-              <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
-                <span>IMEI &amp; Serial Number Match (*#06# verified on video)</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2 sm:gap-2.5 text-xs sm:text-sm text-neutral-200">
+              <div className="flex items-center gap-2.5 bg-neutral-900/90 border border-neutral-800 px-3 py-2 rounded-xl">
+                <CheckCircle2 className="w-4 h-4 text-[#3B82F6] shrink-0" />
+                <span>IMEI &amp; Serial Number Match (*#06# verified)</span>
               </div>
-              <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
-                <span>Serialized tamper-evident security seal (VOID protected)</span>
+              <div className="flex items-center gap-2.5 bg-neutral-900/90 border border-neutral-800 px-3 py-2 rounded-xl">
+                <CheckCircle2 className="w-4 h-4 text-[#3B82F6] shrink-0" />
+                <span>Serialized tamper-evident security seal</span>
               </div>
-              <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
-                <span>Screen, buttons, cameras, battery &amp; charging test</span>
+              <div className="flex items-center gap-2.5 bg-neutral-900/90 border border-neutral-800 px-3 py-2 rounded-xl">
+                <CheckCircle2 className="w-4 h-4 text-[#3B82F6] shrink-0" />
+                <span>Screen, cameras, battery &amp; charging test</span>
               </div>
-              <div className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4.5 h-4.5 text-emerald-400 shrink-0" />
-                <span>Buyer unboxing inspection before payment release</span>
+              <div className="flex items-center gap-2.5 bg-neutral-900/90 border border-neutral-800 px-3 py-2 rounded-xl">
+                <CheckCircle2 className="w-4 h-4 text-[#3B82F6] shrink-0" />
+                <span>Buyer unboxing inspection before payout</span>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 pt-1">
               <Link
                 href="/in/deals/new?type=send"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-95 cursor-pointer"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-5 sm:px-6 py-3 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs sm:text-sm shadow-md transition active:scale-95 cursor-pointer"
               >
                 <span>Book Safe Delivery</span>
                 <span>&rarr;</span>
@@ -1234,31 +1288,31 @@ export default function HomePage() {
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                   startHeroVideo();
                 }}
-                className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs sm:text-sm border border-slate-700 shadow-sm transition active:scale-95 cursor-pointer"
+                className="inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-3 rounded-full bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs sm:text-sm border border-neutral-700 transition active:scale-95 cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5 fill-white" />
-                <span>Watch 35s Film</span>
+                <span>Play Video</span>
               </button>
             </div>
           </div>
 
           {/* Right: Unboxing Visual with "Device Verified" Floating Badge */}
           <div className="lg:col-span-6 flex items-center justify-center">
-            <div className="relative rounded-2xl overflow-hidden border-2 border-white/20 shadow-2xl max-w-md w-full group">
+            <div className="relative rounded-2xl overflow-hidden border border-neutral-800 shadow-2xl max-w-lg w-full group">
               <img
-                src="/images/story_woman_unboxing_perfect.webp"
-                alt="Happy Indian customer safely verifying device at doorstep with SafeShip"
+                src="/images/hero_openbox_16x9.webp"
+                alt="Happy Indian customer safely verifying device at doorstep with SafeShip officer"
                 className="w-full h-auto object-cover select-none group-hover:scale-[1.02] transition-transform duration-500"
               />
               
-              {/* Floating Badge (from Mockup Panel 2) */}
-              <div className="absolute bottom-4 right-4 bg-slate-950/85 backdrop-blur-md px-3.5 py-2.5 rounded-2xl border border-white/20 text-white shadow-xl flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center shrink-0">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              {/* Floating Badge */}
+              <div className="absolute bottom-3 right-3 sm:bottom-4 sm:right-4 bg-black/90 backdrop-blur-md px-3 py-2 sm:px-3.5 sm:py-2.5 rounded-2xl border border-white/15 text-white shadow-xl flex items-center gap-2.5">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-[#0066FF]/20 border border-[#0066FF]/40 text-[#60A5FA] flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-[#60A5FA]" />
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-white leading-tight">Device Verified</div>
-                  <div className="text-[10px] font-mono text-emerald-400 font-semibold">IMEI: 3562 4891 4821</div>
+                  <div className="text-[11px] sm:text-xs font-bold text-white leading-tight">Device Verified</div>
+                  <div className="text-[9px] sm:text-[10px] font-mono text-[#60A5FA] font-semibold">IMEI: 3562 4891 4821</div>
                 </div>
               </div>
             </div>
@@ -1308,57 +1362,57 @@ export default function HomePage() {
           </div>
 
           {/* Card 2: 10-Minute Door Check */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-indigo-400 transition-all duration-300 flex flex-col justify-between space-y-4 group">
+          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-[#0066FF]/60 transition-all duration-300 flex flex-col justify-between space-y-4 group">
             <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center shadow-2xs group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-200">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shadow-2xs group-hover:bg-[#0066FF] group-hover:text-white transition-colors duration-200">
                 <Clock className="w-6 h-6" />
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-[#0066FF] transition-colors">
                 10-Minute Door Check
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
                 Buyer inspects the device at their doorstep before payment is released. Test boot, screen, camera, and IMEI match.
               </p>
             </div>
-            <div className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2.5 py-1 rounded-xl w-fit flex items-center gap-1">
+            <div className="text-[11px] font-bold text-[#0066FF] bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-xl w-fit flex items-center gap-1">
               <Check className="w-3.5 h-3.5" />
               <span>Open-box audit</span>
             </div>
           </div>
 
           {/* Card 3: 100% Transit Insurance */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-emerald-400 transition-all duration-300 flex flex-col justify-between space-y-4 group">
+          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-[#0066FF]/60 transition-all duration-300 flex flex-col justify-between space-y-4 group">
             <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center shadow-2xs group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-200">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shadow-2xs group-hover:bg-[#0066FF] group-hover:text-white transition-colors duration-200">
                 <ShieldCheck className="w-6 h-6" />
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-[#0066FF] transition-colors">
                 100% Transit Insurance
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
                 Full coverage up to ₹10 Lakh against transit loss, theft, or physical damage. Zero financial risk for both parties.
               </p>
             </div>
-            <div className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-xl w-fit flex items-center gap-1">
+            <div className="text-[11px] font-bold text-[#0066FF] bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-xl w-fit flex items-center gap-1">
               <Check className="w-3.5 h-3.5" />
               <span>Up to ₹10L covered</span>
             </div>
           </div>
 
           {/* Card 4: Verified Courier Partners */}
-          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-sky-400 transition-all duration-300 flex flex-col justify-between space-y-4 group">
+          <div className="p-6 rounded-3xl bg-white border border-slate-200/90 shadow-2xs hover:shadow-md hover:border-[#0066FF]/60 transition-all duration-300 flex flex-col justify-between space-y-4 group">
             <div className="space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-sky-50 border border-sky-100 text-sky-600 flex items-center justify-center shadow-2xs group-hover:bg-sky-600 group-hover:text-white transition-colors duration-200">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shadow-2xs group-hover:bg-[#0066FF] group-hover:text-white transition-colors duration-200">
                 <Truck className="w-6 h-6" />
               </div>
-              <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-sky-600 transition-colors">
+              <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-[#0066FF] transition-colors">
                 Verified Courier Partners
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
                 We work with trusted logistics partners (Blue Dart, Delhivery) equipped with serialized tamper seals and live GPS tracking.
               </p>
             </div>
-            <div className="text-[11px] font-bold text-sky-700 bg-sky-50 border border-sky-100 px-2.5 py-1 rounded-xl w-fit flex items-center gap-1">
+            <div className="text-[11px] font-bold text-[#0066FF] bg-blue-50 border border-blue-100 px-2.5 py-1 rounded-xl w-fit flex items-center gap-1">
               <Check className="w-3.5 h-3.5" />
               <span>Live GPS tracking</span>
             </div>
@@ -1367,7 +1421,7 @@ export default function HomePage() {
         </div>
 
         {/* Built for a Safer, More Trusted Marketplace Banner */}
-        <div className="bg-gradient-to-r from-blue-50/90 via-indigo-50/60 to-blue-50/90 border border-blue-200/80 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
+        <div className="bg-gradient-to-r from-blue-50/90 via-white to-blue-50/90 border border-blue-200/80 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-2xs">
           <div className="space-y-1 text-center sm:text-left">
             <h4 className="text-base sm:text-lg font-bold text-slate-900">
               Built for a Safer, More Trusted Marketplace
@@ -1378,7 +1432,7 @@ export default function HomePage() {
           </div>
           <Link
             href="/in/safety"
-            className="px-6 py-3 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm transition active:scale-95 shrink-0 shadow-sm flex items-center gap-2 cursor-pointer"
+            className="px-6 py-3 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs sm:text-sm transition active:scale-95 shrink-0 shadow-md shadow-[#0066FF]/20 flex items-center gap-2 cursor-pointer"
           >
             <span>Learn more</span>
             <span>&rarr;</span>
@@ -1388,33 +1442,33 @@ export default function HomePage() {
       </section>
 
       {/* ========================================================================= */}
-      {/* 7. NATIONAL IMPACT STATS STRIP                                            */}
+      {/* 7. NATIONAL IMPACT STATS STRIP (PURE BLACK)                               */}
       {/* ========================================================================= */}
-      <section className="w-full bg-slate-900 text-white py-10 border-y border-slate-800">
+      <section className="w-full bg-black text-white py-8 sm:py-10 border-y border-neutral-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 text-center">
-            <div className="space-y-1">
-              <div className="text-3xl sm:text-4xl font-black font-mono text-white">50,000+</div>
-              <div className="text-xs text-slate-400 font-medium">Happy Customers</div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 text-center">
+            <div className="p-3 sm:p-0 rounded-2xl bg-neutral-950 sm:bg-transparent border border-neutral-800 sm:border-0 space-y-1">
+              <div className="text-2xl sm:text-4xl font-black font-mono text-white">10-Min</div>
+              <div className="text-[11px] sm:text-xs text-neutral-400 font-medium">Doorstep Unboxing Audit</div>
             </div>
 
-            <div className="space-y-1">
-              <div className="text-3xl sm:text-4xl font-black font-mono text-[#0066FF]">1.8M+</div>
-              <div className="text-xs text-slate-400 font-medium">Packages Delivered</div>
+            <div className="p-3 sm:p-0 rounded-2xl bg-neutral-950 sm:bg-transparent border border-neutral-800 sm:border-0 space-y-1">
+              <div className="text-2xl sm:text-4xl font-black font-mono text-[#0066FF]">19,000+</div>
+              <div className="text-[11px] sm:text-xs text-neutral-400 font-medium">PIN Codes Serviceable</div>
             </div>
 
-            <div className="space-y-1">
-              <div className="text-3xl sm:text-4xl font-black font-mono text-white">1,800+</div>
-              <div className="text-xs text-slate-400 font-medium">Cities &amp; Towns</div>
+            <div className="p-3 sm:p-0 rounded-2xl bg-neutral-950 sm:bg-transparent border border-neutral-800 sm:border-0 space-y-1">
+              <div className="text-2xl sm:text-4xl font-black font-mono text-white">₹10L</div>
+              <div className="text-[11px] sm:text-xs text-neutral-400 font-medium">Max Transit Cargo Cover</div>
             </div>
 
-            <div className="space-y-1">
-              <div className="text-3xl sm:text-4xl font-black font-mono text-[#0066FF]">99.7%</div>
-              <div className="text-xs text-slate-400 font-medium">Successful Deliveries</div>
+            <div className="p-3 sm:p-0 rounded-2xl bg-neutral-950 sm:bg-transparent border border-neutral-800 sm:border-0 space-y-1">
+              <div className="text-2xl sm:text-4xl font-black font-mono text-[#0066FF]">100%</div>
+              <div className="text-[11px] sm:text-xs text-neutral-400 font-medium">RBI Nodal Escrow Lock</div>
             </div>
           </div>
 
-          <div className="mt-6 text-center text-xs text-slate-400 font-mono">
+          <div className="mt-5 sm:mt-6 text-center text-[11px] sm:text-xs text-neutral-400 font-mono">
             <span>&ldquo;A Safer India, One Delivery at a Time.&rdquo;</span>
           </div>
         </div>
@@ -1572,7 +1626,7 @@ export default function HomePage() {
                     }`}
                   >
                     <div className="font-bold flex items-center gap-1.5">
-                      <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-400 shrink-0" />
+                      <Zap className="w-3.5 h-3.5 text-[#0066FF] fill-[#0066FF] shrink-0" />
                       <span>Priority Express Air</span>
                     </div>
                     <div className="text-[11px] text-slate-500 font-normal">2–3 Days Priority Air</div>
@@ -1653,7 +1707,7 @@ export default function HomePage() {
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-3xl mx-auto text-center space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0066FF] text-xs font-bold">
-              <Award className="w-4 h-4 text-amber-500 shrink-0" />
+              <Award className="w-4 h-4 text-[#0066FF] shrink-0" />
               <span>Ranked #1 for Open Box Delivery &amp; Safe Shipping in India</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
@@ -1691,7 +1745,7 @@ export default function HomePage() {
                     </div>
                   </th>
                   <th className="py-4 px-4 text-slate-700 bg-slate-50/80 w-[140px]">Traditional COD</th>
-                  <th className="py-4 px-4 text-rose-600 bg-slate-50/80 w-[140px]">Direct UPI / GPay</th>
+                  <th className="py-4 px-4 text-slate-700 bg-slate-50/80 w-[140px]">Direct UPI / GPay</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-medium">
@@ -1703,13 +1757,13 @@ export default function HomePage() {
                       <span>YES (Power-on, boot, &amp; screen)</span>
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-rose-600 font-semibold inline-flex items-center gap-1 pt-4">
-                    <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                  <td className="py-3.5 px-4 text-slate-600 font-semibold inline-flex items-center gap-1 pt-4">
+                    <XCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                     <span>NO (Pay before open)</span>
                   </td>
-                  <td className="py-3.5 px-4 text-rose-600 font-semibold">
+                  <td className="py-3.5 px-4 text-slate-600 font-semibold">
                     <span className="inline-flex items-center gap-1">
-                      <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                      <XCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>NO (100% advance)</span>
                     </span>
                   </td>
@@ -1728,9 +1782,9 @@ export default function HomePage() {
                       <span>Courier pool (no hold)</span>
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-rose-600 font-semibold">
+                  <td className="py-3.5 px-4 text-slate-600 font-semibold">
                     <span className="inline-flex items-center gap-1">
-                      <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                      <XCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>Zero protection</span>
                     </span>
                   </td>
@@ -1738,20 +1792,20 @@ export default function HomePage() {
                 <tr className="hover:bg-slate-50/50 transition">
                   <td className="py-3.5 px-4 font-bold text-slate-900">What if gadget is defective or fake?</td>
                   <td className="py-3.5 px-4 bg-blue-50/40 border-x-2 border-[#0066FF]/30 text-[#0066FF] font-bold">
-                    <span className="inline-flex items-center gap-1.5 bg-emerald-100/80 text-emerald-800 px-2 py-0.5 rounded-md text-[11px]">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span className="inline-flex items-center gap-1.5 bg-blue-100/70 text-[#0066FF] px-2 py-0.5 rounded-md text-[11px]">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
                       <span>Instant Reversal (₹0 cost)</span>
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-rose-600">
+                  <td className="py-3.5 px-4 text-slate-600">
                     <span className="inline-flex items-center gap-1">
-                      <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                      <XCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>Money lost (no refund)</span>
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-rose-600">
+                  <td className="py-3.5 px-4 text-slate-600">
                     <span className="inline-flex items-center gap-1">
-                      <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                      <XCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>Blocked by scammer</span>
                     </span>
                   </td>
@@ -1775,7 +1829,7 @@ export default function HomePage() {
                       <span>Serialized tamper seal</span>
                     </span>
                   </td>
-                  <td className="py-3.5 px-4 text-rose-600">High return swap risk</td>
+                  <td className="py-3.5 px-4 text-slate-600">High return swap risk</td>
                   <td className="py-3.5 px-4 text-slate-400">N/A</td>
                 </tr>
                 <tr className="hover:bg-slate-50/50 transition">
@@ -1787,9 +1841,9 @@ export default function HomePage() {
                     </span>
                   </td>
                   <td className="py-3.5 px-4 text-slate-500">₹2,000 standard cap</td>
-                  <td className="py-3.5 px-4 text-rose-600">
+                  <td className="py-3.5 px-4 text-slate-600">
                     <span className="inline-flex items-center gap-1">
-                      <XCircle className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                      <XCircle className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>None</span>
                     </span>
                   </td>
@@ -1937,7 +1991,7 @@ export default function HomePage() {
               <div key={i} className="p-4 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-2 hover:border-[#0066FF] transition">
                 <div className="flex items-center justify-between">
                   <span className="font-black text-sm text-slate-900">{route.corridor}</span>
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100">
+                  <span className="text-[10px] font-bold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
                     {route.sla}
                   </span>
                 </div>
@@ -1980,7 +2034,7 @@ export default function HomePage() {
             </div>
 
             <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2.5 hover:border-[#0066FF] transition group">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100/80 text-emerald-600 flex items-center justify-center font-bold shadow-2xs group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-200">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100/80 text-[#0066FF] flex items-center justify-center font-bold shadow-2xs group-hover:bg-[#0066FF] group-hover:text-white transition-colors duration-200">
                 <CreditCard className="w-5 h-5" />
               </div>
               <h3 className="font-bold text-slate-900 text-sm sm:text-base">
@@ -1992,7 +2046,7 @@ export default function HomePage() {
             </div>
 
             <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2.5 hover:border-[#0066FF] transition group">
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100/80 text-indigo-600 flex items-center justify-center font-bold shadow-2xs group-hover:bg-indigo-600 group-hover:text-white transition-colors duration-200">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100/80 text-[#0066FF] flex items-center justify-center font-bold shadow-2xs group-hover:bg-[#0066FF] group-hover:text-white transition-colors duration-200">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <h3 className="font-bold text-slate-900 text-sm sm:text-base">
@@ -2004,14 +2058,14 @@ export default function HomePage() {
             </div>
 
             <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/80 space-y-2.5 hover:border-[#0066FF] transition group">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100/80 text-amber-600 flex items-center justify-center font-bold shadow-2xs group-hover:bg-amber-500 group-hover:text-white transition-colors duration-200">
-                <Star className="w-5 h-5 fill-current" />
+              <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100/80 text-[#0066FF] flex items-center justify-center font-bold shadow-2xs group-hover:bg-[#0066FF] group-hover:text-white transition-colors duration-200">
+                <Truck className="w-5 h-5" />
               </div>
               <h3 className="font-bold text-slate-900 text-sm sm:text-base">
-                Trusted Across 19,000+ PINs
+                Serviceable Across 19,000+ PINs
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                With 50,000+ verified deliveries, ₹10 Lakh transit cargo protection, and PAN-India expressway linehauls, SafeShip is India&apos;s #1 rated safe shipping platform.
+                With mandatory 10-minute doorstep unboxing, ₹10 Lakh transit cargo protection, and PAN-India expressway linehauls, SafeShip is India&apos;s #1 open-box &amp; escrow shipping platform.
               </p>
             </div>
           </div>

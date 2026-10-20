@@ -42,10 +42,10 @@ export const LIVE_TICKER_ITEMS = [
     short: 'Best Open Box & COD Shipping',
   },
   {
-    icon: Star,
+    icon: ShieldCheck,
     color: 'text-amber-300',
-    full: '50,000+ Verified Gadget Deliveries Completed',
-    short: '50,000+ Verified Deliveries',
+    full: 'Up to ₹10 Lakh Comprehensive Transit Cargo Protection',
+    short: '₹10L Transit Cargo Cover',
   },
 ];
 

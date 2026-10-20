@@ -584,10 +584,10 @@ export default function ProfilePage() {
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                   <Link
-                    href="/in/open-box"
+                    href="/in/safety"
                     className="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs transition"
                   >
-                    Learn How 10-Min Open-Box Works
+                    Safety &amp; Escrow Guarantee
                   </Link>
                 </div>
               </section>

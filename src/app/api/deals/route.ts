@@ -31,7 +31,18 @@ export async function GET(request: Request) {
     } catch {}
     if (raw.includes('/track/')) {
       const parts = raw.split('/track/');
-      raw = parts[parts.length - 1].split('?')[0].split('#')[0];
+      raw = parts[parts.length - 1].split('?')[0].split('#')[0].split('/')[0];
+    } else if (raw.startsWith('http://') || raw.startsWith('https://')) {
+      try {
+        const urlObj = new URL(raw);
+        const dealParam = urlObj.searchParams.get('deal') || urlObj.searchParams.get('id') || urlObj.searchParams.get('order');
+        if (dealParam) {
+          raw = dealParam;
+        } else {
+          const segs = urlObj.pathname.split('/').filter(Boolean);
+          if (segs.length > 0) raw = segs[segs.length - 1];
+        }
+      } catch {}
     }
     raw = raw.replace(/^[#\s]+/, '').replace(/[/\s]+$/, '').trim();
     const key = raw.toLowerCase();
@@ -48,26 +59,34 @@ export async function GET(request: Request) {
       deal = allServerDeals.find((d) => {
         const dId = d.id.toLowerCase().replace(/[^a-z0-9]/g, '');
         const dTrk = (d.trackingId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-        return dId === cleanAlpha || dTrk === cleanAlpha;
+        const dDelhivery = `dlv${d.id.replace(/\D/g, '')}88310`;
+        return dId === cleanAlpha || dTrk === cleanAlpha || dDelhivery === cleanAlpha;
       });
     }
 
-    // 3. Digits-only match (e.g. 58257 -> SS58257)
+    // 3. Digits-only match (e.g. 58257 -> SS58257 or phone number)
     if (!deal && cleanDigits && cleanDigits.length >= 4) {
       deal = allServerDeals.find((d) => {
         const dDigits = d.id.replace(/\D/g, '');
         const trkDigits = (d.trackingId || '').replace(/\D/g, '');
-        return dDigits === cleanDigits || trkDigits === cleanDigits;
+        const buyerPhone = (d.buyer?.phone || '').replace(/\D/g, '');
+        const sellerPhone = (d.seller?.phone || '').replace(/\D/g, '');
+        return (
+          dDigits === cleanDigits ||
+          trkDigits === cleanDigits ||
+          (cleanDigits.length >= 8 && (buyerPhone.endsWith(cleanDigits.slice(-10)) || sellerPhone.endsWith(cleanDigits.slice(-10))))
+        );
       });
     }
 
-    // 4. Seal barcode or invoice match
+    // 4. Seal barcode, invoice, or title match
     if (!deal) {
       deal = allServerDeals.find((d) => {
         const barcode = (d.tamperSeal?.barcode || '').toLowerCase();
         const sealId = (d.tamperSeal?.sealId || '').toLowerCase();
         const inv = (d.billingInfo?.invoiceNumber || '').toLowerCase();
-        return barcode.includes(key) || sealId.includes(key) || inv.includes(key);
+        const title = (d.title || '').toLowerCase();
+        return barcode.includes(key) || sealId.includes(key) || inv.includes(key) || (key.length >= 3 && title.includes(key));
       });
     }
 

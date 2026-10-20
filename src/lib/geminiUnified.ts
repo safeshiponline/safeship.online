@@ -429,15 +429,17 @@ Core Operating Principles:
    - All rates are strictly calculated by road/flight distance.
    - Promotional ₹0 Doorstep Open-Box Inspection waiver is included on all bookings.
    - Comprehensive cargo transit protection underwritten by licensed general insurance partners is calibrated to ~0.5% of declared value (minimum floor ₹59, maximum cap ₹599).
-4. Pure Shipping Fee Model (No Upfront Merchandise Hold):
+4. Pure Shipping Fee Model & Refund Policy (IMPORTANT):
    - Only the nominal delivery fee + optional transit insurance is paid upfront to dispatch the courier.
-   - Full merchandise price is paid directly at the doorstep via UPI only after the 10-minute physical unboxing and inspection passes.
+   - Full merchandise price is held in RBI-compliant nodal escrow or paid directly at the doorstep via UPI only after the 10-minute physical unboxing and inspection passes.
+   - DELIVERY FEE NON-REFUNDABLE POLICY: The delivery/shipping fee is strictly NON-REFUNDABLE once a shipment is booked/dispatched (even if the buyer rejects the device at the doorstep or cancels after dispatch), because bonded courier pickup, linehaul transit, and doorstep inspection officer allocation are executed. However, 100% of the device/product escrow value is refunded to the buyer if the item is rejected at the doorstep.
+   - STRICT DISCLOSURE RULE: You MUST ONLY mention that the delivery/shipping fee is non-refundable WHEN the customer specifically asks about delivery fee refunds, shipping charge refunds, booking cancellation refunds, or whether they get the delivery fee back. Do NOT volunteer or mention that the delivery fee is non-refundable in general answers unless the user asks about it.
 5. Doorstep Verification & Delivery Officer Rahul K.:
-   - Dedicated Certified Custody Officer Rahul K. (Officer #KA-4012, 4.98★ rating, 1,480+ safe deliveries) is assigned for pickup and verification.
+   - Dedicated Certified Custody Officer Rahul K. (Officer #KA-4012, Government ID & Background Verified) is assigned for pickup and verification.
    - For privacy and safety, driver phone numbers are masked (+91 98290 •••••) behind the SafeShip Encrypted Telephony Bridge. Customers connect via secure virtual relay or official dispatch concierge.
    - Seller Handshake: 4-digit pickup code verified by officer Rahul K. before parcel is sealed into tamper-evident vault bag.
    - Buyer Handshake: 6-digit release PIN shared by recipient with the delivery officer ONLY AFTER the 10-minute unboxing and test passes.
-   - Zero-Risk Rejection: If the device is fake, damaged, or misrepresented, the recipient rejects it with ₹0 product charges, and it is safely returned to the sender.
+   - Zero-Risk Product Rejection: If the device is fake, damaged, or misrepresented, the recipient rejects it with ₹0 product charges, and it is safely returned to the sender.
 6. 2-Way Hardware Exchange:
    - For phone/laptop swaps, courier Rahul K. audits both devices simultaneously at the doorstep before releasing any cash difference or completing the swap.
 7. 24/7 Digital Support Desk & Ticket Center (TC):
@@ -447,7 +449,7 @@ Core Operating Principles:
 Communication Style & Persona:
 - Professional, reassuring, concise, polite, and institutional (Apple & Stripe quality).
 - Speak strictly as SafeShip Customer Support / Senior Customer Care Specialist. Never say you are a bot, AI, or automated system.
-- CRITICAL: Under NO circumstances ever mention or disclose internal AI model names (such as Gemini, 3.8 Flash, Flash-Lite, GPT, LLM) or internal engineering/tech stacks. Focus purely on customer care, order status, inspection guidelines, and ticket resolution.
+- CRITICAL: Never fabricate star ratings or customer counts. Under NO circumstances ever mention or disclose internal AI model names (such as Gemini, Flash, GPT, LLM) or internal engineering/tech stacks.
 - Always use Indian Rupees (₹) and Indian geographic context concisely.`;
 
   const messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [
@@ -478,11 +480,19 @@ Communication Style & Persona:
 
   // Rule-based fallback
   const q = userQuestion.toLowerCase();
+  const asksDeliveryFeeRefund =
+    /(delivery|shipping|courier|booking|dispatch|transit)\s*(fee|charge|cost|amount|money|payment)?.*(refund|return|back|cancel|non-refundable|refundable)/i.test(q) ||
+    /(refund|return|back|cancel|non-refundable|refundable).*(delivery|shipping|courier|booking|dispatch)\s*(fee|charge|cost|amount|money|payment)?/i.test(q) ||
+    (q.includes('refund') && (q.includes('delivery') || q.includes('shipping') || q.includes('fee') || q.includes('charge') || q.includes('cancel')));
+
+  if (asksDeliveryFeeRefund) {
+    return '### Delivery Fee & Escrow Refund Policy\n\n* **100% Product Escrow Refund:** If a device fails doorstep open-box inspection or is rejected at delivery, 100% of the merchandise amount held in RBI nodal escrow is refunded to the buyer.\n* **Delivery Fee is Non-Refundable:** Please note that the **delivery/shipping fee is non-refundable** once a booking is confirmed and courier dispatch is initiated, as pickup logistics, linehaul transit, and doorstep officer verification are already executed.';
+  }
   if (q.includes('ticket') || q.includes('tc') || q.includes('complaint') || q.includes('arbitrat') || q.includes('case')) {
     return 'You can raise an official SafeShip Support Ticket (TC) anytime! Click the **Ticket Center (TC)** tab in this widget to submit your case. Every ticket is assigned to a Senior Arbitrator with a guaranteed **15-minute response SLA**.';
   }
   if (q.includes('delhi') || q.includes('jaipur') || q.includes('rate') || q.includes('fee') || q.includes('cost') || q.includes('price')) {
-    return 'SafeShip provides transparent distance-based shipping across 3 tiers:\n\n* **Standard Ground (7–8 Days):** Economical surface network, ₹49–₹199 based on distance.\n* **Priority Express (3–4 Days):** Expressway corridor linehaul, ₹99–₹249 based on distance.\n* **Express Air Rush (2 Days):** Commercial air cargo, ₹149–₹329 based on distance.\n\nOnly the delivery fee is charged upfront. Product value is paid at your doorstep via UPI only after the 10-minute open-box unboxing inspection!';
+    return 'SafeShip provides transparent distance-based shipping across 3 tiers:\n\n* **Standard Ground (7–8 Days):** Economical surface network, ₹49–₹199 based on distance.\n* **Priority Express (3–4 Days):** Expressway corridor linehaul, ₹99–₹249 based on distance.\n* **Express Air Rush (2 Days):** Commercial air cargo, ₹149–₹329 based on distance.\n\nOnly the delivery fee is charged upfront. Product value is released only after the 10-minute open-box unboxing inspection at your doorstep!';
   }
   if (q.includes('tier') || q.includes('speed') || q.includes('fast') || q.includes('air') || q.includes('priority') || q.includes('day')) {
     return 'SafeShip offers 3 delivery tiers:\n\n1. **Standard Ground:** 7–8 business days (5 days local), ₹49–₹199.\n2. **Priority Express:** 3–4 business days, ₹99–₹249.\n3. **Express Air Rush:** 2 business days, ₹149–₹329.\n\nEvery delivery includes 10-minute doorstep unboxing and dual handshake verification passcodes.';
@@ -493,17 +503,17 @@ Communication Style & Persona:
   if (q.includes('rider') || q.includes('driver') || q.includes('rahul') || q.includes('contact') || q.includes('phone') || q.includes('number')) {
     return 'Your delivery is handled by Certified Custody Officer Rahul K. (#KA-4012). To protect customer and officer privacy, direct personal phone numbers are masked (+91 98290 •••••) behind the SafeShip Telephony Bridge. You can connect securely via the in-app Telephony Bridge modal or official dispatch desk!';
   }
-  if (q.includes('open box') || q.includes('open-box') || q.includes('inspect')) {
-    return 'SafeShip Open-Box Delivery allows you to physically unbox, inspect cosmetic condition, verify serial/IMEI, and test hardware with our courier officer before paying a single rupee for the item. Merchandise payment is completed via UPI only after you approve the device at your doorstep!';
+  if (q.includes('open box') || q.includes('open-box') || q.includes('inspect') || q.includes('imei')) {
+    return 'SafeShip Open-Box Delivery allows you to physically unbox, inspect cosmetic condition, verify serial/IMEI (*#06#), and test hardware with our courier officer before releasing the 6-digit buyer PIN. Merchandise payment is released only after you approve the device at your doorstep!';
   }
   if (q.includes('exchange') || q.includes('swap')) {
     return 'With SafeShip 2-Way Hardware Exchange, our courier officer audits both devices simultaneously at the doorstep. Any agreed trade difference is settled via UPI on the spot. If either party is unsatisfied, both retain their original devices with ₹0 product charges.';
   }
-  if (q.includes('fake') || q.includes('scam') || q.includes('reject') || q.includes('return')) {
-    return 'If the item does not match specifications or displays undisclosed defects, you can reject the parcel right in front of the courier officer. You are charged ₹0 for the item, and the courier returns it safely to the sender in a tamper-evident vault bag.';
+  if (q.includes('fake') || q.includes('scam') || q.includes('reject') || q.includes('return') || q.includes('escrow') || q.includes('refund')) {
+    return 'If the item does not match specifications or displays undisclosed defects, you can reject the parcel right in front of the courier officer. 100% of the merchandise escrow amount is protected and refunded to the buyer, and the courier returns the device safely to the sender in a tamper-evident vault bag.';
   }
 
-  return 'Hello! Welcome to SafeShip Support. We are here to assist with 3-tier delivery (7–8d Ground, 3–4d Priority, 2d Air), 10-minute doorstep open-box inspection, cargo insurance (~0.5%), or delivery officer telemetry. How can we help you today?';
+  return 'Hello! Welcome to SafeShip Support. We are here to assist with 3-tier delivery (7–8d Ground, 3–4d Priority, 2d Air), 10-minute doorstep open-box inspection, RBI-compliant escrow protection, or raising a support ticket (TC). How can we help you today?';
 }
 
 /**

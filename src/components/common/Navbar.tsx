@@ -46,9 +46,9 @@ export const Navbar: React.FC = () => {
           </Link>
           <Link
             href="/in/deals/new?type=exchange"
-            className="hover:text-[#0066FF] text-amber-600 transition flex items-center gap-1 font-bold"
+            className="hover:text-[#0066FF] text-[#0F172A] transition flex items-center gap-1 font-bold"
           >
-            <ArrowLeftRight className="w-3.5 h-3.5" />
+            <ArrowLeftRight className="w-3.5 h-3.5 text-[#0066FF]" />
             <span>2-Way Exchange</span>
           </Link>
           <Link href="/in/track" className="hover:text-[#0066FF] transition">
@@ -142,9 +142,9 @@ export const Navbar: React.FC = () => {
           <Link
             href="/in/deals/new?type=exchange"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-amber-50/60 text-amber-900 text-xs font-bold"
+            className="flex items-center gap-2.5 p-2.5 rounded-xl hover:bg-slate-50 text-[#0F172A] text-xs font-bold"
           >
-            <ArrowLeftRight className="w-4 h-4 text-amber-600" />
+            <ArrowLeftRight className="w-4 h-4 text-[#0066FF]" />
             <span>2-Way Gadget Exchange</span>
           </Link>
           <Link
@@ -158,9 +158,9 @@ export const Navbar: React.FC = () => {
           <Link
             href="/in/safety"
             onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-emerald-50/60 text-emerald-800 text-xs font-bold"
+            className="flex items-center gap-2.5 p-2.5 rounded-xl bg-blue-50/70 text-[#0066FF] text-xs font-bold"
           >
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <ShieldCheck className="w-4 h-4 text-[#0066FF]" />
             <span>Safety &amp; Escrow Guarantee</span>
           </Link>
           {session ? (

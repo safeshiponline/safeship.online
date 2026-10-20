@@ -13,6 +13,8 @@ export function proxy(request: NextRequest) {
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/images') ||
+    pathname.startsWith('/video') ||
+    pathname.startsWith('/audio') ||
     pathname.startsWith('/real_deal') ||
     pathname === '/favicon.ico' ||
     pathname === '/icon.svg' ||
@@ -28,6 +30,8 @@ export function proxy(request: NextRequest) {
   // 2. If static assets requested under /in (e.g. /in/images/... or /in/favicon.ico), rewrite to root
   if (
     pathname.startsWith('/in/images') ||
+    pathname.startsWith('/in/video') ||
+    pathname.startsWith('/in/audio') ||
     pathname.startsWith('/in/real_deal') ||
     pathname === '/in/favicon.ico' ||
     pathname === '/in/icon.svg' ||

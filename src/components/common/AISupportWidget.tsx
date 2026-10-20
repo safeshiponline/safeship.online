@@ -89,10 +89,6 @@ function parseBold(text: string) {
 
 export function AISupportWidget() {
   const pathname = usePathname();
-  if (pathname?.includes('/credit-cards')) {
-    return null;
-  }
-
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'CHAT' | 'TICKETS'>('CHAT');
   const [input, setInput] = useState('');
@@ -146,6 +142,14 @@ export function AISupportWidget() {
     }
   }, [messages, isOpen, activeTab]);
 
+  if (
+    pathname?.includes('/credit-cards') ||
+    pathname?.includes('/deals/new') ||
+    pathname?.includes('/admin')
+  ) {
+    return null;
+  }
+
   const quickPrompts = [
     'How does open-box verification work?',
     'What if the device IMEI does not match?',
@@ -175,6 +179,10 @@ export function AISupportWidget() {
     setLoading(true);
 
     const isDisputeIntent = /dispute|fake|stolen|scam|damage|broken|reject|officer problem|refund/i.test(query);
+    const asksDeliveryFeeRefund =
+      /(delivery|shipping|courier|booking|dispatch|transit)\s*(fee|charge|cost|amount|money|payment)?.*(refund|return|back|cancel|non-refundable|refundable)/i.test(query) ||
+      /(refund|return|back|cancel|non-refundable|refundable).*(delivery|shipping|courier|booking|dispatch)\s*(fee|charge|cost|amount|money|payment)?/i.test(query);
+
     analytics.capture('support_chat_query', {
       query_length: query.length,
       is_dispute_intent: isDisputeIntent,
@@ -208,12 +216,16 @@ export function AISupportWidget() {
         }
       ]);
     } catch {
+      const fallbackText = asksDeliveryFeeRefund
+        ? '### Delivery Fee & Escrow Refund Policy\n* **100% Device Price Refund**: If you reject the device during doorstep open-box inspection, 100% of the product escrow amount is refunded to your original payment method.\n* **Delivery Fee is Non-Refundable**: Because bonded courier pickup, linehaul logistics, and doorstep verification officer dispatch are already executed, the **delivery/shipping fee is non-refundable** once a shipment is booked and dispatched.'
+        : 'SafeShip Open-Box Delivery guarantees that merchandise payment is settled via UPI only after you inspect and accept the device at your doorstep. If you experience an issue, you can raise an official Ticket Case (TC) for 15-minute arbitration.';
+
       setMessages((prev) => [
         ...prev,
         {
           id: (Date.now() + 1).toString(),
           sender: 'agent',
-          text: 'SafeShip Open-Box Delivery guarantees that merchandise payment is settled via UPI only after you inspect and accept the device at your doorstep. If you experience an issue, you can raise an official Ticket Case (TC) for 15-minute arbitration.',
+          text: fallbackText,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           isAction: true,
           actionType: 'RAISE_TC'
@@ -251,35 +263,35 @@ export function AISupportWidget() {
 
   return (
     <>
-      {/* Floating Trigger Button (Mobile + Desktop) */}
+      {/* Minimal Pure Black Floating Trigger Button (Positioned Slightly Lower) */}
       {!isOpen && (
         <button
           id="btn-open-support"
           type="button"
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-20 md:bottom-6 right-3 sm:right-6 z-50 w-11 h-11 md:w-auto md:h-auto p-0 md:px-4 md:py-2.5 rounded-full bg-[#0066FF] hover:bg-[#0052FF] text-white shadow-lg shadow-[#0066FF]/30 flex items-center justify-center md:gap-2.5 transition active:scale-95 group cursor-pointer border-2 border-white"
+          className="fixed bottom-[64px] md:bottom-4 right-3 sm:right-5 z-50 w-10 h-10 md:w-auto md:h-auto p-0 md:px-3.5 md:py-2 rounded-full bg-black hover:bg-neutral-900 text-white shadow-lg shadow-black/25 flex items-center justify-center md:gap-2 transition active:scale-95 group cursor-pointer border border-white/15"
           aria-label="Open SafeShip Customer Support & Ticket Center"
         >
-          <Headphones className="w-4.5 h-4.5 text-white" />
-          <span className="hidden md:inline text-xs font-bold tracking-tight">Support &amp; TC Desk</span>
+          <Headphones className="w-4 h-4 text-white" />
+          <span className="hidden md:inline text-[11px] font-bold tracking-tight">Support</span>
         </button>
       )}
 
       {/* Slide-over Support Drawer */}
       {isOpen && (
-        <div className="fixed bottom-20 md:bottom-6 right-2 sm:right-6 z-50 w-[calc(100vw-16px)] sm:w-[420px] max-h-[78vh] sm:max-h-[85vh] h-[550px] sm:h-[570px] bg-white rounded-3xl border border-[#CBD5E1] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
+        <div className="fixed bottom-[64px] md:bottom-4 right-2 sm:right-5 z-50 w-[calc(100vw-16px)] sm:w-[410px] max-h-[78vh] sm:max-h-[85vh] h-[540px] sm:h-[560px] bg-white rounded-3xl border border-slate-200 shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
           
-          {/* Drawer Header */}
-          <div className="bg-[#0066FF] text-white p-3.5 flex items-center justify-between">
+          {/* Drawer Header — Minimal Black */}
+          <div className="bg-black text-white p-3.5 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
                 <Headphones className="w-4 h-4 text-white" />
               </div>
               <div>
                 <h3 className="text-xs font-bold tracking-tight flex items-center gap-1.5">
                   <span>Customer Support &amp; Help Desk</span>
                 </h3>
-                <p className="text-[10px] text-blue-100 font-medium">
+                <p className="text-[10px] text-neutral-400 font-medium">
                   24/7 Live Assistance &bull; 15-Min Ticket SLA
                 </p>
               </div>

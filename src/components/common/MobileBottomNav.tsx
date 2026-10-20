@@ -17,86 +17,94 @@ export const MobileBottomNav: React.FC = () => {
     return () => window.removeEventListener('safeship_auth_changed', onAuth);
   }, []);
 
+  // Hide on booking flow (which uses its own sticky action bar) and admin portal
+  if (
+    pathname?.includes('/deals/new') ||
+    pathname?.includes('/admin') ||
+    pathname?.includes('/credit-cards')
+  ) {
+    return null;
+  }
+
   const isHome = pathname === '/' || pathname === '/in';
-  const isShipments = pathname.startsWith('/track') || pathname.startsWith('/in/track');
-  const isSend = (pathname === '/deals/new' || pathname === '/in/deals/new') && !pathname.includes('exchange');
-  const isExchange = pathname.includes('exchange');
+  const isShipments = pathname?.startsWith('/track') || pathname?.startsWith('/in/track');
+  const isSafety = pathname?.startsWith('/safety') || pathname?.startsWith('/in/safety');
   const isProfile = pathname === '/profile' || pathname === '/in/profile';
 
   return (
-    <div className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-lg border-t border-[#E2E8F0] z-40 max-w-md mx-auto">
+    <div className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 z-40 shadow-[0_-4px_20px_rgba(15,23,42,0.06)]">
       <nav
         aria-label="Mobile Navigation"
-        className="px-4 pt-1.5 pb-1 flex items-center justify-between"
+        className="max-w-md mx-auto px-3 pt-1.5 pb-1.5 flex items-center justify-around"
       >
         {/* Home */}
         <Link
           href="/in"
-          className={`flex flex-col items-center gap-0.5 transition group w-12 ${
-            isHome ? 'text-[#0066FF] font-bold' : 'text-[#64748B] hover:text-[#0F172A] font-medium'
+          className={`flex flex-col items-center gap-0.5 py-0.5 transition group min-w-[54px] ${
+            isHome ? 'text-[#0066FF] font-bold' : 'text-slate-500 hover:text-black font-semibold'
           }`}
         >
-          <Home className="w-5 h-5 group-hover:scale-110 transition" />
-          <span className="text-[9px] tracking-tight">Home</span>
+          <Home className="w-5 h-5 group-active:scale-95 transition" />
+          <span className="text-[10px] tracking-tight">Home</span>
         </Link>
 
-        {/* Shipments */}
+        {/* Track Shipments */}
         <Link
           href="/in/track"
-          className={`flex flex-col items-center gap-0.5 transition group w-12 ${
-            isShipments ? 'text-[#0066FF] font-bold' : 'text-[#64748B] hover:text-[#0F172A] font-medium'
+          className={`flex flex-col items-center gap-0.5 py-0.5 transition group min-w-[54px] ${
+            isShipments ? 'text-[#0066FF] font-bold' : 'text-slate-500 hover:text-black font-semibold'
           }`}
         >
-          <Package className="w-5 h-5 group-hover:scale-110 transition" />
-          <span className="text-[9px] tracking-tight">Shipments</span>
+          <Package className="w-5 h-5 group-active:scale-95 transition" />
+          <span className="text-[10px] tracking-tight">Track</span>
         </Link>
 
-        {/* Elevated Center Book Button (+) */}
-        <div className="-mt-6 flex flex-col items-center">
+        {/* Elevated Center Book Delivery Button */}
+        <div className="-mt-5 flex flex-col items-center">
           <Link
             href="/in/deals/new?type=send"
-            className="w-12 h-12 rounded-full bg-[#0066FF] text-white flex items-center justify-center shadow-lg shadow-[#0066FF]/35 hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 border-2 border-white"
-            title="Book Consignment"
-            aria-label="Book Consignment"
+            className="w-11 h-11 rounded-full bg-[#0066FF] text-white flex items-center justify-center shadow-lg shadow-[#0066FF]/30 hover:bg-[#0052FF] active:scale-95 transition-all duration-200 ring-4 ring-white"
+            title="Book SafeShip Delivery"
+            aria-label="Book SafeShip Delivery"
           >
             <Plus className="w-5 h-5 text-white" strokeWidth={2.5} />
           </Link>
-          <span className="text-[9px] text-[#0066FF] font-bold mt-0.5">Book</span>
+          <span className="text-[10px] text-[#0066FF] font-extrabold mt-0.5 tracking-tight">Book Now</span>
         </div>
 
-        {/* Exchange */}
+        {/* 2-Way Exchange */}
         <Link
           href="/in/deals/new?type=exchange"
-          className={`flex flex-col items-center gap-0.5 transition group w-12 ${
-            isExchange ? 'text-amber-600 font-bold' : 'text-[#64748B] hover:text-[#0F172A] font-medium'
+          className={`flex flex-col items-center gap-0.5 py-0.5 transition group min-w-[54px] ${
+            isSafety ? 'text-[#0066FF] font-bold' : 'text-slate-500 hover:text-black font-semibold'
           }`}
         >
-          <ArrowLeftRight className="w-5 h-5 group-hover:scale-110 transition" />
-          <span className="text-[9px] tracking-tight">Exchange</span>
+          <ArrowLeftRight className="w-5 h-5 group-active:scale-95 transition" />
+          <span className="text-[10px] tracking-tight">Exchange</span>
         </Link>
 
-        {/* Profile */}
+        {/* Profile / Account */}
         {hasSession ? (
           <Link
             href="/in/profile"
-            className={`flex flex-col items-center gap-0.5 transition group w-12 ${
-              isProfile ? 'text-[#0066FF] font-bold' : 'text-[#64748B] hover:text-[#0F172A] font-medium'
+            className={`flex flex-col items-center gap-0.5 py-0.5 transition group min-w-[54px] ${
+              isProfile ? 'text-[#0066FF] font-bold' : 'text-slate-500 hover:text-black font-semibold'
             }`}
           >
-            <User className="w-5 h-5 group-hover:scale-110 transition" />
-            <span className="text-[9px] tracking-tight">Profile</span>
+            <User className="w-5 h-5 group-active:scale-95 transition" />
+            <span className="text-[10px] tracking-tight">Account</span>
           </Link>
         ) : (
-          <a
-            href="/api/auth/google/signin?returnUrl=/in/profile"
-            className={`flex flex-col items-center gap-0.5 transition group w-12 ${
-              isProfile ? 'text-[#0066FF] font-bold' : 'text-[#64748B] hover:text-[#0F172A] font-medium'
+          <Link
+            href="/in/profile"
+            className={`flex flex-col items-center gap-0.5 py-0.5 transition group min-w-[54px] ${
+              isProfile ? 'text-[#0066FF] font-bold' : 'text-slate-500 hover:text-black font-semibold'
             }`}
-            title="Sign in with Google"
+            title="Account & Orders"
           >
-            <User className="w-5 h-5 group-hover:scale-110 transition text-[#0066FF]" />
-            <span className="text-[9px] tracking-tight font-semibold text-[#0066FF]">Sign in</span>
-          </a>
+            <User className="w-5 h-5 group-active:scale-95 transition" />
+            <span className="text-[10px] tracking-tight">Account</span>
+          </Link>
         )}
       </nav>
     </div>

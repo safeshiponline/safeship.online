@@ -2,135 +2,273 @@
 
 import React from 'react';
 
-export interface PartnerItem {
+interface PartnerLogoItem {
+  id: string;
   name: string;
-  role: string;
-  logo: React.ReactNode;
+  render: () => React.ReactNode;
 }
 
-export const PARTNERS: PartnerItem[] = [
+const PARTNER_LOGOS: PartnerLogoItem[] = [
   {
-    name: 'Cashfree Payments',
-    role: 'RBI Nodal Escrow Rail',
-    logo: (
-      <span className="w-5 h-5 rounded-md bg-[#6B21A8] text-white flex items-center justify-center text-[10px] font-black shrink-0">
-        CF
-      </span>
+    id: 'delhivery',
+    name: 'Delhivery',
+    render: () => (
+      <svg viewBox="0 0 132 24" className="h-[17px] sm:h-[20px] w-auto" fill="none" aria-label="Delhivery">
+        <text
+          x="0"
+          y="18.5"
+          fill="#0F172A"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fontWeight="900"
+          fontSize="17.5"
+          letterSpacing="0.8"
+        >
+          DELHIVERY
+        </text>
+        <rect x="114" y="5" width="5.5" height="14" rx="1" transform="skewX(-16)" fill="#E11D48" />
+      </svg>
     ),
   },
   {
+    id: 'bluedart',
+    name: 'Blue Dart',
+    render: () => (
+      <svg viewBox="0 0 136 24" className="h-[17px] sm:h-[20px] w-auto" fill="none" aria-label="Blue Dart">
+        {/* Authentic Dart Chevron Mark */}
+        <path d="M1 3.5L13.5 12L1 20.5V3.5Z" fill="#0052CC" />
+        <path d="M1 3.5L13.5 12H6.5L1 3.5Z" fill="#00A651" />
+        <path d="M6.5 12H13.5L1 20.5L6.5 12Z" fill="#E31E24" />
+        <text
+          x="19"
+          y="18"
+          fill="#003399"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fontWeight="900"
+          fontStyle="italic"
+          fontSize="17"
+          letterSpacing="0.3"
+        >
+          BLUE DART
+        </text>
+      </svg>
+    ),
+  },
+  {
+    id: 'razorpay',
     name: 'Razorpay',
-    role: 'Payment Rail',
-    logo: (
-      <span className="text-[#0C2340] font-black italic text-xs tracking-tighter shrink-0">
-        ₹
-      </span>
+    render: () => (
+      <svg viewBox="0 0 124 24" className="h-[18px] sm:h-[21px] w-auto" fill="none" aria-label="Razorpay">
+        {/* Razorpay Slanted Blade Mark */}
+        <path d="M8.5 2.5L15.5 2.5L9.5 21.5H2.5L8.5 2.5Z" fill="#3395FF" />
+        <path d="M2 11.5L8.2 11.5L5.2 21.5H0L2 11.5Z" fill="#072654" />
+        <text
+          x="19"
+          y="18"
+          fill="#072654"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fontWeight="800"
+          fontSize="17.5"
+          letterSpacing="-0.3"
+        >
+          Razorpay
+        </text>
+      </svg>
     ),
   },
   {
-    name: 'BLUE DART',
-    role: 'Air Cargo Express',
-    logo: (
-      <span className="w-2.5 h-2.5 rounded-full bg-[#002B66] shrink-0" />
+    id: 'dtdc',
+    name: 'DTDC Express',
+    render: () => (
+      <svg viewBox="0 0 88 24" className="h-[17px] sm:h-[20px] w-auto" fill="none" aria-label="DTDC">
+        <path d="M4 3.5H84L81.5 7H8.5L3.5 20.5H0L4 3.5Z" fill="#E31E24" />
+        <text
+          x="10"
+          y="20"
+          fill="#0B2265"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fontWeight="900"
+          fontStyle="italic"
+          fontSize="18.5"
+          letterSpacing="1"
+        >
+          DTDC
+        </text>
+      </svg>
     ),
   },
   {
-    name: 'DELHIVERY',
-    role: 'Surface Linehaul',
-    logo: (
-      <span className="w-2.5 h-2.5 rounded-full bg-red-600 shrink-0" />
-    ),
-  },
-  {
-    name: 'Ecom Express',
-    role: 'Doorstep Courier',
-    logo: (
-      <span className="w-2.5 h-2.5 rounded-full bg-[#E31B23] shrink-0" />
-    ),
-  },
-  {
-    name: 'India Post',
-    role: '19,000+ PIN Codes',
-    logo: (
-      <span className="w-5 h-5 rounded-md bg-red-700 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-        📮
-      </span>
-    ),
-  },
-  {
-    name: 'General Cargo Cover',
-    role: '100% Transit Protection',
-    logo: (
-      <span className="w-2.5 h-2.5 rounded-full bg-amber-600 shrink-0" />
-    ),
-  },
-  {
+    id: 'cashfree',
     name: 'Cashfree Payments',
-    role: 'UPI Disbursals',
-    logo: (
-      <span className="w-2.5 h-2.5 rounded-full bg-violet-600 shrink-0" />
+    render: () => (
+      <svg viewBox="0 0 118 24" className="h-[18px] sm:h-[21px] w-auto" fill="none" aria-label="Cashfree">
+        <rect x="0" y="3" width="18" height="18" rx="4.5" fill="#6930CA" />
+        <path
+          d="M11.5 8H7.5C5.8 8 4.5 9.3 4.5 11V13C4.5 14.7 5.8 16 7.5 16H11.5"
+          stroke="white"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+        />
+        <path
+          d="M8.5 12H14M14 12L11.8 9.8M14 12L11.8 14.2"
+          stroke="#00D26A"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <text
+          x="23"
+          y="18"
+          fill="#1E1B4B"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fontWeight="800"
+          fontSize="17"
+          letterSpacing="-0.3"
+        >
+          Cashfree
+        </text>
+      </svg>
     ),
   },
   {
+    id: 'ecom',
+    name: 'Ecom Express',
+    render: () => (
+      <svg viewBox="0 0 142 24" className="h-[17px] sm:h-[20px] w-auto" fill="none" aria-label="Ecom Express">
+        <rect x="0" y="3.5" width="17" height="17" rx="4" fill="#DC2626" />
+        <path d="M4 8H10.5M4 12H9M4 16H10.5" stroke="white" strokeWidth="2" strokeLinecap="round" />
+        <path d="M11.5 9.2L15 12L11.5 14.8V9.2Z" fill="#FACC15" />
+        <text
+          x="22"
+          y="17.5"
+          fill="#0F172A"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fontWeight="800"
+          fontSize="16.5"
+          letterSpacing="-0.3"
+        >
+          Ecom Express
+        </text>
+      </svg>
+    ),
+  },
+  {
+    id: 'icici',
+    name: 'ICICI Bank',
+    render: () => (
+      <svg viewBox="0 0 116 24" className="h-[17px] sm:h-[20px] w-auto" fill="none" aria-label="ICICI Bank">
+        <rect x="0" y="3.5" width="17" height="17" rx="4.5" fill="#F37021" />
+        <circle cx="8.5" cy="7.5" r="2" fill="white" />
+        <path d="M6.5 10.5H10.5L11.2 17.5H5.8L6.5 10.5Z" fill="white" />
+        <text
+          x="22"
+          y="17.5"
+          fill="#9B1D20"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fontWeight="800"
+          fontStyle="italic"
+          fontSize="16.5"
+          letterSpacing="-0.2"
+        >
+          ICICI Bank
+        </text>
+      </svg>
+    ),
+  },
+  {
+    id: 'shiprocket',
     name: 'Shiprocket',
-    role: 'Multicarrier Telemetry',
-    logo: (
-      <span className="w-2.5 h-2.5 rounded-full bg-indigo-600 shrink-0" />
+    render: () => (
+      <svg viewBox="0 0 120 24" className="h-[18px] sm:h-[21px] w-auto" fill="none" aria-label="Shiprocket">
+        <rect x="0" y="3.5" width="17" height="17" rx="4.5" fill="#5B21B6" />
+        <path d="M11.8 6.5C9.2 6.5 6.8 8.8 5.5 12L8.8 15.3C12 14 14.3 11.6 14.3 9C14.3 7.4 13.4 6.5 11.8 6.5Z" fill="white" />
+        <text
+          x="22"
+          y="17.5"
+          fill="#1E1B4B"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fontWeight="800"
+          fontSize="16.5"
+          letterSpacing="-0.3"
+        >
+          Shiprocket
+        </text>
+      </svg>
+    ),
+  },
+  {
+    id: 'indiapost',
+    name: 'India Post',
+    render: () => (
+      <svg viewBox="0 0 112 24" className="h-[17px] sm:h-[20px] w-auto" fill="none" aria-label="India Post">
+        <rect x="0" y="4" width="20" height="16" rx="3.5" fill="#C8102E" />
+        <path d="M3 9.5C8.5 9.5 13 8 17 5.5" stroke="#FACC15" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M3 13C8.5 13 13 11.5 17 9" stroke="#FACC15" strokeWidth="1.8" strokeLinecap="round" />
+        <path d="M3 16.5C8.5 16.5 13 15 17 12.5" stroke="#FEF08A" strokeWidth="1.6" strokeLinecap="round" />
+        <text
+          x="25"
+          y="17.5"
+          fill="#0F172A"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fontWeight="800"
+          fontSize="16"
+          letterSpacing="-0.2"
+        >
+          India Post
+        </text>
+      </svg>
     ),
   },
 ];
 
 export const PartnerMarquee: React.FC = () => {
   return (
-    <section className="w-full bg-white/95 backdrop-blur-xs border-y border-slate-200/80 py-2 sm:py-5 overflow-hidden select-none">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-1.5 sm:mb-2.5 text-center">
-        <p className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-widest text-slate-400">
-          Trusted by India&apos;s Leading Logistics &amp; Payment Networks
-        </p>
-      </div>
+    <section
+      aria-label="Shipping and Payment Partners"
+      className="w-full max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-2 pb-1 sm:py-3 select-none"
+    >
+      <div className="relative w-full overflow-hidden py-1.5 sm:py-2 border-y border-slate-200/60">
+        {/* Soft Left/Right Edge Fades so logos never clip harshly */}
+        <div className="pointer-events-none absolute inset-y-0 left-0 w-8 sm:w-16 bg-gradient-to-r from-[#F8FAFC] via-[#F8FAFC]/85 to-transparent z-10" />
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-8 sm:w-16 bg-gradient-to-l from-[#F8FAFC] via-[#F8FAFC]/85 to-transparent z-10" />
 
-      {/* Infinite Looping Marquee Wrapper with Edge Fade Mask */}
-      <div className="relative w-full overflow-hidden mask-marquee py-1">
-        <div className="animate-marquee flex items-center gap-3 sm:gap-4">
-          {/* First set of partner chips */}
-          {PARTNERS.map((partner, index) => (
+        <div className="flex w-max animate-partner-marquee hover:[animation-play-state:paused] items-center">
+          {[0, 1].map((dupIndex) => (
             <div
-              key={`p1-${index}`}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-white border border-slate-200/80 shadow-2xs hover:border-[#0066FF]/50 transition cursor-default shrink-0 group"
+              key={dupIndex}
+              className="flex items-center gap-6 sm:gap-11 pr-6 sm:pr-11 shrink-0"
+              aria-hidden={dupIndex === 1}
             >
-              {partner.logo}
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-slate-900 font-black text-xs tracking-tight group-hover:text-[#0066FF] transition-colors whitespace-nowrap">
-                  {partner.name}
-                </span>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap hidden xs:inline">
-                  • {partner.role}
-                </span>
-              </div>
-            </div>
-          ))}
-
-          {/* Second duplicate set for seamless infinite loop */}
-          {PARTNERS.map((partner, index) => (
-            <div
-              key={`p2-${index}`}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-white border border-slate-200/80 shadow-2xs hover:border-[#0066FF]/50 transition cursor-default shrink-0 group"
-            >
-              {partner.logo}
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-slate-900 font-black text-xs tracking-tight group-hover:text-[#0066FF] transition-colors whitespace-nowrap">
-                  {partner.name}
-                </span>
-                <span className="text-[9px] font-bold uppercase tracking-wider text-slate-400 whitespace-nowrap hidden xs:inline">
-                  • {partner.role}
-                </span>
-              </div>
+              {PARTNER_LOGOS.map((partner) => (
+                <div
+                  key={`${dupIndex}-${partner.id}`}
+                  className="flex items-center justify-center opacity-80 hover:opacity-100 transition-opacity duration-200 shrink-0"
+                  title={partner.name}
+                >
+                  {partner.render()}
+                </div>
+              ))}
             </div>
           ))}
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes partnerMarquee {
+          0% {
+            transform: translate3d(0, 0, 0);
+          }
+          100% {
+            transform: translate3d(-50%, 0, 0);
+          }
+        }
+        .animate-partner-marquee {
+          animation: partnerMarquee 30s linear infinite;
+          will-change: transform;
+        }
+      `}</style>
     </section>
   );
 };
 
 export default PartnerMarquee;
+

@@ -84,13 +84,13 @@ export const INITIAL_DEALS: SafeDeal[] = [
     sellerPickupCode: '8291',
     status: 'IN_TRANSIT',
     assignedCourier: {
-      id: 'cr_rahul_k',
-      name: 'Rahul K.',
-      rating: 4.9,
-      completedDeliveries: 1480,
-      phone: '+91 98765 43210',
-      vehicleModel: 'Bajaj Pulsar 150 (Silver)',
-      plateNumber: 'KA 03 HY 4012',
+      id: 'cr_vikram_rathore',
+      name: 'Vikram Rathore',
+      rating: 4.97,
+      completedDeliveries: 642,
+      phone: '+91 9829• •••18',
+      vehicleModel: 'TVS iQube Electric (Titanium)',
+      plateNumber: 'RJ 14 SS 4108',
       fleetPartner: 'SafeShip Direct Fleet',
       avatarUrl: '/images/courier_rahul_avatar.webp',
       currentLocation: {
@@ -112,7 +112,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
       sealId: 'SSP-DEL-4829-TAMPER-SAFE',
       barcode: '9948291048291',
       appliedAt: '2026-09-13T09:30:00Z',
-      inspectedBy: 'Rahul K. (Agent #KA-4012)',
+      inspectedBy: 'Vikram Rathore (Agent #SS-4108)',
       inspectionPhotos: [
         '/images/openbox_macro_4x3.webp'
       ]
@@ -156,7 +156,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
         id: 'aud_ss_3',
         timestamp: '2026-09-13T09:30:00Z',
         actor: 'COURIER',
-        title: 'Picked Up by Rahul K.',
+        title: 'Picked Up by Vikram Rathore',
         description: 'Courier verified sealed package at Patrika Gate, Jaipur. In transit to Delhi.'
       }
     ],
@@ -219,13 +219,13 @@ export const INITIAL_DEALS: SafeDeal[] = [
     sellerPickupCode: '9920',
     status: 'IN_TRANSIT',
     assignedCourier: {
-      id: 'cr_rahul_k',
-      name: 'Rahul K.',
-      rating: 4.9,
-      completedDeliveries: 1480,
-      phone: '+91 98765 43210',
-      vehicleModel: 'Bajaj Pulsar 150 (Silver)',
-      plateNumber: 'KA 03 HY 4012',
+      id: 'cr_deepak_sharma',
+      name: 'Deepak Sharma',
+      rating: 4.98,
+      completedDeliveries: 890,
+      phone: '+91 9811• •••74',
+      vehicleModel: 'Bajaj Pulsar 150 (Midnight Black)',
+      plateNumber: 'DL 03 SS 3847',
       fleetPartner: 'SafeShip Direct Fleet',
       avatarUrl: '/images/courier_rahul_avatar.webp',
       currentLocation: {
@@ -315,7 +315,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
       name: 'Suresh Gowda',
       rating: 4.98,
       completedDeliveries: 512,
-      phone: '+91 98801 55219',
+      phone: '+91 9880• •••19',
       vehicleModel: 'TVS Jupiter 125 (Matte Grey)',
       plateNumber: 'KA 03 HY 8492',
       fleetPartner: 'SafeShip Direct Fleet',
@@ -437,7 +437,7 @@ export const INITIAL_DEALS: SafeDeal[] = [
       name: 'Ganesh Patil',
       rating: 4.96,
       completedDeliveries: 340,
-      phone: '+91 98190 22301',
+      phone: '+91 9819• •••01',
       vehicleModel: 'Bajaj Pulsar 150 (Black)',
       plateNumber: 'MH 02 CZ 4410',
       fleetPartner: 'Porter Hyperlocal',

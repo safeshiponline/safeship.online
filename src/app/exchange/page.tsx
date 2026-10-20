@@ -220,10 +220,10 @@ export default function ExchangeHubPage() {
                     {ex.status}
                   </span>
                   <Link
-                    href="/in/open-box?type=exchange"
+                    href="/in/deals/new?type=exchange"
                     className="text-xs font-bold text-[#0066FF] hover:underline"
                   >
-                    View Audit Demo &rarr;
+                    Book Similar Swap &rarr;
                   </Link>
                 </div>
               </div>

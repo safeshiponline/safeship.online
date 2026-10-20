@@ -35,40 +35,41 @@ export const EnterpriseFooter: React.FC<EnterpriseFooterProps> = ({ hideServicea
   };
 
   return (
-    <footer className="w-full bg-[#0F172A] text-white border-t border-slate-800 mt-16 pb-28 sm:pb-12 selection:bg-[#0066FF] selection:text-white">
+    <footer className="w-full bg-black text-white border-t border-neutral-800 mt-12 sm:mt-16 pb-24 sm:pb-12 selection:bg-[#0066FF] selection:text-white">
       {/* 1. PINCODE SERVICEABILITY & TRUST BANNER */}
       {!hideServiceabilityBanner && (
-        <div className="border-b border-slate-800 bg-slate-900/70 py-8 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-6">
+        <div className="border-b border-neutral-800/90 bg-neutral-950 py-6 sm:py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-5 sm:gap-6">
           <div className="max-w-xl text-center lg:text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/20 text-[#0066FF] text-xs font-bold mb-2">
-              <ShieldCheck className="w-4 h-4 text-[#0066FF]" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/20 text-[#3B82F6] text-[11px] font-bold mb-2">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#3B82F6]" />
               <span>National Doorstep Inspection Network</span>
             </div>
-            <h3 className="text-lg sm:text-xl font-black text-white tracking-tight">
+            <h3 className="text-base sm:text-xl font-black text-white tracking-tight">
               Check Pincode Serviceability &amp; Delivery SLA
             </h3>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
               Verify real-time linehaul corridors, bonded courier presence, and same-day availability across 19,000+ Indian pincodes.
             </p>
           </div>
 
           {/* Search Form */}
           <div className="w-full max-w-md">
-            <form onSubmit={handlePincodeSearch} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <form onSubmit={handlePincodeSearch} className="flex flex-row items-center gap-2">
               <div className="relative flex-1">
                 <input
                   type="text"
+                  inputMode="numeric"
                   maxLength={6}
                   value={pincodeInput}
                   onChange={(e) => setPincodeInput(e.target.value.replace(/\D/g, ''))}
-                  placeholder="Enter 6-Digit PIN (e.g. 560001, 110001)"
-                  className="w-full px-4 py-2.5 sm:py-3 rounded-xl bg-slate-800/90 border border-slate-700 text-xs font-mono text-white placeholder:text-slate-500 focus:border-[#0066FF] focus:outline-hidden transition"
+                  placeholder="Enter 6-digit PIN (e.g. 560001)"
+                  className="w-full px-3.5 py-2.5 sm:py-3 rounded-xl bg-neutral-900 border border-neutral-800 text-xs font-mono text-white placeholder:text-neutral-500 focus:border-[#0066FF] focus:outline-hidden transition"
                 />
               </div>
               <button
                 type="submit"
-                className="px-4 py-2.5 sm:py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/30 transition active:scale-95 cursor-pointer whitespace-nowrap text-center"
+                className="px-4 py-2.5 sm:py-3 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-xs shadow-md shadow-[#0066FF]/25 transition active:scale-95 cursor-pointer whitespace-nowrap text-center"
               >
                 Check SLA &rarr;
               </button>
@@ -76,29 +77,29 @@ export const EnterpriseFooter: React.FC<EnterpriseFooterProps> = ({ hideServicea
 
             {/* Results Toast / Dropdown */}
             {pincodeResult && (
-              <div className="mt-3 p-3.5 rounded-xl bg-slate-800/90 border border-slate-700 text-xs space-y-1.5 animate-in fade-in zoom-in-95">
+              <div className="mt-3 p-3.5 rounded-xl bg-neutral-900 border border-neutral-800 text-xs space-y-1.5 animate-in fade-in zoom-in-95">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-white flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5 text-[#0066FF]" />
+                    <MapPin className="w-3.5 h-3.5 text-[#3B82F6]" />
                     <span>PIN {pincodeResult.pincode}: {pincodeResult.city}, {pincodeResult.state}</span>
                   </span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#0066FF]/15 text-[#60A5FA] border border-[#0066FF]/30">
                     SERVICEABLE ✓
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-400 font-mono">
-                  Hub: <strong className="text-slate-200">{pincodeResult.hub}</strong>
+                <div className="text-[11px] text-neutral-400 font-mono">
+                  Hub: <strong className="text-neutral-200">{pincodeResult.hub}</strong>
                 </div>
-                <div className="flex flex-wrap gap-2 pt-1 text-[10px]">
+                <div className="flex flex-wrap gap-1.5 pt-1 text-[10px]">
                   <span className="px-2 py-0.5 rounded bg-blue-500/10 text-blue-300 font-medium">
                     Priority Express (Next-Day Air)
                   </span>
                   {pincodeResult.sameDayAvailable && (
-                    <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300 font-medium">
+                    <span className="px-2 py-0.5 rounded bg-[#0066FF]/15 text-[#60A5FA] font-medium">
                       Same-Day Direct (Sub-6h)
                     </span>
                   )}
-                  <span className="px-2 py-0.5 rounded bg-slate-700 text-slate-300 font-medium">
+                  <span className="px-2 py-0.5 rounded bg-neutral-800 text-neutral-300 font-medium">
                     Doorstep Open-Box Active
                   </span>
                 </div>
@@ -110,144 +111,143 @@ export const EnterpriseFooter: React.FC<EnterpriseFooterProps> = ({ hideServicea
     )}
 
       {/* 2. ENTERPRISE PILLARS & DISCLOSURES */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-7 sm:gap-8">
           {/* Col 1: Brand & Escrow Trust */}
-          <div className="space-y-4">
+          <div className="space-y-3.5">
             <Link href="/in" className="flex items-center gap-2.5 group">
               <SafeShipLogo className="w-8 h-8 shrink-0 group-hover:scale-105 transition" />
               <span className="text-xl font-black text-white tracking-tight">SafeShip</span>
             </Link>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              India’s first high-trust P2P &amp; B2C courier delivery rail engineered with <strong>Guaranteed Doorstep Open-Box Inspection</strong> and institutional escrow settlement.
+            <p className="text-xs text-neutral-400 leading-relaxed">
+              India’s high-trust P2P &amp; B2C courier delivery platform engineered with <strong>Guaranteed Doorstep Open-Box Inspection</strong> and institutional escrow settlement.
             </p>
-            <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] space-y-1.5">
+            <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800/90 text-[11px] space-y-1.5">
               <div className="font-bold text-white flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-[#0066FF]" />
+                  <Lock className="w-3.5 h-3.5 text-[#3B82F6]" />
                   <span>RBI-Compliant Escrow Rails</span>
                 </span>
-                <span className="text-[10px] text-emerald-400 font-bold">100% SECURE</span>
+                <span className="text-[10px] text-[#60A5FA] font-bold">100% SECURE</span>
               </div>
-              <p className="text-slate-400 text-[10px] leading-relaxed">
+              <p className="text-neutral-400 text-[10px] leading-relaxed">
                 Escrow funds held in regulated nodal accounts via RBI-licensed Payment Aggregators (Cashfree / Razorpay). Zero product advance released until buyer approval.
               </p>
-              <div className="pt-1.5 border-t border-slate-800 text-[10px] space-y-0.5 text-slate-300">
-                <div>💬 24/7 Live Support: <span className="text-emerald-400 font-semibold">In-App Live Support &amp; Priority Ticket Desk</span></div>
-                <div>🏛️ GSTIN: <span className="font-mono text-slate-200">08AAECS2938Q1ZP</span> &bull; SAC: <span className="font-mono text-slate-200">996812</span></div>
+              <div className="pt-1.5 border-t border-neutral-800/80 text-[10px] space-y-1 text-neutral-300">
+                <div>💬 24/7 Support: <span className="text-[#60A5FA] font-semibold">Live Help &amp; Priority Ticket Desk</span></div>
+                <div>🏛️ Status: <span className="text-neutral-200 font-medium">Registered Indian Enterprise (MCA &amp; GST Registered)</span></div>
               </div>
             </div>
           </div>
 
-          {/* Col 2: High-Value Categories */}
-          <div className="space-y-3 text-xs">
-            <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">
-              Supported Shipments
-            </h4>
-            <ul className="space-y-2 text-slate-400">
-              <li><Link href="/in/deals/new?type=send" className="hover:text-white transition">Smartphones &amp; Tablets (iPhones, Galaxy)</Link></li>
-              <li><Link href="/in/deals/new?type=send" className="hover:text-white transition">Laptops &amp; MacBooks (M2/M3 Silicon)</Link></li>
-              <li><Link href="/in/deals/new?type=send" className="hover:text-white transition">Cameras &amp; Optics (Sony Alpha, Canon, Lenses)</Link></li>
-              <li><Link href="/in/deals/new?type=send" className="hover:text-white transition">Luxury Watches &amp; Timepieces</Link></li>
-              <li><Link href="/in/deals/new?type=send" className="hover:text-white transition">Gaming Consoles &amp; Audio Equipment</Link></li>
-              <li><Link href="/in/deals/new?type=exchange" className="text-amber-400 hover:text-amber-300 transition font-semibold">2-Way Hardware Exchange ⇄</Link></li>
-            </ul>
-          </div>
+          {/* Col 2 + Col 3 Side-by-Side on Mobile for Compact Professional Layout */}
+          <div className="grid grid-cols-2 sm:grid-cols-1 gap-4 sm:gap-0 sm: contents">
+            {/* Col 2: High-Value Categories */}
+            <div className="space-y-2.5 text-xs">
+              <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">
+                Supported Shipments
+              </h4>
+              <ul className="space-y-2 text-neutral-400 text-[11px] sm:text-xs">
+                <li><Link href="/in/deals/new?type=send&cat=SMARTPHONES_TABLETS" className="hover:text-white transition">Smartphones &amp; Tablets</Link></li>
+                <li><Link href="/in/deals/new?type=send&cat=LAPTOPS_COMPUTERS" className="hover:text-white transition">Laptops &amp; MacBooks</Link></li>
+                <li><Link href="/in/deals/new?type=send&cat=CAMERAS_OPTICS" className="hover:text-white transition">Cameras &amp; Lenses</Link></li>
+                <li><Link href="/in/deals/new?type=send&cat=WATCHES_TIMEPIECES" className="hover:text-white transition">Watches &amp; Wearables</Link></li>
+                <li><Link href="/in/deals/new?type=send&cat=AUDIO_GAMING" className="hover:text-white transition">Gaming &amp; Audio Gear</Link></li>
+                <li><Link href="/in/deals/new?type=exchange" className="text-[#60A5FA] hover:text-white transition font-semibold">2-Way Device Exchange ⇄</Link></li>
+              </ul>
+            </div>
 
-          {/* Col 3: Logistics & SLA Guarantees */}
-          <div className="space-y-3 text-xs">
-            <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">
-              Inspection &amp; Claims SLA
-            </h4>
-            <ul className="space-y-2 text-slate-400">
-              <li className="flex items-start gap-1.5">
-                <Check className="w-3.5 h-3.5 text-[#0066FF] shrink-0 mt-0.5" />
-                <span><strong>Doorstep Verification:</strong> 4-point hardware check before cash release</span>
-              </li>
-              <li className="flex items-start gap-1.5">
-                <Check className="w-3.5 h-3.5 text-[#0066FF] shrink-0 mt-0.5" />
-                <span><strong>Instant Reversal:</strong> Immediate return to sender if item is rejected</span>
-              </li>
-              <li className="flex items-start gap-1.5">
-                <Check className="w-3.5 h-3.5 text-[#0066FF] shrink-0 mt-0.5" />
-                <span><strong>48-Hr Dispute Tribunal:</strong> Judicial resolution on cosmetic/IMEI claims</span>
-              </li>
-              <li className="flex items-start gap-1.5">
-                <Check className="w-3.5 h-3.5 text-[#0066FF] shrink-0 mt-0.5" />
-                <span><strong>Transit Insurance:</strong> Up to ₹2,50,000 total loss &amp; damage cover</span>
-              </li>
-            </ul>
+            {/* Col 3: Logistics & SLA Guarantees */}
+            <div className="space-y-2.5 text-xs">
+              <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">
+                Inspection &amp; Claims SLA
+              </h4>
+              <ul className="space-y-2 text-neutral-400 text-[11px] sm:text-xs">
+                <li className="flex items-start gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-[#3B82F6] shrink-0 mt-0.5" />
+                  <span><strong className="text-neutral-200">Doorstep Check:</strong> Verify hardware before OTP release</span>
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-[#3B82F6] shrink-0 mt-0.5" />
+                  <span><strong className="text-neutral-200">Instant Return:</strong> Immediate return if rejected</span>
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-[#3B82F6] shrink-0 mt-0.5" />
+                  <span><strong className="text-neutral-200">48-Hr Tribunal:</strong> Fast resolution on IMEI claims</span>
+                </li>
+                <li className="flex items-start gap-1.5">
+                  <Check className="w-3.5 h-3.5 text-[#3B82F6] shrink-0 mt-0.5" />
+                  <span><strong className="text-neutral-200">Transit Cover:</strong> Up to ₹2,50,000 protection</span>
+                </li>
+              </ul>
+            </div>
           </div>
 
           {/* Col 4: Institutional & Developers */}
           <div className="space-y-3 text-xs">
             <h4 className="font-bold text-white uppercase tracking-wider text-[11px]">
-              Institutional &amp; Developer APIs
+              Platform &amp; Compliance
             </h4>
-            <div className="space-y-2">
+            <div className="grid grid-cols-2 sm:grid-cols-1 gap-2">
               <button
                 type="button"
                 onClick={() => setActiveModal('API')}
-                className="w-full text-left p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 transition cursor-pointer"
+                className="w-full text-left p-2.5 rounded-xl bg-neutral-950 hover:bg-neutral-900 border border-neutral-800 transition cursor-pointer"
               >
                 <div className="font-bold text-white text-[11px]">Logistics API &amp; Webhooks</div>
-                <div className="text-[10px] text-slate-400">RESTful dispatch, escrow lock, &amp; GPS webhooks</div>
+                <div className="text-[10px] text-neutral-400 mt-0.5">Dispatch, escrow &amp; GPS webhooks</div>
               </button>
 
               <button
                 type="button"
                 onClick={() => setActiveModal('INSURANCE')}
-                className="w-full text-left p-2.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 transition cursor-pointer"
+                className="w-full text-left p-2.5 rounded-xl bg-neutral-950 hover:bg-neutral-900 border border-neutral-800 transition cursor-pointer"
               >
                 <div className="font-bold text-white text-[11px]">Cargo Transit Protection</div>
-                <div className="text-[10px] text-slate-400">Underwritten by Licensed General Insurers</div>
+                <div className="text-[10px] text-neutral-400 mt-0.5">Licensed General Insurer Cover</div>
               </button>
+            </div>
 
-              <div className="flex flex-wrap gap-2 pt-1 text-[11px] text-slate-400">
-                <Link href="/in/safety" className="text-white font-semibold hover:text-[#0066FF] underline">Safety &amp; Trust</Link>
-                <span>&bull;</span>
-                <Link href="/in/terms" className="hover:text-white underline">Terms</Link>
-                <span>&bull;</span>
-                <Link href="/in/privacy" className="hover:text-white underline">Privacy</Link>
-                <span>&bull;</span>
-                <Link href="/in/insurance" className="hover:text-white underline">Insurance</Link>
-                <span>&bull;</span>
-                <Link href="/in/nodal-escrow" className="hover:text-white underline">RBI Escrow</Link>
-                <span>&bull;</span>
-                <Link href="/in/faq" className="hover:text-white underline">FAQ</Link>
-                <span>&bull;</span>
-                <Link href="/in/admin" className="hover:text-white">Admin</Link>
-              </div>
+            <div className="flex flex-wrap gap-x-2.5 gap-y-1.5 pt-1 text-[11px] text-neutral-400">
+              <Link href="/in/safety" className="text-white font-semibold hover:text-[#3B82F6] underline">Safety &amp; Trust</Link>
+              <span>&bull;</span>
+              <Link href="/in/terms" className="hover:text-white underline">Terms</Link>
+              <span>&bull;</span>
+              <Link href="/in/privacy" className="hover:text-white underline">Privacy</Link>
+              <span>&bull;</span>
+              <Link href="/in/insurance" className="hover:text-white underline">Insurance</Link>
+              <span>&bull;</span>
+              <Link href="/in/nodal-escrow" className="hover:text-white underline">RBI Escrow</Link>
+              <span>&bull;</span>
+              <Link href="/in/faq" className="hover:text-white underline">FAQ</Link>
+              <span>&bull;</span>
+              <Link href="/in/admin" className="hover:text-white">Admin</Link>
             </div>
           </div>
         </div>
 
         {/* Regulatory, Trademark & Intermediary Disclaimer */}
-        <div className="mt-10 pt-6 border-t border-slate-800/80 text-[11px] text-slate-400 leading-relaxed space-y-2">
+        <div className="mt-8 sm:mt-10 pt-5 sm:pt-6 border-t border-neutral-900 text-[10px] sm:text-[11px] text-neutral-500 leading-relaxed space-y-2">
           <p>
-            <strong>Regulatory &amp; Legal Intermediary Notice:</strong> SafeShip Technologies India Private Limited operates as an electronic intermediary and logistics technology coordination platform under Section 79 of the Information Technology Act, 2000. SafeShip provides doorstep unboxing inspection workflows in conjunction with contracted third-party logistics courier partners. Payment collections and escrow settlements are strictly facilitated through RBI-authorized Payment Aggregators (including Cashfree Payments India Pvt. Ltd. and Razorpay Software Pvt. Ltd.) in full adherence to the Reserve Bank of India (RBI) Payment Aggregator Guidelines. Cargo transit protection is governed under group marine inland transit policies issued by licensed general insurance carriers.
+            <strong className="text-neutral-400">Regulatory &amp; Legal Intermediary Notice:</strong> SafeShip Technologies India Private Limited operates as a registered electronic intermediary and logistics coordination platform under the Information Technology Act, 2000. SafeShip provides doorstep unboxing inspection workflows with contracted courier partners. Payment collections and escrow settlements are facilitated through RBI-authorized Payment Aggregators in adherence to RBI Nodal Escrow guidelines.
           </p>
           <p>
-            <strong>Trademark &amp; Non-Affiliation Disclaimer:</strong> All third-party trademarks, product names, logos, and brand identities referenced on this website (including Apple, iPhone, Samsung, Galaxy, Delhivery, BlueDart, DTDC, ICICI Lombard, Cashfree, and Razorpay) are the registered property of their respective owners. Their reference on SafeShip is strictly for factual identification and compatibility purposes and does not imply endorsement, affiliation, or direct sponsorship.
-          </p>
-          <p className="text-slate-500">
-            <strong>Grievance Redressal (Rule 3(2) IT Intermediary Rules, 2021):</strong> Grievance Officer: Aman Sharma &bull; Email: grievance@safeship.online &bull; Response window: Acknowledgement within 24 hours, resolution within 15 business days. SafeShip Technologies India Pvt. Ltd., Malviya Nagar Expressway Hub, Jaipur, Rajasthan 302017.
+            <strong className="text-neutral-400">Trademark Disclaimer:</strong> All third-party trademarks, product names, and brand logos referenced on this website are the property of their respective owners and are used strictly for factual identification and compatibility purposes.
           </p>
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-8 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
+        <div className="mt-6 pt-5 border-t border-neutral-900 flex flex-col sm:flex-row items-center justify-between text-[11px] text-neutral-400 gap-3 text-center sm:text-left">
           <div>
             &copy; {new Date().getFullYear()} SafeShip Technologies India Pvt. Ltd. All rights reserved.
           </div>
-          <div className="flex flex-wrap items-center gap-3 text-[11px]">
-            <span>CIN: U63090RJ2026PTC098234</span>
-            <span>&bull;</span>
-            <span>GSTIN: 08AAECS2938Q1ZP</span>
-            <span>&bull;</span>
-            <span className="text-emerald-400 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Logistics Network: 100% Operational
+          <div className="flex flex-wrap items-center justify-center gap-2.5 text-[11px]">
+            <span className="px-2.5 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-300 font-medium">
+              MCA &amp; GST Registered Enterprise
+            </span>
+            <span className="text-neutral-300 flex items-center gap-1.5 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Logistics Network Operational
             </span>
           </div>
         </div>

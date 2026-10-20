@@ -6,13 +6,14 @@
 
 :root {
   --background: #ffffff;
-  --surface: #f9fafb;
-  --foreground: #09090b;
-  --muted: #71717a;
-  --border: #e4e4e7;
-  --primary: #18181b;
-  --accent: #2563eb;
-  --success: #16a34a;
+  --surface: #f8fafc;
+  --foreground: #0f172a;
+  --muted: #64748b;
+  --border: #e2e8f0;
+  --primary: #000000;
+  --accent: #0066ff;
+  --accent-hover: #0052ff;
+  --accent-soft: #eff6ff;
 }
 
 body {

@@ -108,10 +108,21 @@ export function normalizeDealQuery(raw: string): {
   try {
     s = decodeURIComponent(s);
   } catch {}
-  // Extract ID if full tracking URL was pasted (e.g., https://safeship.online/in/track/SS58257)
+  // Extract ID if a tracking URL or path was pasted (e.g. https://safeship.online/in/track/SS58257?booked=true)
   if (s.includes('/track/')) {
     const parts = s.split('/track/');
-    s = parts[parts.length - 1].split('?')[0].split('#')[0];
+    s = parts[parts.length - 1].split('?')[0].split('#')[0].split('/')[0];
+  } else if (s.startsWith('http://') || s.startsWith('https://')) {
+    try {
+      const urlObj = new URL(s);
+      const dealParam = urlObj.searchParams.get('deal') || urlObj.searchParams.get('id') || urlObj.searchParams.get('order');
+      if (dealParam) {
+        s = dealParam;
+      } else {
+        const segs = urlObj.pathname.split('/').filter(Boolean);
+        if (segs.length > 0) s = segs[segs.length - 1];
+      }
+    } catch {}
   }
   // Strip leading '#', spaces, trailing punctuation
   s = s.replace(/^[#\s]+/, '').replace(/[/\s]+$/, '').trim();
@@ -122,16 +133,25 @@ export function normalizeDealQuery(raw: string): {
   return { normalized, cleanedAlphaNum, digitsOnly };
 }
 
+export function getAllUniqueDeals(): SafeDeal[] {
+  const seen = new Set<string>();
+  const combined = [...getUserOrders(), ...getStoredDeals(), ...INITIAL_DEALS];
+  const unique: SafeDeal[] = [];
+  for (const d of combined) {
+    if (d && d.id && !seen.has(d.id.toLowerCase())) {
+      seen.add(d.id.toLowerCase());
+      unique.push(d);
+    }
+  }
+  return unique;
+}
+
 export function getDealById(id: string): SafeDeal | undefined {
   if (!id) return undefined;
   const { normalized, cleanedAlphaNum, digitsOnly } = normalizeDealQuery(id);
   if (!normalized && !cleanedAlphaNum) return undefined;
 
-  const allDeals = [
-    ...getUserOrders(),
-    ...getStoredDeals(),
-    ...INITIAL_DEALS
-  ];
+  const allDeals = getAllUniqueDeals();
 
   // 1. Exact match on id or trackingId
   const exact = allDeals.find(
@@ -139,43 +159,310 @@ export function getDealById(id: string): SafeDeal | undefined {
   );
   if (exact) return exact;
 
-  // 2. Alphanumeric match (e.g. user entered "ss-58257", "#ss58257", or "ss 58257")
+  // 2. Alphanumeric match (e.g. user entered "ss-58257", "#ss58257", "dlv9041288310", or "ss 58257")
   if (cleanedAlphaNum) {
     const alphaMatch = allDeals.find((d) => {
       const dIdClean = d.id.toLowerCase().replace(/[^a-z0-9]/g, '');
       const dTrkClean = (d.trackingId || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-      return dIdClean === cleanedAlphaNum || dTrkClean === cleanedAlphaNum;
+      const dDelhiveryClean = `dlv${d.id.replace(/\D/g, '')}88310`;
+      return dIdClean === cleanedAlphaNum || dTrkClean === cleanedAlphaNum || dDelhiveryClean === cleanedAlphaNum;
     });
     if (alphaMatch) return alphaMatch;
   }
 
-  // 3. Numeric match (e.g. user entered "58257" for "SS58257", or "492100" for "SS-TRK-492100")
+  // 3. Numeric match (e.g. user entered "58257" for "SS58257", or "492100" for "SS-TRK-492100", or phone number)
   if (digitsOnly && digitsOnly.length >= 4) {
     const digitMatch = allDeals.find((d) => {
       const dDigits = d.id.replace(/\D/g, '');
       const trkDigits = (d.trackingId || '').replace(/\D/g, '');
-      return dDigits === digitsOnly || trkDigits === digitsOnly;
+      const buyerPhoneDigits = (d.buyer?.phone || '').replace(/\D/g, '');
+      const sellerPhoneDigits = (d.seller?.phone || '').replace(/\D/g, '');
+      return (
+        dDigits === digitsOnly ||
+        trkDigits === digitsOnly ||
+        (digitsOnly.length >= 8 && (buyerPhoneDigits.endsWith(digitsOnly.slice(-10)) || sellerPhoneDigits.endsWith(digitsOnly.slice(-10))))
+      );
     });
     if (digitMatch) return digitMatch;
   }
 
-  // 4. Barcode / Seal / Invoice / Virtual Account match
-  const sealMatch = allDeals.find((d) => {
+  // 4. Barcode / Seal / Invoice / Virtual Account / Title / Name match
+  const partialMatch = allDeals.find((d) => {
     const barcode = (d.tamperSeal?.barcode || '').toLowerCase();
     const sealId = (d.tamperSeal?.sealId || '').toLowerCase();
     const inv = (d.billingInfo?.invoiceNumber || '').toLowerCase();
     const van = (d.escrowVault?.virtualAccountNumber || '').toLowerCase();
+    const title = (d.title || '').toLowerCase();
     return (
       (barcode && barcode.includes(normalized)) ||
       (sealId && sealId.includes(normalized)) ||
       (inv && inv.includes(normalized)) ||
-      (van && van.includes(normalized))
+      (van && van.includes(normalized)) ||
+      (normalized.length >= 3 && title.includes(normalized))
     );
   });
-  if (sealMatch) return sealMatch;
+  if (partialMatch) return partialMatch;
 
   return undefined;
 }
+
+export function searchDeals(query: string): SafeDeal[] {
+  const allDeals = getAllUniqueDeals();
+  if (!query || !query.trim()) return allDeals;
+
+  const { normalized, cleanedAlphaNum, digitsOnly } = normalizeDealQuery(query);
+  if (!normalized && !cleanedAlphaNum) return allDeals;
+
+  return allDeals.filter((d) => {
+    const dId = d.id.toLowerCase();
+    const dTrk = (d.trackingId || '').toLowerCase();
+    const dIdClean = dId.replace(/[^a-z0-9]/g, '');
+    const dTrkClean = dTrk.replace(/[^a-z0-9]/g, '');
+    const dDigits = d.id.replace(/\D/g, '');
+    const trkDigits = (d.trackingId || '').replace(/\D/g, '');
+    const buyerPhone = (d.buyer?.phone || '').replace(/\D/g, '');
+    const sellerPhone = (d.seller?.phone || '').replace(/\D/g, '');
+    const title = (d.title || '').toLowerCase();
+    const city = (d.city || '').toLowerCase();
+    const buyerName = (d.buyer?.name || '').toLowerCase();
+    const sellerName = (d.seller?.name || '').toLowerCase();
+
+    return (
+      dId.includes(normalized) ||
+      dTrk.includes(normalized) ||
+      (cleanedAlphaNum && (dIdClean.includes(cleanedAlphaNum) || dTrkClean.includes(cleanedAlphaNum))) ||
+      (digitsOnly.length >= 3 && (dDigits.includes(digitsOnly) || trkDigits.includes(digitsOnly) || buyerPhone.includes(digitsOnly) || sellerPhone.includes(digitsOnly))) ||
+      title.includes(normalized) ||
+      city.includes(normalized) ||
+      buyerName.includes(normalized) ||
+      sellerName.includes(normalized)
+    );
+  });
+}
+
+const SAFESHIP_PICKUP_PARTNERS: Array<{
+  id: string;
+  name: string;
+  badgeId: string;
+  rating: number;
+  completedDeliveries: number;
+  maskedPhone: string;
+  bridgeExtension: string;
+  vehicleModel: string;
+  plateNumber: string;
+  fleetPartner: string;
+}> = [
+  {
+    id: 'cr_vikram_rathore',
+    name: 'Vikram Rathore',
+    badgeId: 'SS-4108',
+    rating: 4.97,
+    completedDeliveries: 642,
+    maskedPhone: '+91 9829• •••18',
+    bridgeExtension: '4108',
+    vehicleModel: 'TVS iQube Electric (Titanium)',
+    plateNumber: 'RJ 14 SS 4108',
+    fleetPartner: 'SafeShip Direct Fleet',
+  },
+  {
+    id: 'cr_arjun_menon',
+    name: 'Arjun Menon',
+    badgeId: 'SS-5291',
+    rating: 4.96,
+    completedDeliveries: 518,
+    maskedPhone: '+91 9845• •••42',
+    bridgeExtension: '5291',
+    vehicleModel: 'Ather 450X (Cosmic Black)',
+    plateNumber: 'KA 01 SS 5291',
+    fleetPartner: 'SafeShip Direct Fleet',
+  },
+  {
+    id: 'cr_deepak_sharma',
+    name: 'Deepak Sharma',
+    badgeId: 'SS-3847',
+    rating: 4.98,
+    completedDeliveries: 890,
+    maskedPhone: '+91 9811• •••74',
+    bridgeExtension: '3847',
+    vehicleModel: 'Bajaj Pulsar 150 (Midnight Black)',
+    plateNumber: 'DL 03 SS 3847',
+    fleetPartner: 'SafeShip Direct Fleet',
+  },
+  {
+    id: 'cr_karthik_nair',
+    name: 'Karthik Nair',
+    badgeId: 'SS-6104',
+    rating: 4.95,
+    completedDeliveries: 475,
+    maskedPhone: '+91 9880• •••39',
+    bridgeExtension: '6104',
+    vehicleModel: 'Honda Activa 6G (Rebel Red)',
+    plateNumber: 'TN 09 SS 6104',
+    fleetPartner: 'SafeShip Direct Fleet',
+  },
+  {
+    id: 'cr_pradeep_verma',
+    name: 'Pradeep Verma',
+    badgeId: 'SS-7420',
+    rating: 4.94,
+    completedDeliveries: 712,
+    maskedPhone: '+91 9910• •••61',
+    bridgeExtension: '7420',
+    vehicleModel: 'Hero Xtreme 160R (Stealth)',
+    plateNumber: 'UP 16 SS 7420',
+    fleetPartner: 'SafeShip Direct Fleet',
+  },
+  {
+    id: 'cr_sanjay_thakur',
+    name: 'Sanjay Thakur',
+    badgeId: 'SS-2915',
+    rating: 4.99,
+    completedDeliveries: 1120,
+    maskedPhone: '+91 9820• •••85',
+    bridgeExtension: '2915',
+    vehicleModel: 'TVS Apache RTR 160 (Matte Blue)',
+    plateNumber: 'MH 02 SS 2915',
+    fleetPartner: 'SafeShip Direct Fleet',
+  },
+  {
+    id: 'cr_manish_gupta',
+    name: 'Manish Gupta',
+    badgeId: 'SS-8312',
+    rating: 4.93,
+    completedDeliveries: 395,
+    maskedPhone: '+91 9717• •••23',
+    bridgeExtension: '8312',
+    vehicleModel: 'Suzuki Access 125 (Royal Bronze)',
+    plateNumber: 'HR 26 SS 8312',
+    fleetPartner: 'SafeShip Direct Fleet',
+  },
+  {
+    id: 'cr_rohit_bansal',
+    name: 'Rohit Bansal',
+    badgeId: 'SS-5049',
+    rating: 4.97,
+    completedDeliveries: 830,
+    maskedPhone: '+91 9871• •••56',
+    bridgeExtension: '5049',
+    vehicleModel: 'Bajaj Chetak EV (Brooklyn Black)',
+    plateNumber: 'DL 08 SS 5049',
+    fleetPartner: 'SafeShip Direct Fleet',
+  },
+  {
+    id: 'cr_suresh_gowda',
+    name: 'Suresh Gowda',
+    badgeId: 'SS-4621',
+    rating: 4.98,
+    completedDeliveries: 564,
+    maskedPhone: '+91 9880• •••19',
+    bridgeExtension: '4621',
+    vehicleModel: 'TVS Jupiter 125 (Matte Grey)',
+    plateNumber: 'KA 03 SS 4621',
+    fleetPartner: 'SafeShip Direct Fleet',
+  },
+  {
+    id: 'cr_ganesh_patil',
+    name: 'Ganesh Patil',
+    badgeId: 'SS-9103',
+    rating: 4.96,
+    completedDeliveries: 490,
+    maskedPhone: '+91 9819• •••01',
+    bridgeExtension: '9103',
+    vehicleModel: 'Bajaj Pulsar N160 (Racing Blue)',
+    plateNumber: 'MH 01 SS 9103',
+    fleetPartner: 'SafeShip Direct Fleet',
+  },
+  {
+    id: 'cr_nitin_deshmukh',
+    name: 'Nitin Deshmukh',
+    badgeId: 'SS-6738',
+    rating: 4.95,
+    completedDeliveries: 608,
+    maskedPhone: '+91 9822• •••94',
+    bridgeExtension: '6738',
+    vehicleModel: 'Honda SP 125 (Imperial Blue)',
+    plateNumber: 'MH 12 SS 6738',
+    fleetPartner: 'SafeShip Direct Fleet',
+  },
+  {
+    id: 'cr_harpreet_gill',
+    name: 'Harpreet Gill',
+    badgeId: 'SS-3390',
+    rating: 4.97,
+    completedDeliveries: 755,
+    maskedPhone: '+91 9815• •••37',
+    bridgeExtension: '3390',
+    vehicleModel: 'Revolt RV400 (Stealth Black)',
+    plateNumber: 'PB 65 SS 3390',
+    fleetPartner: 'SafeShip Direct Fleet',
+  },
+];
+
+export function maskCourierPhone(phone?: string, fallbackMasked: string = '+91 98••• •••18'): string {
+  if (!phone) return fallbackMasked;
+  if (phone.includes('•')) return phone.split('(')[0].trim();
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length >= 10) {
+    const last10 = digits.slice(-10);
+    return `+91 ${last10.slice(0, 4)}• •••${last10.slice(-2)}`;
+  }
+  return fallbackMasked;
+}
+
+export function resolvePickupPartnerForDeal(
+  dealId: string,
+  city?: string,
+  existingCourier?: safeCourierInput
+): NonNullable<SafeDeal['assignedCourier']> & { badgeId: string; bridgeExtension: string } {
+  // Deterministic hash based on dealId + city so every shipment gets a distinct pickup partner
+  const seedStr = `${dealId || 'SS'}_${city || 'IN'}`;
+  let hash = 0;
+  for (let i = 0; i < seedStr.length; i++) {
+    hash = (hash * 31 + seedStr.charCodeAt(i)) >>> 0;
+  }
+  const picked = SAFESHIP_PICKUP_PARTNERS[hash % SAFESHIP_PICKUP_PARTNERS.length];
+
+  // If existingCourier already has a specific non-Rahul custom name from our roster or admin, preserve its name while masking phone
+  const isLegacyRahul =
+    !existingCourier?.name ||
+    existingCourier.name.toLowerCase().includes('rahul') ||
+    existingCourier.id === 'cr_rahul_k';
+
+  const resolvedName = isLegacyRahul ? picked.name : existingCourier.name;
+  const resolvedId = isLegacyRahul ? picked.id : existingCourier.id || picked.id;
+  const resolvedRating = isLegacyRahul ? picked.rating : existingCourier.rating || picked.rating;
+  const resolvedDeliveries = isLegacyRahul
+    ? picked.completedDeliveries
+    : existingCourier.completedDeliveries || picked.completedDeliveries;
+  const resolvedVehicle = isLegacyRahul
+    ? picked.vehicleModel
+    : existingCourier.vehicleModel || picked.vehicleModel;
+  const resolvedPlate = isLegacyRahul
+    ? picked.plateNumber
+    : existingCourier.plateNumber || picked.plateNumber;
+
+  return {
+    id: resolvedId,
+    name: resolvedName,
+    badgeId: picked.badgeId,
+    bridgeExtension: picked.bridgeExtension,
+    rating: resolvedRating,
+    completedDeliveries: resolvedDeliveries,
+    phone: maskCourierPhone(isLegacyRahul ? picked.maskedPhone : existingCourier?.phone, picked.maskedPhone),
+    vehicleModel: resolvedVehicle,
+    plateNumber: resolvedPlate,
+    fleetPartner: (existingCourier?.fleetPartner || 'SafeShip Direct Fleet') as NonNullable<SafeDeal['assignedCourier']>['fleetPartner'],
+    avatarUrl: existingCourier?.avatarUrl || '/images/courier_rahul_avatar.webp',
+    currentLocation: existingCourier?.currentLocation || {
+      lat: 28.6139,
+      lng: 77.2090,
+      heading: 90,
+      address: `${city || 'Origin'} SafeShip Ingestion Hub`,
+    },
+  };
+}
+
+type safeCourierInput = SafeDeal['assignedCourier'] | undefined;
 
 export function createNewDeal(params: {
   title: string;
@@ -269,6 +556,11 @@ export function createNewDeal(params: {
       : '02:00 PM – 05:00 PM');
 
   const resolvedPickupDate = params.scheduledPickupDate || 'Scheduled Date';
+
+  const assignedPartner = resolvePickupPartnerForDeal(
+    `${newId}_${Math.floor(Math.random() * 1000)}`,
+    params.city
+  );
 
   const newDeal: SafeDeal = {
     id: newId,
@@ -364,28 +656,12 @@ export function createNewDeal(params: {
     upfrontPaid: params.upfrontPaid,
     paymentId: params.paymentId,
     status: params.upfrontPaid ? (params.declaredValue > 0 ? 'ESCROW_PENDING' : 'COURIER_ASSIGNED') : 'PENDING_ACCEPTANCE',
-    assignedCourier: {
-      id: 'cr_rahul_k',
-      name: 'Rahul K.',
-      rating: 4.98,
-      completedDeliveries: 1480,
-      phone: '+91 98290 ••••• (Bridge: 080-4719-2300)',
-      vehicleModel: 'Bajaj Pulsar 150 (Silver)',
-      plateNumber: 'KA 03 HY 4012',
-      fleetPartner: 'SafeShip Direct Fleet',
-      avatarUrl: '/images/courier_rahul_avatar.webp',
-      currentLocation: {
-        lat: 28.6139,
-        lng: 77.2090,
-        heading: 90,
-        address: `${params.city} SafeShip Ingestion Hub`
-      }
-    },
+    assignedCourier: assignedPartner,
     tamperSeal: {
       sealId: `SSP-${newId}-TAMPER-SAFE`,
       barcode: `99${newId}4820`,
       appliedAt: new Date().toISOString(),
-      inspectedBy: 'Rahul K. (SafeShip Partner #KA-4012)',
+      inspectedBy: `${assignedPartner.name} (SafeShip Partner #${assignedPartner.badgeId})`,
       inspectionPhotos: params.itemPhotos || [],
       intactVerifiedAtDelivery: true
     },
@@ -455,9 +731,10 @@ export function addEscrowChunkPayment(
 ): SafeDeal | null {
   const deals = getStoredDeals();
   const index = deals.findIndex((d) => d.id === dealId);
-  if (index === -1) return null;
+  const baseDeal = index !== -1 ? deals[index] : getDealById(dealId);
+  if (!baseDeal) return null;
 
-  const deal = deals[index];
+  const deal: SafeDeal = { ...baseDeal, auditTrail: [...(baseDeal.auditTrail || [])] };
   const existingChunks = deal.escrowVault?.chunks || [];
   const currentDeposited = existingChunks.reduce((sum, c) => sum + c.amount, 0);
   const remainingBefore = Math.max(0, deal.declaredValue - currentDeposited);
@@ -474,12 +751,13 @@ export function addEscrowChunkPayment(
     methodLabel,
     utr,
     paidAt: new Date().toISOString(),
-    payerLabel: payerLabel || `Private Tranche #${existingChunks.length + 1}`
+    payerLabel: payerLabel || `Escrow Tranche #${existingChunks.length + 1}`
   };
 
   const updatedChunks = [...existingChunks, newChunk];
   const newDepositedTotal = updatedChunks.reduce((sum, c) => sum + c.amount, 0);
-  const halfTarget = Math.ceil(deal.declaredValue / 2);
+  const canSplit = deal.declaredValue > 9999;
+  const halfTarget = canSplit ? Math.ceil(deal.declaredValue / 2) : deal.declaredValue;
   const isHalfFunded = newDepositedTotal >= halfTarget;
   const isFullyFunded = newDepositedTotal >= deal.declaredValue;
 
@@ -496,8 +774,8 @@ export function addEscrowChunkPayment(
     depositedAt: new Date().toISOString(),
     collectionMode: 'PRIVATE_CHUNKS',
     paymentMethodUsed: isFullyFunded
-      ? `Private Multi-Chunk Escrow (${updatedChunks.length} Tranche${updatedChunks.length > 1 ? 's' : ''})`
-      : `Partial Escrow Funded (${updatedChunks.length} Tranche${updatedChunks.length > 1 ? 's' : ''}: ₹${newDepositedTotal.toLocaleString('en-IN')} / ₹${deal.declaredValue.toLocaleString('en-IN')})`,
+      ? `Escrow Held (${updatedChunks.length} Tranche${updatedChunks.length > 1 ? 's' : ''})`
+      : `Escrow Held (${updatedChunks.length} Tranche${updatedChunks.length > 1 ? 's' : ''}: ₹${newDepositedTotal.toLocaleString('en-IN')} / ₹${deal.declaredValue.toLocaleString('en-IN')})`,
     utrNumber: utr,
     chunks: updatedChunks
   };
@@ -507,26 +785,32 @@ export function addEscrowChunkPayment(
     timestamp: new Date().toISOString(),
     actor: 'BUYER',
     title: isFullyFunded
-      ? `Final Escrow Chunk #${newChunk.chunkNumber} Paid (₹${sanitizedAmount.toLocaleString('en-IN')}) — 100% Vault Locked!`
+      ? `100% Escrow Held (₹${newDepositedTotal.toLocaleString('en-IN')}) — Pickup Initiated`
       : isHalfFunded
-      ? `Escrow Chunk #${newChunk.chunkNumber} Paid (₹${sanitizedAmount.toLocaleString('en-IN')}) — Pre-Pickup 50% Met!`
-      : `Private Escrow Chunk #${newChunk.chunkNumber} Deposited (₹${sanitizedAmount.toLocaleString('en-IN')})`,
+      ? `50% Escrow Held (₹${newDepositedTotal.toLocaleString('en-IN')}) — Pickup Initiated`
+      : `Escrow Tranche #${newChunk.chunkNumber} Held (₹${sanitizedAmount.toLocaleString('en-IN')})`,
     description: isFullyFunded
-      ? `Total ₹${newDepositedTotal.toLocaleString('en-IN')} (100% of item value) is now locked in SafeShip RBI Nodal Vault (${deal.escrowVault.virtualAccountNumber}). Field Officer Rahul K. is cleared for scheduled pickup on ${deal.scheduledPickupDate || 'scheduled date'} (${deal.scheduledPickupTimeWindow || 'selected window'}).`
+      ? `Full item value of ₹${newDepositedTotal.toLocaleString('en-IN')} is held safely by SafeShip. Pickup Partner ${resolvePickupPartnerForDeal(deal.id, deal.city, deal.assignedCourier).name} is scheduled for pickup on ${deal.scheduledPickupDate || 'scheduled date'} (${deal.scheduledPickupTimeWindow || 'selected window'}). Released to seller after doorstep open-box check.`
       : isHalfFunded
-      ? `Pre-pickup 50% escrow threshold (₹${halfTarget.toLocaleString('en-IN')}) satisfied! Field Officer Rahul K. is now dispatched for scheduled pickup. The remaining ₹${(deal.declaredValue - newDepositedTotal).toLocaleString('en-IN')} is due before doorstep open-box inspection.`
-      : `Received ₹${sanitizedAmount.toLocaleString('en-IN')} via ${methodLabel} (Ref: ${utr}). Total funded: ₹${newDepositedTotal.toLocaleString('en-IN')} of ₹${deal.declaredValue.toLocaleString('en-IN')} (₹${(deal.declaredValue - newDepositedTotal).toLocaleString('en-IN')} remaining). At least 50% required before pickup dispatch.`
+      ? `50% escrow threshold (₹${halfTarget.toLocaleString('en-IN')}) held! Pickup Partner ${resolvePickupPartnerForDeal(deal.id, deal.city, deal.assignedCourier).name} is dispatched for pickup. Balance ₹${(deal.declaredValue - newDepositedTotal).toLocaleString('en-IN')} is payable at doorstep before open-box inspection.`
+      : `Held ₹${sanitizedAmount.toLocaleString('en-IN')} via ${methodLabel} (Ref: ${utr}). Total held: ₹${newDepositedTotal.toLocaleString('en-IN')} of ₹${deal.declaredValue.toLocaleString('en-IN')}.`
   });
 
   deal.updatedAt = new Date().toISOString();
-  deals[index] = deal;
-  saveStoredDeals(deals);
+  if (index !== -1) {
+    deals[index] = deal;
+    saveStoredDeals(deals);
+  } else {
+    saveStoredDeals([deal, ...deals]);
+  }
 
   const orders = getUserOrders();
   const ordIdx = orders.findIndex((o) => o.id === dealId);
   if (ordIdx !== -1) {
     orders[ordIdx] = deal;
     saveUserOrders(orders);
+  } else {
+    saveUserOrders([deal, ...orders]);
   }
 
   if (typeof window !== 'undefined') {
@@ -546,9 +830,10 @@ export function authorizeDelhiveryDoorstepEscrowMode(
 ): SafeDeal | null {
   const deals = getStoredDeals();
   const index = deals.findIndex((d) => d.id === dealId);
-  if (index === -1) return null;
+  const baseDeal = index !== -1 ? deals[index] : getDealById(dealId);
+  if (!baseDeal) return null;
 
-  const deal = deals[index];
+  const deal: SafeDeal = { ...baseDeal, auditTrail: [...(baseDeal.auditTrail || [])] };
   const existingChunks = deal.escrowVault?.chunks || [];
   let updatedChunks = [...existingChunks];
 
@@ -578,8 +863,8 @@ export function authorizeDelhiveryDoorstepEscrowMode(
     collectionMode: 'DELHIVERY_DOORSTEP_QR',
     paymentMethodUsed:
       totalDeposited > 0
-        ? `Hybrid Escrow: ₹${totalDeposited.toLocaleString('en-IN')} Paid + ₹${balanceAtDoorstep.toLocaleString('en-IN')} via Doorstep Dynamic QR`
-        : `Delhivery / SafeShip Doorstep Dynamic QR Escrow (₹${deal.declaredValue.toLocaleString('en-IN')})`,
+        ? `Hybrid Escrow: ₹${totalDeposited.toLocaleString('en-IN')} Held + ₹${balanceAtDoorstep.toLocaleString('en-IN')} at Doorstep`
+        : `Doorstep Escrow Collection (₹${deal.declaredValue.toLocaleString('en-IN')})`,
     utrNumber: `UTR-QR-AUTH-${Date.now().toString(36).toUpperCase().slice(-6)}`,
     chunks: updatedChunks
   };
@@ -588,22 +873,28 @@ export function authorizeDelhiveryDoorstepEscrowMode(
     id: `aud_${Date.now()}_doorstep_qr`,
     timestamp: new Date().toISOString(),
     actor: 'BUYER',
-    title: 'Delhivery / SafeShip Doorstep Dynamic QR Escrow Authorized',
+    title: 'Doorstep Escrow Mode Authorized',
     description:
       totalDeposited > 0
-        ? `₹${totalDeposited.toLocaleString('en-IN')} locked online + remaining ₹${balanceAtDoorstep.toLocaleString('en-IN')} scheduled for collection at buyer's doorstep via SafeShip Nodal Dynamic UPI QR before open-box seal break.`
-        : `Pickup unlocked! Courier will collect ₹${deal.declaredValue.toLocaleString('en-IN')} into SafeShip Nodal Escrow at buyer's doorstep via Dynamic UPI QR (can be scanned in multiple UPI chunks) right before the 10-minute open-box inspection.`
+        ? `₹${totalDeposited.toLocaleString('en-IN')} held online + remaining ₹${balanceAtDoorstep.toLocaleString('en-IN')} scheduled for collection at buyer's doorstep before open-box inspection.`
+        : `Pickup unlocked! Courier will collect ₹${deal.declaredValue.toLocaleString('en-IN')} into SafeShip Escrow at buyer's doorstep before the 10-minute open-box inspection.`
   });
 
   deal.updatedAt = new Date().toISOString();
-  deals[index] = deal;
-  saveStoredDeals(deals);
+  if (index !== -1) {
+    deals[index] = deal;
+    saveStoredDeals(deals);
+  } else {
+    saveStoredDeals([deal, ...deals]);
+  }
 
   const orders = getUserOrders();
   const ordIdx = orders.findIndex((o) => o.id === dealId);
   if (ordIdx !== -1) {
     orders[ordIdx] = deal;
     saveUserOrders(orders);
+  } else {
+    saveUserOrders([deal, ...orders]);
   }
 
   if (typeof window !== 'undefined') {
@@ -617,12 +908,13 @@ export function authorizeDelhiveryDoorstepEscrowMode(
   return deal;
 }
 
-export function lockDealEscrowHold(dealId: string, paymentMethod: string = 'SafeShip Nodal Escrow Hold', utr?: string): SafeDeal | null {
+export function lockDealEscrowHold(dealId: string, paymentMethod: string = 'SafeShip Escrow Hold', utr?: string): SafeDeal | null {
   const deals = getStoredDeals();
   const index = deals.findIndex((d) => d.id === dealId);
-  if (index === -1) return null;
+  const baseDeal = index !== -1 ? deals[index] : getDealById(dealId);
+  if (!baseDeal) return null;
 
-  const deal = deals[index];
+  const deal: SafeDeal = { ...baseDeal, auditTrail: [...(baseDeal.auditTrail || [])] };
   const escrowAmount = deal.declaredValue;
   const existingChunks = deal.escrowVault?.chunks || [];
   const currentDeposited = existingChunks.reduce((sum, c) => sum + c.amount, 0);
@@ -641,7 +933,7 @@ export function lockDealEscrowHold(dealId: string, paymentMethod: string = 'Safe
             methodLabel: paymentMethod,
             utr: resolvedUtr,
             paidAt: new Date().toISOString(),
-            payerLabel: existingChunks.length > 0 ? 'Final Balance Settlement' : 'Full Single-Shot Escrow Hold'
+            payerLabel: existingChunks.length > 0 ? 'Final Balance Hold' : '100% Full Escrow Hold'
           }
         ]
       : existingChunks;
@@ -662,18 +954,25 @@ export function lockDealEscrowHold(dealId: string, paymentMethod: string = 'Safe
     id: `aud_${Date.now()}_escrow`,
     timestamp: new Date().toISOString(),
     actor: 'BUYER',
-    title: 'Item Escrow Placed on Hold (100% Funded)',
-    description: `₹${escrowAmount.toLocaleString('en-IN')} locked in SafeShip RBI-regulated Nodal Account. Released to seller after doorstep unboxing OTP approval.`
+    title: '100% Escrow Held — Pickup Initiated',
+    description: `₹${escrowAmount.toLocaleString('en-IN')} is safely held by SafeShip. Released to seller only after buyer verifies the item during the 10-minute doorstep open-box check.`
   });
 
-  deals[index] = deal;
-  saveStoredDeals(deals);
+  deal.updatedAt = new Date().toISOString();
+  if (index !== -1) {
+    deals[index] = deal;
+    saveStoredDeals(deals);
+  } else {
+    saveStoredDeals([deal, ...deals]);
+  }
 
   const orders = getUserOrders();
   const ordIdx = orders.findIndex((o) => o.id === dealId);
   if (ordIdx !== -1) {
     orders[ordIdx] = deal;
     saveUserOrders(orders);
+  } else {
+    saveUserOrders([deal, ...orders]);
   }
 
   if (typeof window !== 'undefined') {
@@ -715,23 +1014,8 @@ export function fundDealEscrow(dealId: string, buyerData: { name: string; email:
     utrNumber: `UTR-UPI-${Date.now().toString().slice(-8)}`
   };
 
-  deal.assignedCourier = {
-    id: 'cr_vikram_s',
-    name: 'Vikram Singh (SafeShip Certified Custody Partner)',
-    rating: 4.97,
-    completedDeliveries: 428,
-    phone: '+91 98450 99201',
-    vehicleModel: 'Honda Activa 6G (Pearl White)',
-    plateNumber: 'KA 05 MN 3821',
-    fleetPartner: 'Porter Hyperlocal',
-    avatarUrl: '/images/courier_rahul_avatar.webp',
-    currentLocation: {
-      lat: 12.9716,
-      lng: 77.6412,
-      heading: 90,
-      address: 'En route to seller for physical inspection & tamper sealing'
-    }
-  };
+  const resolvedPartner = resolvePickupPartnerForDeal(deal.id, deal.city, deal.assignedCourier);
+  deal.assignedCourier = resolvedPartner;
 
   deal.auditTrail.push({
     id: `aud_${Date.now()}`,
@@ -746,7 +1030,7 @@ export function fundDealEscrow(dealId: string, buyerData: { name: string; email:
     timestamp: new Date().toISOString(),
     actor: 'SYSTEM',
     title: 'SafeShip Courier Dispatched',
-    description: `Agent Vikram Singh dispatched to seller (${deal.seller.pickupAddress}) for physical device checklist.`
+    description: `Pickup Partner ${resolvedPartner.name} dispatched to seller (${deal.seller.pickupAddress}) for physical device checklist.`
   });
 
   deals[index] = deal;
@@ -978,28 +1262,52 @@ export function requestSellerCallback(dealId: string): SafeDeal | null {
 
 export function advanceDealMilestone(dealId: string, nextStatus: DealStatus): SafeDeal | null {
   const deals = getStoredDeals();
-  const index = deals.findIndex((d) => d.id === dealId);
-  if (index === -1) return null;
+  const index = deals.findIndex((d) => d.id.toLowerCase() === dealId.toLowerCase());
+  let baseDeal: SafeDeal | undefined = index !== -1 ? deals[index] : getDealById(dealId);
+  if (!baseDeal) return null;
 
-  const deal = { ...deals[index] };
+  const deal: SafeDeal = {
+    ...baseDeal,
+    auditTrail: [...(baseDeal.auditTrail || [])],
+  };
   deal.status = nextStatus;
 
+  const partnerName = resolvePickupPartnerForDeal(deal.id, deal.city, deal.assignedCourier).name;
   if (nextStatus === 'PICKUP_INSPECTION') {
     deal.auditTrail.push({
       id: `aud_${Date.now()}`,
       timestamp: new Date().toISOString(),
       actor: 'COURIER',
       title: 'Field Officer At Pickup Location',
-      description: `${deal.assignedCourier?.name || 'Rahul K.'} is conducting doorstep physical audit and IMEI verification.`
+      description: `${partnerName} is conducting doorstep physical audit and IMEI verification.`
     });
-  } else if (nextStatus === 'PICKUP_VERIFIED' || nextStatus === 'IN_TRANSIT') {
+  } else if (nextStatus === 'PICKUP_VERIFIED') {
+    deal.status = 'PICKUP_VERIFIED';
+    if (!deal.tamperSeal) {
+      deal.tamperSeal = {
+        sealId: `SSP-${deal.id}-SAFE`,
+        barcode: `99${deal.id}4820`,
+        appliedAt: new Date().toISOString(),
+        inspectedBy: partnerName,
+        inspectionPhotos: deal.itemPhotos,
+        intactVerifiedAtDelivery: false
+      };
+    }
+    deal.auditTrail.push({
+      id: `aud_${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      actor: 'COURIER',
+      title: `Device Picked Up & Sealed in Tamper Bag (#${deal.tamperSeal.sealId})`,
+      description: `Courier ${partnerName} verified Seller OTP (${deal.sellerPickupCode || '4829'}) and sealed the package at pickup.`
+    });
+  } else if (nextStatus === 'IN_TRANSIT') {
     deal.status = 'IN_TRANSIT';
     if (!deal.tamperSeal) {
       deal.tamperSeal = {
         sealId: `SSP-${deal.id}-SAFE`,
         barcode: `99${deal.id}4820`,
         appliedAt: new Date().toISOString(),
-        inspectedBy: deal.assignedCourier?.name || 'Rahul K.',
+        inspectedBy: partnerName,
         inspectionPhotos: deal.itemPhotos,
         intactVerifiedAtDelivery: false
       };
@@ -1011,8 +1319,8 @@ export function advanceDealMilestone(dealId: string, nextStatus: DealStatus): Sa
       id: `aud_${Date.now()}`,
       timestamp: new Date().toISOString(),
       actor: 'COURIER',
-      title: 'Item Sealed in Tamper Bag & In Transit',
-      description: `Verified condition matching declaration. Sealed in tamper bag #${deal.tamperSeal?.sealId}. Dispatched along ${deal.routeCorridor || 'express corridor'}.`
+      title: 'Consignment Dispatched in Insured Transit',
+      description: `Tamper-sealed package #${deal.tamperSeal?.sealId} departed ${deal.city} hub towards ${deal.buyer?.city || 'destination'}.`
     });
   } else if (nextStatus === 'OUT_FOR_DELIVERY') {
     deal.status = 'OUT_FOR_DELIVERY';
@@ -1021,8 +1329,8 @@ export function advanceDealMilestone(dealId: string, nextStatus: DealStatus): Sa
       id: `aud_${Date.now()}`,
       timestamp: new Date().toISOString(),
       actor: 'COURIER',
-      title: 'Out for Doorstep Delivery',
-      description: `Assigned officer arrived at delivery locality. 10-minute doorstep unboxing window ready.`
+      title: 'Out for Doorstep Open-Box Delivery',
+      description: `Assigned officer arrived at delivery locality in ${deal.buyer?.city || 'destination'}. 10-minute doorstep unboxing window ready.`
     });
   } else if (nextStatus === 'COMPLETED') {
     deal.status = 'COMPLETED';
@@ -1041,9 +1349,20 @@ export function advanceDealMilestone(dealId: string, nextStatus: DealStatus): Sa
   }
 
   deal.updatedAt = new Date().toISOString();
-  deals[index] = deal;
+  if (index !== -1) {
+    deals[index] = deal;
+  } else {
+    deals.unshift(deal);
+  }
   saveStoredDeals(deals);
   syncDealToUserOrders(deal);
+  if (typeof window !== 'undefined') {
+    fetch('/api/deals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(deal),
+    }).catch(() => {});
+  }
   return deal;
 }
 
