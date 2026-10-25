@@ -382,7 +382,7 @@ export default function HomePage() {
       {/* 1. TOP HEADER: Clean, Professional, High-Trust Navigation                 */}
       {/* ========================================================================= */}
       <header className="w-full bg-white border-b border-[#E2E8F0] sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-8 lg:px-12 xl:px-16 py-2.5 sm:py-3 flex items-center justify-between gap-2">
           {/* Brand Logo */}
           <Link href="/in" className="flex items-center gap-2 sm:gap-2.5 group shrink-0 select-none">
             <SafeShipLogo className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 group-hover:scale-105 transition duration-200" />
@@ -805,353 +805,362 @@ export default function HomePage() {
       )}
 
       {/* ========================================================================= */}
-      {/* 3. HERO SECTION (LUXURY FINTECH AESTHETICS, AMBIENT DEPTH, PERFECT SCALING) */}
-      <section className="relative w-full max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-2 sm:pt-8 pb-2.5 sm:pb-10 overflow-hidden">
-        {/* Subtle Ambient Radial Glows */}
-        <div className="absolute -top-24 -right-16 w-80 sm:w-96 h-80 sm:h-96 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/2 -left-20 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+      {/* DESKTOP FIRST-FOLD WRAPPER: HERO + PARTNER MARQUEE + DEVICE CATEGORIES    */}
+      {/* Ensures desktop viewport shows cleanly down to Device Categories only     */}
+      {/* ========================================================================= */}
+      <div className="w-full lg:min-h-[calc(100vh-66px)] lg:flex lg:flex-col lg:justify-between">
+        {/* ========================================================================= */}
+        {/* 3. HERO SECTION (LUXURY FINTECH AESTHETICS, AMBIENT DEPTH, WIDE DESKTOP)  */}
+        {/* ========================================================================= */}
+        <section className="relative w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-2 sm:pt-4 lg:pt-5 pb-2.5 sm:pb-4 overflow-hidden">
+          {/* Subtle Ambient Radial Glows */}
+          <div className="absolute -top-24 -right-16 w-80 sm:w-96 h-80 sm:h-96 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-1/2 -left-20 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-6 lg:gap-x-10 lg:gap-y-5 items-center relative z-10">
-          
-          {/* Left Hero Content */}
-          <div className="lg:col-span-6 xl:col-span-5 space-y-2 sm:space-y-5">
-            
-            {/* Eyebrow Pill Badge (Dynamic Switching Tagline) */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setHeroTaglineIdx((prev) => (prev + 1) % HERO_TAGLINES.length)}
-                title="Click to switch tagline"
-                className="group inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full bg-blue-50/95 hover:bg-blue-100/80 border border-blue-200/90 shadow-2xs text-[11px] sm:text-xs font-extrabold text-[#0066FF] tracking-tight transition-all active:scale-95 cursor-pointer"
-              >
-                <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0066FF]"></span>
-                </span>
-                <span key={heroTaglineIdx} className="animate-in fade-in duration-300 text-left">
-                  {HERO_TAGLINES[heroTaglineIdx]}
-                </span>
-                <RefreshCw className="w-3 h-3 text-[#0066FF]/60 group-hover:text-[#0066FF] group-hover:rotate-180 transition-transform duration-300 shrink-0 ml-0.5" />
-              </button>
+          {/* Desktop Top Strip: Changing Tagline Pill + 4 Trust Tags on the Same Line */}
+          <div className="hidden sm:flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 lg:gap-3 mb-4 lg:mb-5 relative z-10">
+            {/* Left: Dynamic Switching Tagline Pill */}
+            <button
+              type="button"
+              onClick={() => setHeroTaglineIdx((prev) => (prev + 1) % HERO_TAGLINES.length)}
+              title="Click to switch tagline"
+              className="group inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-blue-50/95 hover:bg-blue-100/85 border border-blue-200/90 shadow-2xs text-xs font-extrabold text-[#0066FF] tracking-tight transition-all active:scale-95 cursor-pointer self-start xl:self-auto shrink-0"
+            >
+              <span className="relative flex h-2 w-2 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0066FF]"></span>
+              </span>
+              <span key={heroTaglineIdx} className="animate-in fade-in duration-300 text-left whitespace-nowrap">
+                {HERO_TAGLINES[heroTaglineIdx]}
+              </span>
+              <RefreshCw className="w-3 h-3 text-[#0066FF]/60 group-hover:text-[#0066FF] group-hover:rotate-180 transition-transform duration-300 shrink-0 ml-0.5" />
+            </button>
+
+            {/* Right: 4 Trust Tags Inline on the Same Top Bar */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-2.5 flex-1 xl:max-w-[940px] 2xl:max-w-[1020px]">
+              {/* Prop 1: Bank Escrow */}
+              <div className="px-3 py-1.5 rounded-xl bg-white/95 hover:bg-white border border-slate-200/85 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11.5px] lg:text-xs font-extrabold text-slate-900 leading-tight truncate">Bank Escrow</div>
+                  <div className="text-[10px] lg:text-[10.5px] text-slate-500 font-medium leading-tight truncate">Funds 100% locked in RBI nodal</div>
+                </div>
+              </div>
+
+              {/* Prop 2: PAN India */}
+              <div className="px-3 py-1.5 rounded-xl bg-white/95 hover:bg-white border border-slate-200/85 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                  <Truck className="w-3.5 h-3.5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11.5px] lg:text-xs font-extrabold text-slate-900 leading-tight truncate">PAN India</div>
+                  <div className="text-[10px] lg:text-[10.5px] text-slate-500 font-medium leading-tight truncate">19,000+ serviceable PIN codes</div>
+                </div>
+              </div>
+
+              {/* Prop 3: 10-Min Open-Box */}
+              <div className="px-3 py-1.5 rounded-xl bg-white/95 hover:bg-white border border-slate-200/85 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                  <Eye className="w-3.5 h-3.5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11.5px] lg:text-xs font-extrabold text-slate-900 leading-tight truncate">10-Min Open-Box</div>
+                  <div className="text-[10px] lg:text-[10.5px] text-slate-500 font-medium leading-tight truncate">Verify boot &amp; IMEI before paying</div>
+                </div>
+              </div>
+
+              {/* Prop 4: 24/7 Support */}
+              <div className="px-3 py-1.5 rounded-xl bg-white/95 hover:bg-white border border-slate-200/85 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
+                <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                  <Headphones className="w-3.5 h-3.5" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11.5px] lg:text-xs font-extrabold text-slate-900 leading-tight truncate">24/7 Support</div>
+                  <div className="text-[10px] lg:text-[10.5px] text-slate-500 font-medium leading-tight truncate">Live human escrow desk</div>
+                </div>
+              </div>
             </div>
+          </div>
 
-            {/* Mobile View: Calibrated Bold Headline on Left, Elongated Action Buttons on Right with Zero Collision (sm:hidden) */}
-            <div className="flex sm:hidden items-stretch justify-between gap-2 min-[400px]:gap-2.5 min-[450px]:gap-3 pt-0.5">
-              {/* Left: Punchy 3-Line Headline with Impactful Typography & Matched Height */}
-              <div className="flex-1 min-w-0 pr-0.5 flex flex-col justify-center">
-                <h1 className="text-[22.5px] min-[370px]:text-[24px] min-[410px]:text-[26px] min-[460px]:text-[28.5px] font-black tracking-[-0.04em] text-[#0F172A] leading-[1.06]">
-                  <span className="block whitespace-nowrap">Open Box Delivery</span>
-                  <span className="block whitespace-nowrap">&amp; Safe Shipping.</span>
-                  <span className="block whitespace-nowrap bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent drop-shadow-2xs">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-6 lg:gap-x-10 xl:gap-x-12 items-center relative z-10">
+            
+            {/* Left Hero Content */}
+            <div className="lg:col-span-6 xl:col-span-6 space-y-2 sm:space-y-4 lg:space-y-5">
+              
+              {/* Mobile-Only Eyebrow Pill Badge (Dynamic Switching Tagline) */}
+              <div className="flex sm:hidden items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setHeroTaglineIdx((prev) => (prev + 1) % HERO_TAGLINES.length)}
+                  title="Click to switch tagline"
+                  className="group inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50/95 hover:bg-blue-100/80 border border-blue-200/90 shadow-2xs text-[11px] font-extrabold text-[#0066FF] tracking-tight transition-all active:scale-95 cursor-pointer"
+                >
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0066FF]"></span>
+                  </span>
+                  <span key={heroTaglineIdx} className="animate-in fade-in duration-300 text-left">
+                    {HERO_TAGLINES[heroTaglineIdx]}
+                  </span>
+                  <RefreshCw className="w-3 h-3 text-[#0066FF]/60 group-hover:text-[#0066FF] group-hover:rotate-180 transition-transform duration-300 shrink-0 ml-0.5" />
+                </button>
+              </div>
+
+              {/* Mobile View: Calibrated Bold Headline on Left, Elongated Action Buttons on Right with Zero Collision (sm:hidden) */}
+              <div className="flex sm:hidden items-stretch justify-between gap-2 min-[400px]:gap-2.5 min-[450px]:gap-3 pt-0.5">
+                {/* Left: Punchy 3-Line Headline with Impactful Typography & Matched Height */}
+                <div className="flex-1 min-w-0 pr-0.5 flex flex-col justify-center">
+                  <h1 className="text-[22.5px] min-[370px]:text-[24px] min-[410px]:text-[26px] min-[460px]:text-[28.5px] font-black tracking-[-0.04em] text-[#0F172A] leading-[1.06]">
+                    <span className="block whitespace-nowrap">Open Box Delivery</span>
+                    <span className="block whitespace-nowrap">&amp; Safe Shipping.</span>
+                    <span className="block whitespace-nowrap bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent drop-shadow-2xs">
+                      Verify Then Pay.
+                    </span>
+                  </h1>
+                </div>
+
+                {/* Right: Elongated, Sleek Action Buttons (Less Tall, More Long, Bigger Text) */}
+                <div className="w-[148px] min-[380px]:w-[156px] min-[420px]:w-[168px] min-[460px]:w-[180px] shrink-0 flex flex-col justify-center gap-1.5 min-[400px]:gap-2">
+                  {/* Track Shipment on Top */}
+                  <Link
+                    href="/in/track"
+                    className="w-full h-[37px] min-[400px]:h-[39px] px-2.5 min-[400px]:px-3 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200/90 hover:border-slate-300 text-slate-900 font-black text-[13px] min-[400px]:text-[13.5px] min-[460px]:text-[14px] shadow-2xs hover:shadow-xs transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                  >
+                    <Search className="w-4 h-4 text-slate-700 shrink-0 stroke-[2.5]" />
+                    <span className="whitespace-nowrap">Track Shipment</span>
+                  </Link>
+
+                  {/* Book Delivery Under It with Minimal Live Indicator */}
+                  <Link
+                    href="/in/deals/new?type=send"
+                    className="relative group overflow-hidden w-full h-[37px] min-[400px]:h-[39px] px-2.5 min-[400px]:px-3 rounded-2xl bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#0038CC] hover:from-[#0052FF] hover:to-[#002FA7] text-white font-black text-[13px] min-[400px]:text-[13.5px] min-[460px]:text-[14px] shadow-md shadow-blue-500/25 hover:shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                  >
+                    <span className="relative flex h-2 w-2 shrink-0">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-70"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                    </span>
+                    <span className="whitespace-nowrap">Book Delivery &rarr;</span>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Mobile View: Hero Subtext Full-Width Under Headline & Buttons with Brand Blue Accent (sm:hidden) */}
+              <div className="block sm:hidden space-y-1 text-slate-600 leading-snug pt-0.5">
+                <p className="font-extrabold text-slate-900 flex items-center gap-1.5 text-[12.5px] xs:text-[13.5px]">
+                  <span className="w-2 h-2 rounded-full bg-[#0066FF] shrink-0 shadow-xs shadow-[#0066FF]/40"></span>
+                  <span>The safest way to ship &amp; buy electronics across India.</span>
+                </p>
+                <p className="text-slate-600 text-[11px] xs:text-[12px] leading-normal font-normal pl-3.5">
+                  Guaranteed 10-minute doorstep unboxing. Verify screen &amp; IMEI before payment &mdash; or reject on the spot for ₹0.
+                </p>
+              </div>
+
+              {/* Desktop View: Full Scaled Headline Utilizing Horizontal Space (hidden sm:block) */}
+              <div className="hidden sm:block space-y-1">
+                <h1 className="text-5xl lg:text-[58px] xl:text-[66px] 2xl:text-[72px] font-black tracking-[-0.035em] text-[#0F172A] leading-[1.05]">
+                  <span className="block">Open Box Delivery</span>
+                  <span className="block">&amp; Safe Shipping.</span>
+                  <span className="block bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
                     Verify Then Pay.
                   </span>
                 </h1>
               </div>
 
-              {/* Right: Elongated, Sleek Action Buttons (Less Tall, More Long, Bigger Text) */}
-              <div className="w-[148px] min-[380px]:w-[156px] min-[420px]:w-[168px] min-[460px]:w-[180px] shrink-0 flex flex-col justify-center gap-1.5 min-[400px]:gap-2">
-                {/* Track Shipment on Top */}
-                <Link
-                  href="/in/track"
-                  className="w-full h-[37px] min-[400px]:h-[39px] px-2.5 min-[400px]:px-3 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200/90 hover:border-slate-300 text-slate-900 font-black text-[13px] min-[400px]:text-[13.5px] min-[460px]:text-[14px] shadow-2xs hover:shadow-xs transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
-                >
-                  <Search className="w-4 h-4 text-slate-700 shrink-0 stroke-[2.5]" />
-                  <span className="whitespace-nowrap">Track Shipment</span>
-                </Link>
+              {/* Desktop View: Subtitle (hidden sm:block) */}
+              <div className="hidden sm:block space-y-1.5 text-slate-600 text-sm sm:text-base lg:text-[17px] xl:text-lg leading-relaxed max-w-2xl">
+                <p className="font-bold text-slate-900">
+                  The safest way to ship and buy electronics across India.
+                </p>
+                <p className="text-slate-600 font-normal">
+                  Guaranteed 10-minute doorstep unboxing. Verify boot, screen &amp; IMEI before releasing payment &mdash; or reject on the spot for ₹0.
+                </p>
+              </div>
 
-                {/* Book Delivery Under It with Minimal Live Indicator */}
+              {/* Desktop Action Buttons: Book Delivery & Track Shipment */}
+              <div className="hidden sm:flex items-center gap-3.5 pt-1">
                 <Link
                   href="/in/deals/new?type=send"
-                  className="relative group overflow-hidden w-full h-[37px] min-[400px]:h-[39px] px-2.5 min-[400px]:px-3 rounded-2xl bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#0038CC] hover:from-[#0052FF] hover:to-[#002FA7] text-white font-black text-[13px] min-[400px]:text-[13.5px] min-[460px]:text-[14px] shadow-md shadow-blue-500/25 hover:shadow-lg transition-all duration-200 active:scale-95 flex items-center justify-center gap-1.5 text-center cursor-pointer"
+                  className="py-3.5 lg:py-4 px-7 lg:px-8 rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-sm sm:text-base lg:text-[17px] shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2.5 text-center cursor-pointer"
                 >
-                  <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="relative flex h-2.5 w-2.5 shrink-0">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-70"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
                   </span>
-                  <span className="whitespace-nowrap">Book Delivery &rarr;</span>
+                  <span>Book Safe Delivery &rarr;</span>
+                </Link>
+
+                <Link
+                  href="/in/track"
+                  className="py-3.5 lg:py-4 px-6 lg:px-7 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-sm sm:text-base lg:text-[17px] shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
+                >
+                  <Search className="w-4.5 h-4.5 text-slate-500 shrink-0" />
+                  <span>Track Shipment</span>
                 </Link>
               </div>
-            </div>
 
-            {/* Mobile View: Hero Subtext Full-Width Under Headline & Buttons with Brand Blue Accent (sm:hidden) */}
-            <div className="block sm:hidden space-y-1 text-slate-600 leading-snug pt-0.5">
-              <p className="font-extrabold text-slate-900 flex items-center gap-1.5 text-[12.5px] xs:text-[13.5px]">
-                <span className="w-2 h-2 rounded-full bg-[#0066FF] shrink-0 shadow-xs shadow-[#0066FF]/40"></span>
-                <span>The safest way to ship &amp; buy electronics across India.</span>
-              </p>
-              <p className="text-slate-600 text-[11px] xs:text-[12px] leading-normal font-normal pl-3.5">
-                Guaranteed 10-minute doorstep unboxing. Verify screen &amp; IMEI before payment &mdash; or reject on the spot for ₹0.
-              </p>
-            </div>
-
-            {/* Desktop View: Full Headline (hidden sm:block) */}
-            <div className="hidden sm:block space-y-0.5 sm:space-y-1">
-              <h1 className="text-5xl lg:text-[58px] font-black tracking-[-0.035em] text-[#0F172A] leading-[1.08]">
-                <span className="block">Open Box Delivery</span>
-                <span className="block">&amp; Safe Shipping.</span>
-                <span className="block bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
-                  Verify Then Pay.
-                </span>
-              </h1>
-            </div>
-
-            {/* Desktop View: Subtitle (hidden sm:block) */}
-            <div className="hidden sm:block space-y-1 text-slate-600 text-sm sm:text-base leading-relaxed max-w-xl">
-              <p className="font-semibold text-slate-900">
-                The safest way to ship and buy electronics across India.
-              </p>
-              <p className="text-slate-600 font-normal">
-                Guaranteed 10-minute doorstep unboxing. Verify boot, screen &amp; IMEI before releasing payment &mdash; or reject on the spot for ₹0.
-              </p>
-            </div>
-
-            {/* Desktop Action Buttons: Book Delivery & Track Shipment */}
-            <div className="hidden sm:flex items-center gap-3 pt-1">
-              <Link
-                href="/in/deals/new?type=send"
-                className="py-3.5 px-7 rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-sm sm:text-base shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
-              >
-                <span className="relative flex h-2 w-2 shrink-0">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-70"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                </span>
-                <span>Book Safe Delivery &rarr;</span>
-              </Link>
-
-              <Link
-                href="/in/track"
-                className="py-3.5 px-5 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-sm sm:text-base shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
-              >
-                <Search className="w-4 h-4 text-slate-500 shrink-0" />
-                <span>Track Shipment</span>
-              </Link>
-            </div>
-
-            {/* Mobile: Ultra-Clean 1-Row 4-Column Trust Strip (Unified Brand Blue & Slate) */}
-            <div className="grid grid-cols-4 gap-1.5 sm:hidden pt-0.5">
-              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
-                <ShieldCheck className="w-4 h-4 text-[#0066FF] mb-0.5 shrink-0" />
-                <span className="text-[10.5px] xs:text-[11.5px] font-bold text-slate-900 leading-tight">Bank Escrow</span>
-                <span className="text-[9px] text-slate-500 font-medium leading-none mt-0.5">100% Locked</span>
+              {/* Mobile: Ultra-Clean 1-Row 4-Column Trust Strip (Unified Brand Blue & Slate) */}
+              <div className="grid grid-cols-4 gap-1.5 sm:hidden pt-0.5">
+                <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
+                  <ShieldCheck className="w-4 h-4 text-[#0066FF] mb-0.5 shrink-0" />
+                  <span className="text-[10.5px] xs:text-[11.5px] font-bold text-slate-900 leading-tight">Bank Escrow</span>
+                  <span className="text-[9px] text-slate-500 font-medium leading-none mt-0.5">100% Locked</span>
+                </div>
+                <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
+                  <Truck className="w-4 h-4 text-[#0066FF] mb-0.5 shrink-0" />
+                  <span className="text-[10.5px] xs:text-[11.5px] font-bold text-slate-900 leading-tight">PAN India</span>
+                  <span className="text-[9px] text-slate-500 font-medium leading-none mt-0.5">19k+ PINs</span>
+                </div>
+                <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
+                  <Eye className="w-4 h-4 text-[#0066FF] mb-0.5 shrink-0" />
+                  <span className="text-[10.5px] xs:text-[11.5px] font-bold text-slate-900 leading-tight">10-Min Check</span>
+                  <span className="text-[9px] text-slate-500 font-medium leading-none mt-0.5">Open-Box Audit</span>
+                </div>
+                <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
+                  <Headphones className="w-4 h-4 text-[#0066FF] mb-0.5 shrink-0" />
+                  <span className="text-[10.5px] xs:text-[11.5px] font-bold text-slate-900 leading-tight">24/7 Desk</span>
+                  <span className="text-[9px] text-slate-500 font-medium leading-none mt-0.5">Live Support</span>
+                </div>
               </div>
-              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
-                <Truck className="w-4 h-4 text-[#0066FF] mb-0.5 shrink-0" />
-                <span className="text-[10.5px] xs:text-[11.5px] font-bold text-slate-900 leading-tight">PAN India</span>
-                <span className="text-[9px] text-slate-500 font-medium leading-none mt-0.5">19k+ PINs</span>
-              </div>
-              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
-                <Eye className="w-4 h-4 text-[#0066FF] mb-0.5 shrink-0" />
-                <span className="text-[10.5px] xs:text-[11.5px] font-bold text-slate-900 leading-tight">10-Min Check</span>
-                <span className="text-[9px] text-slate-500 font-medium leading-none mt-0.5">Open-Box Audit</span>
-              </div>
-              <div className="flex flex-col items-center text-center p-1.5 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs">
-                <Headphones className="w-4 h-4 text-[#0066FF] mb-0.5 shrink-0" />
-                <span className="text-[10.5px] xs:text-[11.5px] font-bold text-slate-900 leading-tight">24/7 Desk</span>
-                <span className="text-[9px] text-slate-500 font-medium leading-none mt-0.5">Live Support</span>
-              </div>
+
             </div>
 
-          </div>
+            {/* Right Hero Visual Container: High-Converting Doorstep Escrow Card */}
+            <div className="lg:col-span-6 xl:col-span-6 w-full max-w-lg lg:max-w-none mx-auto">
+              <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-b from-white via-white to-slate-50 border border-slate-200/80 shadow-2xl shadow-blue-900/[0.06] p-1.5 sm:p-2.5 relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/[0.12]">
+                <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-black border border-slate-200/70">
+                  {/* Media Container: High-Definition WebP Thumbnail by default, interactive Video on click */}
+                  <div className="relative w-full aspect-[16/10] sm:aspect-video bg-black overflow-hidden flex items-center justify-center group select-none">
+                    {!isHeroVideoActive ? (
+                      /* 1. Default State: High-Converting WebP Photo Thumbnail with Minimal Play Button Only */
+                      <div 
+                        onClick={startHeroVideo}
+                        className="relative w-full h-full cursor-pointer flex items-center justify-center overflow-hidden"
+                      >
+                        <img
+                          src="/images/safeship_video_thumbnail.webp"
+                          alt="SafeShip Doorstep Open Box Inspection with Apple iPhone Verification"
+                          className="w-full h-full object-cover object-center group-hover:scale-[1.03] transition-transform duration-700 ease-out block"
+                        />
 
-          {/* Right Hero Visual Container: High-Converting Doorstep Escrow Card (Clean Without Bottom Tag Bar) */}
-          <div className="lg:col-span-6 xl:col-span-7 w-full max-w-lg lg:max-w-none mx-auto">
-            <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-b from-white via-white to-slate-50 border border-slate-200/80 shadow-2xl shadow-blue-900/[0.06] p-1.5 sm:p-2 relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/[0.12]">
-              <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-black border border-slate-200/70">
-                {/* Media Container: High-Definition WebP Thumbnail by default, interactive Video on click */}
-                <div className="relative w-full aspect-[16/10] sm:aspect-video bg-black overflow-hidden flex items-center justify-center group select-none">
-                  {!isHeroVideoActive ? (
-                    /* 1. Default State: High-Converting WebP Photo Thumbnail with Minimal Play Button Only */
-                    <div 
-                      onClick={startHeroVideo}
-                      className="relative w-full h-full cursor-pointer flex items-center justify-center overflow-hidden"
-                    >
-                      <img
-                        src="/images/safeship_video_thumbnail.webp"
-                        alt="SafeShip Doorstep Open Box Inspection with Apple iPhone Verification"
-                        className="w-full h-full object-cover object-center group-hover:scale-[1.03] transition-transform duration-700 ease-out block"
-                      />
-
-                      {/* Center: Minimal Sleek Play Affordance Only */}
-                      <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-500 flex items-center justify-center">
-                        <div className="relative flex items-center justify-center transform group-hover:scale-108 active:scale-95 transition-transform duration-300">
-                          <span className="absolute -inset-2 rounded-full bg-black/30 blur-lg opacity-80" />
-                          <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-black/75 hover:bg-black/90 backdrop-blur-md text-white flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.45)] border border-white/30 transition-all">
-                            <Play className="w-5 h-5 sm:w-6 sm:h-6 ml-0.5 fill-white text-white" />
+                        {/* Center: Minimal Sleek Play Affordance Only */}
+                        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-500 flex items-center justify-center">
+                          <div className="relative flex items-center justify-center transform group-hover:scale-108 active:scale-95 transition-transform duration-300">
+                            <span className="absolute -inset-2 rounded-full bg-black/30 blur-lg opacity-80" />
+                            <div className="relative w-12 h-12 sm:w-15 sm:h-15 rounded-full bg-black/75 hover:bg-black/90 backdrop-blur-md text-white flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.45)] border border-white/30 transition-all">
+                              <Play className="w-5 h-5 sm:w-6 sm:h-6 ml-0.5 fill-white text-white" />
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    /* 2. Active State: Video Playing with Minimal Play/Pause Button Only */
-                    <div className="relative w-full h-full bg-black flex items-center justify-center">
-                      <video
-                        ref={heroVideoRef}
-                        src="/video/safeship_promo_47s.mp4"
-                        poster="/images/safeship_video_thumbnail.webp"
-                        autoPlay
-                        muted={isHeroVideoMuted}
-                        playsInline
-                        preload="auto"
-                        onPlay={() => setIsHeroVideoPlaying(true)}
-                        onPause={() => setIsHeroVideoPlaying(false)}
-                        onEnded={() => {
-                          if (heroVideoRef.current) {
-                            heroVideoRef.current.currentTime = 0;
-                          }
-                          closeHeroVideo();
-                        }}
-                        className="w-full h-full object-cover cursor-pointer"
-                        onClick={toggleHeroVideoPlayPause}
-                      />
+                    ) : (
+                      /* 2. Active State: Video Playing with Minimal Play/Pause Button Only */
+                      <div className="relative w-full h-full bg-black flex items-center justify-center">
+                        <video
+                          ref={heroVideoRef}
+                          src="/video/safeship_promo_47s.mp4"
+                          poster="/images/safeship_video_thumbnail.webp"
+                          autoPlay
+                          muted={isHeroVideoMuted}
+                          playsInline
+                          preload="auto"
+                          onPlay={() => setIsHeroVideoPlaying(true)}
+                          onPause={() => setIsHeroVideoPlaying(false)}
+                          onEnded={() => {
+                            if (heroVideoRef.current) {
+                              heroVideoRef.current.currentTime = 0;
+                            }
+                            closeHeroVideo();
+                          }}
+                          className="w-full h-full object-cover cursor-pointer"
+                          onClick={toggleHeroVideoPlayPause}
+                        />
 
-                      {/* Minimal Play/Pause Control Button Only (No Sound or Close Icons) */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleHeroVideoPlayPause();
-                        }}
-                        title={isHeroVideoPlaying ? 'Pause video' : 'Play video'}
-                        aria-label={isHeroVideoPlaying ? 'Pause video' : 'Play video'}
-                        className="absolute bottom-3 right-3 sm:bottom-3.5 sm:right-3.5 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/75 hover:bg-black/90 backdrop-blur-md border border-white/25 text-white flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
-                      >
-                        {isHeroVideoPlaying ? (
-                          <Pause className="w-4 h-4 sm:w-4.5 sm:h-4.5 fill-white text-white" />
-                        ) : (
-                          <Play className="w-4 h-4 sm:w-4.5 sm:h-4.5 ml-0.5 fill-white text-white" />
-                        )}
-                      </button>
-                    </div>
-                  )}
+                        {/* Minimal Play/Pause Control Button Only (No Sound or Close Icons) */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleHeroVideoPlayPause();
+                          }}
+                          title={isHeroVideoPlaying ? 'Pause video' : 'Play video'}
+                          aria-label={isHeroVideoPlaying ? 'Pause video' : 'Play video'}
+                          className="absolute bottom-3 right-3 sm:bottom-3.5 sm:right-3.5 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/75 hover:bg-black/90 backdrop-blur-md border border-white/25 text-white flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
+                        >
+                          {isHeroVideoPlaying ? (
+                            <Pause className="w-4 h-4 sm:w-4.5 sm:h-4.5 fill-white text-white" />
+                          ) : (
+                            <Play className="w-4 h-4 sm:w-4.5 sm:h-4.5 ml-0.5 fill-white text-white" />
+                          )}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
+
           </div>
+        </section>
 
-          {/* Desktop: Full-Width 4-Card Trust Strip Stretched to the End Corner of the Video (Unified Brand Palette) */}
-          <div className="hidden sm:grid sm:grid-cols-4 lg:col-span-12 gap-3 lg:gap-4 pt-1">
-            {/* Prop 1: Bank-Secured Escrow */}
-            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/80 hover:border-blue-200 transition flex items-center gap-3 shadow-2xs">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-4.5 h-4.5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs sm:text-[13px] font-extrabold text-slate-900">Bank Escrow</div>
-                <div className="text-[11px] text-slate-500 font-medium">Funds 100% locked in RBI nodal</div>
-              </div>
-            </div>
+        {/* ========================================================================= */}
+        {/* 4. TRUSTED PARTNER LOGOS STRIP - COMPACT MARQUEE                          */}
+        {/* ========================================================================= */}
+        <PartnerMarquee />
 
-            {/* Prop 2: PAN India Delivery */}
-            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/80 hover:border-blue-200 transition flex items-center gap-3 shadow-2xs">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                <Truck className="w-4.5 h-4.5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs sm:text-[13px] font-extrabold text-slate-900">PAN India</div>
-                <div className="text-[11px] text-slate-500 font-medium">19,000+ serviceable PIN codes</div>
-              </div>
-            </div>
-
-            {/* Prop 3: 10-Min Doorstep Open-Box Audit */}
-            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/80 hover:border-blue-200 transition flex items-center gap-3 shadow-2xs">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                <Eye className="w-4.5 h-4.5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs sm:text-[13px] font-extrabold text-slate-900">10-Min Open-Box</div>
-                <div className="text-[11px] text-slate-500 font-medium">Verify boot &amp; IMEI before paying</div>
-              </div>
-            </div>
-
-            {/* Prop 4: Real People Support */}
-            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/80 hover:border-blue-200 transition flex items-center gap-3 shadow-2xs">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                <Headphones className="w-4.5 h-4.5" />
-              </div>
-              <div className="min-w-0">
-                <div className="text-xs sm:text-[13px] font-extrabold text-slate-900">24/7 Support</div>
-                <div className="text-[11px] text-slate-500 font-medium">Live human escrow desk</div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ========================================================================= */}
-      {/* 4. TRUSTED PARTNER LOGOS STRIP - COMPACT MARQUEE                          */}
-      {/* ========================================================================= */}
-      <PartnerMarquee />
-
-      {/* ========================================================================= */}
-      {/* 4B. DEVICE PRESETS: SHOP & SELL ELECTRONICS SAFELY (DIRECT TO DETAILS)    */}
-      {/* ========================================================================= */}
-      <section className="w-full max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-4 sm:pt-7 pb-2 sm:pb-4">
-        <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
-          <h2 className="text-[15px] sm:text-xl font-extrabold text-[#0F172A] tracking-tight">
-            Shop &amp; Sell Electronics Safely
-          </h2>
-          <Link
-            href="/in/deals/new?type=send&step=2"
-            className="inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-[#0066FF] hover:text-[#0052FF] transition shrink-0"
-          >
-            <span>All Categories</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        {/* 4 Symmetrical Device Category Cards (2x2 on mobile, 4-col on desktop) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
-          {HOME_DEVICE_PRESETS.map((preset) => (
+        {/* ========================================================================= */}
+        {/* 4B. DEVICE PRESETS: SHOP & SELL ELECTRONICS SAFELY (DIRECT TO DETAILS)    */}
+        {/* ========================================================================= */}
+        <section className="w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-3 sm:pt-4 pb-3 sm:pb-6">
+          <div className="flex items-center justify-between gap-2 mb-2.5 sm:mb-3.5">
+            <h2 className="text-[15px] sm:text-xl lg:text-[22px] font-extrabold text-[#0F172A] tracking-tight">
+              Shop &amp; Sell Electronics Safely
+            </h2>
             <Link
-              key={preset.id}
-              href={preset.href}
-              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white via-[#F8FAFC] to-[#EFF6FF]/60 hover:from-white hover:to-blue-50/80 border border-slate-200/90 hover:border-[#0066FF]/45 px-3.5 py-2.5 sm:px-4 sm:py-3.5 shadow-2xs hover:shadow-md transition-all duration-200 flex items-center justify-between gap-2 cursor-pointer"
+              href="/in/deals/new?type=send&step=2"
+              className="inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-[#0066FF] hover:text-[#0052FF] transition shrink-0"
             >
-              <div className="min-w-0 flex flex-col justify-center z-10">
-                <div className="inline-flex items-center gap-0.5 text-[13px] sm:text-[15px] font-extrabold text-[#0F172A] group-hover:text-[#0066FF] transition-colors">
-                  <span className="truncate">{preset.title}</span>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#0066FF] group-hover:translate-x-0.5 transition-all shrink-0" />
+              <span>All Categories</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {/* 4 Symmetrical Device Category Cards (2x2 on mobile, 4-col on desktop) */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
+            {HOME_DEVICE_PRESETS.map((preset) => (
+              <Link
+                key={preset.id}
+                href={preset.href}
+                className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-white via-[#F8FAFC] to-[#EFF6FF]/60 hover:from-white hover:to-blue-50/80 border border-slate-200/90 hover:border-[#0066FF]/45 px-3.5 py-2.5 sm:px-5 sm:py-4 lg:px-6 lg:py-4.5 shadow-2xs hover:shadow-md transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 cursor-pointer"
+              >
+                <div className="min-w-0 flex flex-col justify-center z-10">
+                  <div className="inline-flex items-center gap-0.5 text-[13px] sm:text-base lg:text-[17px] font-extrabold text-[#0F172A] group-hover:text-[#0066FF] transition-colors">
+                    <span className="truncate">{preset.title}</span>
+                    <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-[#0066FF] group-hover:translate-x-0.5 transition-all shrink-0" />
+                  </div>
+                  <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate mt-0.5">
+                    {preset.subtitle}
+                  </span>
                 </div>
-                <span className="text-[10px] sm:text-[11px] text-slate-500 font-medium truncate mt-0.5">
-                  {preset.subtitle}
-                </span>
-              </div>
-              <div className="w-14 h-11 sm:w-16 sm:h-13 shrink-0 flex items-center justify-end">
-                <img
-                  src={preset.image}
-                  alt={preset.title}
-                  className="max-w-full max-h-full object-contain group-hover:scale-108 transition-transform duration-300 drop-shadow-xs"
-                  loading="eager"
-                />
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        {/* Quick Sub-Category Pills for Extra Electronics */}
-        <div className="mt-2.5 flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-          {[
-            { label: 'Cameras & Lenses', href: '/in/deals/new?type=send&category=camera&step=2' },
-            { label: 'PS5 & Gaming Consoles', href: '/in/deals/new?type=send&category=gaming&step=2' },
-            { label: 'AirPods & Audio', href: '/in/deals/new?type=send&category=watch_audio&step=2' },
-            { label: '2-Way Device Exchange ⇄', href: '/in/deals/new?type=exchange&step=1' },
-          ].map((pill) => (
-            <Link
-              key={pill.label}
-              href={pill.href}
-              className="px-3 py-1.5 rounded-full bg-white hover:bg-[#0066FF] text-slate-700 hover:text-white border border-slate-200/90 hover:border-[#0066FF] text-[11px] font-bold whitespace-nowrap transition-all shadow-2xs shrink-0"
-            >
-              {pill.label}
-            </Link>
-          ))}
-        </div>
-      </section>
+                <div className="w-14 h-11 sm:w-18 sm:h-14 lg:w-22 lg:h-16 shrink-0 flex items-center justify-end">
+                  <img
+                    src={preset.image}
+                    alt={preset.title}
+                    className="max-w-full max-h-full object-contain group-hover:scale-108 transition-transform duration-300 drop-shadow-xs"
+                    loading="eager"
+                  />
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      </div>
 
       {/* ========================================================================= */}
       {/* 5. HOW SAFESHIP WORKS: 5-STEP MILESTONE FLOW & DOORSTEP VERIFICATION SPOTLIGHT */}
       {/* ========================================================================= */}
-      <section id="how-it-works" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16 space-y-8 sm:space-y-12">
+      <section id="how-it-works" className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-8 sm:py-16 space-y-8 sm:space-y-12">
         
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto space-y-2.5">
@@ -1324,7 +1333,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 6. YOUR TRANSACTION IS FULLY PROTECTED (PANEL 3 FROM MOCKUP)              */}
       {/* ========================================================================= */}
-      <section id="features" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-16 space-y-8 sm:space-y-10">
+      <section id="features" className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-8 sm:py-16 space-y-8 sm:space-y-10">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-2.5">
@@ -1445,7 +1454,7 @@ export default function HomePage() {
       {/* 7. NATIONAL IMPACT STATS STRIP (PURE BLACK)                               */}
       {/* ========================================================================= */}
       <section className="w-full bg-black text-white py-8 sm:py-10 border-y border-neutral-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 text-center">
             <div className="p-3 sm:p-0 rounded-2xl bg-neutral-950 sm:bg-transparent border border-neutral-800 sm:border-0 space-y-1">
               <div className="text-2xl sm:text-4xl font-black font-mono text-white">10-Min</div>
@@ -1477,7 +1486,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 8. DETAILED COURIER FARE & SLA ESTIMATOR (SECTION #PRICING)                */}
       {/* ========================================================================= */}
-      <section id="pricing" className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+      <section id="pricing" className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-12 sm:py-16">
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-sm space-y-8">
           
           <div className="max-w-2xl mx-auto text-center space-y-2">
@@ -1703,7 +1712,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 9. SAFESHIP VS TRADITIONAL CASH-ON-DELIVERY (COD) COMPARISON TABLE        */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <section className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-8 sm:py-12">
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-3xl mx-auto text-center space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0066FF] text-xs font-bold">
@@ -1857,7 +1866,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 10. CATEGORY-SPECIFIC INSPECTION PROTOCOLS                                */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-6">
+      <section className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-8 sm:py-12 space-y-6">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
             Specialized Doorstep Inspection Protocols
@@ -1935,7 +1944,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 10.5 NATIONWIDE OPEN BOX DELIVERY & SAFE SHIPPING CORRIDORS               */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 space-y-6">
+      <section className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-8 sm:py-10 space-y-6">
         <div className="bg-gradient-to-b from-white to-slate-50/70 rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-3xl mx-auto text-center space-y-2">
             <span className="text-[11px] font-bold uppercase tracking-wider bg-blue-50 text-[#0066FF] px-3 py-1 rounded-full border border-blue-100">
@@ -2006,7 +2015,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 10.8 WHY SAFESHIP IS INDIA'S BEST OPEN BOX DELIVERY & BEST COD SHIPPING   */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 space-y-6">
+      <section className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-8 sm:py-12 space-y-6">
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-3xl mx-auto text-center space-y-2">
             <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#0066FF] bg-blue-50 border border-blue-200 px-3 py-1 rounded-full inline-block">
@@ -2075,7 +2084,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 11. FREQUENTLY ASKED QUESTIONS (ACCORDION)                                */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+      <section className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-8 sm:py-12">
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-2xl mx-auto text-center space-y-2">
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
@@ -2156,7 +2165,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 12. HIGH-IMPACT CLOSING BANNER                                            */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+      <section className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pb-16">
         <div className="bg-gradient-to-r from-[#0066FF] to-blue-700 text-white rounded-3xl p-8 sm:p-10 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 text-center md:text-left">
             <h3 className="text-2xl sm:text-3xl font-black tracking-tight">

@@ -224,7 +224,7 @@ export const PartnerMarquee: React.FC = () => {
   return (
     <section
       aria-label="Shipping and Payment Partners"
-      className="w-full max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-2 pb-1 sm:py-3 select-none"
+      className="w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-2 pb-1 sm:py-2.5 select-none"
     >
       <div className="relative w-full overflow-hidden py-1.5 sm:py-2 border-y border-slate-200/60">
         {/* Soft Left/Right Edge Fades so logos never clip harshly */}
