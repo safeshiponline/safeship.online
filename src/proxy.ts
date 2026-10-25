@@ -106,7 +106,8 @@ export const config = {
      * Match all request paths except for the ones starting with:
      * - _next/static (static files)
      * - _next/image (image optimization files)
+     * - video/, images/, audio/, real_deal/ (direct CDN static & byte-range media streaming)
      */
-    '/((?!_next/static|_next/image).*)',
+    '/((?!_next/static|_next/image|video/|images/|audio/|real_deal/|favicon\\.ico|icon\\.svg|apple-icon\\.png).*)',
   ],
 };

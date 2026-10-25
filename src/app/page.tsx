@@ -136,22 +136,22 @@ export default function HomePage() {
   const startHeroVideo = () => {
     setIsHeroVideoActive(true);
     setIsHeroVideoPlaying(true);
-    setTimeout(() => {
-      if (heroVideoRef.current) {
-        if (heroVideoRef.current.ended) {
-          heroVideoRef.current.currentTime = 0;
-        }
-        heroVideoRef.current.muted = false;
-        setIsHeroVideoMuted(false);
-        heroVideoRef.current.play().catch(() => {
-          if (heroVideoRef.current) {
-            heroVideoRef.current.muted = true;
-            setIsHeroVideoMuted(true);
-            heroVideoRef.current.play().catch(() => {});
-          }
+    const v = heroVideoRef.current;
+    if (v) {
+      if (v.ended) {
+        v.currentTime = 0;
+      }
+      v.muted = false;
+      setIsHeroVideoMuted(false);
+      const playPromise = v.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          v.muted = true;
+          setIsHeroVideoMuted(true);
+          v.play().catch(() => {});
         });
       }
-    }, 60);
+    }
   };
 
   const toggleHeroVideoPlayPause = () => {
@@ -1029,11 +1029,33 @@ export default function HomePage() {
             <div className="lg:col-span-7 xl:col-span-7 w-full max-w-lg lg:max-w-none mx-auto">
               <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-b from-white via-white to-slate-50 border border-slate-200/80 shadow-2xl shadow-blue-900/[0.06] p-1.5 sm:p-2.5 relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/[0.12]">
                 <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-black border border-slate-200/70">
-                  {/* Media Container: High-Definition WebP Thumbnail by default, interactive Video on click */}
+                  {/* Media Container: High-Definition WebP Thumbnail overlay + pre-mounted Video for instant playback */}
                   <div className="relative w-full aspect-[16/10] sm:aspect-video bg-black overflow-hidden flex items-center justify-center group select-none">
+                    {/* Pre-mounted Video Element so click-to-play runs synchronously in the user gesture */}
+                    <video
+                      ref={heroVideoRef}
+                      src="/video/safeship-promo.mp4"
+                      poster="/images/safeship_video_thumbnail.webp"
+                      muted={isHeroVideoMuted}
+                      playsInline
+                      preload="metadata"
+                      onPlay={() => setIsHeroVideoPlaying(true)}
+                      onPause={() => setIsHeroVideoPlaying(false)}
+                      onEnded={() => {
+                        if (heroVideoRef.current) {
+                          heroVideoRef.current.currentTime = 0;
+                        }
+                        closeHeroVideo();
+                      }}
+                      className={`w-full h-full object-cover cursor-pointer ${
+                        isHeroVideoActive ? 'block' : 'hidden'
+                      }`}
+                      onClick={toggleHeroVideoPlayPause}
+                    />
+
                     {!isHeroVideoActive ? (
                       /* 1. Default State: High-Converting WebP Photo Thumbnail with Minimal Play Button Only */
-                      <div 
+                      <div
                         onClick={startHeroVideo}
                         className="relative w-full h-full cursor-pointer flex items-center justify-center overflow-hidden"
                       >
@@ -1054,46 +1076,23 @@ export default function HomePage() {
                         </div>
                       </div>
                     ) : (
-                      /* 2. Active State: Video Playing with Minimal Play/Pause Button Only */
-                      <div className="relative w-full h-full bg-black flex items-center justify-center">
-                        <video
-                          ref={heroVideoRef}
-                          src="/video/safeship_promo_47s.mp4"
-                          poster="/images/safeship_video_thumbnail.webp"
-                          autoPlay
-                          muted={isHeroVideoMuted}
-                          playsInline
-                          preload="auto"
-                          onPlay={() => setIsHeroVideoPlaying(true)}
-                          onPause={() => setIsHeroVideoPlaying(false)}
-                          onEnded={() => {
-                            if (heroVideoRef.current) {
-                              heroVideoRef.current.currentTime = 0;
-                            }
-                            closeHeroVideo();
-                          }}
-                          className="w-full h-full object-cover cursor-pointer"
-                          onClick={toggleHeroVideoPlayPause}
-                        />
-
-                        {/* Minimal Play/Pause Control Button Only (No Sound or Close Icons) */}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            toggleHeroVideoPlayPause();
-                          }}
-                          title={isHeroVideoPlaying ? 'Pause video' : 'Play video'}
-                          aria-label={isHeroVideoPlaying ? 'Pause video' : 'Play video'}
-                          className="absolute bottom-3 right-3 sm:bottom-3.5 sm:right-3.5 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/75 hover:bg-black/90 backdrop-blur-md border border-white/25 text-white flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
-                        >
-                          {isHeroVideoPlaying ? (
-                            <Pause className="w-4 h-4 sm:w-4.5 sm:h-4.5 fill-white text-white" />
-                          ) : (
-                            <Play className="w-4 h-4 sm:w-4.5 sm:h-4.5 ml-0.5 fill-white text-white" />
-                          )}
-                        </button>
-                      </div>
+                      /* 2. Active State: Minimal Play/Pause Control Button Only (No Sound or Close Icons) */
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleHeroVideoPlayPause();
+                        }}
+                        title={isHeroVideoPlaying ? 'Pause video' : 'Play video'}
+                        aria-label={isHeroVideoPlaying ? 'Pause video' : 'Play video'}
+                        className="absolute bottom-3 right-3 sm:bottom-3.5 sm:right-3.5 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-black/75 hover:bg-black/90 backdrop-blur-md border border-white/25 text-white flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
+                      >
+                        {isHeroVideoPlaying ? (
+                          <Pause className="w-4 h-4 sm:w-4.5 sm:h-4.5 fill-white text-white" />
+                        ) : (
+                          <Play className="w-4 h-4 sm:w-4.5 sm:h-4.5 ml-0.5 fill-white text-white" />
+                        )}
+                      </button>
                     )}
                   </div>
                 </div>
