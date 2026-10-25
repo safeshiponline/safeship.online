@@ -806,80 +806,79 @@ export default function HomePage() {
 
       {/* ========================================================================= */}
       {/* DESKTOP FIRST-FOLD WRAPPER: HERO + PARTNER MARQUEE + DEVICE CATEGORIES    */}
-      {/* Ensures desktop viewport shows cleanly down to Device Categories only     */}
+      {/* Natural tight vertical flow with zero empty gaps in the middle            */}
       {/* ========================================================================= */}
-      <div className="w-full lg:min-h-[calc(100vh-66px)] lg:flex lg:flex-col lg:justify-between">
+      <div className="w-full">
         {/* ========================================================================= */}
         {/* 3. HERO SECTION (LUXURY FINTECH AESTHETICS, AMBIENT DEPTH, WIDE DESKTOP)  */}
         {/* ========================================================================= */}
-        <section className="relative w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-2 sm:pt-4 lg:pt-5 pb-2.5 sm:pb-4 overflow-hidden">
+        <section className="relative w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-2 sm:pt-5 lg:pt-6 pb-2.5 sm:pb-5 overflow-hidden">
           {/* Subtle Ambient Radial Glows */}
           <div className="absolute -top-24 -right-16 w-80 sm:w-96 h-80 sm:h-96 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute top-1/2 -left-20 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
-          {/* Desktop Top Strip: Changing Tagline Pill + 4 Trust Tags on the Same Line */}
-          <div className="hidden sm:flex flex-col xl:flex-row xl:items-center justify-between gap-2.5 lg:gap-3 mb-4 lg:mb-5 relative z-10">
-            {/* Left: Dynamic Switching Tagline Pill */}
+          {/* Desktop Top Strip: 12-Column Full-Width Grid (No Empty Space in Middle) */}
+          <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-12 gap-2.5 lg:gap-3 items-stretch mb-5 lg:mb-6 relative z-10">
+            {/* Cols 1-4: Dynamic Switching Tagline Pill (Full Width of 4 Cols, Matched Height) */}
             <button
               type="button"
               onClick={() => setHeroTaglineIdx((prev) => (prev + 1) % HERO_TAGLINES.length)}
               title="Click to switch tagline"
-              className="group inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-blue-50/95 hover:bg-blue-100/85 border border-blue-200/90 shadow-2xs text-xs font-extrabold text-[#0066FF] tracking-tight transition-all active:scale-95 cursor-pointer self-start xl:self-auto shrink-0"
+              className="sm:col-span-2 lg:col-span-4 group w-full h-full flex items-center justify-between gap-2.5 px-4 py-2.5 rounded-2xl bg-blue-50/95 hover:bg-blue-100/85 border border-blue-200/90 shadow-2xs text-xs lg:text-[13px] font-extrabold text-[#0066FF] tracking-tight transition-all active:scale-[0.99] cursor-pointer"
             >
-              <span className="relative flex h-2 w-2 shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#0066FF]"></span>
-              </span>
-              <span key={heroTaglineIdx} className="animate-in fade-in duration-300 text-left whitespace-nowrap">
-                {HERO_TAGLINES[heroTaglineIdx]}
-              </span>
-              <RefreshCw className="w-3 h-3 text-[#0066FF]/60 group-hover:text-[#0066FF] group-hover:rotate-180 transition-transform duration-300 shrink-0 ml-0.5" />
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#0066FF]"></span>
+                </span>
+                <span key={heroTaglineIdx} className="animate-in fade-in duration-300 text-left truncate">
+                  {HERO_TAGLINES[heroTaglineIdx]}
+                </span>
+              </div>
+              <RefreshCw className="w-3.5 h-3.5 text-[#0066FF]/70 group-hover:text-[#0066FF] group-hover:rotate-180 transition-transform duration-300 shrink-0" />
             </button>
 
-            {/* Right: 4 Trust Tags Inline on the Same Top Bar */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 lg:gap-2.5 flex-1 xl:max-w-[940px] 2xl:max-w-[1020px]">
-              {/* Prop 1: Bank Escrow */}
-              <div className="px-3 py-1.5 rounded-xl bg-white/95 hover:bg-white border border-slate-200/85 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[11.5px] lg:text-xs font-extrabold text-slate-900 leading-tight truncate">Bank Escrow</div>
-                  <div className="text-[10px] lg:text-[10.5px] text-slate-500 font-medium leading-tight truncate">Funds 100% locked in RBI nodal</div>
-                </div>
+            {/* Cols 5-6: Bank Escrow */}
+            <div className="lg:col-span-2 px-3.5 py-2 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4 h-4" />
               </div>
-
-              {/* Prop 2: PAN India */}
-              <div className="px-3 py-1.5 rounded-xl bg-white/95 hover:bg-white border border-slate-200/85 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                  <Truck className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[11.5px] lg:text-xs font-extrabold text-slate-900 leading-tight truncate">PAN India</div>
-                  <div className="text-[10px] lg:text-[10.5px] text-slate-500 font-medium leading-tight truncate">19,000+ serviceable PIN codes</div>
-                </div>
+              <div className="min-w-0">
+                <div className="text-xs lg:text-[13px] font-extrabold text-slate-900 leading-tight truncate">Bank Escrow</div>
+                <div className="text-[10.5px] lg:text-[11px] text-slate-500 font-medium leading-tight truncate">Funds 100% locked in RBI nodal</div>
               </div>
+            </div>
 
-              {/* Prop 3: 10-Min Open-Box */}
-              <div className="px-3 py-1.5 rounded-xl bg-white/95 hover:bg-white border border-slate-200/85 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                  <Eye className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[11.5px] lg:text-xs font-extrabold text-slate-900 leading-tight truncate">10-Min Open-Box</div>
-                  <div className="text-[10px] lg:text-[10.5px] text-slate-500 font-medium leading-tight truncate">Verify boot &amp; IMEI before paying</div>
-                </div>
+            {/* Cols 7-8: PAN India */}
+            <div className="lg:col-span-2 px-3.5 py-2 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <Truck className="w-4 h-4" />
               </div>
+              <div className="min-w-0">
+                <div className="text-xs lg:text-[13px] font-extrabold text-slate-900 leading-tight truncate">PAN India</div>
+                <div className="text-[10.5px] lg:text-[11px] text-slate-500 font-medium leading-tight truncate">19,000+ serviceable PIN codes</div>
+              </div>
+            </div>
 
-              {/* Prop 4: 24/7 Support */}
-              <div className="px-3 py-1.5 rounded-xl bg-white/95 hover:bg-white border border-slate-200/85 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
-                <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                  <Headphones className="w-3.5 h-3.5" />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-[11.5px] lg:text-xs font-extrabold text-slate-900 leading-tight truncate">24/7 Support</div>
-                  <div className="text-[10px] lg:text-[10.5px] text-slate-500 font-medium leading-tight truncate">Live human escrow desk</div>
-                </div>
+            {/* Cols 9-10: 10-Min Open-Box */}
+            <div className="lg:col-span-2 px-3.5 py-2 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <Eye className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs lg:text-[13px] font-extrabold text-slate-900 leading-tight truncate">10-Min Open-Box</div>
+                <div className="text-[10.5px] lg:text-[11px] text-slate-500 font-medium leading-tight truncate">Verify boot &amp; IMEI before paying</div>
+              </div>
+            </div>
+
+            {/* Cols 11-12: 24/7 Support */}
+            <div className="lg:col-span-2 px-3.5 py-2 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <Headphones className="w-4 h-4" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs lg:text-[13px] font-extrabold text-slate-900 leading-tight truncate">24/7 Support</div>
+                <div className="text-[10.5px] lg:text-[11px] text-slate-500 font-medium leading-tight truncate">Live human escrow desk</div>
               </div>
             </div>
           </div>
@@ -887,7 +886,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-6 lg:gap-x-10 xl:gap-x-12 items-center relative z-10">
             
             {/* Left Hero Content */}
-            <div className="lg:col-span-6 xl:col-span-6 space-y-2 sm:space-y-4 lg:space-y-5">
+            <div className="lg:col-span-5 xl:col-span-5 space-y-2 sm:space-y-5 lg:space-y-6">
               
               {/* Mobile-Only Eyebrow Pill Badge (Dynamic Switching Tagline) */}
               <div className="flex sm:hidden items-center gap-2 flex-wrap">
@@ -1027,7 +1026,7 @@ export default function HomePage() {
             </div>
 
             {/* Right Hero Visual Container: High-Converting Doorstep Escrow Card */}
-            <div className="lg:col-span-6 xl:col-span-6 w-full max-w-lg lg:max-w-none mx-auto">
+            <div className="lg:col-span-7 xl:col-span-7 w-full max-w-lg lg:max-w-none mx-auto">
               <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-b from-white via-white to-slate-50 border border-slate-200/80 shadow-2xl shadow-blue-900/[0.06] p-1.5 sm:p-2.5 relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/[0.12]">
                 <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-black border border-slate-200/70">
                   {/* Media Container: High-Definition WebP Thumbnail by default, interactive Video on click */}
@@ -1112,9 +1111,9 @@ export default function HomePage() {
         {/* ========================================================================= */}
         {/* 4B. DEVICE PRESETS: SHOP & SELL ELECTRONICS SAFELY (DIRECT TO DETAILS)    */}
         {/* ========================================================================= */}
-        <section className="w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-3 sm:pt-4 pb-3 sm:pb-6">
-          <div className="flex items-center justify-between gap-2 mb-2.5 sm:mb-3.5">
-            <h2 className="text-[15px] sm:text-xl lg:text-[22px] font-extrabold text-[#0F172A] tracking-tight">
+        <section className="w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-3 sm:pt-5 pb-3 sm:pb-8">
+          <div className="flex items-center justify-between gap-2 mb-2.5 sm:mb-4">
+            <h2 className="text-[15px] sm:text-xl lg:text-2xl font-extrabold text-[#0F172A] tracking-tight">
               Shop &amp; Sell Electronics Safely
             </h2>
             <Link
@@ -1132,18 +1131,18 @@ export default function HomePage() {
               <Link
                 key={preset.id}
                 href={preset.href}
-                className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-white via-[#F8FAFC] to-[#EFF6FF]/60 hover:from-white hover:to-blue-50/80 border border-slate-200/90 hover:border-[#0066FF]/45 px-3.5 py-2.5 sm:px-5 sm:py-4 lg:px-6 lg:py-4.5 shadow-2xs hover:shadow-md transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 cursor-pointer"
+                className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-white via-[#F8FAFC] to-[#EFF6FF]/60 hover:from-white hover:to-blue-50/80 border border-slate-200/90 hover:border-[#0066FF]/45 px-3.5 py-2.5 sm:px-5 sm:py-4.5 lg:px-6 lg:py-5 shadow-2xs hover:shadow-md transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 cursor-pointer"
               >
                 <div className="min-w-0 flex flex-col justify-center z-10">
-                  <div className="inline-flex items-center gap-0.5 text-[13px] sm:text-base lg:text-[17px] font-extrabold text-[#0F172A] group-hover:text-[#0066FF] transition-colors">
+                  <div className="inline-flex items-center gap-0.5 text-[13px] sm:text-base lg:text-lg font-extrabold text-[#0F172A] group-hover:text-[#0066FF] transition-colors">
                     <span className="truncate">{preset.title}</span>
                     <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-[#0066FF] group-hover:translate-x-0.5 transition-all shrink-0" />
                   </div>
-                  <span className="text-[10px] sm:text-xs text-slate-500 font-medium truncate mt-0.5">
+                  <span className="text-[10px] sm:text-xs lg:text-[13px] text-slate-500 font-medium truncate mt-0.5">
                     {preset.subtitle}
                   </span>
                 </div>
-                <div className="w-14 h-11 sm:w-18 sm:h-14 lg:w-22 lg:h-16 shrink-0 flex items-center justify-end">
+                <div className="w-14 h-11 sm:w-20 sm:h-15 lg:w-24 lg:h-18 shrink-0 flex items-center justify-end">
                   <img
                     src={preset.image}
                     alt={preset.title}
@@ -1160,7 +1159,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 5. HOW SAFESHIP WORKS: 5-STEP MILESTONE FLOW & DOORSTEP VERIFICATION SPOTLIGHT */}
       {/* ========================================================================= */}
-      <section id="how-it-works" className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-8 sm:py-16 space-y-8 sm:space-y-12">
+      <section id="how-it-works" className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pt-10 sm:pt-20 lg:pt-24 pb-8 sm:pb-16 space-y-8 sm:space-y-12">
         
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto space-y-2.5">
