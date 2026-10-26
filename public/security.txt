@@ -1,0 +1,9 @@
+# SafeShip Technologies India Pvt. Ltd. — RFC 9116 Security Disclosure
+Contact: mailto:security@safeship.online
+Contact: mailto:grievance@safeship.online
+Contact: tel:+91-1800-890-2829
+Expires: 2027-12-31T23:59:59.000Z
+Preferred-Languages: en, hi
+Canonical: https://safeship.online/.well-known/security.txt
+Policy: https://safeship.online/in/safety
+Acknowledgments: https://safeship.online/in/safety

@@ -381,8 +381,8 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 1. TOP HEADER: Clean, Professional, High-Trust Navigation                 */}
       {/* ========================================================================= */}
-      <header className="w-full bg-white border-b border-[#E2E8F0] sticky top-0 z-40">
-        <div className="max-w-[1600px] mx-auto px-3 sm:px-8 lg:px-12 xl:px-16 py-2.5 sm:py-3 flex items-center justify-between gap-2">
+      <header className="w-full bg-white/95 backdrop-blur-md border-b border-[#E2E8F0] sticky top-0 z-40">
+        <div className="max-w-[1680px] mx-auto px-3.5 sm:px-6 lg:px-8 xl:px-10 py-2.5 sm:py-3 flex items-center justify-between gap-2">
           {/* Brand Logo */}
           <Link href="/in" className="flex items-center gap-2 sm:gap-2.5 group shrink-0 select-none">
             <SafeShipLogo className="w-8 h-8 sm:w-10 sm:h-10 shrink-0 group-hover:scale-105 transition duration-200" />
@@ -806,25 +806,25 @@ export default function HomePage() {
 
       {/* ========================================================================= */}
       {/* DESKTOP FIRST-FOLD WRAPPER: HERO + PARTNER MARQUEE + DEVICE CATEGORIES    */}
-      {/* Natural tight vertical flow with zero empty gaps in the middle            */}
+      {/* Calibrated wide desktop layout with balanced proportions & zero empty gap */}
       {/* ========================================================================= */}
-      <div className="w-full">
+      <div className="w-full lg:min-h-[calc(100vh-64px)] lg:flex lg:flex-col lg:justify-between overflow-hidden">
         {/* ========================================================================= */}
         {/* 3. HERO SECTION (LUXURY FINTECH AESTHETICS, AMBIENT DEPTH, WIDE DESKTOP)  */}
         {/* ========================================================================= */}
-        <section className="relative w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-2 sm:pt-5 lg:pt-6 pb-2.5 sm:pb-5 overflow-hidden">
+        <section className="relative w-full max-w-[1680px] mx-auto px-3.5 sm:px-6 lg:px-8 xl:px-10 pt-2 sm:pt-4 lg:pt-5 pb-2.5 sm:pb-4 lg:flex-1 lg:flex lg:flex-col lg:justify-between">
           {/* Subtle Ambient Radial Glows */}
           <div className="absolute -top-24 -right-16 w-80 sm:w-96 h-80 sm:h-96 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute top-1/2 -left-20 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
-          {/* Desktop Top Strip: 12-Column Full-Width Grid (No Empty Space in Middle) */}
-          <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-12 gap-2.5 lg:gap-3 items-stretch mb-5 lg:mb-6 relative z-10">
-            {/* Cols 1-4: Dynamic Switching Tagline Pill (Full Width of 4 Cols, Matched Height) */}
+          {/* Desktop Top Strip: Proportional 5-Column Grid (Zero Truncation & Zero Empty Gap) */}
+          <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr_1fr] gap-2.5 lg:gap-3 items-stretch mb-4 lg:mb-5 relative z-10">
+            {/* Col 1: Dynamic Switching Tagline Pill */}
             <button
               type="button"
               onClick={() => setHeroTaglineIdx((prev) => (prev + 1) % HERO_TAGLINES.length)}
               title="Click to switch tagline"
-              className="sm:col-span-2 lg:col-span-4 group w-full h-full flex items-center justify-between gap-2.5 px-4 py-2.5 rounded-2xl bg-blue-50/95 hover:bg-blue-100/85 border border-blue-200/90 shadow-2xs text-xs lg:text-[13px] font-extrabold text-[#0066FF] tracking-tight transition-all active:scale-[0.99] cursor-pointer"
+              className="sm:col-span-2 lg:col-span-1 group w-full h-full flex items-center justify-between gap-2.5 px-4 py-2.5 rounded-2xl bg-blue-50/95 hover:bg-blue-100/85 border border-blue-200/90 shadow-2xs text-xs xl:text-[13px] font-extrabold text-[#0066FF] tracking-tight transition-all active:scale-[0.99] cursor-pointer"
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="relative flex h-2.5 w-2.5 shrink-0">
@@ -838,55 +838,55 @@ export default function HomePage() {
               <RefreshCw className="w-3.5 h-3.5 text-[#0066FF]/70 group-hover:text-[#0066FF] group-hover:rotate-180 transition-transform duration-300 shrink-0" />
             </button>
 
-            {/* Cols 5-6: Bank Escrow */}
-            <div className="lg:col-span-2 px-3.5 py-2 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
+            {/* Col 2: Bank Escrow */}
+            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
               <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
                 <ShieldCheck className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs lg:text-[13px] font-extrabold text-slate-900 leading-tight truncate">Bank Escrow</div>
-                <div className="text-[10.5px] lg:text-[11px] text-slate-500 font-medium leading-tight truncate">Funds 100% locked in RBI nodal</div>
+                <div className="text-xs xl:text-[13px] font-extrabold text-slate-900 leading-tight">Bank Escrow</div>
+                <div className="text-[10.5px] xl:text-[11.5px] text-slate-500 font-medium leading-tight truncate">Funds 100% locked in RBI nodal</div>
               </div>
             </div>
 
-            {/* Cols 7-8: PAN India */}
-            <div className="lg:col-span-2 px-3.5 py-2 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
+            {/* Col 3: PAN India */}
+            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
               <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
                 <Truck className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs lg:text-[13px] font-extrabold text-slate-900 leading-tight truncate">PAN India</div>
-                <div className="text-[10.5px] lg:text-[11px] text-slate-500 font-medium leading-tight truncate">19,000+ serviceable PIN codes</div>
+                <div className="text-xs xl:text-[13px] font-extrabold text-slate-900 leading-tight">PAN India</div>
+                <div className="text-[10.5px] xl:text-[11.5px] text-slate-500 font-medium leading-tight truncate">19,000+ serviceable PIN codes</div>
               </div>
             </div>
 
-            {/* Cols 9-10: 10-Min Open-Box */}
-            <div className="lg:col-span-2 px-3.5 py-2 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
+            {/* Col 4: 10-Min Open-Box */}
+            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
               <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
                 <Eye className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs lg:text-[13px] font-extrabold text-slate-900 leading-tight truncate">10-Min Open-Box</div>
-                <div className="text-[10.5px] lg:text-[11px] text-slate-500 font-medium leading-tight truncate">Verify boot &amp; IMEI before paying</div>
+                <div className="text-xs xl:text-[13px] font-extrabold text-slate-900 leading-tight">10-Min Open-Box</div>
+                <div className="text-[10.5px] xl:text-[11.5px] text-slate-500 font-medium leading-tight truncate">Verify boot &amp; IMEI before paying</div>
               </div>
             </div>
 
-            {/* Cols 11-12: 24/7 Support */}
-            <div className="lg:col-span-2 px-3.5 py-2 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
+            {/* Col 5: 24/7 Support */}
+            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
               <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
                 <Headphones className="w-4 h-4" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs lg:text-[13px] font-extrabold text-slate-900 leading-tight truncate">24/7 Support</div>
-                <div className="text-[10.5px] lg:text-[11px] text-slate-500 font-medium leading-tight truncate">Live human escrow desk</div>
+                <div className="text-xs xl:text-[13px] font-extrabold text-slate-900 leading-tight">24/7 Support</div>
+                <div className="text-[10.5px] xl:text-[11.5px] text-slate-500 font-medium leading-tight truncate">Live human escrow desk</div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-6 lg:gap-x-10 xl:gap-x-12 items-center relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-6 lg:gap-x-8 xl:gap-x-10 items-center relative z-10 my-auto">
             
-            {/* Left Hero Content */}
-            <div className="lg:col-span-5 xl:col-span-5 space-y-2 sm:space-y-5 lg:space-y-6">
+            {/* Left Hero Content (Balanced 6 Columns on Desktop so 3-line Headline Spans Cleanly) */}
+            <div className="lg:col-span-6 xl:col-span-6 space-y-2 sm:space-y-4 lg:space-y-5">
               
               {/* Mobile-Only Eyebrow Pill Badge (Dynamic Switching Tagline) */}
               <div className="flex sm:hidden items-center gap-2 flex-wrap">
@@ -956,21 +956,21 @@ export default function HomePage() {
                 </p>
               </div>
 
-              {/* Desktop View: Full Scaled Headline Utilizing Horizontal Space (hidden sm:block) */}
+              {/* Desktop View: Crisp 3-Line Scaled Headline Utilizing Horizontal Space (hidden sm:block) */}
               <div className="hidden sm:block space-y-1">
-                <h1 className="text-5xl lg:text-[58px] xl:text-[66px] 2xl:text-[72px] font-black tracking-[-0.035em] text-[#0F172A] leading-[1.05]">
-                  <span className="block">Open Box Delivery</span>
-                  <span className="block">&amp; Safe Shipping.</span>
-                  <span className="block bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
+                <h1 className="text-4xl sm:text-5xl lg:text-[48px] xl:text-[56px] 2xl:text-[64px] font-black tracking-[-0.035em] text-[#0F172A] leading-[1.06]">
+                  <span className="block whitespace-nowrap">Open Box Delivery</span>
+                  <span className="block whitespace-nowrap">&amp; Safe Shipping.</span>
+                  <span className="block whitespace-nowrap bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
                     Verify Then Pay.
                   </span>
                 </h1>
               </div>
 
               {/* Desktop View: Subtitle (hidden sm:block) */}
-              <div className="hidden sm:block space-y-1.5 text-slate-600 text-sm sm:text-base lg:text-[17px] xl:text-lg leading-relaxed max-w-2xl">
+              <div className="hidden sm:block space-y-1.5 text-slate-600 text-sm sm:text-base lg:text-[16.5px] xl:text-[17.5px] leading-relaxed max-w-2xl">
                 <p className="font-bold text-slate-900">
-                  The safest way to ship and buy electronics across India.
+                  India&apos;s #1 open box courier &amp; safe shipping company for high-value electronics.
                 </p>
                 <p className="text-slate-600 font-normal">
                   Guaranteed 10-minute doorstep unboxing. Verify boot, screen &amp; IMEI before releasing payment &mdash; or reject on the spot for ₹0.
@@ -981,7 +981,7 @@ export default function HomePage() {
               <div className="hidden sm:flex items-center gap-3.5 pt-1">
                 <Link
                   href="/in/deals/new?type=send"
-                  className="py-3.5 lg:py-4 px-7 lg:px-8 rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-sm sm:text-base lg:text-[17px] shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2.5 text-center cursor-pointer"
+                  className="py-3.5 lg:py-4 px-7 lg:px-8 rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-sm sm:text-base lg:text-[16.5px] shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2.5 text-center cursor-pointer"
                 >
                   <span className="relative flex h-2.5 w-2.5 shrink-0">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-70"></span>
@@ -992,11 +992,27 @@ export default function HomePage() {
 
                 <Link
                   href="/in/track"
-                  className="py-3.5 lg:py-4 px-6 lg:px-7 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-sm sm:text-base lg:text-[17px] shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
+                  className="py-3.5 lg:py-4 px-6 lg:px-7 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-sm sm:text-base lg:text-[16.5px] shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
                 >
                   <Search className="w-4.5 h-4.5 text-slate-500 shrink-0" />
                   <span>Track Shipment</span>
                 </Link>
+              </div>
+
+              {/* Desktop Micro-Trust Verification Strip Under CTAs */}
+              <div className="hidden sm:flex flex-wrap items-center gap-x-5 gap-y-1.5 pt-1 text-xs font-semibold text-slate-600">
+                <span className="inline-flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
+                  <span>₹0 Product Advance</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
+                  <span>₹10L Cargo Insurance</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
+                  <span>Instant Reject at ₹0</span>
+                </span>
               </div>
 
               {/* Mobile: Ultra-Clean 1-Row 4-Column Trust Strip (Unified Brand Blue & Slate) */}
@@ -1025,8 +1041,8 @@ export default function HomePage() {
 
             </div>
 
-            {/* Right Hero Visual Container: High-Converting Doorstep Escrow Card */}
-            <div className="lg:col-span-7 xl:col-span-7 w-full max-w-lg lg:max-w-none mx-auto">
+            {/* Right Hero Visual Container: High-Converting Doorstep Escrow Card (Balanced 6 Columns) */}
+            <div className="lg:col-span-6 xl:col-span-6 w-full max-w-lg lg:max-w-none mx-auto">
               <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-b from-white via-white to-slate-50 border border-slate-200/80 shadow-2xl shadow-blue-900/[0.06] p-1.5 sm:p-2.5 relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/[0.12]">
                 <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-black border border-slate-200/70">
                   {/* Media Container: High-Definition WebP Thumbnail overlay + pre-mounted Video for instant playback */}
@@ -1110,8 +1126,8 @@ export default function HomePage() {
         {/* ========================================================================= */}
         {/* 4B. DEVICE PRESETS: SHOP & SELL ELECTRONICS SAFELY (DIRECT TO DETAILS)    */}
         {/* ========================================================================= */}
-        <section className="w-full max-w-[1600px] mx-auto px-3.5 sm:px-8 lg:px-12 xl:px-16 pt-3 sm:pt-5 pb-3 sm:pb-8">
-          <div className="flex items-center justify-between gap-2 mb-2.5 sm:mb-4">
+        <section className="w-full max-w-[1680px] mx-auto px-3.5 sm:px-6 lg:px-8 xl:px-10 pt-3 sm:pt-4 lg:pt-5 pb-3 sm:pb-6 lg:pb-7">
+          <div className="flex items-center justify-between gap-2 mb-2.5 sm:mb-3.5">
             <h2 className="text-[15px] sm:text-xl lg:text-2xl font-extrabold text-[#0F172A] tracking-tight">
               Shop &amp; Sell Electronics Safely
             </h2>
@@ -1158,7 +1174,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 5. HOW SAFESHIP WORKS: 5-STEP MILESTONE FLOW & DOORSTEP VERIFICATION SPOTLIGHT */}
       {/* ========================================================================= */}
-      <section id="how-it-works" className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pt-10 sm:pt-20 lg:pt-24 pb-8 sm:pb-16 space-y-8 sm:space-y-12">
+      <section id="how-it-works" className="w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 pt-10 sm:pt-16 lg:pt-20 pb-8 sm:pb-16 space-y-8 sm:space-y-12">
         
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto space-y-2.5">
@@ -1331,7 +1347,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 6. YOUR TRANSACTION IS FULLY PROTECTED (PANEL 3 FROM MOCKUP)              */}
       {/* ========================================================================= */}
-      <section id="features" className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-8 sm:py-16 space-y-8 sm:space-y-10">
+      <section id="features" className="w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-16 space-y-8 sm:space-y-10">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-2.5">
@@ -1452,7 +1468,7 @@ export default function HomePage() {
       {/* 7. NATIONAL IMPACT STATS STRIP (PURE BLACK)                               */}
       {/* ========================================================================= */}
       <section className="w-full bg-black text-white py-8 sm:py-10 border-y border-neutral-800">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16">
+        <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 text-center">
             <div className="p-3 sm:p-0 rounded-2xl bg-neutral-950 sm:bg-transparent border border-neutral-800 sm:border-0 space-y-1">
               <div className="text-2xl sm:text-4xl font-black font-mono text-white">10-Min</div>
@@ -1484,7 +1500,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 8. DETAILED COURIER FARE & SLA ESTIMATOR (SECTION #PRICING)                */}
       {/* ========================================================================= */}
-      <section id="pricing" className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-12 sm:py-16">
+      <section id="pricing" className="w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-12 sm:py-16">
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-sm space-y-8">
           
           <div className="max-w-2xl mx-auto text-center space-y-2">
@@ -1710,18 +1726,18 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 9. SAFESHIP VS TRADITIONAL CASH-ON-DELIVERY (COD) COMPARISON TABLE        */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-8 sm:py-12">
+      <section className="w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-12">
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-3xl mx-auto text-center space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0066FF] text-xs font-bold">
               <Award className="w-4 h-4 text-[#0066FF] shrink-0" />
-              <span>Ranked #1 for Open Box Delivery &amp; Safe Shipping in India</span>
+              <span>Ranked #1 for Open Box Delivery, Open Box Courier &amp; Safe Shipping in India</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-              Why SafeShip is the Best Shipping Company for Open Box Delivery &amp; Safe Shipping
+              Why SafeShip is the Best Shipping Company for Open Box Delivery, Safe Courier &amp; Safe Shipping
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              Standard couriers (Delhivery, BlueDart, DTDC) enforce a strict &quot;pay before opening&quot; policy that leaves buyers vulnerable to scams. SafeShip mandates a 10-minute doorstep unboxing audit and RBI-compliant Payment Aggregator nodal escrow so you verify then pay with complete peace of mind.
+              Standard couriers (Delhivery, BlueDart, DTDC) enforce a strict &quot;pay before opening&quot; policy that leaves buyers vulnerable to scams. As India&apos;s highest-rated safe openbox shipping company and secure open box courier, SafeShip mandates a 10-minute doorstep unboxing audit and RBI-compliant Payment Aggregator nodal escrow so you verify then pay with complete peace of mind.
             </p>
           </div>
 
@@ -1864,7 +1880,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 10. CATEGORY-SPECIFIC INSPECTION PROTOCOLS                                */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-8 sm:py-12 space-y-6">
+      <section className="w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-12 space-y-6">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
             Specialized Doorstep Inspection Protocols
@@ -1942,7 +1958,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 10.5 NATIONWIDE OPEN BOX DELIVERY & SAFE SHIPPING CORRIDORS               */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-8 sm:py-10 space-y-6">
+      <section className="w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-10 space-y-6">
         <div className="bg-gradient-to-b from-white to-slate-50/70 rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-3xl mx-auto text-center space-y-2">
             <span className="text-[11px] font-bold uppercase tracking-wider bg-blue-50 text-[#0066FF] px-3 py-1 rounded-full border border-blue-100">
@@ -2013,17 +2029,17 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 10.8 WHY SAFESHIP IS INDIA'S BEST OPEN BOX DELIVERY & BEST COD SHIPPING   */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-8 sm:py-12 space-y-6">
+      <section className="w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-12 space-y-6">
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-3xl mx-auto text-center space-y-2">
             <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#0066FF] bg-blue-50 border border-blue-200 px-3 py-1 rounded-full inline-block">
-              India&apos;s #1 Ranked Courier Authority
+              India&apos;s #1 Ranked Open Box Courier &amp; Safe Shipping Authority
             </span>
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-black tracking-tight text-slate-900">
-              Why SafeShip is India&apos;s Best Open Box Delivery &amp; Best COD Shipping Company
+              Why SafeShip is India&apos;s Best Open Box Delivery, Safe Courier &amp; Best COD Shipping Company
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-2xl mx-auto">
-              Engineered specifically for second-hand smartphones, MacBooks, gaming consoles, and electronics. Zero blind payments, zero scam risk, and 100% legal escrow protection.
+              Engineered specifically as a safe openbox shipping company and secure open box courier for second-hand smartphones, MacBooks, gaming consoles, and electronics. Zero blind payments, zero scam risk, and 100% legal escrow protection.
             </p>
           </div>
 
@@ -2033,10 +2049,10 @@ export default function HomePage() {
                 <Package className="w-5 h-5" />
               </div>
               <h3 className="font-bold text-slate-900 text-sm sm:text-base">
-                Best Open Box Delivery Company
+                Best Open Box Delivery &amp; Courier
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Conventional couriers forbid opening parcels before payment. SafeShip delivery officers mandate a 10-minute unhurried physical inspection at your doorstep. Test boot, screen, and cameras before paying ₹1.
+                Conventional couriers forbid opening parcels before payment. As India&apos;s #1 open box courier (open box curior), SafeShip delivery officers mandate a 10-minute unhurried physical inspection at your doorstep. Test boot, screen, and cameras before paying ₹1.
               </p>
             </div>
 
@@ -2048,7 +2064,7 @@ export default function HomePage() {
                 Best COD Shipping Company
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Replaces risky, blind Cash-On-Delivery with Verify-Then-Pay. Buyers never risk paying cash for a dummy phone or brick. Pay via dynamic UPI QR code only after you approve the device.
+                Replaces risky, blind Cash-On-Delivery with Verify-Then-Pay secure open box delivery. Buyers never risk paying cash for a dummy phone or brick. Pay via dynamic UPI QR code only after you approve the device.
               </p>
             </div>
 
@@ -2057,10 +2073,10 @@ export default function HomePage() {
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <h3 className="font-bold text-slate-900 text-sm sm:text-base">
-                Safe Shipping &amp; RBI Escrow
+                Safe Courier, Safe Shipping &amp; Escrow
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                Buyer payments are held in segregated trustee nodal accounts under RBI Payment Aggregator directives. Sellers get guaranteed instant payout upon buyer approval with zero return-swap scams.
+                Rated #1 safe courier (safe curior) and safe delivery company in India. Buyer payments are held in segregated trustee nodal accounts under RBI Payment Aggregator directives, guaranteeing sellers instant payout upon buyer approval.
               </p>
             </div>
 
@@ -2072,8 +2088,36 @@ export default function HomePage() {
                 Serviceable Across 19,000+ PINs
               </h3>
               <p className="text-xs text-slate-600 leading-relaxed">
-                With mandatory 10-minute doorstep unboxing, ₹10 Lakh transit cargo protection, and PAN-India expressway linehauls, SafeShip is India&apos;s #1 open-box &amp; escrow shipping platform.
+                With mandatory 10-minute doorstep unboxing, ₹10 Lakh transit cargo protection, and PAN-India expressway linehauls, SafeShip is India&apos;s highest-rated secureopen box &amp; escrow shipping platform.
               </p>
+            </div>
+          </div>
+
+          {/* Verified Semantic Search & AI Index Directory Pill Strip */}
+          <div className="pt-4 border-t border-slate-200/80">
+            <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-slate-600">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#0066FF] mr-1">
+                Verified Search Specializations:
+              </span>
+              {[
+                'Best Open Box Delivery Company',
+                'Open Box Courier India',
+                'Safe Courier & Safe Shipping',
+                'Secure Open Box Delivery',
+                'Safe Openbox Shipping Company',
+                'Best COD Shipping Company',
+                'Verify Then Pay Courier',
+                'Open Box Curior & Safe Curior',
+                'RBI Nodal Escrow Shipping',
+                '10-Minute Doorstep Unboxing'
+              ].map((tag, idx) => (
+                <span
+                  key={idx}
+                  className="px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200/90 text-slate-700"
+                >
+                  {tag}
+                </span>
+              ))}
             </div>
           </div>
         </div>
@@ -2082,22 +2126,26 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 11. FREQUENTLY ASKED QUESTIONS (ACCORDION)                                */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 py-8 sm:py-12">
+      <section className="w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-12">
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-2xl mx-auto text-center space-y-2">
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-              Frequently Asked Questions on Open Box Delivery &amp; Safe Shipping
+              Frequently Asked Questions on Open Box Delivery, Open Box Courier &amp; Safe Shipping
             </h2>
             <p className="text-xs sm:text-sm text-slate-600">
-              Clear answers on doorstep unboxing, verify then pay escrow, and dispute resolution.
+              Clear answers on doorstep unboxing, safe courier protocols, verify then pay escrow, and dispute resolution.
             </p>
           </div>
 
           <div className="max-w-3xl mx-auto divide-y divide-slate-200 text-xs sm:text-sm">
             {[
               {
-                q: 'Why is SafeShip the best shipping company for open box delivery in India?',
-                a: 'SafeShip is India’s premier logistics network built specifically for open box delivery and safe shipping. Unlike conventional couriers who enforce payment before opening, SafeShip delivery officers unbox the parcel and wait up to 10 minutes at your doorstep while you power on the device, test the touch screen, verify battery health, and dial *#06# for the IMEI before releasing any payment.'
+                q: 'Why is SafeShip the best shipping company for open box delivery and best open box courier in India?',
+                a: 'SafeShip is India’s #1 logistics network built specifically for open box delivery, open box courier (open box curior), and safe shipping. Unlike conventional couriers who enforce payment before opening, SafeShip delivery officers unbox the parcel and wait up to 10 minutes at your doorstep while you power on the device, test the touch screen, verify battery health, and dial *#06# for the IMEI before releasing any payment.'
+              },
+              {
+                q: 'Which is the best safe courier (safe curior) and secure open box delivery company in India?',
+                a: 'SafeShip is rated #1 in India for safe courier (safe curior), secure open box (secureopen box) delivery, and safe openbox shipping company services. Every shipment includes a serialized tamper-evident pouch, mandatory 10-minute doorstep unboxing, RBI-compliant Payment Aggregator nodal escrow, and ₹10 Lakh transit cargo insurance.'
               },
               {
                 q: 'Which is the best COD company or best COD shipping company in India?',
@@ -2163,7 +2211,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 12. HIGH-IMPACT CLOSING BANNER                                            */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-[1600px] mx-auto px-4 sm:px-8 lg:px-12 xl:px-16 pb-16">
+      <section className="w-full max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 pb-16">
         <div className="bg-gradient-to-r from-[#0066FF] to-blue-700 text-white rounded-3xl p-8 sm:p-10 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 text-center md:text-left">
             <h3 className="text-2xl sm:text-3xl font-black tracking-tight">

@@ -2,26 +2,38 @@ import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = 'https://safeship.online/in';
-  const lastModified = new Date('2026-09-24');
+  const lastModified = new Date('2026-10-26');
 
   return [
     {
       url: baseUrl,
       lastModified,
-      changeFrequency: 'weekly',
+      changeFrequency: 'daily',
       priority: 1.0,
-    },
-    {
-      url: `${baseUrl}/deals/new`,
-      lastModified,
-      changeFrequency: 'weekly',
-      priority: 0.7,
     },
     {
       url: `${baseUrl}/open-box`,
       lastModified,
       changeFrequency: 'weekly',
-      priority: 0.85,
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/safety`,
+      lastModified,
+      changeFrequency: 'weekly',
+      priority: 0.95,
+    },
+    {
+      url: `${baseUrl}/faq`,
+      lastModified,
+      changeFrequency: 'weekly',
+      priority: 0.9,
+    },
+    {
+      url: `${baseUrl}/deals/new`,
+      lastModified,
+      changeFrequency: 'weekly',
+      priority: 0.9,
     },
     {
       url: `${baseUrl}/discover`,
@@ -30,40 +42,40 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.85,
     },
     {
-      url: `${baseUrl}/faq`,
+      url: `${baseUrl}/exchange`,
+      lastModified,
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    },
+    {
+      url: `${baseUrl}/track`,
       lastModified,
       changeFrequency: 'weekly',
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/safety`,
+      url: `${baseUrl}/nodal-escrow`,
       lastModified,
-      changeFrequency: 'weekly',
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/insurance`,
+      lastModified,
+      changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
       url: `${baseUrl}/terms`,
       lastModified,
       changeFrequency: 'monthly',
-      priority: 0.7,
+      priority: 0.75,
     },
     {
       url: `${baseUrl}/privacy`,
       lastModified,
       changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/insurance`,
-      lastModified,
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/nodal-escrow`,
-      lastModified,
-      changeFrequency: 'monthly',
-      priority: 0.7,
+      priority: 0.75,
     },
   ];
 }

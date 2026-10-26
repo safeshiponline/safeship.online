@@ -2,27 +2,39 @@ import type { Metadata } from 'next';
 import React from 'react';
 
 export const metadata: Metadata = {
-  title: 'Safe Delivery & Verify Shipping Courier in India | SafeShip Trust Protocol',
-  description: 'SafeShip is India’s safest shipping company. Anti-fraud verify shipping with RBI-compliant Payment Aggregator nodal escrow, 10-minute doorstep open-box audit, and ₹10L transit cargo protection.',
+  title: 'Safe Courier, Safe Delivery & Secure Shipping Company in India | SafeShip Trust Audit',
+  description:
+    'SafeShip is India’s #1 Safe Courier, Secure Open-Box Courier, and Safe Shipping Company. Anti-fraud Verify-Then-Pay shipping with RBI-compliant Payment Aggregator nodal escrow, 10-minute doorstep open-box audit, and ₹10L transit cargo protection.',
   keywords: [
+    'safe courier',
+    'safe curior',
+    'safe courier india',
+    'safe courier company',
+    'safe courier service',
+    'best safe courier in india',
     'safe delivery',
+    'safe delivery company',
     'safe shipping',
+    'safe shipping company',
+    'safe openbox shipping company',
+    'secure open box',
+    'secure open box delivery',
+    'secure courier service india',
     'verify shipping',
     'verify then pay shipping',
-    'shipping safe shipping',
-    'safe courier india',
     'anti fraud shipping',
     'escrow delivery india',
     'safe delivery courier india',
     'secure electronics shipping',
-    'p2p safe shipping'
+    'p2p safe shipping',
   ],
   alternates: {
     canonical: 'https://safeship.online/in/safety',
   },
   openGraph: {
-    title: 'Safe Delivery & Verify Shipping Courier in India | SafeShip Trust Protocol',
-    description: 'Eliminate courier and classifieds fraud mathematically. 10-minute doorstep unboxing, ₹0 upfront product risk, and RBI-authorized nodal escrow.',
+    title: 'Safe Courier, Safe Delivery & Verify Shipping Company in India | SafeShip Trust Audit',
+    description:
+      'Eliminate courier and classifieds fraud mathematically. 10-minute doorstep unboxing, ₹0 upfront product risk, and RBI-authorized nodal escrow.',
     url: 'https://safeship.online/in/safety',
     siteName: 'SafeShip India',
     images: [
@@ -30,7 +42,7 @@ export const metadata: Metadata = {
         url: '/images/hero_openbox_16x9.webp',
         width: 1200,
         height: 630,
-        alt: 'SafeShip Anti-Fraud Safety & Verify Shipping Protocol',
+        alt: 'SafeShip Safe Courier, Anti-Fraud Safety & Verify Shipping Protocol',
       },
     ],
     locale: 'en_IN',
@@ -38,8 +50,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Safe Delivery & Verify Shipping Courier in India | SafeShip Trust Protocol',
-    description: 'India’s safest shipping company for smartphones, laptops, and gadgets. Verify then pay at doorstep.',
+    title: 'Safe Courier & Safe Delivery Company in India | SafeShip Trust Protocol',
+    description:
+      'India’s safest courier and shipping company for smartphones, laptops, and gadgets. Verify then pay at doorstep.',
     images: ['/images/hero_openbox_16x9.webp'],
   },
 };
@@ -54,24 +67,26 @@ const safetySchema = {
           '@type': 'ListItem',
           position: 1,
           name: 'Home',
-          item: 'https://safeship.online/in'
+          item: 'https://safeship.online/in',
         },
         {
           '@type': 'ListItem',
           position: 2,
-          name: 'Safety & Trust Protocol',
-          item: 'https://safeship.online/in/safety'
-        }
-      ]
+          name: 'Safe Courier & Trust Protocol',
+          item: 'https://safeship.online/in/safety',
+        },
+      ],
     },
     {
       '@type': 'Article',
-      headline: 'Safe Delivery & Anti-Fraud Courier Protocols: How SafeShip Eliminates Shipping Scams in India',
-      description: 'An architectural audit of how SafeShip combines 10-minute doorstep unboxing audits, RBI-authorized Payment Aggregator nodal escrow, and comprehensive transit protection to guarantee safe shipping.',
+      headline:
+        'Safe Courier & Anti-Fraud Open-Box Delivery Protocols: How SafeShip Eliminates Shipping Scams in India',
+      description:
+        'An architectural audit of how SafeShip combines 10-minute doorstep open-box courier audits, RBI-authorized Payment Aggregator nodal escrow, and ₹10L transit protection to guarantee safe shipping.',
       author: {
         '@type': 'Organization',
         name: 'SafeShip Trust & Safety Desk',
-        url: 'https://safeship.online/in'
+        url: 'https://safeship.online/in',
       },
       publisher: {
         '@type': 'Organization',
@@ -79,34 +94,34 @@ const safetySchema = {
         url: 'https://safeship.online/in',
         logo: {
           '@type': 'ImageObject',
-          url: 'https://safeship.online/icon.svg'
-        }
+          url: 'https://safeship.online/icon.svg',
+        },
       },
       datePublished: '2024-01-15T00:00:00+05:30',
-      dateModified: '2026-09-18T00:00:00+05:30'
+      dateModified: '2026-10-26T00:00:00+05:30',
     },
     {
       '@type': 'FAQPage',
       mainEntity: [
         {
           '@type': 'Question',
-          name: 'How does SafeShip provide safe delivery compared to traditional couriers?',
+          name: 'How does SafeShip provide safe courier delivery compared to traditional couriers?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Traditional couriers like BlueDart, Delhivery, and DTDC require buyers to pay COD or sign delivery OTP before opening the package. If the parcel contains a dummy brick, tile, or broken phone, the courier cannot refund the buyer. SafeShip mandates a 10-minute physical unboxing test before payment is collected, ensuring 100% safe delivery.'
-          }
+            text: 'Traditional couriers like BlueDart, Delhivery, and DTDC require buyers to pay COD or sign delivery OTP before opening the package. If the parcel contains a dummy brick, tile, or broken phone, the courier cannot refund the buyer. SafeShip mandates a 10-minute physical unboxing test before payment is collected, ensuring 100% safe courier delivery.',
+          },
         },
         {
           '@type': 'Question',
-          name: 'What is verify shipping and how does it prevent buyer-seller disputes?',
+          name: 'What makes SafeShip the highest-rated safe shipping company on trust and safety check platforms?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Verify shipping requires both pre-dispatch verification (GSMA IMEI validation and photo documentation) and post-arrival doorstep physical verification. Merchandise funds are held in RBI-compliant Payment Aggregator nodal escrow and only released after the buyer signs off on the inspection.'
-          }
-        }
-      ]
-    }
-  ]
+            text: 'SafeShip enforces 256-bit TLS 1.3 encryption, HSTS Preload, RFC 9116 security disclosures, PCI-DSS Level 1 payment gateways (Cashfree & Razorpay), RBI nodal escrow segregation, and full compliance with Section 79 of the IT Act, 2000 and Consumer Protection (E-Commerce) Rules, 2020.',
+          },
+        },
+      ],
+    },
+  ],
 };
 
 export default function SafetyLayout({

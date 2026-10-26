@@ -1,0 +1,15 @@
+# SafeShip Technologies India Pvt. Ltd. — Platform Trust & Transparency Specification (trust.txt)
+member=SafeShip Technologies India Private Limited
+belongsto=SafeShip Technologies India Private Limited
+control=https://safeship.online/in
+social=https://x.com/SafeShipIndia
+social=https://linkedin.com/company/safeship-india
+contact=mailto:support@safeship.online
+contact=mailto:grievance@safeship.online
+contact=tel:+91-1800-890-2829
+address=Malviya Nagar Expressway Logistics Hub, Tonk Road, Jaipur, Rajasthan 302017, India
+policy=https://safeship.online/in/safety
+privacy=https://safeship.online/in/privacy
+terms=https://safeship.online/in/terms
+escrow=https://safeship.online/in/nodal-escrow
+insurance=https://safeship.online/in/insurance

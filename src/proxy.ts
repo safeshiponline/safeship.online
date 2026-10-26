@@ -2,16 +2,17 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function proxy(request: NextRequest) {
-  const { pathname, search } = request.nextUrl;
+  const { pathname } = request.nextUrl;
 
   // 0. Bypass if already internally rewritten
   if (request.headers.get('x-internal-rewrite') === '1') {
     return NextResponse.next();
   }
 
-  // 1. Bypass Next.js internals, static assets, and public files
+  // 1. Bypass Next.js internals, static assets, security/trust discovery files, and public files
   if (
     pathname.startsWith('/_next') ||
+    pathname.startsWith('/.well-known') ||
     pathname.startsWith('/images') ||
     pathname.startsWith('/video') ||
     pathname.startsWith('/audio') ||
@@ -21,14 +22,16 @@ export function proxy(request: NextRequest) {
     pathname === '/apple-icon.png' ||
     pathname === '/robots.txt' ||
     pathname === '/sitemap.xml' ||
+    pathname === '/security.txt' ||
     pathname === '/llms.txt' ||
     pathname === '/llms-full.txt'
   ) {
     return NextResponse.next();
   }
 
-  // 2. If static assets requested under /in (e.g. /in/images/... or /in/favicon.ico), rewrite to root
+  // 2. If static or discovery assets requested under /in (e.g. /in/images/... or /in/llms.txt), rewrite to root
   if (
+    pathname.startsWith('/in/.well-known') ||
     pathname.startsWith('/in/images') ||
     pathname.startsWith('/in/video') ||
     pathname.startsWith('/in/audio') ||
@@ -36,6 +39,7 @@ export function proxy(request: NextRequest) {
     pathname === '/in/favicon.ico' ||
     pathname === '/in/icon.svg' ||
     pathname === '/in/apple-icon.png' ||
+    pathname === '/in/security.txt' ||
     pathname === '/in/llms.txt' ||
     pathname === '/in/llms-full.txt'
   ) {
@@ -106,8 +110,9 @@ export const config = {
      * Match all request paths except for the ones starting with:
      * - _next/static (static files)
      * - _next/image (image optimization files)
+     * - .well-known/ (RFC 9116 security.txt & trust.txt scanners)
      * - video/, images/, audio/, real_deal/ (direct CDN static & byte-range media streaming)
      */
-    '/((?!_next/static|_next/image|video/|images/|audio/|real_deal/|favicon\\.ico|icon\\.svg|apple-icon\\.png).*)',
+    '/((?!_next/static|_next/image|\\.well-known/|video/|images/|audio/|real_deal/|favicon\\.ico|icon\\.svg|apple-icon\\.png|security\\.txt).*)',
   ],
 };
