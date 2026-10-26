@@ -43,11 +43,11 @@ export const PartnerMarquee: React.FC = () => {
       aria-label="Verified Logistics & RBI Nodal Escrow Partners: Blue Dart, Delhivery, India Post, Shiprocket, Cashfree Payments, Razorpay, DTDC, Ecom Express, ICICI Bank"
       className="w-full border-y border-slate-200/80 bg-white/70 shrink-0 select-none"
     >
-      <div className="w-full max-w-[1600px] 2xl:max-w-[1760px] mx-auto px-3.5 sm:px-6 lg:px-[clamp(1.75rem,3vw,3.75rem)] py-1.5 sm:py-2 lg:py-[clamp(0.45rem,0.95dvh,0.85rem)]">
+      <div className="w-full max-w-[min(94vw,168dvh)] mx-auto px-3.5 sm:px-6 lg:px-[min(2.2vw,3.8dvh)] py-1.5 sm:py-2 lg:py-[min(0.65vw,1.1dvh)]">
         {/* Desktop Static Partner Bar (Matches 3rd Reference Photo: Static, Evenly Spaced with Dividers) */}
         <div className="hidden lg:flex items-center justify-between w-full">
           <div className="pr-4 xl:pr-6 shrink-0">
-            <span className="text-[11.5px] xl:text-[12.5px] font-medium text-slate-500 leading-[1.3] block">
+            <span className="text-[max(11px,min(0.76vw,1.32dvh))] font-medium text-slate-500 leading-[1.3] block">
               Trusted delivery &amp;
               <br />
               payment partners
@@ -56,7 +56,7 @@ export const PartnerMarquee: React.FC = () => {
 
           {DESKTOP_STATIC_PARTNERS.map((partner) => (
             <React.Fragment key={partner.id}>
-              <span className="h-5 w-px bg-slate-200/90 shrink-0" aria-hidden="true" />
+              <span className="h-[max(18px,min(1.4vw,2.4dvh))] w-px bg-slate-200/90 shrink-0" aria-hidden="true" />
               <div
                 className="px-3 xl:px-5 flex items-center justify-center opacity-85 hover:opacity-100 transition-opacity duration-200 shrink-0"
                 title={partner.name}
@@ -64,7 +64,7 @@ export const PartnerMarquee: React.FC = () => {
                 <img
                   src={partner.src}
                   alt={partner.name}
-                  className="h-[19px] xl:h-[22px] 2xl:h-[24px] w-auto max-w-[130px] xl:max-w-[150px] object-contain block pointer-events-none select-none"
+                  className="h-[max(18px,min(1.32vw,2.25dvh))] w-auto max-w-[min(9.5vw,16.5dvh)] object-contain block pointer-events-none select-none"
                   loading="eager"
                 />
               </div>
