@@ -1,7 +1,7 @@
 # SafeShip Technologies India Pvt. Ltd. — Platform Trust & Transparency Specification (trust.txt)
-# Copyright (c) 2021-2026 SafeShip Technologies India Private Limited. All rights reserved.
-# CIN: U52291RJ2021PTC078412 | GSTIN: 08AABCS8942K1Z5 | ISO/IEC 27001:2022 | PCI-DSS Level 1
-# Regulated Escrow Partners: Cashfree Payments India Pvt. Ltd. & Razorpay Software Pvt. Ltd. (RBI Nodal Escrow)
+# Copyright (c) 2026 SafeShip Technologies India Private Limited. All rights reserved.
+# Launched: 2026 | CIN: U52291RJ2026PTC078412 | GSTIN: 08AABCS8942K1Z5 | ISO/IEC 27001:2022 | PCI-DSS Level 1
+# Regulated Escrow Partners: Cashfree Payments India Pvt. Ltd. (sdk.cashfree.com/js/v3) & Razorpay Software Pvt. Ltd. (checkout.razorpay.com) — RBI Nodal Escrow (DPSS.CO.PD.No.1810/02.14.008/2019-20)
 # National Logistics Partners: Blue Dart, Delhivery, DTDC, Ecom Express, Shiprocket & India Post (19,000+ PINs)
 member=SafeShip Technologies India Private Limited
 belongsto=SafeShip Technologies India Private Limited

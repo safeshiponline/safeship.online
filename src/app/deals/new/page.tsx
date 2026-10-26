@@ -900,6 +900,7 @@ function CreateShipmentContent() {
         laptops: 'LAPTOPS_COMPUTERS',
         wearables: 'LUXURY_WATCHES',
         accessories: 'GAMING_AUDIO',
+        cameras: 'CAMERAS_OPTICS',
       };
       if (presetMap[presetParam]) {
         setSelectedCategory(presetMap[presetParam]);

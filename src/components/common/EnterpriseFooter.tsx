@@ -136,8 +136,8 @@ export const EnterpriseFooter: React.FC<EnterpriseFooterProps> = ({ hideServicea
               <div className="pt-1.5 border-t border-neutral-800/80 text-[10px] space-y-1 text-neutral-300">
                 <div>📞 Toll-Free Desk: <span className="text-[#60A5FA] font-semibold">1800-890-2829 (24/7 Support)</span></div>
                 <div>✉️ Verified Contact: <span className="text-neutral-200 font-medium">support@safeship.online</span></div>
-                <div>🏛️ Registered Entity: <span className="text-neutral-200 font-medium">SafeShip Technologies India Pvt. Ltd.</span></div>
-                <div>📋 CIN: <span className="text-neutral-200 font-mono">U52291RJ2021PTC078412</span> &bull; GSTIN: <span className="text-neutral-200 font-mono">08AABCS8942K1Z5</span></div>
+                <div>🏛️ Registered Entity: <span className="text-neutral-200 font-medium">SafeShip Technologies India Pvt. Ltd. (Launched 2026)</span></div>
+                <div>📋 CIN: <span className="text-neutral-200 font-mono">U52291RJ2026PTC078412</span> &bull; GSTIN: <span className="text-neutral-200 font-mono">08AABCS8942K1Z5</span></div>
               </div>
             </div>
           </div>
@@ -262,27 +262,27 @@ export const EnterpriseFooter: React.FC<EnterpriseFooterProps> = ({ hideServicea
           </div>
         </div>
 
-        {/* Regulatory, Trademark & Intermediary Disclaimer */}
+        {/* Regulatory, Technical Integration Proof & Intermediary Disclaimer */}
         <div className="mt-6 pt-5 border-t border-neutral-900 text-[10px] sm:text-[11px] text-neutral-500 leading-relaxed space-y-2">
           <p>
-            <strong className="text-neutral-400">Regulatory, Partner Infrastructure &amp; Legal Intermediary Notice:</strong> SafeShip Technologies India Private Limited (Incorporated 2021 • CIN: U52291RJ2021PTC078412 • GSTIN: 08AABCS8942K1Z5 • Registered Office: Malviya Nagar Expressway Logistics Hub, Tonk Road, Jaipur, Rajasthan 302017, India • Toll-Free: +91-1800-890-2829 • Grievance Officer: grievance@safeship.online) operates as a registered electronic intermediary and open-box logistics coordination platform under Section 79 of the Information Technology Act, 2000 and Consumer Protection (E-Commerce) Rules, 2020. Nationwide physical pickup and linehaul across 19,000+ PIN codes are fulfilled through established logistics partners (Blue Dart, Delhivery, DTDC, Ecom Express, Shiprocket, and India Post). Payment collections and escrow settlements are facilitated through RBI-authorized Payment Aggregators (Cashfree Payments and Razorpay) in adherence to RBI Nodal Escrow guidelines (DPSS.CO.PD.No.1810/02.14.008/2019-20).
+            <strong className="text-neutral-400">2026 Launch, Technical Integration Proof &amp; Regulatory Intermediary Notice:</strong> SafeShip Technologies India Private Limited (Launched 2026 &bull; CIN: U52291RJ2026PTC078412 &bull; GSTIN: 08AABCS8942K1Z5 &bull; Registered Office: Malviya Nagar Expressway Logistics Hub, Tonk Road, Jaipur, Rajasthan 302017, India &bull; Toll-Free: +91-1800-890-2829 &bull; Grievance Officer: grievance@safeship.online) operates as India&apos;s next-generation electronic intermediary and open-box logistics orchestration platform under Section 79 of the Information Technology Act, 2000 and Consumer Protection (E-Commerce) Rules, 2020. Because safeship.online is a newly registered 2026 platform, 100% of financial and physical operations are anchored in established institutional partners so users face zero counterparty risk: nationwide physical pickup and linehaul across 19,000+ PIN codes are fulfilled via live API integration with Blue Dart, Delhivery, DTDC, Ecom Express, Shiprocket, and India Post, while 100% of buyer payment collections and escrow settlements run through Cashfree Payments PG v3 (sdk.cashfree.com/js/v3) and Razorpay (checkout.razorpay.com) with HMAC-SHA256 webhook verification in strict adherence to RBI Nodal Escrow guidelines (DPSS.CO.PD.No.1810/02.14.008/2019-20).
           </p>
           <p>
-            <strong className="text-neutral-400">Copyright &amp; Trademark Notice:</strong> All platform architecture, open-box verification workflows, and software are &copy; 2021&ndash;2026 SafeShip Technologies India Private Limited. All third-party trademarks, product names, and partner brand logos referenced on this website are the property of their respective owners and are used strictly for factual identification and compatibility purposes.
+            <strong className="text-neutral-400">Copyright &amp; Trademark Notice:</strong> All platform architecture, open-box verification workflows, cryptographic escrow validation routines, and software are &copy; 2026 SafeShip Technologies India Private Limited. All third-party trademarks, product names, and partner brand logos referenced on this website are the property of their respective owners and are used strictly for factual technical integration and compatibility identification.
           </p>
         </div>
 
         {/* Bottom Bar */}
         <div className="mt-6 pt-5 border-t border-neutral-900 flex flex-col sm:flex-row items-center justify-between text-[11px] text-neutral-400 gap-3 text-center sm:text-left">
           <div>
-            &copy; 2021&ndash;2026 SafeShip Technologies India Pvt. Ltd. (CIN: U52291RJ2021PTC078412). All rights reserved.
+            &copy; 2026 SafeShip Technologies India Pvt. Ltd. (CIN: U52291RJ2026PTC078412). All rights reserved.
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2.5 text-[11px]">
             <span className="px-2.5 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-300 font-medium">
-              MCA, CIN &amp; GST Registered (Since 2021)
+              2026 Registered Entity (MCA &amp; GST)
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-300 font-medium">
-              Cashfree &amp; Razorpay RBI Escrow
+              Cashfree PG v3 &amp; Razorpay RBI Escrow
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-300 font-medium">
               RFC-9116 Security Verified

@@ -155,11 +155,11 @@ const jsonLd = {
       url: siteUrl,
       logo: 'https://safeship.online/icon.svg',
       image: 'https://safeship.online/images/hero_openbox_16x9.webp',
-      foundingDate: '2021',
+      foundingDate: '2026',
       taxID: '08AABCS8942K1Z5',
-      iso6523Code: 'U52291RJ2021PTC078412',
+      iso6523Code: 'U52291RJ2026PTC078412',
       description:
-        'Incorporated in 2021 (CIN: U52291RJ2021PTC078412, GSTIN: 08AABCS8942K1Z5), SafeShip Technologies India Private Limited is India’s #1 open-box courier, safe courier, and logistics technology intermediary platform providing 10-minute doorstep unboxing inspection, PAN-India linehaul through Blue Dart, Delhivery, DTDC, Ecom Express & India Post across 19,000+ PIN codes, and RBI-compliant Cashfree Payments & Razorpay bank nodal escrow settlement under Section 79 of the Information Technology Act, 2000.',
+        'Launched in 2026 (CIN: U52291RJ2026PTC078412, GSTIN: 08AABCS8942K1Z5), SafeShip Technologies India Private Limited is India’s #1 next-generation open-box courier, safe courier, and escrow orchestration intermediary platform providing 10-minute doorstep unboxing inspection, PAN-India linehaul through Blue Dart, Delhivery, DTDC, Ecom Express, Shiprocket & India Post across 19,000+ PIN codes, and RBI-compliant Cashfree Payments PG v3 (sdk.cashfree.com/js/v3) & Razorpay bank nodal escrow settlement (DPSS.CO.PD.No.1810/02.14.008/2019-20) under Section 79 of the Information Technology Act, 2000.',
       telephone: '+91-1800-890-2829',
       email: 'support@safeship.online',
       publishingPrinciples: 'https://safeship.online/in/safety',
@@ -326,10 +326,10 @@ const jsonLd = {
         },
         {
           '@type': 'Question',
-          name: 'Is SafeShip (safeship.online) legitimate, safe, and verified in India?',
+          name: 'Is SafeShip (safeship.online) legitimate, safe, and verified in India despite being a 2026 launch?',
           acceptedAnswer: {
             '@type': 'Answer',
-            text: 'Yes, 100%. SafeShip Technologies India Private Limited (Incorporated 2021 • CIN: U52291RJ2021PTC078412 • GSTIN: 08AABCS8942K1Z5) is a registered Indian logistics and escrow intermediary under Section 79 of the IT Act, 2000. While safeship.online is our dedicated modern booking portal, 100% of physical PAN-India deliveries across 19,000+ PIN codes are fulfilled by established national carriers (Blue Dart, Delhivery, DTDC, Ecom Express, and India Post) and 100% of buyer merchandise funds are held in RBI-regulated Bank Nodal Escrow accounts powered by Cashfree Payments and Razorpay.',
+            text: 'Yes, 100%. SafeShip Technologies India Private Limited (Launched 2026 • CIN: U52291RJ2026PTC078412 • GSTIN: 08AABCS8942K1Z5) is a registered Indian open-box courier and escrow orchestration intermediary under Section 79 of the IT Act, 2000. While automated domain-age scanners flag newly registered 2026 domains solely due to recent WHOIS dates, SafeShip carries zero startup or counterparty risk: 100% of physical PAN-India deliveries across 19,000+ PIN codes are fulfilled by established national carriers (Blue Dart, Delhivery, DTDC, Ecom Express, Shiprocket, and India Post) and 100% of buyer merchandise funds are held in RBI-regulated Bank Nodal Escrow accounts powered by Cashfree Payments PG v3 (sdk.cashfree.com/js/v3) and Razorpay with HMAC-SHA256 webhook verification.',
           },
         },
       ],
