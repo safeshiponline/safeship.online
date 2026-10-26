@@ -882,39 +882,39 @@ export default function HomePage() {
             {/* Left Hero Content (Minimal Switching Eyebrow, Punchy 2-Line Headline, Subtitle, Bigger CTAs & 3 Icon Trust Items) */}
             <div className="space-y-2 sm:space-y-3.5 lg:space-y-[min(1.15vw,2dvh)]">
               
-              {/* Mobile-Only Eyebrow Pill Badge (Dynamic Switching Tagline) */}
-              <div className="flex sm:hidden items-center gap-2 flex-wrap">
+              {/* Mobile-Only Eyebrow Badge (Dynamic Switching Tagline — Strictly Single Line) */}
+              <div className="flex sm:hidden items-center overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setHeroTaglineIdx((prev) => (prev + 1) % HERO_TAGLINES.length)}
                   title="Click to switch tagline"
-                  className="group inline-flex items-center gap-1.5 text-[10.5px] font-extrabold uppercase tracking-[0.12em] text-[#0066FF] transition-all active:scale-95 cursor-pointer"
+                  className="group inline-flex items-center text-[clamp(8.5px,2.35vw,10.5px)] font-extrabold uppercase tracking-[0.04em] min-[420px]:tracking-[0.055em] text-[#0066FF] whitespace-nowrap transition-all active:scale-95 cursor-pointer max-w-full overflow-hidden"
                 >
-                  <span key={heroTaglineIdx} className="animate-in fade-in duration-300 text-left">
+                  <span key={heroTaglineIdx} className="animate-in fade-in duration-300 text-left whitespace-nowrap truncate">
                     {HERO_TAGLINES[heroTaglineIdx]}
                   </span>
                 </button>
               </div>
 
-              {/* Desktop Minimal Switching Eyebrow (Matches Reference Photo: Clean Uppercase Blue Text, Keeps Switching) */}
-              <div className="hidden sm:flex items-center">
+              {/* Desktop Minimal Switching Eyebrow (Strictly Single Line Across All Breakpoints) */}
+              <div className="hidden sm:flex items-center overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setHeroTaglineIdx((prev) => (prev + 1) % HERO_TAGLINES.length)}
                   title="Click to switch tagline"
-                  className="group inline-flex items-center gap-2 text-xs lg:text-[max(0.75rem,min(0.88vw,1.52dvh))] font-extrabold uppercase tracking-[0.15em] text-[#0066FF] hover:text-[#0052FF] transition-colors cursor-pointer"
+                  className="group inline-flex items-center gap-2 text-[11px] md:text-xs lg:text-[max(0.68rem,min(0.78vw,1.35dvh))] font-extrabold uppercase tracking-[0.09em] lg:tracking-[0.12em] text-[#0066FF] hover:text-[#0052FF] whitespace-nowrap transition-colors cursor-pointer max-w-full overflow-hidden"
                 >
-                  <span key={heroTaglineIdx} className="animate-in fade-in duration-300 text-left">
+                  <span key={heroTaglineIdx} className="animate-in fade-in duration-300 text-left whitespace-nowrap truncate">
                     {HERO_TAGLINES[heroTaglineIdx]}
                   </span>
                 </button>
               </div>
 
               {/* Mobile View: Calibrated Bold Headline on Left, Elongated Action Buttons on Right with Zero Collision (sm:hidden) */}
-              <div className="flex sm:hidden items-stretch justify-between gap-2 min-[400px]:gap-2.5 min-[450px]:gap-3 pt-0.5">
+              <div className="flex sm:hidden items-center justify-between gap-2 min-[400px]:gap-2.5 min-[450px]:gap-3 pt-0.5">
                 {/* Left: Punchy Headline */}
                 <div className="flex-1 min-w-0 pr-0.5 flex flex-col justify-center">
-                  <h2 className="text-[25px] min-[370px]:text-[27px] min-[410px]:text-[29px] min-[460px]:text-[31px] font-black tracking-[-0.04em] text-[#0F172A] leading-[1.06]">
+                  <h2 className="text-[clamp(25px,6.8vw,34px)] font-black tracking-[-0.04em] text-[#0F172A] leading-[1.08]">
                     <span className="block whitespace-nowrap">See it. Verify it.</span>
                     <span className="block whitespace-nowrap text-[#0066FF]">
                       Then pay.
