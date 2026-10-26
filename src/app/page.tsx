@@ -818,13 +818,13 @@ export default function HomePage() {
           <div className="absolute top-1/2 -left-20 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
           {/* Desktop Top Strip: Proportional 5-Column Grid (Zero Truncation & Zero Empty Gap) */}
-          <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-[1.3fr_1fr_1fr_1fr_1fr] gap-2.5 lg:gap-3 items-stretch mb-4 lg:mb-5 relative z-10">
+          <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-[1.32fr_1fr_1fr_1fr_1fr] gap-2.5 lg:gap-3.5 items-stretch mb-3 lg:mb-4 relative z-10">
             {/* Col 1: Dynamic Switching Tagline Pill */}
             <button
               type="button"
               onClick={() => setHeroTaglineIdx((prev) => (prev + 1) % HERO_TAGLINES.length)}
               title="Click to switch tagline"
-              className="sm:col-span-2 lg:col-span-1 group w-full h-full flex items-center justify-between gap-2.5 px-4 py-2.5 rounded-2xl bg-blue-50/95 hover:bg-blue-100/85 border border-blue-200/90 shadow-2xs text-xs xl:text-[13px] font-extrabold text-[#0066FF] tracking-tight transition-all active:scale-[0.99] cursor-pointer"
+              className="sm:col-span-2 lg:col-span-1 group w-full h-full flex items-center justify-between gap-2.5 px-4 py-3 rounded-2xl bg-blue-50/95 hover:bg-blue-100/85 border border-blue-200/90 shadow-2xs text-xs xl:text-[13.5px] font-extrabold text-[#0066FF] tracking-tight transition-all active:scale-[0.99] cursor-pointer"
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="relative flex h-2.5 w-2.5 shrink-0">
@@ -839,54 +839,54 @@ export default function HomePage() {
             </button>
 
             {/* Col 2: Bank Escrow */}
-            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-4 h-4" />
+            <div className="px-4 py-3 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-3 shadow-2xs min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4.5 h-4.5" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs xl:text-[13px] font-extrabold text-slate-900 leading-tight">Bank Escrow</div>
-                <div className="text-[10.5px] xl:text-[11.5px] text-slate-500 font-medium leading-tight truncate">Funds 100% locked in RBI nodal</div>
+                <div className="text-xs xl:text-[13.5px] font-extrabold text-slate-900 leading-tight">Bank Escrow</div>
+                <div className="text-[11px] xl:text-[12px] text-slate-500 font-medium leading-tight truncate mt-0.5">Funds 100% locked in RBI nodal</div>
               </div>
             </div>
 
             {/* Col 3: PAN India */}
-            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                <Truck className="w-4 h-4" />
+            <div className="px-4 py-3 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-3 shadow-2xs min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <Truck className="w-4.5 h-4.5" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs xl:text-[13px] font-extrabold text-slate-900 leading-tight">PAN India</div>
-                <div className="text-[10.5px] xl:text-[11.5px] text-slate-500 font-medium leading-tight truncate">19,000+ serviceable PIN codes</div>
+                <div className="text-xs xl:text-[13.5px] font-extrabold text-slate-900 leading-tight">PAN India</div>
+                <div className="text-[11px] xl:text-[12px] text-slate-500 font-medium leading-tight truncate mt-0.5">19,000+ serviceable PIN codes</div>
               </div>
             </div>
 
             {/* Col 4: 10-Min Open-Box */}
-            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                <Eye className="w-4 h-4" />
+            <div className="px-4 py-3 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-3 shadow-2xs min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <Eye className="w-4.5 h-4.5" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs xl:text-[13px] font-extrabold text-slate-900 leading-tight">10-Min Open-Box</div>
-                <div className="text-[10.5px] xl:text-[11.5px] text-slate-500 font-medium leading-tight truncate">Verify boot &amp; IMEI before paying</div>
+                <div className="text-xs xl:text-[13.5px] font-extrabold text-slate-900 leading-tight">10-Min Open-Box</div>
+                <div className="text-[11px] xl:text-[12px] text-slate-500 font-medium leading-tight truncate mt-0.5">Verify boot &amp; IMEI before paying</div>
               </div>
             </div>
 
             {/* Col 5: 24/7 Support */}
-            <div className="px-3.5 py-2.5 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 shadow-2xs min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                <Headphones className="w-4 h-4" />
+            <div className="px-4 py-3 rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-3 shadow-2xs min-w-0">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <Headphones className="w-4.5 h-4.5" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs xl:text-[13px] font-extrabold text-slate-900 leading-tight">24/7 Support</div>
-                <div className="text-[10.5px] xl:text-[11.5px] text-slate-500 font-medium leading-tight truncate">Live human escrow desk</div>
+                <div className="text-xs xl:text-[13.5px] font-extrabold text-slate-900 leading-tight">24/7 Support</div>
+                <div className="text-[11px] xl:text-[12px] text-slate-500 font-medium leading-tight truncate mt-0.5">Live human escrow desk</div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-6 lg:gap-x-8 xl:gap-x-10 items-center relative z-10 my-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.15fr] xl:grid-cols-[1fr_1.18fr] gap-2.5 sm:gap-6 lg:gap-x-7 xl:gap-x-9 items-center relative z-10 my-auto py-1 lg:py-2">
             
-            {/* Left Hero Content (Balanced 6 Columns on Desktop so 3-line Headline Spans Cleanly) */}
-            <div className="lg:col-span-6 xl:col-span-6 space-y-2 sm:space-y-4 lg:space-y-5">
+            {/* Left Hero Content (Scaled Up Typography, Buttons & Pills to Fill Middle Space) */}
+            <div className="space-y-2 sm:space-y-4 lg:space-y-5 xl:space-y-6">
               
               {/* Mobile-Only Eyebrow Pill Badge (Dynamic Switching Tagline) */}
               <div className="flex sm:hidden items-center gap-2 flex-wrap">
@@ -956,9 +956,9 @@ export default function HomePage() {
                 </p>
               </div>
 
-              {/* Desktop View: Crisp 3-Line Scaled Headline Utilizing Horizontal Space (hidden sm:block) */}
-              <div className="hidden sm:block space-y-1">
-                <h1 className="text-4xl sm:text-5xl lg:text-[48px] xl:text-[56px] 2xl:text-[64px] font-black tracking-[-0.035em] text-[#0F172A] leading-[1.06]">
+              {/* Desktop View: Commanding 3-Line Scaled Headline Utilizing Full Column Width (hidden sm:block) */}
+              <div className="hidden sm:block space-y-1.5">
+                <h1 className="text-4xl sm:text-5xl lg:text-[54px] xl:text-[64px] 2xl:text-[72px] font-black tracking-[-0.035em] text-[#0F172A] leading-[1.05]">
                   <span className="block whitespace-nowrap">Open Box Delivery</span>
                   <span className="block whitespace-nowrap">&amp; Safe Shipping.</span>
                   <span className="block whitespace-nowrap bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
@@ -967,8 +967,8 @@ export default function HomePage() {
                 </h1>
               </div>
 
-              {/* Desktop View: Subtitle (hidden sm:block) */}
-              <div className="hidden sm:block space-y-1.5 text-slate-600 text-sm sm:text-base lg:text-[16.5px] xl:text-[17.5px] leading-relaxed max-w-2xl">
+              {/* Desktop View: Enlarged Subtitle (hidden sm:block) */}
+              <div className="hidden sm:block space-y-2 text-slate-600 text-sm sm:text-base lg:text-[18px] xl:text-[19.5px] leading-relaxed max-w-[650px]">
                 <p className="font-bold text-slate-900">
                   India&apos;s #1 open box courier &amp; safe shipping company for high-value electronics.
                 </p>
@@ -977,11 +977,11 @@ export default function HomePage() {
                 </p>
               </div>
 
-              {/* Desktop Action Buttons: Book Delivery & Track Shipment */}
-              <div className="hidden sm:flex items-center gap-3.5 pt-1">
+              {/* Desktop Action Buttons: Enlarged Book Delivery & Track Shipment */}
+              <div className="hidden sm:flex items-center gap-4 pt-1">
                 <Link
                   href="/in/deals/new?type=send"
-                  className="py-3.5 lg:py-4 px-7 lg:px-8 rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-sm sm:text-base lg:text-[16.5px] shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2.5 text-center cursor-pointer"
+                  className="py-4 lg:py-4.5 px-8 lg:px-9 xl:px-10 rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-base lg:text-[17.5px] xl:text-[18.5px] shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2.5 text-center cursor-pointer"
                 >
                   <span className="relative flex h-2.5 w-2.5 shrink-0">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-70"></span>
@@ -992,25 +992,25 @@ export default function HomePage() {
 
                 <Link
                   href="/in/track"
-                  className="py-3.5 lg:py-4 px-6 lg:px-7 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-bold text-sm sm:text-base lg:text-[16.5px] shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer"
+                  className="py-4 lg:py-4.5 px-7 lg:px-8 xl:px-9 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-800 font-bold text-base lg:text-[17.5px] xl:text-[18.5px] shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2.5 text-center cursor-pointer"
                 >
-                  <Search className="w-4.5 h-4.5 text-slate-500 shrink-0" />
+                  <Search className="w-5 h-5 text-slate-500 shrink-0" />
                   <span>Track Shipment</span>
                 </Link>
               </div>
 
-              {/* Desktop Micro-Trust Verification Strip Under CTAs */}
-              <div className="hidden sm:flex flex-wrap items-center gap-x-5 gap-y-1.5 pt-1 text-xs font-semibold text-slate-600">
-                <span className="inline-flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
+              {/* Desktop Micro-Trust Verification Pills Under CTAs */}
+              <div className="hidden sm:flex flex-wrap items-center gap-2.5 lg:gap-3 pt-1">
+                <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs text-xs lg:text-[13px] xl:text-[13.5px] font-bold text-slate-700">
+                  <CheckCircle2 className="w-4 h-4 text-[#0066FF] shrink-0" />
                   <span>₹0 Product Advance</span>
                 </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
+                <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs text-xs lg:text-[13px] xl:text-[13.5px] font-bold text-slate-700">
+                  <CheckCircle2 className="w-4 h-4 text-[#0066FF] shrink-0" />
                   <span>₹10L Cargo Insurance</span>
                 </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
+                <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs text-xs lg:text-[13px] xl:text-[13.5px] font-bold text-slate-700">
+                  <CheckCircle2 className="w-4 h-4 text-[#0066FF] shrink-0" />
                   <span>Instant Reject at ₹0</span>
                 </span>
               </div>
@@ -1041,9 +1041,9 @@ export default function HomePage() {
 
             </div>
 
-            {/* Right Hero Visual Container: High-Converting Doorstep Escrow Card (Balanced 6 Columns) */}
-            <div className="lg:col-span-6 xl:col-span-6 w-full max-w-lg lg:max-w-none mx-auto">
-              <div className="rounded-2xl sm:rounded-3xl bg-gradient-to-b from-white via-white to-slate-50 border border-slate-200/80 shadow-2xl shadow-blue-900/[0.06] p-1.5 sm:p-2.5 relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/[0.12]">
+            {/* Right Hero Visual Container: Enlarged High-Converting Doorstep Video Card */}
+            <div className="w-full max-w-lg lg:max-w-none mx-auto">
+              <div className="rounded-2xl sm:rounded-[28px] bg-gradient-to-b from-white via-white to-slate-50 border border-slate-200/80 shadow-2xl shadow-blue-900/[0.07] p-1.5 sm:p-2.5 lg:p-3 relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/[0.14]">
                 <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-black border border-slate-200/70">
                   {/* Media Container: High-Definition WebP Thumbnail overlay + pre-mounted Video for instant playback */}
                   <div className="relative w-full aspect-[16/10] sm:aspect-video bg-black overflow-hidden flex items-center justify-center group select-none">
@@ -1085,8 +1085,8 @@ export default function HomePage() {
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-500 flex items-center justify-center">
                           <div className="relative flex items-center justify-center transform group-hover:scale-108 active:scale-95 transition-transform duration-300">
                             <span className="absolute -inset-2 rounded-full bg-black/30 blur-lg opacity-80" />
-                            <div className="relative w-12 h-12 sm:w-15 sm:h-15 rounded-full bg-black/75 hover:bg-black/90 backdrop-blur-md text-white flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.45)] border border-white/30 transition-all">
-                              <Play className="w-5 h-5 sm:w-6 sm:h-6 ml-0.5 fill-white text-white" />
+                            <div className="relative w-12 h-12 sm:w-16 sm:h-16 lg:w-18 lg:h-18 rounded-full bg-black/75 hover:bg-black/90 backdrop-blur-md text-white flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.45)] border border-white/30 transition-all">
+                              <Play className="w-5 h-5 sm:w-6 sm:h-6 lg:w-7 lg:h-7 ml-0.5 fill-white text-white" />
                             </div>
                           </div>
                         </div>
@@ -1126,8 +1126,8 @@ export default function HomePage() {
         {/* ========================================================================= */}
         {/* 4B. DEVICE PRESETS: SHOP & SELL ELECTRONICS SAFELY (DIRECT TO DETAILS)    */}
         {/* ========================================================================= */}
-        <section className="w-full max-w-[1680px] mx-auto px-3.5 sm:px-6 lg:px-8 xl:px-10 pt-3 sm:pt-4 lg:pt-5 pb-3 sm:pb-6 lg:pb-7">
-          <div className="flex items-center justify-between gap-2 mb-2.5 sm:mb-3.5">
+        <section className="w-full max-w-[1680px] mx-auto px-3.5 sm:px-6 lg:px-8 xl:px-10 pt-2.5 sm:pt-3.5 lg:pt-4 pb-3 sm:pb-5 lg:pb-6">
+          <div className="flex items-center justify-between gap-2 mb-2.5 sm:mb-3">
             <h2 className="text-[15px] sm:text-xl lg:text-2xl font-extrabold text-[#0F172A] tracking-tight">
               Shop &amp; Sell Electronics Safely
             </h2>
@@ -1149,15 +1149,15 @@ export default function HomePage() {
                 className="group relative overflow-hidden rounded-2xl lg:rounded-3xl bg-gradient-to-br from-white via-[#F8FAFC] to-[#EFF6FF]/60 hover:from-white hover:to-blue-50/80 border border-slate-200/90 hover:border-[#0066FF]/45 px-3.5 py-2.5 sm:px-5 sm:py-4.5 lg:px-6 lg:py-5 shadow-2xs hover:shadow-md transition-all duration-200 flex items-center justify-between gap-2 sm:gap-3 cursor-pointer"
               >
                 <div className="min-w-0 flex flex-col justify-center z-10">
-                  <div className="inline-flex items-center gap-0.5 text-[13px] sm:text-base lg:text-lg font-extrabold text-[#0F172A] group-hover:text-[#0066FF] transition-colors">
+                  <div className="inline-flex items-center gap-0.5 text-[13px] sm:text-base lg:text-[19px] font-extrabold text-[#0F172A] group-hover:text-[#0066FF] transition-colors">
                     <span className="truncate">{preset.title}</span>
-                    <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400 group-hover:text-[#0066FF] group-hover:translate-x-0.5 transition-all shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4.5 text-slate-400 group-hover:text-[#0066FF] group-hover:translate-x-0.5 transition-all shrink-0" />
                   </div>
-                  <span className="text-[10px] sm:text-xs lg:text-[13px] text-slate-500 font-medium truncate mt-0.5">
+                  <span className="text-[10px] sm:text-xs lg:text-[13.5px] text-slate-500 font-medium truncate mt-0.5">
                     {preset.subtitle}
                   </span>
                 </div>
-                <div className="w-14 h-11 sm:w-20 sm:h-15 lg:w-24 lg:h-18 shrink-0 flex items-center justify-end">
+                <div className="w-14 h-11 sm:w-20 sm:h-15 lg:w-26 lg:h-19 shrink-0 flex items-center justify-end">
                   <img
                     src={preset.image}
                     alt={preset.title}
