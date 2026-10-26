@@ -3277,7 +3277,7 @@ function CreateShipmentContent() {
                 </div>
 
                 {/* Route Timeline */}
-                <div className="space-y-3 pb-4 border-b border-[#F1F5F9]">
+                <div className="space-y-3">
                   <span className="text-xs font-bold text-[#64748B] block">Route</span>
                   <div className="relative pl-5 space-y-3.5 before:content-[''] before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200">
                     <div className="relative flex items-start justify-between gap-2">
@@ -3317,24 +3317,6 @@ function CreateShipmentContent() {
                         Change
                       </button>
                     </div>
-                  </div>
-                </div>
-
-                {/* Price Breakdown */}
-                <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between text-[#475569]">
-                    <span>Item Value (Declared)</span>
-                    <span className="font-mono font-bold text-[#0F172A]">₹{(declaredValue || 0).toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[#475569]">
-                    <span>Shipping Charge (Est.)</span>
-                    <span className="font-mono font-bold text-[#0F172A]">₹{upfrontShippingCharge.toLocaleString('en-IN')}</span>
-                  </div>
-                  <div className="pt-2 border-t border-[#F1F5F9] flex items-baseline justify-between">
-                    <span className="text-sm font-black text-[#0F172A]">Total Payable</span>
-                    <span className="text-lg font-black text-[#0066FF] font-mono">
-                      ₹{((declaredValue || 0) + upfrontShippingCharge).toLocaleString('en-IN')}
-                    </span>
                   </div>
                 </div>
 
