@@ -398,7 +398,7 @@ export default function HomePage() {
       {/* 1. TOP HEADER: Clean, Professional, High-Trust Navigation                 */}
       {/* ========================================================================= */}
       <header className="w-full bg-white/95 backdrop-blur-md border-b border-[#E2E8F0] sticky top-0 z-40">
-        <div className="max-w-[1720px] 2xl:max-w-[1920px] min-[2100px]:max-w-[2140px] mx-auto px-3.5 sm:px-6 lg:px-[clamp(1.5rem,2.8vw,3.75rem)] py-2 sm:py-2.5 2xl:py-3 flex items-center justify-between gap-2">
+        <div className="max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-3.5 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)] py-2 sm:py-2.5 flex items-center justify-between gap-2">
           {/* Brand Logo */}
           <Link href="/in" className="flex items-center gap-2 sm:gap-2.5 group shrink-0 select-none">
             <SafeShipLogo className="w-8 h-8 sm:w-10 sm:h-10 2xl:w-11 2xl:h-11 shrink-0 group-hover:scale-105 transition duration-200" />
@@ -821,27 +821,27 @@ export default function HomePage() {
       )}
 
       {/* ========================================================================= */}
-      {/* DESKTOP & TABLET FIRST-FOLD WRAPPER: HERO + MARQUEE + DEVICE CATEGORIES   */}
-      {/* Dynamically locks to 100dvh across tablets, MacBooks, and wide desktops   */}
-      {/* so all 6 category tabs remain 100% visible and middle items scale cleanly */}
+      {/* DESKTOP FIRST-FOLD WRAPPER: HERO + PARTNER MARQUEE + DEVICE CATEGORIES    */}
+      {/* Dynamically locks to 100dvh on all desktop screens & DPIs so all 6        */}
+      {/* category tabs remain 100% visible while middle items scale to fill space  */}
       {/* ========================================================================= */}
-      <div className="w-full sm:h-[calc(100dvh-58px)] sm:min-h-[750px] min-[1180px]:min-h-[600px] sm:max-h-[1480px] min-[1180px]:max-h-[1320px] sm:flex sm:flex-col sm:justify-between overflow-hidden">
+      <div className="w-full lg:h-[calc(100dvh-58px)] lg:min-h-[600px] lg:max-h-[1280px] lg:flex lg:flex-col lg:justify-between overflow-hidden">
         {/* ========================================================================= */}
         {/* 3. HERO SECTION (LUXURY FINTECH AESTHETICS, AMBIENT DEPTH, FLUID DESKTOP) */}
         {/* ========================================================================= */}
-        <section className="relative w-full max-w-[1720px] 2xl:max-w-[1920px] min-[2100px]:max-w-[2140px] mx-auto px-3.5 sm:px-6 lg:px-[clamp(1.5rem,2.8vw,3.75rem)] pt-2 sm:pt-[clamp(0.45rem,1dvh,1.15rem)] pb-2 sm:pb-[clamp(0.3rem,0.75dvh,0.85rem)] sm:flex-1 sm:min-h-0 sm:flex sm:flex-col sm:justify-between">
+        <section className="relative w-full max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-3.5 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)] pt-2 sm:pt-3 lg:pt-[clamp(0.5rem,1.15dvh,1.25rem)] pb-2 sm:pb-3 lg:pb-[clamp(0.35rem,0.8dvh,0.9rem)] lg:flex-1 lg:min-h-0 lg:flex lg:flex-col lg:justify-between">
           {/* Subtle Ambient Radial Glows */}
           <div className="absolute -top-24 -right-16 w-80 sm:w-96 h-80 sm:h-96 bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute top-1/2 -left-20 w-72 h-72 bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
 
-          {/* Tablet (2x2) & Desktop (5-Col) Top Strip: Taller Cards & Zero Truncation */}
-          <div className="hidden sm:grid sm:grid-cols-2 min-[1180px]:grid-cols-[1.28fr_1fr_1fr_1fr_1fr] gap-2 sm:gap-[clamp(0.45rem,0.85dvh,0.85rem)] min-[1180px]:gap-[clamp(0.6rem,0.9vw,1.1rem)] items-stretch mb-2 sm:mb-[clamp(0.4rem,0.9dvh,1rem)] shrink-0 relative z-10">
+          {/* Desktop Top Strip: Taller, Proportional 5-Column Trust & Tagline Grid */}
+          <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-[1.28fr_1fr_1fr_1fr_1fr] gap-2.5 lg:gap-[clamp(0.55rem,0.9vw,1rem)] items-stretch mb-2.5 lg:mb-[clamp(0.45rem,1dvh,1rem)] shrink-0 relative z-10">
             {/* Col 1: Dynamic Switching Tagline Pill */}
             <button
               type="button"
               onClick={() => setHeroTaglineIdx((prev) => (prev + 1) % HERO_TAGLINES.length)}
               title="Click to switch tagline"
-              className="sm:col-span-2 min-[1180px]:col-span-1 group w-full h-full flex items-center justify-between gap-2.5 px-3.5 min-[1180px]:px-[clamp(0.85rem,1.1vw,1.35rem)] py-2 sm:py-[clamp(0.45rem,0.95dvh,0.85rem)] min-[1180px]:py-[clamp(0.65rem,1.35dvh,1.15rem)] rounded-2xl bg-blue-50/95 hover:bg-blue-100/85 border border-blue-200/90 shadow-2xs text-xs min-[1180px]:text-[clamp(0.78rem,min(0.88vw,1.6dvh),1rem)] font-extrabold text-[#0066FF] tracking-tight transition-all active:scale-[0.99] cursor-pointer"
+              className="sm:col-span-2 lg:col-span-1 group w-full h-full flex items-center justify-between gap-2.5 px-3.5 lg:px-[clamp(0.85rem,1.1vw,1.25rem)] py-2.5 lg:py-[clamp(0.65rem,1.25dvh,1.05rem)] rounded-2xl bg-blue-50/95 hover:bg-blue-100/85 border border-blue-200/90 shadow-2xs text-xs xl:text-[14px] font-extrabold text-[#0066FF] tracking-tight transition-all active:scale-[0.99] cursor-pointer"
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <span className="relative flex h-2.5 w-2.5 shrink-0">
@@ -852,58 +852,58 @@ export default function HomePage() {
                   {HERO_TAGLINES[heroTaglineIdx]}
                 </span>
               </div>
-              <RefreshCw className="w-3.5 h-3.5 2xl:w-4 2xl:h-4 text-[#0066FF]/70 group-hover:text-[#0066FF] group-hover:rotate-180 transition-transform duration-300 shrink-0" />
+              <RefreshCw className="w-3.5 h-3.5 text-[#0066FF]/70 group-hover:text-[#0066FF] group-hover:rotate-180 transition-transform duration-300 shrink-0" />
             </button>
 
             {/* Col 2: Bank Escrow */}
-            <div className="px-3.5 min-[1180px]:px-[clamp(0.8rem,1.05vw,1.3rem)] py-2 sm:py-[clamp(0.45rem,0.95dvh,0.85rem)] min-[1180px]:py-[clamp(0.65rem,1.35dvh,1.15rem)] rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 min-[1180px]:gap-3 shadow-2xs min-w-0">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 min-[1180px]:w-10 min-[1180px]:h-10 2xl:w-11 2xl:h-11 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                <ShieldCheck className="w-4 h-4 sm:w-4.5 sm:h-4.5 min-[1180px]:w-5 min-[1180px]:h-5" />
+            <div className="px-3.5 lg:px-[clamp(0.8rem,1.05vw,1.2rem)] py-2.5 lg:py-[clamp(0.65rem,1.25dvh,1.05rem)] rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 lg:gap-3 shadow-2xs min-w-0">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-4.5 h-4.5 lg:w-5 lg:h-5" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs sm:text-[13px] min-[1180px]:text-[clamp(0.8rem,min(0.9vw,1.6dvh),1.02rem)] font-extrabold text-slate-900 leading-tight truncate">Bank Escrow</div>
-                <div className="text-[10.5px] sm:text-[11.5px] min-[1180px]:text-[clamp(0.68rem,min(0.76vw,1.35dvh),0.86rem)] text-slate-500 font-medium leading-tight truncate mt-0.5">Funds 100% locked in RBI nodal</div>
+                <div className="text-xs xl:text-[14px] font-extrabold text-slate-900 leading-tight">Bank Escrow</div>
+                <div className="text-[11px] xl:text-[12.5px] text-slate-500 font-medium leading-tight truncate mt-0.5">Funds 100% locked in RBI nodal</div>
               </div>
             </div>
 
             {/* Col 3: PAN India */}
-            <div className="px-3.5 min-[1180px]:px-[clamp(0.8rem,1.05vw,1.3rem)] py-2 sm:py-[clamp(0.45rem,0.95dvh,0.85rem)] min-[1180px]:py-[clamp(0.65rem,1.35dvh,1.15rem)] rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 min-[1180px]:gap-3 shadow-2xs min-w-0">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 min-[1180px]:w-10 min-[1180px]:h-10 2xl:w-11 2xl:h-11 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                <Truck className="w-4 h-4 sm:w-4.5 sm:h-4.5 min-[1180px]:w-5 min-[1180px]:h-5" />
+            <div className="px-3.5 lg:px-[clamp(0.8rem,1.05vw,1.2rem)] py-2.5 lg:py-[clamp(0.65rem,1.25dvh,1.05rem)] rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 lg:gap-3 shadow-2xs min-w-0">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <Truck className="w-4.5 h-4.5 lg:w-5 lg:h-5" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs sm:text-[13px] min-[1180px]:text-[clamp(0.8rem,min(0.9vw,1.6dvh),1.02rem)] font-extrabold text-slate-900 leading-tight truncate">PAN India</div>
-                <div className="text-[10.5px] sm:text-[11.5px] min-[1180px]:text-[clamp(0.68rem,min(0.76vw,1.35dvh),0.86rem)] text-slate-500 font-medium leading-tight truncate mt-0.5">19,000+ serviceable PIN codes</div>
+                <div className="text-xs xl:text-[14px] font-extrabold text-slate-900 leading-tight">PAN India</div>
+                <div className="text-[11px] xl:text-[12.5px] text-slate-500 font-medium leading-tight truncate mt-0.5">19,000+ serviceable PIN codes</div>
               </div>
             </div>
 
             {/* Col 4: 10-Min Open-Box */}
-            <div className="px-3.5 min-[1180px]:px-[clamp(0.8rem,1.05vw,1.3rem)] py-2 sm:py-[clamp(0.45rem,0.95dvh,0.85rem)] min-[1180px]:py-[clamp(0.65rem,1.35dvh,1.15rem)] rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 min-[1180px]:gap-3 shadow-2xs min-w-0">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 min-[1180px]:w-10 min-[1180px]:h-10 2xl:w-11 2xl:h-11 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                <Eye className="w-4 h-4 sm:w-4.5 sm:h-4.5 min-[1180px]:w-5 min-[1180px]:h-5" />
+            <div className="px-3.5 lg:px-[clamp(0.8rem,1.05vw,1.2rem)] py-2.5 lg:py-[clamp(0.65rem,1.25dvh,1.05rem)] rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 lg:gap-3 shadow-2xs min-w-0">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <Eye className="w-4.5 h-4.5 lg:w-5 lg:h-5" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs sm:text-[13px] min-[1180px]:text-[clamp(0.8rem,min(0.9vw,1.6dvh),1.02rem)] font-extrabold text-slate-900 leading-tight truncate">10-Min Open-Box</div>
-                <div className="text-[10.5px] sm:text-[11.5px] min-[1180px]:text-[clamp(0.68rem,min(0.76vw,1.35dvh),0.86rem)] text-slate-500 font-medium leading-tight truncate mt-0.5">Verify boot &amp; IMEI before paying</div>
+                <div className="text-xs xl:text-[14px] font-extrabold text-slate-900 leading-tight">10-Min Open-Box</div>
+                <div className="text-[11px] xl:text-[12.5px] text-slate-500 font-medium leading-tight truncate mt-0.5">Verify boot &amp; IMEI before paying</div>
               </div>
             </div>
 
             {/* Col 5: 24/7 Support */}
-            <div className="px-3.5 min-[1180px]:px-[clamp(0.8rem,1.05vw,1.3rem)] py-2 sm:py-[clamp(0.45rem,0.95dvh,0.85rem)] min-[1180px]:py-[clamp(0.65rem,1.35dvh,1.15rem)] rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 min-[1180px]:gap-3 shadow-2xs min-w-0">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 min-[1180px]:w-10 min-[1180px]:h-10 2xl:w-11 2xl:h-11 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
-                <Headphones className="w-4 h-4 sm:w-4.5 sm:h-4.5 min-[1180px]:w-5 min-[1180px]:h-5" />
+            <div className="px-3.5 lg:px-[clamp(0.8rem,1.05vw,1.2rem)] py-2.5 lg:py-[clamp(0.65rem,1.25dvh,1.05rem)] rounded-2xl bg-white/95 hover:bg-white border border-slate-200/90 hover:border-blue-200 transition flex items-center gap-2.5 lg:gap-3 shadow-2xs min-w-0">
+              <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-xl bg-blue-50 border border-blue-100 text-[#0066FF] flex items-center justify-center shrink-0">
+                <Headphones className="w-4.5 h-4.5 lg:w-5 lg:h-5" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs sm:text-[13px] min-[1180px]:text-[clamp(0.8rem,min(0.9vw,1.6dvh),1.02rem)] font-extrabold text-slate-900 leading-tight truncate">24/7 Support</div>
-                <div className="text-[10.5px] sm:text-[11.5px] min-[1180px]:text-[clamp(0.68rem,min(0.76vw,1.35dvh),0.86rem)] text-slate-500 font-medium leading-tight truncate mt-0.5">Live human escrow desk</div>
+                <div className="text-xs xl:text-[14px] font-extrabold text-slate-900 leading-tight">24/7 Support</div>
+                <div className="text-[11px] xl:text-[12.5px] text-slate-500 font-medium leading-tight truncate mt-0.5">Live human escrow desk</div>
               </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 min-[1180px]:grid-cols-[0.92fr_1.24fr] 2xl:grid-cols-[0.9fr_1.28fr] gap-2.5 sm:gap-[clamp(0.65rem,1.4dvh,1.35rem)] min-[1180px]:gap-x-[clamp(1.75rem,2.6vw,3.25rem)] items-center relative z-10 sm:flex-1 sm:min-h-0 my-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-[0.92fr_1.24fr] xl:grid-cols-[0.9fr_1.28fr] gap-2.5 sm:gap-6 lg:gap-x-[clamp(1.5rem,2.4vw,2.85rem)] items-center relative z-10 lg:flex-1 lg:min-h-0 my-auto">
             
-            {/* Left Hero Content (2-Col Full-Width Row on Tablets, Taller Vertical Stack on Desktops) */}
-            <div className="space-y-2 sm:space-y-0">
+            {/* Left Hero Content (Bigger & Taller Fluid Viewport-Aware Typography, Buttons & Pills) */}
+            <div className="space-y-2 sm:space-y-4 lg:space-y-[clamp(0.85rem,2dvh,1.8rem)]">
               
               {/* Mobile-Only Eyebrow Pill Badge (Dynamic Switching Tagline) */}
               <div className="flex sm:hidden items-center gap-2 flex-wrap">
@@ -973,68 +973,63 @@ export default function HomePage() {
                 </p>
               </div>
 
-              {/* Tablet (2-Col Full-Width Header) & Desktop (Vertical Stack) Hero Text + Actions */}
-              <div className="hidden sm:grid sm:grid-cols-[1.18fr_0.82fr] sm:items-center sm:gap-5 min-[1180px]:block min-[1180px]:space-y-[clamp(0.85rem,2.05dvh,1.9rem)]">
-                {/* Headline + Subtitle Group */}
-                <div className="space-y-1.5 sm:space-y-[clamp(0.35rem,0.8dvh,0.75rem)] min-[1180px]:space-y-[clamp(0.65rem,1.5dvh,1.35rem)] min-w-0">
-                  <h1 className="text-[clamp(2.1rem,min(4.5vw,3.9dvh),3.35rem)] min-[1180px]:text-[clamp(2.6rem,min(4.25vw,7.6dvh),5.5rem)] font-black tracking-[-0.035em] text-[#0F172A] leading-[1.05] min-[1180px]:leading-[1.06]">
-                    <span className="block whitespace-nowrap">Open Box Delivery</span>
-                    <span className="block whitespace-nowrap">&amp; Safe Shipping.</span>
-                    <span className="block whitespace-nowrap bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
-                      Verify Then Pay.
-                    </span>
-                  </h1>
+              {/* Desktop View: Bigger & Taller 3-Line Scaled Headline (hidden sm:block) */}
+              <div className="hidden sm:block">
+                <h1 className="text-4xl sm:text-5xl lg:text-[clamp(2.75rem,min(4.35vw,7.8dvh),5.4rem)] font-black tracking-[-0.035em] text-[#0F172A] leading-[1.06]">
+                  <span className="block whitespace-nowrap">Open Box Delivery</span>
+                  <span className="block whitespace-nowrap">&amp; Safe Shipping.</span>
+                  <span className="block whitespace-nowrap bg-gradient-to-r from-[#0066FF] via-[#0052FF] to-[#1D4ED8] bg-clip-text text-transparent">
+                    Verify Then Pay.
+                  </span>
+                </h1>
+              </div>
 
-                  <div className="space-y-1 min-[1180px]:space-y-[clamp(0.35rem,0.75dvh,0.65rem)] text-slate-600 text-[clamp(0.8rem,min(1.4vw,1.35dvh),1.02rem)] min-[1180px]:text-[clamp(0.96rem,min(1.22vw,2.15dvh),1.42rem)] leading-[1.45] min-[1180px]:leading-[1.55] max-w-full min-[1180px]:max-w-[clamp(28rem,39vw,48rem)]">
-                    <p className="font-bold text-slate-900">
-                      India&apos;s #1 open box courier &amp; safe shipping company for high-value electronics.
-                    </p>
-                    <p className="text-slate-600 font-normal">
-                      Guaranteed 10-minute doorstep unboxing via Blue Dart &amp; Delhivery partners with Cashfree RBI Nodal Escrow. Verify boot, screen &amp; IMEI before paying &mdash; or reject for ₹0.
-                    </p>
-                  </div>
-                </div>
+              {/* Desktop View: Bigger & Taller Fluid Subtitle (hidden sm:block) */}
+              <div className="hidden sm:block space-y-1.5 lg:space-y-[clamp(0.4rem,0.85dvh,0.75rem)] text-slate-600 text-sm sm:text-base lg:text-[clamp(1.02rem,min(1.26vw,2.2dvh),1.42rem)] leading-[1.55] max-w-full lg:max-w-[clamp(30rem,39vw,47rem)]">
+                <p className="font-bold text-slate-900">
+                  India&apos;s #1 open box courier &amp; safe shipping company for high-value electronics.
+                </p>
+                <p className="text-slate-600 font-normal">
+                  Guaranteed 10-minute doorstep unboxing via Blue Dart &amp; Delhivery partners with Cashfree RBI Nodal Escrow. Verify boot, screen &amp; IMEI before paying &mdash; or reject for ₹0.
+                </p>
+              </div>
 
-                {/* Action Buttons + Micro-Trust Verification Pills Group */}
-                <div className="flex flex-col justify-center gap-2 sm:gap-[clamp(0.45rem,1dvh,0.85rem)] min-[1180px]:space-y-[clamp(0.75rem,1.6dvh,1.35rem)] min-[1180px]:block">
-                  {/* Action Buttons: Stacked/Full on Tablet Right Col, Side-by-Side on Desktop */}
-                  <div className="flex flex-col min-[900px]:flex-row min-[1180px]:flex-row items-stretch min-[900px]:items-center gap-2 sm:gap-2.5 min-[1180px]:gap-4">
-                    <Link
-                      href="/in/deals/new?type=send"
-                      className="flex-1 min-[1180px]:flex-initial py-2.5 sm:py-[clamp(0.6rem,1.25dvh,1rem)] min-[1180px]:py-[clamp(0.85rem,1.75dvh,1.35rem)] px-4 sm:px-5 min-[1180px]:px-[clamp(1.55rem,2.2vw,2.85rem)] rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-xs sm:text-[clamp(0.82rem,min(1.4vw,1.45dvh),1rem)] min-[1180px]:text-[clamp(0.95rem,min(1.18vw,2.1dvh),1.32rem)] shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer whitespace-nowrap"
-                    >
-                      <span className="relative flex h-2.5 w-2.5 shrink-0">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-70"></span>
-                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
-                      </span>
-                      <span>Book Safe Delivery &rarr;</span>
-                    </Link>
+              {/* Desktop Action Buttons: Bigger & Taller Fluid Book Delivery & Track Shipment */}
+              <div className="hidden sm:flex items-center gap-3.5 lg:gap-4 pt-0.5">
+                <Link
+                  href="/in/deals/new?type=send"
+                  className="py-3.5 lg:py-[clamp(0.88rem,1.75dvh,1.32rem)] px-7 lg:px-[clamp(1.65rem,2.25vw,2.8rem)] rounded-2xl bg-gradient-to-r from-[#0066FF] to-[#0052FF] hover:from-[#0052FF] hover:to-[#0040CC] text-white font-bold text-sm sm:text-base lg:text-[clamp(1rem,min(1.22vw,2.15dvh),1.32rem)] shadow-md shadow-blue-500/25 hover:shadow-lg hover:shadow-blue-500/35 transition active:scale-95 flex items-center justify-center gap-2.5 text-center cursor-pointer whitespace-nowrap"
+                >
+                  <span className="relative flex h-2.5 w-2.5 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-70"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+                  </span>
+                  <span>Book Safe Delivery &rarr;</span>
+                </Link>
 
-                    <Link
-                      href="/in/track"
-                      className="flex-1 min-[1180px]:flex-initial py-2.5 sm:py-[clamp(0.6rem,1.25dvh,1rem)] min-[1180px]:py-[clamp(0.85rem,1.75dvh,1.35rem)] px-4 sm:px-5 min-[1180px]:px-[clamp(1.35rem,1.9vw,2.45rem)] rounded-2xl bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-800 font-bold text-xs sm:text-[clamp(0.82rem,min(1.4vw,1.45dvh),1rem)] min-[1180px]:text-[clamp(0.95rem,min(1.18vw,2.1dvh),1.32rem)] shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer whitespace-nowrap"
-                    >
-                      <Search className="w-4 h-4 min-[1180px]:w-5 min-[1180px]:h-5 text-slate-500 shrink-0" />
-                      <span>Track Shipment</span>
-                    </Link>
-                  </div>
+                <Link
+                  href="/in/track"
+                  className="py-3.5 lg:py-[clamp(0.88rem,1.75dvh,1.32rem)] px-6 lg:px-[clamp(1.45rem,2vw,2.5rem)] rounded-2xl bg-white hover:bg-slate-50 border border-slate-200/90 text-slate-800 font-bold text-sm sm:text-base lg:text-[clamp(1rem,min(1.22vw,2.15dvh),1.32rem)] shadow-2xs hover:shadow-xs transition active:scale-95 flex items-center justify-center gap-2 text-center cursor-pointer whitespace-nowrap"
+                >
+                  <Search className="w-4.5 h-4.5 lg:w-5 lg:h-5 text-slate-500 shrink-0" />
+                  <span>Track Shipment</span>
+                </Link>
+              </div>
 
-                  {/* Micro-Trust Verification Pills Under CTAs */}
-                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-[1180px]:gap-2.5">
-                    <span className="inline-flex items-center gap-1.5 min-[1180px]:gap-2 px-2.5 sm:px-3 min-[1180px]:px-[clamp(0.75rem,1.05vw,1.25rem)] py-1.5 sm:py-[clamp(0.32rem,0.7dvh,0.58rem)] min-[1180px]:py-[clamp(0.45rem,1dvh,0.8rem)] rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs text-[11px] sm:text-[clamp(0.68rem,min(1.15vw,1.2dvh),0.82rem)] min-[1180px]:text-[clamp(0.75rem,min(0.88vw,1.55dvh),1rem)] font-bold text-slate-700 whitespace-nowrap">
-                      <CheckCircle2 className="w-3.5 h-3.5 min-[1180px]:w-4 min-[1180px]:h-4 text-[#0066FF] shrink-0" />
-                      <span>₹0 Product Advance</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 min-[1180px]:gap-2 px-2.5 sm:px-3 min-[1180px]:px-[clamp(0.75rem,1.05vw,1.25rem)] py-1.5 sm:py-[clamp(0.32rem,0.7dvh,0.58rem)] min-[1180px]:py-[clamp(0.45rem,1dvh,0.8rem)] rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs text-[11px] sm:text-[clamp(0.68rem,min(1.15vw,1.2dvh),0.82rem)] min-[1180px]:text-[clamp(0.75rem,min(0.88vw,1.55dvh),1rem)] font-bold text-slate-700 whitespace-nowrap">
-                      <CheckCircle2 className="w-3.5 h-3.5 min-[1180px]:w-4 min-[1180px]:h-4 text-[#0066FF] shrink-0" />
-                      <span>₹10L Cargo Insurance</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 min-[1180px]:gap-2 px-2.5 sm:px-3 min-[1180px]:px-[clamp(0.75rem,1.05vw,1.25rem)] py-1.5 sm:py-[clamp(0.32rem,0.7dvh,0.58rem)] min-[1180px]:py-[clamp(0.45rem,1dvh,0.8rem)] rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs text-[11px] sm:text-[clamp(0.68rem,min(1.15vw,1.2dvh),0.82rem)] min-[1180px]:text-[clamp(0.75rem,min(0.88vw,1.55dvh),1rem)] font-bold text-slate-700 whitespace-nowrap">
-                      <CheckCircle2 className="w-3.5 h-3.5 min-[1180px]:w-4 min-[1180px]:h-4 text-[#0066FF] shrink-0" />
-                      <span>Instant Reject at ₹0</span>
-                    </span>
-                  </div>
-                </div>
+              {/* Desktop Micro-Trust Verification Pills Under CTAs (Bigger & Taller) */}
+              <div className="hidden sm:flex flex-wrap items-center gap-2 lg:gap-2.5 pt-0.5">
+                <span className="inline-flex items-center gap-1.5 lg:gap-2 px-3.5 lg:px-[clamp(0.85rem,1.1vw,1.25rem)] py-2 lg:py-[clamp(0.48rem,1dvh,0.78rem)] rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs text-xs lg:text-[clamp(0.78rem,min(0.92vw,1.6dvh),1rem)] font-bold text-slate-700 whitespace-nowrap">
+                  <CheckCircle2 className="w-4 h-4 text-[#0066FF] shrink-0" />
+                  <span>₹0 Product Advance</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 lg:gap-2 px-3.5 lg:px-[clamp(0.85rem,1.1vw,1.25rem)] py-2 lg:py-[clamp(0.48rem,1dvh,0.78rem)] rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs text-xs lg:text-[clamp(0.78rem,min(0.92vw,1.6dvh),1rem)] font-bold text-slate-700 whitespace-nowrap">
+                  <CheckCircle2 className="w-4 h-4 text-[#0066FF] shrink-0" />
+                  <span>₹10L Cargo Insurance</span>
+                </span>
+                <span className="inline-flex items-center gap-1.5 lg:gap-2 px-3.5 lg:px-[clamp(0.85rem,1.1vw,1.25rem)] py-2 lg:py-[clamp(0.48rem,1dvh,0.78rem)] rounded-xl bg-white/95 border border-slate-200/90 shadow-2xs text-xs lg:text-[clamp(0.78rem,min(0.92vw,1.6dvh),1rem)] font-bold text-slate-700 whitespace-nowrap">
+                  <CheckCircle2 className="w-4 h-4 text-[#0066FF] shrink-0" />
+                  <span>Instant Reject at ₹0</span>
+                </span>
               </div>
 
               {/* Mobile: Ultra-Clean 1-Row 4-Column Trust Strip (Unified Brand Blue & Slate) */}
@@ -1063,9 +1058,9 @@ export default function HomePage() {
 
             </div>
 
-            {/* Right Hero Visual Container: Exact 1150:666 WebP Thumbnail Aspect Ratio, Scales Wide on Tablets & Wide Desktops */}
-            <div className="w-full max-w-lg sm:max-w-[min(100%,calc((100dvh-540px)*1.7267))] min-[1180px]:max-w-[min(100%,calc((100dvh-210px)*1.7267))] mx-auto">
-              <div className="rounded-2xl sm:rounded-[26px] bg-gradient-to-b from-white via-white to-slate-50 border border-slate-200/80 shadow-2xl shadow-blue-900/[0.08] p-1.5 sm:p-2 min-[1180px]:p-[clamp(0.35rem,0.65dvh,0.65rem)] relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/[0.15]">
+            {/* Right Hero Visual Container: Exact 1150:666 WebP Thumbnail Aspect Ratio, Bigger & Taller Fill */}
+            <div className="w-full max-w-2xl lg:max-w-[min(100%,calc((100dvh-215px)*1.7267))] mx-auto">
+              <div className="rounded-2xl sm:rounded-[26px] bg-gradient-to-b from-white via-white to-slate-50 border border-slate-200/80 shadow-2xl shadow-blue-900/[0.08] p-1.5 sm:p-2 lg:p-[clamp(0.35rem,0.65dvh,0.65rem)] relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/[0.15]">
                 <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/70">
                   {/* Media Container: Exact 1150:666 aspect ratio matching safeship_video_thumbnail.webp so there are 0px black borders */}
                   <div className="relative w-full aspect-[1150/666] overflow-hidden flex items-center justify-center group select-none">
@@ -1107,8 +1102,8 @@ export default function HomePage() {
                         <div className="absolute inset-0 bg-black/10 group-hover:bg-black/20 transition-colors duration-500 flex items-center justify-center">
                           <div className="relative flex items-center justify-center transform group-hover:scale-108 active:scale-95 transition-transform duration-300">
                             <span className="absolute -inset-2 rounded-full bg-black/30 blur-lg opacity-80" />
-                            <div className="relative w-12 h-12 sm:w-15 sm:h-15 min-[1180px]:w-17 min-[1180px]:h-17 2xl:w-19 2xl:h-19 rounded-full bg-black/75 hover:bg-black/90 backdrop-blur-md text-white flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.45)] border border-white/30 transition-all">
-                              <Play className="w-5 h-5 sm:w-6 sm:h-6 min-[1180px]:w-6.5 min-[1180px]:h-6.5 2xl:w-7.5 2xl:h-7.5 ml-0.5 fill-white text-white" />
+                            <div className="relative w-12 h-12 sm:w-15 sm:h-15 lg:w-17 lg:h-17 rounded-full bg-black/75 hover:bg-black/90 backdrop-blur-md text-white flex items-center justify-center shadow-[0_8px_30px_rgba(0,0,0,0.45)] border border-white/30 transition-all">
+                              <Play className="w-5 h-5 sm:w-6 sm:h-6 lg:w-6.5 lg:h-6.5 ml-0.5 fill-white text-white" />
                             </div>
                           </div>
                         </div>
@@ -1147,40 +1142,40 @@ export default function HomePage() {
 
         {/* ========================================================================= */}
         {/* 4B. DEVICE PRESETS: SHOP & SELL ELECTRONICS SAFELY (6 CATEGORIES)         */}
-        {/* 3x2 on Tablets (768px-1179px), 6-Col on Desktops (>=1180px), Taller Cards */}
+        {/* Taller, well-proportioned cards visible at bottom of first fold           */}
         {/* ========================================================================= */}
-        <section className="w-full max-w-[1720px] 2xl:max-w-[1920px] min-[2100px]:max-w-[2140px] mx-auto px-3.5 sm:px-6 lg:px-[clamp(1.5rem,2.8vw,3.75rem)] pt-1.5 sm:pt-[clamp(0.35rem,0.75dvh,0.75rem)] pb-3 sm:pb-[clamp(0.55rem,1.2dvh,1.15rem)] shrink-0">
-          <div className="flex items-center justify-between gap-2 mb-1.5 sm:mb-[clamp(0.35rem,0.7dvh,0.7rem)]">
-            <h2 className="text-[15px] sm:text-[clamp(0.95rem,min(1.6vw,1.7dvh),1.2rem)] min-[1180px]:text-[clamp(1.08rem,min(1.32vw,2.15dvh),1.5rem)] font-extrabold text-[#0F172A] tracking-tight">
+        <section className="w-full max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-3.5 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)] pt-2 sm:pt-3 lg:pt-[clamp(0.4rem,0.8dvh,0.75rem)] pb-3 sm:pb-4 lg:pb-[clamp(0.6rem,1.25dvh,1.15rem)] shrink-0">
+          <div className="flex items-center justify-between gap-2 mb-2 sm:mb-2.5 lg:mb-[clamp(0.4rem,0.75dvh,0.7rem)]">
+            <h2 className="text-[15px] sm:text-lg lg:text-[clamp(1.05rem,min(1.3vw,2.1dvh),1.45rem)] font-extrabold text-[#0F172A] tracking-tight">
               Shop &amp; Sell Electronics Safely
             </h2>
             <Link
               href="/in/deals/new?type=send&step=2"
-              className="inline-flex items-center gap-1 text-xs sm:text-sm 2xl:text-[15px] font-bold text-[#0066FF] hover:text-[#0052FF] transition shrink-0"
+              className="inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-[#0066FF] hover:text-[#0052FF] transition shrink-0"
             >
               <span>All 6 Categories</span>
-              <ArrowRight className="w-3.5 h-3.5 2xl:w-4 2xl:h-4" />
+              <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
 
-          {/* 6 Symmetrical Taller Device Category Cards (2x3 on mobile, 3x2 on tablets up to 1179px, 6-col on desktops >=1180px) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 min-[1180px]:grid-cols-6 gap-2 sm:gap-[clamp(0.5rem,0.9dvh,0.85rem)] min-[1180px]:gap-[clamp(0.65rem,0.95vw,1.15rem)]">
+          {/* 6 Symmetrical Taller Device Category Cards (2x3 on mobile, 3x2 on tablet, 6-col on desktop) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 lg:gap-[clamp(0.6rem,0.9vw,1.05rem)]">
             {HOME_DEVICE_PRESETS.map((preset) => (
               <Link
                 key={preset.id}
                 href={preset.href}
-                className="group relative overflow-hidden rounded-2xl min-[1180px]:rounded-[22px] bg-gradient-to-br from-white via-[#F8FAFC] to-[#EFF6FF]/65 hover:from-white hover:to-blue-50/85 border border-slate-200/90 hover:border-[#0066FF]/45 px-3 py-2.5 sm:px-3.5 sm:py-[clamp(0.5rem,1.05dvh,0.95rem)] min-[1180px]:px-[clamp(0.85rem,1.1vw,1.35rem)] min-[1180px]:py-[clamp(0.8rem,1.65dvh,1.4rem)] min-[1180px]:min-h-[clamp(4.4rem,8.4dvh,6.4rem)] shadow-2xs hover:shadow-md transition-all duration-200 flex items-center justify-between gap-2 cursor-pointer"
+                className="group relative overflow-hidden rounded-2xl lg:rounded-[22px] bg-gradient-to-br from-white via-[#F8FAFC] to-[#EFF6FF]/65 hover:from-white hover:to-blue-50/85 border border-slate-200/90 hover:border-[#0066FF]/45 px-3 py-3 sm:px-3.5 sm:py-3.5 lg:px-[clamp(0.8rem,1.05vw,1.2rem)] lg:py-[clamp(0.75rem,1.55dvh,1.3rem)] lg:min-h-[clamp(4.2rem,7.8dvh,5.8rem)] shadow-2xs hover:shadow-md transition-all duration-200 flex items-center justify-between gap-2 cursor-pointer"
               >
                 <div className="min-w-0 flex flex-col justify-center z-10">
-                  <div className="inline-flex items-center gap-0.5 text-[12.5px] sm:text-[clamp(0.8rem,min(1.4vw,1.5dvh),0.96rem)] min-[1180px]:text-[clamp(0.85rem,min(1vw,1.85dvh),1.15rem)] font-extrabold text-[#0F172A] group-hover:text-[#0066FF] transition-colors">
+                  <div className="inline-flex items-center gap-0.5 text-[12.5px] sm:text-sm lg:text-[clamp(0.84rem,min(0.96vw,1.8dvh),1.06rem)] font-extrabold text-[#0F172A] group-hover:text-[#0066FF] transition-colors">
                     <span className="truncate">{preset.title}</span>
                     <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#0066FF] group-hover:translate-x-0.5 transition-all shrink-0" />
                   </div>
-                  <span className="text-[10px] sm:text-[clamp(0.66rem,min(1.15vw,1.2dvh),0.78rem)] min-[1180px]:text-[clamp(0.68rem,min(0.78vw,1.4dvh),0.88rem)] text-slate-500 font-medium truncate mt-0.5 min-[1180px]:mt-1">
+                  <span className="text-[10px] sm:text-[11px] lg:text-[clamp(0.68rem,min(0.76vw,1.35dvh),0.82rem)] text-slate-500 font-medium truncate mt-1">
                     {preset.subtitle}
                   </span>
                 </div>
-                <div className="w-12 h-10 sm:w-[clamp(2.6rem,4.5vw,3.8rem)] sm:h-[clamp(2.1rem,3.4dvh,3.1rem)] min-[1180px]:w-[clamp(2.95rem,3.9vw,5rem)] min-[1180px]:h-[clamp(2.5rem,4.8dvh,4.25rem)] shrink-0 flex items-center justify-end">
+                <div className="w-13 h-11 sm:w-15 sm:h-12 lg:w-[clamp(2.9rem,3.8vw,4.6rem)] lg:h-[clamp(2.45rem,4.6dvh,3.9rem)] shrink-0 flex items-center justify-end">
                   <img
                     src={preset.image}
                     alt={preset.title}
@@ -1197,7 +1192,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 5. HOW SAFESHIP WORKS: 5-STEP MILESTONE FLOW & DOORSTEP VERIFICATION SPOTLIGHT */}
       {/* ========================================================================= */}
-      <section id="how-it-works" className="w-full max-w-[1720px] 2xl:max-w-[1920px] min-[2100px]:max-w-[2140px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,3vw,3.75rem)] pt-10 sm:pt-16 lg:pt-20 pb-8 sm:pb-16 space-y-8 sm:space-y-12">
+      <section id="how-it-works" className="w-full max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)] pt-10 sm:pt-16 lg:pt-20 pb-8 sm:pb-16 space-y-8 sm:space-y-12">
         
         {/* Section Header */}
         <div className="text-center max-w-2xl mx-auto space-y-2.5">
@@ -1370,7 +1365,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 6. YOUR TRANSACTION IS FULLY PROTECTED (PANEL 3 FROM MOCKUP)              */}
       {/* ========================================================================= */}
-      <section id="features" className="w-full max-w-[1720px] 2xl:max-w-[1920px] min-[2100px]:max-w-[2140px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,3vw,3.75rem)] py-8 sm:py-16 space-y-8 sm:space-y-10">
+      <section id="features" className="w-full max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)] py-8 sm:py-16 space-y-8 sm:space-y-10">
         
         {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto space-y-2.5">
@@ -1545,7 +1540,7 @@ export default function HomePage() {
       {/* 7. NATIONAL IMPACT STATS STRIP (PURE BLACK)                               */}
       {/* ========================================================================= */}
       <section className="w-full bg-black text-white py-8 sm:py-10 border-y border-neutral-800">
-        <div className="max-w-[1720px] 2xl:max-w-[1920px] min-[2100px]:max-w-[2140px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,3vw,3.75rem)]">
+        <div className="max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)]">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 text-center">
             <div className="p-3 sm:p-0 rounded-2xl bg-neutral-950 sm:bg-transparent border border-neutral-800 sm:border-0 space-y-1">
               <div className="text-2xl sm:text-4xl font-black font-mono text-white">10-Min</div>
@@ -1577,7 +1572,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 8. DETAILED COURIER FARE & SLA ESTIMATOR (SECTION #PRICING)                */}
       {/* ========================================================================= */}
-      <section id="pricing" className="w-full max-w-[1720px] 2xl:max-w-[1920px] min-[2100px]:max-w-[2140px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,3vw,3.75rem)] py-12 sm:py-16">
+      <section id="pricing" className="w-full max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)] py-12 sm:py-16">
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-sm space-y-8">
           
           <div className="max-w-2xl mx-auto text-center space-y-2">
@@ -1803,7 +1798,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 9. SAFESHIP VS TRADITIONAL CASH-ON-DELIVERY (COD) COMPARISON TABLE        */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-[1720px] 2xl:max-w-[1920px] min-[2100px]:max-w-[2140px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,3vw,3.75rem)] py-8 sm:py-12">
+      <section className="w-full max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)] py-8 sm:py-12">
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-3xl mx-auto text-center space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0066FF] text-xs font-bold">
@@ -1957,7 +1952,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 10. CATEGORY-SPECIFIC INSPECTION PROTOCOLS                                */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-[1720px] 2xl:max-w-[1920px] min-[2100px]:max-w-[2140px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,3vw,3.75rem)] py-8 sm:py-12 space-y-6">
+      <section className="w-full max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)] py-8 sm:py-12 space-y-6">
         <div className="text-center max-w-2xl mx-auto space-y-2">
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
             Specialized Doorstep Inspection Protocols
@@ -2035,7 +2030,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 10.5 NATIONWIDE OPEN BOX DELIVERY & SAFE SHIPPING CORRIDORS               */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-[1720px] 2xl:max-w-[1920px] min-[2100px]:max-w-[2140px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,3vw,3.75rem)] py-8 sm:py-10 space-y-6">
+      <section className="w-full max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)] py-8 sm:py-10 space-y-6">
         <div className="bg-gradient-to-b from-white to-slate-50/70 rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-3xl mx-auto text-center space-y-2">
             <span className="text-[11px] font-bold uppercase tracking-wider bg-blue-50 text-[#0066FF] px-3 py-1 rounded-full border border-blue-100">
@@ -2106,7 +2101,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 10.8 WHY SAFESHIP IS INDIA'S BEST OPEN BOX DELIVERY & BEST COD SHIPPING   */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-[1720px] 2xl:max-w-[1920px] min-[2100px]:max-w-[2140px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,3vw,3.75rem)] py-8 sm:py-12 space-y-6">
+      <section className="w-full max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)] py-8 sm:py-12 space-y-6">
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-3xl mx-auto text-center space-y-2">
             <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#0066FF] bg-blue-50 border border-blue-200 px-3 py-1 rounded-full inline-block">
@@ -2205,7 +2200,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 11. FREQUENTLY ASKED QUESTIONS (ACCORDION)                                */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-[1720px] 2xl:max-w-[1920px] min-[2100px]:max-w-[2140px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,3vw,3.75rem)] py-8 sm:py-12">
+      <section className="w-full max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)] py-8 sm:py-12">
         <div className="bg-white rounded-3xl p-6 sm:p-8 lg:p-10 border border-slate-200 shadow-2xs space-y-6">
           <div className="max-w-2xl mx-auto text-center space-y-2">
             <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
@@ -2294,7 +2289,7 @@ export default function HomePage() {
       {/* ========================================================================= */}
       {/* 12. HIGH-IMPACT CLOSING BANNER                                            */}
       {/* ========================================================================= */}
-      <section className="w-full max-w-[1720px] 2xl:max-w-[1920px] min-[2100px]:max-w-[2140px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,3vw,3.75rem)] pb-16">
+      <section className="w-full max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)] pb-16">
         <div className="bg-gradient-to-r from-[#0066FF] to-blue-700 text-white rounded-3xl p-8 sm:p-10 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="space-y-2 text-center md:text-left">
             <h3 className="text-2xl sm:text-3xl font-black tracking-tight">
