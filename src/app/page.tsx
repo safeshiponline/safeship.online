@@ -1182,12 +1182,15 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Large Right-Aligned Product Cutout Filling Right Side of Card */}
-                <div className="absolute right-1.5 sm:right-2 lg:right-[min(0.45vw,0.8dvh)] bottom-1.5 top-5 sm:top-5 lg:top-[min(1.4vw,2.4dvh)] w-[45%] sm:w-[46%] flex items-end justify-end pointer-events-none">
+                {/* Large Right-Aligned High-DPI WebP Product Cutout Filling Right Side of Card */}
+                <div className="absolute right-1.5 sm:right-2 lg:right-[min(0.45vw,0.8dvh)] bottom-1.5 top-2.5 sm:top-3 lg:top-[min(0.75vw,1.3dvh)] w-[47%] sm:w-[48%] lg:w-[49%] flex items-end justify-end pointer-events-none">
                   <img
                     src={preset.image}
                     alt={preset.title}
-                    className="w-full h-full max-h-full object-contain object-right-bottom group-hover:scale-108 transition-transform duration-300 drop-shadow-xs"
+                    width={600}
+                    height={556}
+                    decoding="async"
+                    className="w-full h-full max-h-full object-contain object-right-bottom group-hover:scale-106 transition-transform duration-300"
                     loading="eager"
                   />
                 </div>

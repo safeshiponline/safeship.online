@@ -9,24 +9,24 @@ interface PartnerLogoItem {
 }
 
 const PARTNER_LOGOS: PartnerLogoItem[] = [
-  { id: 'delhivery', name: 'Delhivery Express', src: '/images/partners/delhivery.png' },
-  { id: 'cashfree', name: 'Cashfree Payments Nodal Escrow', src: '/images/partners/cashfree.png' },
-  { id: 'bluedart', name: 'Blue Dart DHL Air Priority', src: '/images/partners/bluedart.png' },
-  { id: 'razorpay', name: 'Razorpay Payment Aggregator', src: '/images/partners/razorpay.png' },
-  { id: 'dtdc', name: 'DTDC Express Network', src: '/images/partners/dtdc.png' },
-  { id: 'ecom', name: 'Ecom Express Logistics', src: '/images/partners/ecom.png' },
-  { id: 'icici', name: 'ICICI Bank Nodal Trustee', src: '/images/partners/icici.png' },
-  { id: 'shiprocket', name: 'Shiprocket Carrier Hub', src: '/images/partners/shiprocket.png' },
-  { id: 'indiapost', name: 'India Post Speed Post', src: '/images/partners/indiapost.png' },
+  { id: 'bluedart', name: 'Blue Dart DHL Air Priority', src: '/images/partners/bluedart.webp' },
+  { id: 'delhivery', name: 'Delhivery Express', src: '/images/partners/delhivery.webp' },
+  { id: 'indiapost', name: 'India Post Speed Post', src: '/images/partners/indiapost.webp' },
+  { id: 'shiprocket', name: 'Shiprocket Carrier Hub', src: '/images/partners/shiprocket.webp' },
+  { id: 'cashfree', name: 'Cashfree Payments Nodal Escrow', src: '/images/partners/cashfree.webp' },
+  { id: 'razorpay', name: 'Razorpay Payment Aggregator', src: '/images/partners/razorpay.webp' },
+  { id: 'dtdc', name: 'DTDC Express Network', src: '/images/partners/dtdc.webp' },
+  { id: 'ecom', name: 'Ecom Express Logistics', src: '/images/partners/ecom.webp' },
+  { id: 'icici', name: 'ICICI Bank Nodal Trustee', src: '/images/partners/icici.webp' },
 ];
 
 const DESKTOP_STATIC_PARTNERS: PartnerLogoItem[] = [
-  { id: 'bluedart', name: 'Blue Dart DHL Air Priority', src: '/images/partners/bluedart.png' },
-  { id: 'delhivery', name: 'Delhivery Express', src: '/images/partners/delhivery.png' },
-  { id: 'indiapost', name: 'India Post Speed Post', src: '/images/partners/indiapost.png' },
-  { id: 'shiprocket', name: 'Shiprocket Carrier Hub', src: '/images/partners/shiprocket.png' },
-  { id: 'cashfree', name: 'Cashfree Payments Nodal Escrow', src: '/images/partners/cashfree.png' },
-  { id: 'razorpay', name: 'Razorpay Payment Aggregator', src: '/images/partners/razorpay.png' },
+  { id: 'bluedart', name: 'Blue Dart DHL Air Priority', src: '/images/partners/bluedart.webp' },
+  { id: 'delhivery', name: 'Delhivery Express', src: '/images/partners/delhivery.webp' },
+  { id: 'indiapost', name: 'India Post Speed Post', src: '/images/partners/indiapost.webp' },
+  { id: 'shiprocket', name: 'Shiprocket Carrier Hub', src: '/images/partners/shiprocket.webp' },
+  { id: 'cashfree', name: 'Cashfree Payments Nodal Escrow', src: '/images/partners/cashfree.webp' },
+  { id: 'razorpay', name: 'Razorpay Payment Aggregator', src: '/images/partners/razorpay.webp' },
 ];
 
 // Repeat 3 full sequences per half for mobile/tablet marquee
@@ -41,30 +41,30 @@ export const PartnerMarquee: React.FC = () => {
   return (
     <section
       aria-label="Verified Logistics & RBI Nodal Escrow Partners: Blue Dart, Delhivery, India Post, Shiprocket, Cashfree Payments, Razorpay, DTDC, Ecom Express, ICICI Bank"
-      className="w-full border-y border-slate-200/80 bg-white/70 shrink-0 select-none"
+      className="w-full border-y border-slate-200/80 bg-white shrink-0 select-none"
     >
-      <div className="w-full max-w-[min(94vw,168dvh)] mx-auto px-3.5 sm:px-6 lg:px-[min(2.2vw,3.8dvh)] py-1.5 sm:py-2 lg:py-[min(0.65vw,1.1dvh)]">
-        {/* Desktop Static Partner Bar (Matches 3rd Reference Photo: Static, Evenly Spaced with Dividers) */}
+      <div className="w-full max-w-[min(94vw,168dvh)] mx-auto px-3.5 sm:px-6 lg:px-[min(2.2vw,3.8dvh)] py-1.5 sm:py-2 lg:py-[min(0.75vw,1.28dvh)]">
+        {/* Desktop Static Partner Bar (Matches Reference Photo: Static, Evenly Spaced with Dividers) */}
         <div className="hidden lg:flex items-center justify-between w-full">
           <div className="pr-4 xl:pr-6 shrink-0">
-            <span className="text-[max(11px,min(0.76vw,1.32dvh))] font-medium text-slate-500 leading-[1.3] block">
-              Trusted delivery &amp;
+            <span className="text-[max(11px,min(0.76vw,1.32dvh))] font-medium text-slate-500 leading-[1.32] block">
+              Trusted logistics
               <br />
-              payment partners
+              and payment partners
             </span>
           </div>
 
           {DESKTOP_STATIC_PARTNERS.map((partner) => (
             <React.Fragment key={partner.id}>
-              <span className="h-[max(18px,min(1.4vw,2.4dvh))] w-px bg-slate-200/90 shrink-0" aria-hidden="true" />
+              <span className="h-[max(20px,min(1.5vw,2.55dvh))] w-px bg-slate-200/90 shrink-0" aria-hidden="true" />
               <div
-                className="px-3 xl:px-5 flex items-center justify-center opacity-85 hover:opacity-100 transition-opacity duration-200 shrink-0"
+                className="px-3 xl:px-5 flex items-center justify-center opacity-95 hover:opacity-100 transition-opacity duration-200 shrink-0"
                 title={partner.name}
               >
                 <img
                   src={partner.src}
                   alt={partner.name}
-                  className="h-[max(18px,min(1.32vw,2.25dvh))] w-auto max-w-[min(9.5vw,16.5dvh)] object-contain block pointer-events-none select-none"
+                  className="h-[max(22px,min(1.65vw,2.8dvh))] w-auto max-w-[min(10.5vw,18dvh)] object-contain block pointer-events-none select-none"
                   loading="eager"
                 />
               </div>
