@@ -223,10 +223,10 @@ const PARTNER_LOGOS: PartnerLogoItem[] = [
 export const PartnerMarquee: React.FC = () => {
   return (
     <section
-      aria-label="Shipping and Payment Partners"
-      className="w-full max-w-[1680px] mx-auto px-3.5 sm:px-6 lg:px-8 xl:px-10 py-1.5 sm:py-2 select-none"
+      aria-label="Verified Logistics & RBI Nodal Escrow Partners: Delhivery, Blue Dart, DTDC, Ecom Express, India Post, Shiprocket, Cashfree Payments, Razorpay, ICICI Bank"
+      className="w-full max-w-[1840px] 2xl:max-w-[2100px] mx-auto px-3.5 sm:px-6 lg:px-[clamp(1.5rem,3vw,3.75rem)] py-1 sm:py-1.5 lg:py-[clamp(0.2rem,0.5dvh,0.5rem)] shrink-0 select-none"
     >
-      <div className="relative w-full overflow-hidden py-1.5 sm:py-2 border-y border-slate-200/70">
+      <div className="relative w-full overflow-hidden py-1.5 sm:py-2 lg:py-[clamp(0.3rem,0.65dvh,0.6rem)] border-y border-slate-200/75">
         {/* Soft Left/Right Edge Fades so logos never clip harshly */}
         <div className="pointer-events-none absolute inset-y-0 left-0 w-8 sm:w-16 bg-gradient-to-r from-[#F8FAFC] via-[#F8FAFC]/85 to-transparent z-10" />
         <div className="pointer-events-none absolute inset-y-0 right-0 w-8 sm:w-16 bg-gradient-to-l from-[#F8FAFC] via-[#F8FAFC]/85 to-transparent z-10" />

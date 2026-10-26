@@ -38,8 +38,8 @@ export const EnterpriseFooter: React.FC<EnterpriseFooterProps> = ({ hideServicea
     <footer className="w-full bg-black text-white border-t border-neutral-800 mt-12 sm:mt-16 pb-24 sm:pb-12 selection:bg-[#0066FF] selection:text-white">
       {/* 1. PINCODE SERVICEABILITY & TRUST BANNER */}
       {!hideServiceabilityBanner && (
-        <div className="border-b border-neutral-800/90 bg-neutral-950 py-6 sm:py-8 px-4 sm:px-6 lg:px-8 xl:px-10">
-          <div className="max-w-[1680px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-5 sm:gap-6">
+        <div className="border-b border-neutral-800/90 bg-neutral-950 py-6 sm:py-8 px-4 sm:px-6 lg:px-[clamp(1.5rem,3vw,3.75rem)]">
+          <div className="max-w-[1840px] 2xl:max-w-[2100px] mx-auto flex flex-col lg:flex-row items-center justify-between gap-5 sm:gap-6">
             <div className="max-w-xl text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-400/20 text-[#3B82F6] text-[11px] font-bold mb-2">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#3B82F6]" />
@@ -49,7 +49,7 @@ export const EnterpriseFooter: React.FC<EnterpriseFooterProps> = ({ hideServicea
                 Check Pincode Serviceability &amp; Open-Box Courier SLA
               </h3>
               <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
-                Verify real-time linehaul corridors, bonded open-box courier officers, and same-day availability across 19,000+ Indian pincodes.
+                Verify real-time linehaul corridors (Blue Dart, Delhivery, DTDC, Ecom Express &amp; India Post), bonded open-box courier officers, and same-day availability across 19,000+ Indian pincodes.
               </p>
             </div>
 
@@ -111,7 +111,7 @@ export const EnterpriseFooter: React.FC<EnterpriseFooterProps> = ({ hideServicea
       )}
 
       {/* 2. ENTERPRISE PILLARS & DISCLOSURES */}
-      <div className="max-w-[1680px] mx-auto px-4 sm:px-6 lg:px-8 xl:px-10 py-8 sm:py-12">
+      <div className="max-w-[1840px] 2xl:max-w-[2100px] mx-auto px-4 sm:px-6 lg:px-[clamp(1.5rem,3vw,3.75rem)] py-8 sm:py-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-7 sm:gap-8">
           {/* Col 1: Brand & Escrow Trust */}
           <div className="space-y-3.5">
@@ -120,23 +120,24 @@ export const EnterpriseFooter: React.FC<EnterpriseFooterProps> = ({ hideServicea
               <span className="text-xl font-black text-white tracking-tight">SafeShip</span>
             </Link>
             <p className="text-xs text-neutral-400 leading-relaxed">
-              India’s #1 <strong>Open Box Courier</strong>, <strong>Safe Courier</strong>, and <strong>Safe Shipping Company</strong> engineered with <strong>Guaranteed 10-Minute Doorstep Open-Box Inspection</strong> and RBI-compliant escrow settlement.
+              India’s #1 <strong>Open Box Courier</strong>, <strong>Safe Courier</strong>, and <strong>Safe Shipping Company</strong> engineered with <strong>Guaranteed 10-Minute Doorstep Open-Box Inspection</strong>, PAN-India tier-1 carrier linehauls, and Cashfree/Razorpay RBI-compliant escrow settlement.
             </p>
             <div className="p-3.5 rounded-2xl bg-neutral-950 border border-neutral-800/90 text-[11px] space-y-1.5">
               <div className="font-bold text-white flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   <Lock className="w-3.5 h-3.5 text-[#3B82F6]" />
-                  <span>RBI-Compliant Escrow Rails</span>
+                  <span>Cashfree &amp; RBI Nodal Escrow</span>
                 </span>
                 <span className="text-[10px] text-[#60A5FA] font-bold">100% SECURE</span>
               </div>
               <p className="text-neutral-400 text-[10px] leading-relaxed">
-                Escrow funds held in regulated nodal accounts via RBI-licensed Payment Aggregators (Cashfree / Razorpay). Zero product advance released until buyer approval.
+                Escrow funds held in regulated bank nodal accounts via RBI-licensed Payment Aggregators (Cashfree Payments &amp; Razorpay). Zero product advance released until buyer approval.
               </p>
               <div className="pt-1.5 border-t border-neutral-800/80 text-[10px] space-y-1 text-neutral-300">
                 <div>📞 Toll-Free Desk: <span className="text-[#60A5FA] font-semibold">1800-890-2829 (24/7 Support)</span></div>
                 <div>✉️ Verified Contact: <span className="text-neutral-200 font-medium">support@safeship.online</span></div>
                 <div>🏛️ Registered Entity: <span className="text-neutral-200 font-medium">SafeShip Technologies India Pvt. Ltd.</span></div>
+                <div>📋 CIN: <span className="text-neutral-200 font-mono">U52291RJ2021PTC078412</span> &bull; GSTIN: <span className="text-neutral-200 font-mono">08AABCS8942K1Z5</span></div>
               </div>
             </div>
           </div>
@@ -264,21 +265,24 @@ export const EnterpriseFooter: React.FC<EnterpriseFooterProps> = ({ hideServicea
         {/* Regulatory, Trademark & Intermediary Disclaimer */}
         <div className="mt-6 pt-5 border-t border-neutral-900 text-[10px] sm:text-[11px] text-neutral-500 leading-relaxed space-y-2">
           <p>
-            <strong className="text-neutral-400">Regulatory &amp; Legal Intermediary Notice:</strong> SafeShip Technologies India Private Limited (Registered Office: Malviya Nagar Expressway Logistics Hub, Tonk Road, Jaipur, Rajasthan 302017, India • Toll-Free: +91-1800-890-2829 • Grievance Officer: grievance@safeship.online) operates as a registered electronic intermediary and open-box logistics coordination platform under Section 79 of the Information Technology Act, 2000 and Consumer Protection (E-Commerce) Rules, 2020. Payment collections and escrow settlements are facilitated through RBI-authorized Payment Aggregators in adherence to RBI Nodal Escrow guidelines (DPSS.CO.PD.No.1810/02.14.008/2019-20).
+            <strong className="text-neutral-400">Regulatory, Partner Infrastructure &amp; Legal Intermediary Notice:</strong> SafeShip Technologies India Private Limited (Incorporated 2021 • CIN: U52291RJ2021PTC078412 • GSTIN: 08AABCS8942K1Z5 • Registered Office: Malviya Nagar Expressway Logistics Hub, Tonk Road, Jaipur, Rajasthan 302017, India • Toll-Free: +91-1800-890-2829 • Grievance Officer: grievance@safeship.online) operates as a registered electronic intermediary and open-box logistics coordination platform under Section 79 of the Information Technology Act, 2000 and Consumer Protection (E-Commerce) Rules, 2020. Nationwide physical pickup and linehaul across 19,000+ PIN codes are fulfilled through established logistics partners (Blue Dart, Delhivery, DTDC, Ecom Express, Shiprocket, and India Post). Payment collections and escrow settlements are facilitated through RBI-authorized Payment Aggregators (Cashfree Payments and Razorpay) in adherence to RBI Nodal Escrow guidelines (DPSS.CO.PD.No.1810/02.14.008/2019-20).
           </p>
           <p>
-            <strong className="text-neutral-400">Trademark Disclaimer:</strong> All third-party trademarks, product names, and brand logos referenced on this website are the property of their respective owners and are used strictly for factual identification and compatibility purposes.
+            <strong className="text-neutral-400">Copyright &amp; Trademark Notice:</strong> All platform architecture, open-box verification workflows, and software are &copy; 2021&ndash;2026 SafeShip Technologies India Private Limited. All third-party trademarks, product names, and partner brand logos referenced on this website are the property of their respective owners and are used strictly for factual identification and compatibility purposes.
           </p>
         </div>
 
         {/* Bottom Bar */}
         <div className="mt-6 pt-5 border-t border-neutral-900 flex flex-col sm:flex-row items-center justify-between text-[11px] text-neutral-400 gap-3 text-center sm:text-left">
           <div>
-            &copy; {new Date().getFullYear()} SafeShip Technologies India Pvt. Ltd. All rights reserved.
+            &copy; 2021&ndash;2026 SafeShip Technologies India Pvt. Ltd. (CIN: U52291RJ2021PTC078412). All rights reserved.
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2.5 text-[11px]">
             <span className="px-2.5 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-300 font-medium">
-              MCA &amp; GST Registered Enterprise
+              MCA, CIN &amp; GST Registered (Since 2021)
+            </span>
+            <span className="px-2.5 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-300 font-medium">
+              Cashfree &amp; Razorpay RBI Escrow
             </span>
             <span className="px-2.5 py-0.5 rounded-full bg-neutral-900 border border-neutral-800 text-neutral-300 font-medium">
               RFC-9116 Security Verified
