@@ -35,7 +35,7 @@ export const PartnerMarquee: React.FC = () => {
       aria-label="Verified Logistics & RBI Nodal Escrow Partners: Delhivery, Cashfree Payments, Blue Dart, Razorpay, DTDC, Ecom Express, ICICI Bank, Shiprocket, India Post"
       className="w-full max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-3.5 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)] py-0.5 sm:py-1 lg:py-[clamp(0.15rem,0.4dvh,0.45rem)] shrink-0 select-none"
     >
-      <div className="relative w-full overflow-hidden py-1.5 sm:py-2 lg:py-[clamp(0.3rem,0.6dvh,0.55rem)] border-y border-slate-200/80">
+      <div className="relative w-full overflow-hidden py-1.5 sm:py-2 lg:py-[clamp(0.45rem,0.85dvh,0.75rem)] border-y border-slate-200/80">
         {/* Soft Left/Right Edge Fades so logos never clip harshly */}
         <div className="pointer-events-none absolute inset-y-0 left-0 w-10 sm:w-20 bg-gradient-to-r from-[#F8FAFC] via-[#F8FAFC]/90 to-transparent z-10" />
         <div className="pointer-events-none absolute inset-y-0 right-0 w-10 sm:w-20 bg-gradient-to-l from-[#F8FAFC] via-[#F8FAFC]/90 to-transparent z-10" />

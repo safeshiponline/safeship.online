@@ -1059,7 +1059,7 @@ export default function HomePage() {
             </div>
 
             {/* Right Hero Visual Container: Exact 1150:666 WebP Thumbnail Aspect Ratio, Bigger & Taller Fill */}
-            <div className="w-full max-w-2xl lg:max-w-[min(100%,calc((100dvh-215px)*1.7267))] mx-auto">
+            <div className="w-full max-w-2xl lg:max-w-[min(100%,calc((100dvh-255px)*1.7267))] mx-auto">
               <div className="rounded-2xl sm:rounded-[26px] bg-gradient-to-b from-white via-white to-slate-50 border border-slate-200/80 shadow-2xl shadow-blue-900/[0.08] p-1.5 sm:p-2 lg:p-[clamp(0.35rem,0.65dvh,0.65rem)] relative overflow-hidden transition-all duration-500 hover:shadow-blue-500/[0.15]">
                 <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-slate-950 border border-slate-200/70">
                   {/* Media Container: Exact 1150:666 aspect ratio matching safeship_video_thumbnail.webp so there are 0px black borders */}
@@ -1142,44 +1142,44 @@ export default function HomePage() {
 
         {/* ========================================================================= */}
         {/* 4B. DEVICE PRESETS: SHOP & SELL ELECTRONICS SAFELY (6 CATEGORIES)         */}
-        {/* Taller, well-proportioned cards visible at bottom of first fold           */}
+        {/* Taller, bigger, well-proportioned cards filling bottom first-fold space   */}
         {/* ========================================================================= */}
-        <section className="w-full max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-3.5 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)] pt-2 sm:pt-3 lg:pt-[clamp(0.4rem,0.8dvh,0.75rem)] pb-3 sm:pb-4 lg:pb-[clamp(0.6rem,1.25dvh,1.15rem)] shrink-0">
-          <div className="flex items-center justify-between gap-2 mb-2 sm:mb-2.5 lg:mb-[clamp(0.4rem,0.75dvh,0.7rem)]">
-            <h2 className="text-[15px] sm:text-lg lg:text-[clamp(1.05rem,min(1.3vw,2.1dvh),1.45rem)] font-extrabold text-[#0F172A] tracking-tight">
+        <section className="w-full max-w-[1680px] 2xl:max-w-[1840px] mx-auto px-3.5 sm:px-6 lg:px-[clamp(1.5rem,2.6vw,3.25rem)] pt-2 sm:pt-3 lg:pt-[clamp(0.5rem,1dvh,0.95rem)] pb-3 sm:pb-4 lg:pb-[clamp(0.75rem,1.5dvh,1.35rem)] shrink-0">
+          <div className="flex items-center justify-between gap-2 mb-2 sm:mb-3 lg:mb-[clamp(0.55rem,1.05dvh,0.95rem)]">
+            <h2 className="text-[15px] sm:text-lg lg:text-[clamp(1.12rem,min(1.38vw,2.25dvh),1.55rem)] font-extrabold text-[#0F172A] tracking-tight">
               Shop &amp; Sell Electronics Safely
             </h2>
             <Link
               href="/in/deals/new?type=send&step=2"
-              className="inline-flex items-center gap-1 text-xs sm:text-sm font-bold text-[#0066FF] hover:text-[#0052FF] transition shrink-0"
+              className="inline-flex items-center gap-1.5 text-xs sm:text-sm lg:text-[clamp(0.82rem,0.95vw,1rem)] font-bold text-[#0066FF] hover:text-[#0052FF] transition shrink-0"
             >
               <span>All 6 Categories</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3.5 h-3.5 lg:w-4 lg:h-4" />
             </Link>
           </div>
 
-          {/* 6 Symmetrical Taller Device Category Cards (2x3 on mobile, 3x2 on tablet, 6-col on desktop) */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 lg:gap-[clamp(0.6rem,0.9vw,1.05rem)]">
+          {/* 6 Symmetrical Bigger & Taller Device Category Cards (2x3 on mobile, 3x2 on tablet, 6-col on desktop) */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3.5 lg:gap-[clamp(0.65rem,0.95vw,1.15rem)]">
             {HOME_DEVICE_PRESETS.map((preset) => (
               <Link
                 key={preset.id}
                 href={preset.href}
-                className="group relative overflow-hidden rounded-2xl lg:rounded-[22px] bg-gradient-to-br from-white via-[#F8FAFC] to-[#EFF6FF]/65 hover:from-white hover:to-blue-50/85 border border-slate-200/90 hover:border-[#0066FF]/45 px-3 py-3 sm:px-3.5 sm:py-3.5 lg:px-[clamp(0.8rem,1.05vw,1.2rem)] lg:py-[clamp(0.75rem,1.55dvh,1.3rem)] lg:min-h-[clamp(4.2rem,7.8dvh,5.8rem)] shadow-2xs hover:shadow-md transition-all duration-200 flex items-center justify-between gap-2 cursor-pointer"
+                className="group relative overflow-hidden rounded-2xl lg:rounded-[24px] bg-gradient-to-br from-white via-[#F8FAFC] to-[#EFF6FF]/75 hover:from-white hover:to-blue-50/90 border border-slate-200/95 hover:border-[#0066FF]/50 px-3 py-3.5 sm:px-4 sm:py-4 lg:px-[clamp(0.85rem,1.1vw,1.35rem)] lg:py-[clamp(1.1rem,2.2dvh,1.8rem)] lg:min-h-[clamp(6.2rem,11.8dvh,8.6rem)] shadow-xs hover:shadow-md transition-all duration-200 flex items-center justify-between gap-2 cursor-pointer"
               >
-                <div className="min-w-0 flex flex-col justify-center z-10">
-                  <div className="inline-flex items-center gap-0.5 text-[12.5px] sm:text-sm lg:text-[clamp(0.84rem,min(0.96vw,1.8dvh),1.06rem)] font-extrabold text-[#0F172A] group-hover:text-[#0066FF] transition-colors">
+                <div className="min-w-0 flex flex-col justify-center gap-1 lg:gap-1.5 z-10">
+                  <div className="inline-flex items-center gap-0.5 text-[12.5px] sm:text-sm lg:text-[clamp(0.88rem,min(1vw,1.9dvh),1.12rem)] font-extrabold text-[#0F172A] tracking-tight group-hover:text-[#0066FF] transition-colors leading-tight">
                     <span className="truncate">{preset.title}</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#0066FF] group-hover:translate-x-0.5 transition-all shrink-0" />
+                    <ChevronRight className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-slate-400 group-hover:text-[#0066FF] group-hover:translate-x-0.5 transition-all shrink-0" />
                   </div>
-                  <span className="text-[10px] sm:text-[11px] lg:text-[clamp(0.68rem,min(0.76vw,1.35dvh),0.82rem)] text-slate-500 font-medium truncate mt-1">
+                  <span className="text-[10px] sm:text-xs lg:text-[clamp(0.74rem,min(0.82vw,1.5dvh),0.9rem)] text-slate-500 font-medium leading-snug line-clamp-2">
                     {preset.subtitle}
                   </span>
                 </div>
-                <div className="w-13 h-11 sm:w-15 sm:h-12 lg:w-[clamp(2.9rem,3.8vw,4.6rem)] lg:h-[clamp(2.45rem,4.6dvh,3.9rem)] shrink-0 flex items-center justify-end">
+                <div className="w-14 h-12 sm:w-16 sm:h-14 lg:w-[clamp(3.6rem,4.6vw,5.4rem)] lg:h-[clamp(3.2rem,6.4dvh,4.9rem)] shrink-0 flex items-center justify-end">
                   <img
                     src={preset.image}
                     alt={preset.title}
-                    className="max-w-full max-h-full object-contain group-hover:scale-108 transition-transform duration-300 drop-shadow-xs"
+                    className="max-w-full max-h-full object-contain group-hover:scale-110 transition-transform duration-300 drop-shadow-xs"
                     loading="eager"
                   />
                 </div>
