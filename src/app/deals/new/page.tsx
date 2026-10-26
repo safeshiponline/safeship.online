@@ -1160,16 +1160,16 @@ function CreateShipmentContent() {
     goToStep(1);
   };
 
-  // 8 Realistic Categories (Vehicles removed!)
-  const categories: { id: ItemCategory; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-    { id: 'SMARTPHONES_TABLETS', label: 'Smartphones & Tablets', icon: Smartphone },
-    { id: 'LAPTOPS_COMPUTERS', label: 'Laptops & Computers', icon: Monitor },
-    { id: 'CAMERAS_OPTICS', label: 'Cameras & Optics', icon: Camera },
-    { id: 'LUXURY_WATCHES', label: 'Luxury & Watches', icon: Watch },
-    { id: 'GAMING_AUDIO', label: 'Gaming & Audio', icon: Headphones },
-    { id: 'DOCUMENTS_VALUABLES', label: 'Documents & Valuables', icon: FileText },
-    { id: 'FASHION_APPAREL', label: 'Fashion & Apparel', icon: Shirt },
-    { id: 'OTHER_ELECTRONICS', label: 'Other Electronics', icon: Layers },
+  // 8 Realistic Categories with High-DPI WebP Studio Cutouts
+  const categories: { id: ItemCategory; label: string; image: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { id: 'SMARTPHONES_TABLETS', label: 'Smartphones & Tablets', image: '/images/preset_phones.webp', icon: Smartphone },
+    { id: 'LAPTOPS_COMPUTERS', label: 'Laptops & Computers', image: '/images/preset_laptops.webp', icon: Monitor },
+    { id: 'CAMERAS_OPTICS', label: 'Cameras & Optics', image: '/images/preset_cameras.webp', icon: Camera },
+    { id: 'LUXURY_WATCHES', label: 'Luxury & Watches', image: '/images/preset_luxury_watch.webp', icon: Watch },
+    { id: 'GAMING_AUDIO', label: 'Gaming & Audio', image: '/images/preset_accessories.webp', icon: Headphones },
+    { id: 'DOCUMENTS_VALUABLES', label: 'Documents & Valuables', image: '/images/preset_documents.webp', icon: FileText },
+    { id: 'FASHION_APPAREL', label: 'Fashion & Apparel', image: '/images/preset_fashion.webp', icon: Shirt },
+    { id: 'OTHER_ELECTRONICS', label: 'Other Electronics', image: '/images/preset_other_electronics.webp', icon: Layers },
   ];
 
   // Validation routines
@@ -1839,31 +1839,161 @@ function CreateShipmentContent() {
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col justify-between selection:bg-[#0066FF] selection:text-white">
       
       {/* Header */}
-      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-30 px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <Link
-            href="/in"
-            className="w-9 h-9 rounded-full bg-[#F1F5F9] hover:bg-[#E2E8F0] flex items-center justify-center text-[#0F172A] transition active:scale-95"
-            title="Return to Home"
-          >
-            <ArrowLeft className="w-4.5 h-4.5" />
-          </Link>
+      <header className="bg-white border-b border-[#E2E8F0] sticky top-0 z-30">
+        {/* Top Brand & Navigation Bar */}
+        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-10 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link
+              href="/in"
+              className="lg:hidden w-9 h-9 rounded-full bg-[#F1F5F9] hover:bg-[#E2E8F0] flex items-center justify-center text-[#0F172A] transition active:scale-95"
+              title="Return to Home"
+            >
+              <ArrowLeft className="w-4.5 h-4.5" />
+            </Link>
+            <Link href="/in" className="flex items-center gap-2.5 group">
+              <SafeShipLogo className="w-8 h-8 transition-transform group-hover:scale-105" />
+              <div className="hidden sm:block leading-tight">
+                <span className="text-[17px] font-black tracking-tight text-[#0F172A] block">SafeShip</span>
+                <span className="text-[10px] font-semibold text-[#64748B] block">See. Verify. Pay.</span>
+              </div>
+            </Link>
+          </div>
 
-          <div className="text-center">
-            <span className="text-[11px] font-bold text-[#0066FF] uppercase tracking-wider">
+          {/* Mobile Center Step Title */}
+          <div className="lg:hidden text-center">
+            <span className="text-[10px] font-bold text-[#0066FF] uppercase tracking-wider block">
               {mode === 'exchange' ? 'Item exchange' : 'Shipment booking'} &bull; Step {currentStep} of 4
             </span>
-            <h1 className="text-sm font-bold text-[#0F172A] mt-0.5">
+            <h1 className="text-xs font-bold text-[#0F172A]">
               {currentStep === 1 && (mode === 'exchange' ? 'What are you exchanging?' : 'What are you sending?')}
-              {currentStep === 2 && 'Add item details'}
-              {currentStep === 3 && 'Pickup and delivery'}
-              {currentStep === 4 && 'Review your quote'}
+              {currentStep === 2 && 'Item Details & Verification'}
+              {currentStep === 3 && 'Pickup & Delivery Addresses'}
+              {currentStep === 4 && 'Review & Schedule'}
             </h1>
           </div>
 
-          <Link href="/in" className="w-9 h-9 flex items-center justify-center">
-            <SafeShipLogo className="w-7 h-7" />
-          </Link>
+          {/* Desktop Navigation Links */}
+          <nav className="hidden lg:flex items-center gap-8 text-[13px] font-semibold text-[#334155]">
+            <Link href="/in#how-it-works" className="hover:text-[#0066FF] transition">How It Works</Link>
+            <Link href="/in#features" className="hover:text-[#0066FF] transition">Features</Link>
+            <Link href="/track" className="hover:text-[#0066FF] transition">Track</Link>
+            <Link href="/in#safety" className="hover:text-[#0066FF] transition">Safety</Link>
+            <Link href="/in#pricing" className="hover:text-[#0066FF] transition">Pricing</Link>
+          </nav>
+
+          {/* Right Location Pill & Avatar */}
+          <div className="flex items-center gap-3">
+            <div className="hidden md:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#F8FAFC] border border-[#E2E8F0] text-xs font-semibold text-[#334155]">
+              <MapPin className="w-3.5 h-3.5 text-[#0066FF]" />
+              <span>{pickupCity ? `${pickupCity} (${pickupPincode})` : 'Jaipur (303301)'}</span>
+            </div>
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 border border-blue-200 flex items-center justify-center text-xs font-bold text-[#0066FF] shadow-2xs">
+              {senderName ? senderName.charAt(0).toUpperCase() : 'R'}
+            </div>
+          </div>
+        </div>
+
+        {/* Sub-header Stepper Bar */}
+        <div className="bg-[#F8FAFC]/90 border-t border-[#E2E8F0] py-2.5 px-4 sm:px-6 lg:px-10">
+          <div className="max-w-[1360px] mx-auto flex items-center justify-between gap-4">
+            {/* Back Button */}
+            <button
+              type="button"
+              onClick={() => {
+                if (currentStep > 1) {
+                  goToStep((currentStep - 1) as 1 | 2 | 3 | 4);
+                } else {
+                  router.push('/in');
+                }
+              }}
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-[#E2E8F0] hover:bg-slate-50 text-xs font-bold text-[#334155] shadow-2xs transition cursor-pointer shrink-0"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back</span>
+            </button>
+
+            {/* Centered 4-Step Progress Stepper */}
+            <div className="flex-1 flex flex-col items-center">
+              <span className="hidden lg:block text-[10px] font-bold text-[#0066FF] uppercase tracking-[0.14em] mb-1.5">
+                {mode === 'exchange' ? 'ITEM EXCHANGE' : 'SHIPMENT BOOKING'} &bull; STEP {currentStep} OF 4
+              </span>
+              <div className="w-full max-w-2xl flex items-center justify-between">
+                {[
+                  {
+                    s: 1,
+                    title: 'Item',
+                    sub: categories.find((c) => c.id === selectedCategory)?.label || 'Smartphones & Tablets',
+                  },
+                  {
+                    s: 2,
+                    title: 'Details',
+                    sub: currentStep > 2 && itemName ? itemName : 'Specs & Photos',
+                  },
+                  {
+                    s: 3,
+                    title: 'Addresses',
+                    sub: currentStep > 3 && pickupCity && dropCity ? `${pickupCity} → ${dropCity}` : 'Pickup & Delivery',
+                  },
+                  {
+                    s: 4,
+                    title: 'Review',
+                    sub: 'Check & Schedule',
+                  },
+                ].map((item, idx) => {
+                  const isCurrent = item.s === currentStep;
+                  const isCompleted = item.s < currentStep;
+                  return (
+                    <React.Fragment key={item.s}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (item.s < currentStep) goToStep(item.s as 1 | 2 | 3 | 4);
+                        }}
+                        disabled={item.s > currentStep}
+                        className={`flex items-center gap-2 text-left transition ${
+                          item.s < currentStep ? 'cursor-pointer hover:opacity-85' : 'cursor-default'
+                        }`}
+                      >
+                        <div
+                          className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center shrink-0 transition ${
+                            isCurrent
+                              ? 'bg-[#0066FF] text-white shadow-xs ring-4 ring-blue-100'
+                              : isCompleted
+                              ? 'bg-[#0066FF] text-white'
+                              : 'bg-slate-200/80 text-slate-500'
+                          }`}
+                        >
+                          {isCompleted ? <Check className="w-3.5 h-3.5" /> : item.s}
+                        </div>
+                        <div className="leading-tight">
+                          <span
+                            className={`text-xs font-bold block ${
+                              isCurrent ? 'text-[#0066FF]' : isCompleted ? 'text-[#0F172A]' : 'text-[#64748B]'
+                            }`}
+                          >
+                            {item.title}
+                          </span>
+                          <span className="hidden md:block text-[10px] text-[#64748B] truncate max-w-[130px]">
+                            {item.sub}
+                          </span>
+                        </div>
+                      </button>
+                      {idx < 3 && (
+                        <div
+                          className={`flex-1 h-[2px] mx-2 sm:mx-4 rounded-full transition-colors ${
+                            item.s < currentStep ? 'bg-[#0066FF]' : 'bg-[#E2E8F0]'
+                          }`}
+                        />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right Spacer for Symmetry on Desktop */}
+            <div className="hidden sm:block w-[72px] shrink-0" />
+          </div>
         </div>
       </header>
 
@@ -1886,40 +2016,12 @@ function CreateShipmentContent() {
         </div>
       )}
 
-      {/* Progress Dots */}
-      <div className="bg-white border-b border-[#E2E8F0] py-2">
-        <div className="max-w-md mx-auto flex items-center justify-around sm:justify-between px-3 sm:px-6">
-          {[1, 2, 3, 4].map((s) => (
-            <div key={s} className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-              <div
-                className={`w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center shrink-0 ${
-                  s === currentStep
-                    ? 'bg-[#0066FF] text-white shadow-sm ring-2 ring-blue-100'
-                    : s < currentStep
-                    ? 'bg-black text-white'
-                    : 'bg-slate-100 text-slate-400'
-                }`}
-              >
-                {s < currentStep ? <Check className="w-3.5 h-3.5" /> : s}
-              </div>
-              <span className="text-[11px] font-medium hidden sm:inline text-[#64748B]">
-                {s === 1 && 'Item'}
-                {s === 2 && 'Details'}
-                {s === 3 && 'Addresses'}
-                {s === 4 && 'Review'}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* Main Wizard Form Body */}
-      <main className={`mx-auto w-full p-4 sm:p-6 lg:p-8 pb-28 sm:pb-12 flex-1 transition-all ${currentStep === 4 ? 'max-w-6xl' : 'max-w-3xl'}`}>
+      <main className="mx-auto w-full max-w-[1380px] px-4 sm:px-6 lg:px-10 py-5 lg:py-7 pb-28 sm:pb-12 flex-1 transition-all">
 
-        
         {/* Collaborative Booking Invitation Banner */}
         {isCollabInvite && (
-          <div className="mb-4 p-4 rounded-3xl bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-200 shadow-xs flex items-start justify-between gap-3 animate-in fade-in">
+          <div className="mb-5 p-4 rounded-3xl bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-200 shadow-xs flex items-start justify-between gap-3 animate-in fade-in">
             <div className="flex items-start gap-3">
               <div className="w-9 h-9 rounded-2xl bg-[#0066FF] text-white flex items-center justify-center shrink-0 shadow-xs text-base">
                 🤝
@@ -1946,930 +2048,1349 @@ function CreateShipmentContent() {
           </div>
         )}
 
-
-        
         {/* =================================================================== */}
-        {/* STEP 1: CATEGORY SELECTION (8 Realistic High-Value Categories)      */}
+        {/* STEP 1: CATEGORY SELECTION (3-Column Desktop Layout)                */}
         {/* =================================================================== */}
         {currentStep === 1 && (
-          <div className="space-y-4 animate-in fade-in">
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-xl font-bold text-[#0F172A]">
-                  {mode === 'exchange' ? 'Select Exchange Category' : 'Select Item Category'}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-7 items-center animate-in fade-in">
+            {/* LEFT COLUMN: Brand Promise & Open Box Illustration (Desktop) */}
+            <div className="hidden lg:flex lg:col-span-3 flex-col justify-between space-y-5 pr-2">
+              <div className="space-y-3">
+                <div className="inline-flex items-center gap-2 text-[#0066FF] font-bold text-xs uppercase tracking-wider">
+                  <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF]" />
+                  </div>
+                  <span>INDIA&apos;S TRUSTED</span>
+                </div>
+                <h2 className="text-[28px] xl:text-[32px] font-black text-[#0F172A] leading-[1.15] tracking-tight">
+                  Open Box Delivery for Electronics
                 </h2>
-                {mode === 'exchange' && (
-                  <span className="text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-full">
-                    2-WAY SWAP
-                  </span>
-                )}
+                <p className="text-sm text-[#475569] leading-relaxed">
+                  Inspect, verify and pay only if you&apos;re satisfied. Safe, insured and hassle-free.
+                </p>
               </div>
-              <p className="text-xs text-[#64748B] mt-0.5">
-                {mode === 'exchange'
-                  ? 'SafeShip bonded couriers inspect both merchandise parcels simultaneously at the doorstep before swap sign-off.'
-                  : 'Doorstep open-box inspection is guaranteed on all electronics, optics, and high-value certified consignments.'}
-              </p>
+
+              <div className="relative w-full pt-2">
+                <img
+                  src="/images/booking_hero_box.webp"
+                  alt="SafeShip Open Box Electronics Delivery"
+                  className="w-full h-auto object-contain rounded-2xl drop-shadow-md"
+                />
+              </div>
             </div>
 
-            <div id="field-category" className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2 rounded-2xl p-1">
-              {categories.map((cat) => {
-                const IconComp = cat.icon;
-                const isSelected = selectedCategory === cat.id;
-                return (
+            {/* CENTER COLUMN: Main Category Selection Card */}
+            <div className="lg:col-span-6 bg-white rounded-[28px] border border-[#E2E8F0] shadow-sm p-5 sm:p-7 space-y-5">
+              <div>
+                <span className="text-[11px] font-bold text-[#0066FF] uppercase tracking-wider block">
+                  STEP 1 OF 4
+                </span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <h2 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">
+                    {mode === 'exchange' ? 'What are you exchanging?' : 'What are you sending?'}
+                  </h2>
+                  {mode === 'exchange' && (
+                    <span className="text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-full">
+                      2-WAY SWAP
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs sm:text-[13px] text-[#64748B] mt-1">
+                  {mode === 'exchange'
+                    ? 'SafeShip bonded couriers inspect both merchandise parcels simultaneously at the doorstep before swap sign-off.'
+                    : 'Doorstep open-box inspection is guaranteed on all electronics, optics, and high-value certified consignments.'}
+                </p>
+              </div>
+
+              {/* 4x2 Category Grid with High-DPI WebP Product Images */}
+              <div id="field-category" className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {categories.map((cat) => {
+                  const isSelected = selectedCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategory(cat.id);
+                        clearFieldError('category');
+                      }}
+                      className={`group relative rounded-2xl border p-3 flex flex-col justify-between text-left transition-all cursor-pointer h-[142px] sm:h-[152px] overflow-hidden active:scale-[0.98] ${
+                        isSelected
+                          ? 'bg-[#EFF6FF]/90 border-[#0066FF] ring-2 ring-[#0066FF]/20 shadow-sm'
+                          : 'bg-[#F8FAFC]/70 hover:bg-white border-[#E2E8F0] hover:border-blue-300 hover:shadow-xs'
+                      }`}
+                    >
+                      <div className="w-full h-[82px] sm:h-[90px] flex items-center justify-center overflow-hidden">
+                        <img
+                          src={cat.image}
+                          alt={cat.label}
+                          className="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105 drop-shadow-xs"
+                        />
+                      </div>
+                      <div className="w-full flex items-end justify-between gap-1 pt-1">
+                        <span
+                          className={`text-[11px] sm:text-xs leading-tight line-clamp-2 ${
+                            isSelected ? 'font-bold text-[#0F172A]' : 'font-semibold text-[#1E293B]'
+                          }`}
+                        >
+                          {cat.label}
+                        </span>
+                        <span
+                          className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[10px] transition ${
+                            isSelected
+                              ? 'bg-[#0066FF] text-white shadow-2xs'
+                              : 'bg-slate-200/70 text-slate-500 group-hover:bg-blue-100 group-hover:text-[#0066FF]'
+                          }`}
+                        >
+                          &rsaquo;
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {errors.category && (
+                <div className="p-3 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-800 text-xs font-semibold flex items-center justify-between gap-2 animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{errors.category}</span>
+                  </div>
                   <button
-                    key={cat.id}
                     type="button"
-                    onClick={() => {
-                      setSelectedCategory(cat.id);
-                      clearFieldError('category');
-                    }}
-                    className={`p-4 rounded-2xl border flex flex-col items-center text-center transition cursor-pointer shadow-2xs active:scale-95 ${
-                      isSelected
-                        ? 'bg-[#EFF6FF] border-[#0066FF] text-[#0066FF] shadow-xs ring-2 ring-blue-100 font-bold'
-                        : 'bg-white border-[#E2E8F0] text-[#334155] hover:border-[#BFDBFE]'
+                    onClick={() => scrollToField('field-category')}
+                    className="text-[11px] font-bold text-rose-700 hover:text-rose-900 underline cursor-pointer shrink-0"
+                  >
+                    Choose Category &uarr;
+                  </button>
+                </div>
+              )}
+
+              {stepErrorBanner && currentStep === 1 && !errors.category && (
+                <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{stepErrorBanner}</span>
+                </div>
+              )}
+
+              {/* Bottom Action Bar Inside Card */}
+              <div className="pt-3 border-t border-[#F1F5F9] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {mode === 'send' ? (
+                  <button
+                    type="button"
+                    onClick={() => setMode('exchange')}
+                    className="flex items-start gap-2.5 text-left group cursor-pointer"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-blue-50 text-[#0066FF] flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-blue-100 transition">
+                      <ArrowLeftRight className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-[#334155] group-hover:text-[#0066FF] transition block">
+                        Looking for a 2-Way Device Swap?
+                      </span>
+                      <span className="text-[11px] text-[#64748B] block">
+                        Enable this option in the next step to send and receive devices.
+                      </span>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-amber-800 font-semibold">
+                    <ArrowLeftRight className="w-4 h-4 text-amber-600" />
+                    <span>2-Way Device Swap Enabled</span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  className="hidden sm:inline-flex py-3.5 px-6 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md shadow-[#0066FF]/20 transition active:scale-95 items-center justify-center gap-2 cursor-pointer shrink-0"
+                >
+                  <span>Continue to Item Details</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN: 4 Value Pillars (Desktop) */}
+            <div className="hidden lg:flex lg:col-span-3 flex-col justify-center space-y-5 pl-2">
+              {[
+                {
+                  icon: ShieldCheck,
+                  title: '10-Minute Doorstep Inspection',
+                  desc: 'Receiver can open, inspect and test the item before paying.',
+                },
+                {
+                  icon: Lock,
+                  title: 'Secure Payment with Bank Escrow',
+                  desc: 'Money is safely held in RBI-compliant escrow until delivery is approved.',
+                },
+                {
+                  icon: Truck,
+                  title: 'Insured Shipping',
+                  desc: 'Every shipment is protected against damage or loss in transit.',
+                },
+                {
+                  icon: RefreshCw,
+                  title: 'Easy Returns',
+                  desc: "If the item doesn't match, it's returned to the seller at no extra cost.",
+                },
+              ].map((feat, i) => {
+                const FeatIcon = feat.icon;
+                return (
+                  <div
+                    key={feat.title}
+                    className={`flex items-start gap-3.5 ${
+                      i < 3 ? 'pb-5 border-b border-[#E2E8F0]/80' : ''
                     }`}
                   >
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${
-                      isSelected ? 'bg-[#0066FF] text-white' : 'bg-[#F1F5F9] text-[#64748B]'
-                    }`}>
-                      <IconComp className="w-5 h-5" />
+                    <div className="w-10 h-10 rounded-full bg-blue-100/80 border border-blue-200/60 text-[#0066FF] flex items-center justify-center shrink-0 shadow-2xs">
+                      <FeatIcon className="w-5 h-5" />
                     </div>
-                    <span className="text-xs">{cat.label}</span>
-                  </button>
+                    <div>
+                      <h3 className="text-sm font-bold text-[#0F172A] leading-snug">{feat.title}</h3>
+                      <p className="text-xs text-[#64748B] mt-1 leading-relaxed">{feat.desc}</p>
+                    </div>
+                  </div>
                 );
               })}
             </div>
-
-            {errors.category && (
-              <div className="p-3 rounded-2xl bg-rose-50 border-2 border-rose-300 text-rose-800 text-xs font-semibold flex items-center justify-between gap-2 animate-in fade-in">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                  <span>{errors.category}</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => scrollToField('field-category')}
-                  className="text-[11px] font-bold text-rose-700 hover:text-rose-900 underline cursor-pointer shrink-0"
-                >
-                  Choose Category &uarr;
-                </button>
-              </div>
-            )}
-
-            {stepErrorBanner && currentStep === 1 && !errors.category && (
-              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                <span>{stepErrorBanner}</span>
-              </div>
-            )}
-
-            {/* Subtle option to switch to 2-way swap if desired (hidden from main header) */}
-            {mode === 'send' && (
-              <div className="pt-2 text-center">
-                <button
-                  type="button"
-                  onClick={() => setMode('exchange')}
-                  className="text-[11px] text-slate-400 hover:text-slate-600 font-medium inline-flex items-center gap-1.5 transition cursor-pointer py-1"
-                >
-                  <ArrowLeftRight className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Looking for 2-Way Device Swap? Enable here</span>
-                </button>
-              </div>
-            )}
-
-            {/* Desktop Inline Navigation */}
-            <div className="hidden sm:flex items-center justify-end pt-3">
-              <button
-                type="button"
-                onClick={handleNextStep}
-                className="py-3 px-6 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md shadow-[#0066FF]/20 transition active:scale-95 inline-flex items-center gap-2 cursor-pointer"
-              >
-                <span>Continue to Item Details</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
           </div>
         )}
 
         {/* =================================================================== */}
-        {/* STEP 2: ITEM DETAILS & PHOTO VERIFICATION (Minimal, Zero Scroll)   */}
+        {/* STEP 2: ITEM DETAILS & PHOTO VERIFICATION (2-Column Desktop Layout) */}
         {/* =================================================================== */}
         {currentStep === 2 && (
-          <div className="space-y-4 animate-in fade-in">
-            <div>
-              <h2 className="text-xl font-bold text-[#0F172A]">
-                {mode === 'exchange' ? 'Dual Item Specifications' : 'Item Details & Verification'}
-              </h2>
-              <p className="text-xs text-[#64748B] mt-0.5">
-                Provide item specifications and upload at least 1 photo for doorstep open-box verification.
-              </p>
-            </div>
-
-            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-4">
-              {/* Item Model */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-in fade-in">
+            {/* LEFT MAIN CARD (8 Columns on Desktop) */}
+            <div className="lg:col-span-8 bg-white rounded-[28px] p-5 sm:p-7 border border-[#E2E8F0] shadow-sm space-y-5">
               <div>
-                <label className="text-xs font-bold text-[#334155] block mb-1">
-                  Item Model / Specification <span className="text-rose-500">*</span>:
-                </label>
-                <input
-                  id="field-itemName"
-                  type="text"
-                  value={itemName}
-                  onChange={(e) => {
-                    const nextVal = e.target.value;
-                    setItemName(nextVal);
-                    clearFieldError('itemName');
-                    if (uploadedPhotos.length > 0 && nextVal.trim().length >= 2) {
-                      verifyMultiAnglePhotos(uploadedPhotos, nextVal.trim());
-                    }
-                  }}
-                  className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-sm text-[#0F172A] outline-hidden transition ${
-                    errors.itemName ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                  }`}
-                  placeholder="e.g., Apple iPhone 15 Pro Max 256GB Natural Titanium"
-                />
-                {errors.itemName && (
-                  <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.itemName}</p>
-                )}
-
-                {/* Quick 1-Tap Device Model Presets */}
-                <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mr-0.5">
-                    Quick Presets:
-                  </span>
-                  {(
-                    searchParams.get('preset') === 'tablets'
-                      ? [
-                          { label: 'iPad Pro M4 11" (256GB)', val: 82000, inc: 'Original Box, USB-C Cable & Adapter' },
-                          { label: 'iPad Air M2 11" (128GB)', val: 48000, inc: 'Original Box & USB-C Cable' },
-                          { label: 'Galaxy Tab S9 Ultra', val: 74000, inc: 'S-Pen, Original Box & Cable' },
-                        ]
-                      : selectedCategory === 'LAPTOPS_COMPUTERS'
-                      ? [
-                          { label: 'MacBook Air M3 13" (16GB/512GB)', val: 92000, inc: 'MagSafe 3 Cable, 35W Adapter & Box' },
-                          { label: 'MacBook Pro M3 Pro 14"', val: 145000, inc: 'Original Box, MagSafe Charger & Invoice' },
-                          { label: 'ASUS ROG Zephyrus G16', val: 118000, inc: 'Original Power Brick & Box' },
-                        ]
-                      : selectedCategory === 'LUXURY_WATCHES'
-                      ? [
-                          { label: 'Apple Watch Ultra 2 (49mm)', val: 64000, inc: 'Alpine Loop Band, Magnetic Charger & Box' },
-                          { label: 'Apple Watch Series 10 (46mm)', val: 38000, inc: 'Sport Band, Fast Charger & Box' },
-                          { label: 'Galaxy Watch Ultra (47mm)', val: 44000, inc: 'Marine Band, Wireless Puck & Box' },
-                        ]
-                      : selectedCategory === 'GAMING_AUDIO'
-                      ? [
-                          { label: 'AirPods Pro 2 (USB-C)', val: 16500, inc: 'MagSafe Case, Ear Tips & Original Box' },
-                          { label: 'Sony WH-1000XM5 Headphones', val: 21000, inc: 'Carry Case, Audio Cable & Box' },
-                          { label: 'PlayStation 5 Slim (Disc)', val: 41000, inc: 'DualSense Controller, HDMI, Power Cord & Box' },
-                        ]
-                      : [
-                          { label: 'iPhone 16 Pro Max (256GB)', val: 108000, inc: 'Original Box, USB-C Woven Cable & Invoice' },
-                          { label: 'iPhone 15 Pro (128GB)', val: 76000, inc: 'Original Box, USB-C Cable & Bill' },
-                          { label: 'Samsung Galaxy S24 Ultra (256GB)', val: 84000, inc: 'S-Pen, Original Box & Data Cable' },
-                        ]
-                  ).map((presetItem) => (
-                    <button
-                      key={presetItem.label}
-                      type="button"
-                      onClick={() => {
-                        setItemName(presetItem.label);
-                        setDeclaredValue(presetItem.val);
-                        if (!includedItems || includedItems === 'Original Box, Charger') {
-                          setIncludedItems(presetItem.inc);
-                        }
-                        clearFieldError('itemName');
-                        clearFieldError('declaredValue');
-                        clearFieldError('includedItems');
-                      }}
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition cursor-pointer ${
-                        itemName === presetItem.label
-                          ? 'bg-[#0066FF] text-white border-[#0066FF] shadow-2xs'
-                          : 'bg-slate-50 hover:bg-blue-50/70 text-slate-700 hover:text-[#0066FF] border-slate-200/90 hover:border-blue-200'
-                      }`}
-                    >
-                      {presetItem.label}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Clean Product Verification Pill */}
-                {detectedProduct && (
-                  <div className="mt-2 flex items-center justify-between px-3 py-1.5 rounded-xl bg-blue-50/70 border border-blue-200/80 text-[11px] text-slate-900 animate-in fade-in">
-                    <span className="flex items-center gap-1.5 font-semibold">
-                      <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
-                      <span>Product Verified: <strong>{detectedProduct.brand}</strong> ({detectedProduct.badge})</span>
-                    </span>
-                    <span className="text-[10px] font-bold text-white bg-black px-2 py-0.5 rounded-md">
-                      ✓ Open-Box Eligible
-                    </span>
-                  </div>
-                )}
+                <h2 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">
+                  {mode === 'exchange' ? 'Dual Item Specifications' : 'Item Details & Verification'}
+                </h2>
+                <p className="text-xs sm:text-[13px] text-[#64748B] mt-1">
+                  Provide item specifications and upload at least 1 photo for doorstep open-box verification.
+                </p>
               </div>
 
-              {/* Condition & Declared Valuation Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="rounded-2xl p-4 sm:p-5 border border-[#E2E8F0] bg-[#FFFFFF] space-y-4">
+                {/* Item Model */}
                 <div>
-                  <label className="text-xs font-bold text-[#334155] block mb-1">
-                    Physical Condition <span className="text-rose-500">*</span>:
+                  <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                    Item Model / Specification <span className="text-rose-500">*</span>:
                   </label>
-                  <select
-                    id="field-condition"
-                    value={condition}
+                  <input
+                    id="field-itemName"
+                    type="text"
+                    value={itemName}
                     onChange={(e) => {
-                      setCondition(e.target.value);
-                      clearFieldError('condition');
+                      const nextVal = e.target.value;
+                      setItemName(nextVal);
+                      clearFieldError('itemName');
+                      if (uploadedPhotos.length > 0 && nextVal.trim().length >= 2) {
+                        verifyMultiAnglePhotos(uploadedPhotos, nextVal.trim());
+                      }
                     }}
-                    className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
-                      errors.condition ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-sm font-medium text-[#0F172A] outline-hidden transition ${
+                      errors.itemName ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#CBD5E1] focus:border-[#0066FF] focus:ring-2 focus:ring-blue-100'
                     }`}
-                  >
-                    <option value="Used - Mint">Used - Mint (Flawless, scratchless)</option>
-                    <option value="Used - Excellent">Used - Excellent (Minor cosmetic wear)</option>
-                    <option value="Brand New Sealed">Brand New Sealed (Unopened factory box)</option>
-                    <option value="Used - Good">Used - Good (Normal wear, 100% functional)</option>
-                    <option value="Used - Fair">Used - Fair (Visible scratches, fully working)</option>
-                  </select>
-                  {errors.condition && (
-                    <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.condition}</p>
+                    placeholder="e.g., Apple iPhone 15 Pro Max 256GB Natural Titanium"
+                  />
+                  {errors.itemName && (
+                    <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.itemName}</p>
                   )}
-                </div>
 
-                <div>
-                  <label className="text-xs font-bold text-[#334155] block mb-1">
-                    Declared Valuation (₹) <span className="text-rose-500">*</span>:
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">₹</span>
-                    <input
-                      id="field-declaredValue"
-                      type="number"
-                      value={declaredValue === 0 ? '' : declaredValue}
-                      onChange={(e) => {
-                        const val = e.target.value === '' ? 0 : Number(e.target.value);
-                        setDeclaredValue(val);
-                        clearFieldError('declaredValue');
-                      }}
-                      placeholder="e.g., 65000"
-                      className={`w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-sm font-bold text-slate-900 outline-hidden transition ${
-                        errors.declaredValue ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                      }`}
-                    />
-                  </div>
-                  {errors.declaredValue && (
-                    <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.declaredValue}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Included Items */}
-              <div>
-                <label className="text-xs font-bold text-[#334155] block mb-1">
-                  Included In-the-Box / Accessories <span className="text-rose-500">*</span>:
-                </label>
-                <input
-                  id="field-includedItems"
-                  type="text"
-                  value={includedItems}
-                  onChange={(e) => {
-                    setIncludedItems(e.target.value);
-                    clearFieldError('includedItems');
-                  }}
-                  placeholder="e.g., Original box, charger, purchase invoice"
-                  className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden transition ${
-                    errors.includedItems ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                  }`}
-                />
-                {errors.includedItems && (
-                  <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.includedItems}</p>
-                )}
-              </div>
-
-              {/* Photo Upload Section: 100% Zero pre-filled photos */}
-              <div id="field-photos" className="pt-2 border-t border-slate-100 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5">
-                    <Camera className="w-4 h-4 text-[#0066FF]" />
-                    <span>Upload Item Photos (1–4 Photos)</span>
-                    <span className="text-rose-500">*</span>
-                  </label>
-                  <span className="text-[10px] text-slate-500 font-semibold bg-slate-100 px-2 py-0.5 rounded-full">
-                    {uploadedPhotos.length} / 4 attached
-                  </span>
-                </div>
-
-                {uploadedPhotos.length === 0 ? (
-                  <label className="flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-dashed border-blue-200 hover:border-[#0066FF] bg-blue-50/30 hover:bg-blue-50/60 transition cursor-pointer group text-center shadow-2xs">
-                    <div className="w-10 h-10 rounded-xl bg-white border border-blue-200 text-[#0066FF] flex items-center justify-center mb-2 shadow-xs group-hover:scale-105 transition-transform">
-                      <Camera className="w-5 h-5" />
-                    </div>
-                    <span className="text-xs font-bold text-slate-900 block">
-                      Tap or drag photos to upload
+                  {/* Quick 1-Tap Device Model Presets */}
+                  <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] font-semibold text-[#64748B] mr-0.5">
+                      Quick Presets:
                     </span>
-                    <span className="text-[11px] text-slate-500 mt-0.5 block">
-                      Screen, rear, or retail box &bull; Verified at unboxing
-                    </span>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={(e) => handleSimplePhotoUpload(e.target.files)}
-                      className="hidden"
-                    />
-                  </label>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                      {uploadedPhotos.map((photoUrl, idx) => (
-                        <div key={idx} className="relative rounded-xl border border-slate-200 bg-white p-1 shadow-2xs group flex flex-col items-center">
-                          <div className="w-full aspect-square rounded-lg bg-slate-100 overflow-hidden flex items-center justify-center relative">
-                            <img src={photoUrl} alt={`Item ${idx + 1}`} className="w-full h-full object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => handleRemovePhoto(idx)}
-                              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/80 hover:bg-rose-600 text-white flex items-center justify-center text-xs transition cursor-pointer shadow-xs"
-                              title="Remove"
-                            >
-                              &times;
-                            </button>
-                          </div>
-                          <span className="text-[9px] text-slate-400 font-medium mt-0.5">Photo #{idx + 1}</span>
-                        </div>
-                      ))}
-
-                      {uploadedPhotos.length < 4 && (
-                        <label className="flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-dashed border-slate-300 hover:border-[#0066FF] bg-slate-50 hover:bg-blue-50/50 transition cursor-pointer text-center p-1 group">
-                          <Camera className="w-4 h-4 text-[#0066FF] mb-1" />
-                          <span className="text-[10px] font-bold text-slate-700">+ Add</span>
-                          <input
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            onChange={(e) => handleSimplePhotoUpload(e.target.files)}
-                            className="hidden"
-                          />
-                        </label>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {errors.photos && (
-                  <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.photos}</p>
-                )}
-
-                {/* Multimodal Verification Status Badge */}
-                {isMatchingPhoto && (
-                  <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-medium flex items-center gap-2">
-                    <span className="w-3.5 h-3.5 rounded-full border-2 border-[#0066FF] border-t-transparent animate-spin shrink-0" />
-                    <span>AI verifying device photos against {itemName || 'declared item'}...</span>
-                  </div>
-                )}
-
-                {!isMatchingPhoto && photoMatchResult && photoMatchResult.isMatch && (
-                  <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-slate-900 text-xs font-semibold flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
-                      <span>Hardware Model Verified: {photoMatchResult.detectedModel || itemName}</span>
-                    </span>
-                    <span className="text-[10px] bg-[#0066FF] text-white px-2 py-0.5 rounded-md font-bold">
-                      {photoMatchResult.confidence || '99%'} Match
-                    </span>
-                  </div>
-                )}
-
-                {/* Product Mismatch: Elegant Amber Notice with Replace Photo / Confirm actions */}
-                {!isMatchingPhoto && photoMatchResult && !photoMatchResult.isMatch && !dismissedMismatch && (
-                  <div className="p-3 rounded-2xl bg-amber-50/95 border border-amber-300 text-amber-950 text-xs space-y-2 animate-in fade-in shadow-2xs">
-                    <div className="flex items-start gap-2.5">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <h4 className="font-bold text-amber-900 text-xs">
-                            Notice: {photoMatchResult.detectedCategory || 'Item'} Detected
-                          </h4>
-                          <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.5 rounded">
-                            Optical Check
-                          </span>
-                        </div>
-                        <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                          {photoMatchResult.reason || `The uploaded photo looks like a ${photoMatchResult.detectedCategory || 'different device'}, while declared item is "${itemName}".`}
-                        </p>
-                        <p className="text-[10px] text-amber-700/90 mt-0.5">
-                          Your assigned SafeShip pickup partner will verify the physical item against this order during the 10-minute doorstep unboxing window.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="pt-1.5 border-t border-amber-200/70 flex items-center justify-end gap-2">
+                    {(
+                      searchParams.get('preset') === 'tablets'
+                        ? [
+                            { label: 'iPad Pro M4 11" (256GB)', val: 82000, inc: 'Original Box, USB-C Cable & Adapter' },
+                            { label: 'iPad Air M2 11" (128GB)', val: 48000, inc: 'Original Box & USB-C Cable' },
+                            { label: 'Galaxy Tab S9 Ultra', val: 74000, inc: 'S-Pen, Original Box & Cable' },
+                          ]
+                        : selectedCategory === 'LAPTOPS_COMPUTERS'
+                        ? [
+                            { label: 'MacBook Air M3 13" (16GB/512GB)', val: 92000, inc: 'MagSafe 3 Cable, 35W Adapter & Box' },
+                            { label: 'MacBook Pro M3 Pro 14"', val: 145000, inc: 'Original Box, MagSafe Charger & Invoice' },
+                            { label: 'ASUS ROG Zephyrus G16', val: 118000, inc: 'Original Power Brick & Box' },
+                          ]
+                        : selectedCategory === 'LUXURY_WATCHES'
+                        ? [
+                            { label: 'Apple Watch Ultra 2 (49mm)', val: 64000, inc: 'Alpine Loop Band, Magnetic Charger & Box' },
+                            { label: 'Apple Watch Series 10 (46mm)', val: 38000, inc: 'Sport Band, Fast Charger & Box' },
+                            { label: 'Galaxy Watch Ultra (47mm)', val: 44000, inc: 'Marine Band, Wireless Puck & Box' },
+                          ]
+                        : selectedCategory === 'GAMING_AUDIO'
+                        ? [
+                            { label: 'AirPods Pro 2 (USB-C)', val: 16500, inc: 'MagSafe Case, Ear Tips & Original Box' },
+                            { label: 'Sony WH-1000XM5 Headphones', val: 21000, inc: 'Carry Case, Audio Cable & Box' },
+                            { label: 'PlayStation 5 Slim (Disc)', val: 41000, inc: 'DualSense Controller, HDMI, Power Cord & Box' },
+                          ]
+                        : [
+                            { label: 'iPhone 16 Pro Max (256GB)', val: 108000, inc: 'Original Box, USB-C Woven Cable & Invoice' },
+                            { label: 'iPhone 15 Pro (128GB)', val: 76000, inc: 'Original Box, USB-C Cable & Bill' },
+                            { label: 'Samsung Galaxy S24 Ultra (256GB)', val: 84000, inc: 'S-Pen, Original Box & Data Cable' },
+                          ]
+                    ).map((presetItem) => (
                       <button
+                        key={presetItem.label}
                         type="button"
                         onClick={() => {
-                          setUploadedPhotos([]);
-                          setProductPhoto(null);
-                          setPhotoMatchResult(null);
+                          setItemName(presetItem.label);
+                          setDeclaredValue(presetItem.val);
+                          if (!includedItems || includedItems === 'Original Box, Charger') {
+                            setIncludedItems(presetItem.inc);
+                          }
+                          clearFieldError('itemName');
+                          clearFieldError('declaredValue');
+                          clearFieldError('includedItems');
                         }}
-                        className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 font-bold text-[11px] transition cursor-pointer"
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition cursor-pointer ${
+                          itemName === presetItem.label
+                            ? 'bg-[#0066FF] text-white border-[#0066FF] shadow-2xs'
+                            : 'bg-[#F8FAFC] hover:bg-blue-50/70 text-[#334155] hover:text-[#0066FF] border-[#E2E8F0] hover:border-blue-200'
+                        }`}
                       >
-                        Replace Photo
+                        {presetItem.label}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setDismissedMismatch(true)}
-                        className="px-2.5 py-1 rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-bold text-[11px] transition cursor-pointer"
-                      >
-                        I Confirm Item is Correct (Proceed)
-                      </button>
-                    </div>
+                    ))}
                   </div>
-                )}
 
-                {/* Dismissed / Overridden Mismatch Pill */}
-                {!isMatchingPhoto && photoMatchResult && !photoMatchResult.isMatch && dismissedMismatch && (
-                  <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] flex items-center justify-between">
-                    <span>Listing confirmed by sender &bull; Physical audit at doorstep</span>
-                    <button
-                      type="button"
-                      onClick={() => setDismissedMismatch(false)}
-                      className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
+                  {/* Clean Product Verification Pill */}
+                  {detectedProduct && (
+                    <div className="mt-3 flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-xs text-[#0F172A] animate-in fade-in">
+                      <span className="flex items-center gap-2 font-medium">
+                        <CheckCircle2 className="w-4 h-4 text-[#0066FF] shrink-0" />
+                        <span>
+                          Product Verified: <strong>{detectedProduct.brand}</strong> ({detectedProduct.badge})
+                        </span>
+                      </span>
+                      <span className="text-[11px] font-bold text-white bg-[#1E293B] px-2.5 py-1 rounded-full inline-flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                        <span>Open-Box Eligible</span>
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Condition & Declared Valuation Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                      Physical Condition <span className="text-rose-500">*</span>:
+                    </label>
+                    <select
+                      id="field-condition"
+                      value={condition}
+                      onChange={(e) => {
+                        setCondition(e.target.value);
+                        clearFieldError('condition');
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-xs font-medium text-[#0F172A] outline-hidden transition ${
+                        errors.condition ? 'border-rose-500 bg-rose-50/20' : 'border-[#CBD5E1] focus:border-[#0066FF]'
+                      }`}
                     >
-                      Review Notice
-                    </button>
+                      <option value="Used - Mint">Used - Mint (Flawless, scratchless)</option>
+                      <option value="Used - Excellent">Used - Excellent (Minor cosmetic wear)</option>
+                      <option value="Brand New Sealed">Brand New Sealed (Unopened factory box)</option>
+                      <option value="Used - Good">Used - Good (Normal wear, 100% functional)</option>
+                      <option value="Used - Fair">Used - Fair (Visible scratches, fully working)</option>
+                    </select>
+                    {errors.condition && (
+                      <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.condition}</p>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Optional Serial / IMEI input */}
-              <div className="pt-2 border-t border-slate-100">
-                <label className="text-xs font-bold text-[#334155] flex items-center justify-between mb-1">
-                  <span className="flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF]" />
-                    <span>IMEI or Serial Number:</span>
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-normal">Optional &bull; Audited at unboxing</span>
-                </label>
-                <input
-                  id="field-manualImei"
-                  type="text"
-                  value={manualImei}
-                  onChange={(e) => {
-                    const clean = e.target.value.replace(/\s+/g, '');
-                    setManualImei(clean);
-                  }}
-                  placeholder="e.g. 15-digit IMEI or serial number"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0066FF] text-xs font-mono text-[#0F172A] outline-hidden transition"
-                />
-              </div>
-
-              {/* Minimal Open-Box & Escrow Assurance */}
-              <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600">
-                <span className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#0066FF] shrink-0" />
-                  <span>10-min doorstep open-box inspection &bull; ₹0 return if rejected</span>
-                </span>
-                <span className="text-[11px] font-semibold text-[#0066FF] shrink-0 hidden sm:inline">RBI Nodal Escrow</span>
-              </div>
-
-              {/* Exchange Mode Fields (If 2-Way exchange) */}
-              {mode === 'exchange' && (
-                <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-3 pt-3">
-                  <div className="flex items-center justify-between pb-1.5 border-b border-amber-200/60">
-                    <span className="text-xs font-bold text-amber-900">Partner Item (What You Receive)</span>
-                    <span className="text-[10px] text-amber-700 font-semibold bg-amber-100 px-2 py-0.5 rounded-full">2-Way Swap</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[11px] font-bold text-[#334155] block mb-1">Partner Item Model <span className="text-rose-500">*</span>:</label>
+                  <div>
+                    <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                      Declared Valuation (₹) <span className="text-rose-500">*</span>:
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-500">₹</span>
                       <input
-                        id="field-exchangeItemName"
-                        type="text"
-                        value={exchangeItemName}
-                        onChange={(e) => { setExchangeItemName(e.target.value); clearFieldError('exchangeItemName'); }}
-                        placeholder="e.g. MacBook Air M2 16GB"
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs text-[#0F172A] outline-hidden"
-                      />
-                      {errors.exchangeItemName && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.exchangeItemName}</p>}
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-[#334155] block mb-1">Partner Estimated Value (₹) <span className="text-rose-500">*</span>:</label>
-                      <input
-                        id="field-exchangeValue"
+                        id="field-declaredValue"
                         type="number"
-                        value={exchangeValue === 0 ? '' : exchangeValue}
-                        onChange={(e) => { setExchangeValue(e.target.value === '' ? 0 : Number(e.target.value)); clearFieldError('exchangeValue'); }}
-                        placeholder="e.g. 70000"
-                        className="w-full px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-bold text-amber-800 outline-hidden"
+                        value={declaredValue === 0 ? '' : declaredValue}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? 0 : Number(e.target.value);
+                          setDeclaredValue(val);
+                          clearFieldError('declaredValue');
+                        }}
+                        placeholder="e.g., 65000"
+                        className={`w-full pl-8 pr-3.5 py-2.5 rounded-xl bg-white border text-sm font-bold text-slate-900 outline-hidden transition ${
+                          errors.declaredValue ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#CBD5E1] focus:border-[#0066FF]'
+                        }`}
                       />
-                      {errors.exchangeValue && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.exchangeValue}</p>}
                     </div>
+                    {errors.declaredValue && (
+                      <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.declaredValue}</p>
+                    )}
                   </div>
                 </div>
-              )}
+
+                {/* Included Items */}
+                <div>
+                  <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                    Included In-the-Box / Accessories <span className="text-rose-500">*</span>:
+                  </label>
+                  <input
+                    id="field-includedItems"
+                    type="text"
+                    value={includedItems}
+                    onChange={(e) => {
+                      setIncludedItems(e.target.value);
+                      clearFieldError('includedItems');
+                    }}
+                    placeholder="e.g., Original Box, Charger"
+                    className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-xs font-medium text-[#0F172A] outline-hidden transition ${
+                      errors.includedItems ? 'border-rose-500 bg-rose-50/20 focus:border-rose-600' : 'border-[#CBD5E1] focus:border-[#0066FF]'
+                    }`}
+                  />
+                  <span className="text-[11px] text-[#64748B] mt-1 block">
+                    Mention all items to avoid rejection.
+                  </span>
+                  {errors.includedItems && (
+                    <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.includedItems}</p>
+                  )}
+                </div>
+
+                {/* Photo Upload Section */}
+                <div id="field-photos" className="pt-2 border-t border-slate-100 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5">
+                      <Camera className="w-4 h-4 text-[#0066FF]" />
+                      <span>Upload Item Photos (1–4 Photos)</span>
+                      <span className="text-rose-500">*</span>
+                    </label>
+                    <span className="text-[11px] text-[#64748B] font-semibold bg-[#F1F5F9] px-2.5 py-0.5 rounded-full">
+                      {uploadedPhotos.length} / 4 attached
+                    </span>
+                  </div>
+
+                  {uploadedPhotos.length === 0 ? (
+                    <label className="flex flex-col items-center justify-center py-6 px-4 rounded-2xl border-2 border-dashed border-blue-200 hover:border-[#0066FF] bg-[#F8FAFC] hover:bg-blue-50/40 transition cursor-pointer group text-center">
+                      <div className="w-11 h-11 rounded-2xl bg-blue-50 border border-blue-200/80 text-[#0066FF] flex items-center justify-center mb-2 shadow-2xs group-hover:scale-105 transition-transform">
+                        <Camera className="w-5 h-5" />
+                      </div>
+                      <span className="text-sm font-bold text-[#0F172A] block">
+                        Tap or drag photos to upload
+                      </span>
+                      <span className="text-xs text-[#64748B] mt-0.5 block">
+                        Screen, rear, or retail box &bull; Verified at unboxing
+                      </span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => handleSimplePhotoUpload(e.target.files)}
+                        className="hidden"
+                      />
+                    </label>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                        {uploadedPhotos.map((photoUrl, idx) => (
+                          <div key={idx} className="relative rounded-xl border border-slate-200 bg-white p-1 shadow-2xs group flex flex-col items-center">
+                            <div className="w-full aspect-square rounded-lg bg-slate-100 overflow-hidden flex items-center justify-center relative">
+                              <img src={photoUrl} alt={`Item ${idx + 1}`} className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePhoto(idx)}
+                                className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/80 hover:bg-rose-600 text-white flex items-center justify-center text-xs transition cursor-pointer shadow-xs"
+                                title="Remove"
+                              >
+                                &times;
+                              </button>
+                            </div>
+                            <span className="text-[9px] text-slate-400 font-medium mt-0.5">Photo #{idx + 1}</span>
+                          </div>
+                        ))}
+
+                        {uploadedPhotos.length < 4 && (
+                          <label className="flex flex-col items-center justify-center aspect-square rounded-xl border-2 border-dashed border-slate-300 hover:border-[#0066FF] bg-slate-50 hover:bg-blue-50/50 transition cursor-pointer text-center p-1 group">
+                            <Camera className="w-4 h-4 text-[#0066FF] mb-1" />
+                            <span className="text-[10px] font-bold text-slate-700">+ Add</span>
+                            <input
+                              type="file"
+                              multiple
+                              accept="image/*"
+                              onChange={(e) => handleSimplePhotoUpload(e.target.files)}
+                              className="hidden"
+                            />
+                          </label>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {errors.photos && (
+                    <p className="text-[11px] text-rose-600 font-semibold mt-1">⚠️ {errors.photos}</p>
+                  )}
+
+                  {/* Multimodal Verification Status Badge */}
+                  {isMatchingPhoto && (
+                    <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-900 text-xs font-medium flex items-center gap-2">
+                      <span className="w-3.5 h-3.5 rounded-full border-2 border-[#0066FF] border-t-transparent animate-spin shrink-0" />
+                      <span>AI verifying device photos against {itemName || 'declared item'}...</span>
+                    </div>
+                  )}
+
+                  {!isMatchingPhoto && photoMatchResult && photoMatchResult.isMatch && (
+                    <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-slate-900 text-xs font-semibold flex items-center justify-between gap-2">
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
+                        <span>Hardware Model Verified: {photoMatchResult.detectedModel || itemName}</span>
+                      </span>
+                      <span className="text-[10px] bg-[#0066FF] text-white px-2 py-0.5 rounded-md font-bold">
+                        {photoMatchResult.confidence || '99%'} Match
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Product Mismatch: Elegant Amber Notice with Replace Photo / Confirm actions */}
+                  {!isMatchingPhoto && photoMatchResult && !photoMatchResult.isMatch && !dismissedMismatch && (
+                    <div className="p-3 rounded-2xl bg-amber-50/95 border border-amber-300 text-amber-950 text-xs space-y-2 animate-in fade-in shadow-2xs">
+                      <div className="flex items-start gap-2.5">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <h4 className="font-bold text-amber-900 text-xs">
+                              Notice: {photoMatchResult.detectedCategory || 'Item'} Detected
+                            </h4>
+                            <span className="text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.5 rounded">
+                              Optical Check
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
+                            {photoMatchResult.reason || `The uploaded photo looks like a ${photoMatchResult.detectedCategory || 'different device'}, while declared item is "${itemName}".`}
+                          </p>
+                          <p className="text-[10px] text-amber-700/90 mt-0.5">
+                            Your assigned SafeShip pickup partner will verify the physical item against this order during the 10-minute doorstep unboxing window.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="pt-1.5 border-t border-amber-200/70 flex items-center justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUploadedPhotos([]);
+                            setProductPhoto(null);
+                            setPhotoMatchResult(null);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 font-bold text-[11px] transition cursor-pointer"
+                        >
+                          Replace Photo
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDismissedMismatch(true)}
+                          className="px-2.5 py-1 rounded-lg bg-amber-700 hover:bg-amber-800 text-white font-bold text-[11px] transition cursor-pointer"
+                        >
+                          I Confirm Item is Correct (Proceed)
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Dismissed / Overridden Mismatch Pill */}
+                  {!isMatchingPhoto && photoMatchResult && !photoMatchResult.isMatch && dismissedMismatch && (
+                    <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-[11px] flex items-center justify-between">
+                      <span>Listing confirmed by sender &bull; Physical audit at doorstep</span>
+                      <button
+                        type="button"
+                        onClick={() => setDismissedMismatch(false)}
+                        className="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer"
+                      >
+                        Review Notice
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Optional Serial / IMEI input */}
+                <div className="pt-2 border-t border-slate-100">
+                  <label className="text-xs font-bold text-[#334155] flex items-center gap-1.5 mb-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF]" />
+                    <span>IMEI or Serial Number (Optional)</span>
+                  </label>
+                  <input
+                    id="field-manualImei"
+                    type="text"
+                    value={manualImei}
+                    onChange={(e) => {
+                      const clean = e.target.value.replace(/\s+/g, '');
+                      setManualImei(clean);
+                    }}
+                    placeholder="e.g. 15-digit IMEI or serial number"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#CBD5E1] focus:border-[#0066FF] text-xs font-mono text-[#0F172A] outline-hidden transition"
+                  />
+                  <span className="text-[11px] text-[#64748B] mt-1 block">
+                    Optional &bull; Audited at unboxing
+                  </span>
+                </div>
+
+                {/* Minimal Open-Box & Escrow Assurance */}
+                <div className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-[#F0F7FF] border border-blue-200/70 text-xs text-[#1E293B]">
+                  <span className="flex items-center gap-2 font-medium">
+                    <ShieldCheck className="w-4 h-4 text-[#0066FF] shrink-0" />
+                    <span>10-minute doorstep open-box inspection &bull; ₹0 return if rejected</span>
+                  </span>
+                  <span className="text-[11px] font-bold text-[#0066FF] shrink-0 hidden sm:inline">RBI Nodal Escrow</span>
+                </div>
+
+                {/* Exchange Mode Fields (If 2-Way exchange) */}
+                {mode === 'exchange' && (
+                  <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 space-y-3 pt-3">
+                    <div className="flex items-center justify-between pb-1.5 border-b border-amber-200/60">
+                      <span className="text-xs font-bold text-amber-900">Partner Item (What You Receive)</span>
+                      <span className="text-[10px] text-amber-700 font-semibold bg-amber-100 px-2 py-0.5 rounded-full">2-Way Swap</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[11px] font-bold text-[#334155] block mb-1">Partner Item Model <span className="text-rose-500">*</span>:</label>
+                        <input
+                          id="field-exchangeItemName"
+                          type="text"
+                          value={exchangeItemName}
+                          onChange={(e) => { setExchangeItemName(e.target.value); clearFieldError('exchangeItemName'); }}
+                          placeholder="e.g. MacBook Air M2 16GB"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs text-[#0F172A] outline-hidden"
+                        />
+                        {errors.exchangeItemName && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.exchangeItemName}</p>}
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-[#334155] block mb-1">Partner Estimated Value (₹) <span className="text-rose-500">*</span>:</label>
+                        <input
+                          id="field-exchangeValue"
+                          type="number"
+                          value={exchangeValue === 0 ? '' : exchangeValue}
+                          onChange={(e) => { setExchangeValue(e.target.value === '' ? 0 : Number(e.target.value)); clearFieldError('exchangeValue'); }}
+                          placeholder="e.g. 70000"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-amber-200 text-xs font-bold text-amber-800 outline-hidden"
+                        />
+                        {errors.exchangeValue && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.exchangeValue}</p>}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop Inline Navigation */}
+              <div className="hidden sm:flex items-center justify-between pt-1">
+                <button
+                  type="button"
+                  onClick={() => goToStep(1)}
+                  className="py-3 px-5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] hover:bg-slate-100 text-[#334155] font-bold text-xs transition active:scale-95 inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextStep}
+                  className="py-3.5 px-6 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md shadow-[#0066FF]/20 transition active:scale-95 inline-flex items-center gap-2 cursor-pointer"
+                >
+                  <span>Next: Pickup &amp; Delivery Addresses</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
-            {/* Desktop Inline Navigation */}
-            <div className="hidden sm:flex items-center justify-between pt-3">
-              <button
-                type="button"
-                onClick={() => goToStep(1)}
-                className="py-3 px-5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 font-bold text-xs transition active:scale-95 inline-flex items-center gap-1.5 cursor-pointer"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Back</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleNextStep}
-                className="py-3 px-6 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md shadow-[#0066FF]/20 transition active:scale-95 inline-flex items-center gap-2 cursor-pointer"
-              >
-                <span>Next: Pickup &amp; Delivery Addresses</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+            {/* RIGHT SIDEBAR (4 Columns on Desktop): Photo Guidelines & Safe Payment */}
+            <div className="lg:col-span-4 space-y-5">
+              {/* Card 1: Photo Guidelines */}
+              <div className="bg-white rounded-[24px] p-5 border border-[#E2E8F0] shadow-sm space-y-3.5">
+                <div>
+                  <h3 className="text-base font-black text-[#0F172A]">Photo Guidelines</h3>
+                  <p className="text-xs text-[#64748B] mt-0.5">
+                    Upload clear photos to ensure smooth verification:
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    {
+                      img: '/images/guide_front_back.webp',
+                      label: '1. Product – Front & Back',
+                    },
+                    {
+                      img: '/images/guide_in_box.webp',
+                      label: '2. In-the-box Items',
+                    },
+                    {
+                      img: '/images/guide_imei.webp',
+                      label: '3. Serial Number / IMEI',
+                    },
+                    {
+                      img: '/images/guide_packaging.webp',
+                      label: '4. Original Packaging',
+                    },
+                  ].map((g) => (
+                    <div
+                      key={g.label}
+                      className="rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-2 flex flex-col items-center text-center"
+                    >
+                      <div className="w-full h-20 rounded-lg bg-white overflow-hidden flex items-center justify-center mb-1.5 border border-slate-100">
+                        <img
+                          src={g.img}
+                          alt={g.label}
+                          className="w-full h-full object-contain p-1"
+                        />
+                      </div>
+                      <span className="text-[11px] font-bold text-[#1E293B] leading-tight">
+                        {g.label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Card 2: Safe & Secure Payment */}
+              <div className="bg-white rounded-[24px] p-5 border border-[#E2E8F0] shadow-sm space-y-3.5">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100/80 text-[#0066FF] flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-[#0F172A]">Safe &amp; Secure Payment</h3>
+                    <p className="text-xs text-[#64748B] mt-0.5">
+                      Your payment is held in secure RBI Nodal Escrow.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5 pt-2 border-t border-[#F1F5F9]">
+                  {[
+                    { icon: CheckCircle2, text: "You pay only if you're satisfied" },
+                    { icon: Clock, text: '10-minute doorstep inspection' },
+                    { icon: RefreshCw, text: '₹0 return if rejected' },
+                    { icon: Lock, text: 'RBI Nodal Escrow' },
+                  ].map((item) => {
+                    const ItemIcon = item.icon;
+                    return (
+                      <div key={item.text} className="flex items-center gap-2.5 text-xs font-semibold text-[#334155]">
+                        <div className="w-6 h-6 rounded-full bg-blue-50 text-[#0066FF] flex items-center justify-center shrink-0">
+                          <ItemIcon className="w-3.5 h-3.5" />
+                        </div>
+                        <span>{item.text}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         )}
 
         {/* =================================================================== */}
-        {/* STEP 3: PICKUP & DROP LOCATIONS (Minimal, Zero Scroll)              */}
+        {/* STEP 3: PICKUP & DROP LOCATIONS (2-Column Desktop Layout)           */}
         {/* =================================================================== */}
         {currentStep === 3 && (
-          <div className="space-y-4 animate-in fade-in">
-            <div>
-              <h2 className="text-xl font-bold text-[#0F172A]">
-                {mode === 'exchange' ? '2-Way Addresses & Corridor' : 'Origin & Destination Addresses'}
-              </h2>
-              <p className="text-xs text-[#64748B] mt-0.5">
-                Add pickup and delivery details. PIN codes auto-resolve city, state &amp; logistics hub.
-              </p>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start animate-in fade-in">
+            {/* LEFT COLUMN (8 Columns on Desktop) */}
+            <div className="lg:col-span-8 space-y-5">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">
+                  {mode === 'exchange' ? '2-Way Addresses & Corridor' : 'Pickup and Delivery Addresses'}
+                </h2>
+                <p className="text-xs sm:text-[13px] text-[#64748B] mt-1">
+                  Enter origin and destination details. PIN codes auto-resolve city, state &amp; logistics hub.
+                </p>
+              </div>
 
-            {/* SENDER / PICKUP DETAILS */}
-            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3.5">
-              <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A]">
-                  <span className="w-2 h-2 rounded-full bg-[#0066FF]" />
-                  <span>Sender / Pickup Address</span>
+              {/* CARD 1: SENDER / PICKUP DETAILS */}
+              <div className="bg-white rounded-[24px] p-5 sm:p-6 border border-[#E2E8F0] shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
+                  <div className="flex items-center gap-2 text-sm font-black text-[#0F172A]">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#0066FF]" />
+                    <span>Sender / Pickup Address</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!senderName) setSenderName('Rohan Verma');
+                      if (!senderPhone) setSenderPhone('9829012890');
+                      if (!pickupLocation) setPickupLocation('Flat 402, Block B, Malviya Nagar');
+                      if (!pickupPincode) handlePickupPincodeChange('302017');
+                      clearFieldError('senderName');
+                      clearFieldError('senderPhone');
+                      clearFieldError('pickupLocation');
+                      clearFieldError('pickupPincode');
+                    }}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#0066FF] bg-blue-50 hover:bg-blue-100/80 px-3 py-1 rounded-full border border-blue-200/80 transition cursor-pointer"
+                  >
+                    <MapPin className="w-3 h-3" />
+                    <span>Use saved address</span>
+                  </button>
                 </div>
-                {pickupCity && (
-                  <span className="text-[11px] font-bold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                    {pickupCity}, {pickupState} ✓
+
+                {/* Row 1: Sender Name & Sender Mobile */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                      Sender Name <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      id="field-senderName"
+                      type="text"
+                      value={senderName}
+                      onChange={(e) => { setSenderName(e.target.value); clearFieldError('senderName'); }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-xs font-medium text-[#0F172A] outline-hidden transition ${
+                        errors.senderName ? 'border-rose-500 bg-rose-50/20' : 'border-[#CBD5E1] focus:border-[#0066FF]'
+                      }`}
+                      placeholder="e.g., Rohan Verma"
+                    />
+                    {errors.senderName && <p className="text-[10px] text-rose-600 mt-1 font-semibold">⚠️ {errors.senderName}</p>}
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                      Sender Mobile <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      id="field-senderPhone"
+                      type="tel"
+                      maxLength={10}
+                      value={senderPhone}
+                      onChange={(e) => { setSenderPhone(e.target.value.replace(/\D/g, '')); clearFieldError('senderPhone'); }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-xs font-mono font-semibold text-[#0F172A] outline-hidden transition ${
+                        errors.senderPhone ? 'border-rose-500 bg-rose-50/20' : 'border-[#CBD5E1] focus:border-[#0066FF]'
+                      }`}
+                      placeholder="e.g., 9829012890"
+                    />
+                    {errors.senderPhone && <p className="text-[10px] text-rose-600 mt-1 font-semibold">⚠️ {errors.senderPhone}</p>}
+                  </div>
+                </div>
+
+                {/* Row 2: Email & Pickup Street Address side-by-side on desktop */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                      Email for Pickup Alerts <span className="text-slate-400 font-normal">(Optional)</span>
+                    </label>
+                    <input
+                      id="field-senderEmail"
+                      type="email"
+                      value={senderEmail}
+                      onChange={(e) => setSenderEmail(e.target.value.trim())}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#CBD5E1] focus:border-[#0066FF] text-xs font-medium text-[#0F172A] outline-hidden transition"
+                      placeholder="e.g., rohan@gmail.com"
+                    />
+                    <span className="text-[10px] text-[#64748B] mt-1 block">
+                      (Receives 4-digit pickup code)
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                      Pickup Address &amp; Landmark <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      id="field-pickupLocation"
+                      type="text"
+                      value={pickupLocation}
+                      onChange={(e) => { setPickupLocation(e.target.value); clearFieldError('pickupLocation'); }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-xs font-medium text-[#0F172A] outline-hidden transition ${
+                        errors.pickupLocation ? 'border-rose-500 bg-rose-50/20' : 'border-[#CBD5E1] focus:border-[#0066FF]'
+                      }`}
+                      placeholder="e.g., Flat 402, Block B, Malviya Nagar"
+                    />
+                    {errors.pickupLocation && <p className="text-[10px] text-rose-600 mt-1 font-semibold">⚠️ {errors.pickupLocation}</p>}
+                  </div>
+                </div>
+
+                {/* Row 3: Pickup PIN Code & Resolved Hub Pill */}
+                <div className="flex flex-col sm:flex-row sm:items-end gap-3 pt-1">
+                  <div className="w-full sm:w-44">
+                    <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                      Pickup PIN Code <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        id="field-pickupPincode"
+                        type="text"
+                        maxLength={6}
+                        value={pickupPincode}
+                        onChange={(e) => handlePickupPincodeChange(e.target.value)}
+                        className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-xs text-[#0F172A] font-mono font-bold outline-hidden transition ${
+                          errors.pickupPincode ? 'border-rose-500 bg-rose-50/20' : 'border-[#CBD5E1] focus:border-[#0066FF]'
+                        }`}
+                        placeholder="e.g., 302017"
+                      />
+                      {pickupCity && (
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500 absolute right-3 top-1/2 -translate-y-1/2" />
+                      )}
+                    </div>
+                    {errors.pickupPincode && <p className="text-[10px] text-rose-600 mt-1 font-semibold">⚠️ {errors.pickupPincode}</p>}
+                  </div>
+
+                  <div className="flex-1">
+                    {pickupCity ? (
+                      <div className="px-3.5 py-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/90 text-xs flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span className="font-bold text-[#0F172A] truncate">
+                            {pickupCity}, {pickupState} &bull; <span className="font-semibold text-emerald-800">{pickupHub || 'Jaipur Air Cargo Hub'}</span>
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => scrollToField('field-pickupPincode')}
+                          className="text-[11px] font-bold text-[#0066FF] hover:underline shrink-0 cursor-pointer"
+                        >
+                          Change
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] text-[#64748B]">
+                        Enter 6-digit PIN code to auto-resolve city &amp; logistics hub
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 2: OPTIONAL SELLER SETTLEMENT DETAILS (BANK ACCOUNT / UPI) */}
+              <div className="bg-white rounded-[24px] p-5 sm:p-6 border border-[#E2E8F0] shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
+                  <div className="flex items-center gap-2 text-sm font-black text-[#0F172A]">
+                    <CreditCard className="w-4 h-4 text-[#0066FF]" />
+                    <span>Seller Escrow Settlement Details</span>
+                    <span className="text-xs text-[#64748B] font-medium">(Optional)</span>
+                  </div>
+                  <span className="text-[11px] font-bold text-[#0066FF] bg-blue-50 px-3 py-1 rounded-full border border-blue-200/80">
+                    Where do I get paid?
                   </span>
+                </div>
+
+                <p className="text-xs text-[#64748B] leading-relaxed">
+                  Where should SafeShip transfer the <strong className="text-[#0F172A]">{declaredValue > 0 ? `₹${declaredValue.toLocaleString('en-IN')}` : 'item value'}</strong> payout once the buyer approves doorstep open-box inspection?
+                </p>
+
+                {/* Toggle: Bank Account vs UPI */}
+                <div className="grid grid-cols-2 gap-2.5 p-1 bg-[#F8FAFC] rounded-2xl border border-[#E2E8F0]">
+                  <button
+                    type="button"
+                    onClick={() => setSellerSettlementType('BANK')}
+                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center gap-2 ${
+                      sellerSettlementType === 'BANK'
+                        ? 'bg-[#0066FF] text-white shadow-xs'
+                        : 'text-[#475569] hover:text-[#0F172A]'
+                    }`}
+                  >
+                    <CreditCard className="w-3.5 h-3.5" />
+                    <span>Bank Account</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSellerSettlementType('UPI')}
+                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center gap-2 ${
+                      sellerSettlementType === 'UPI'
+                        ? 'bg-[#0066FF] text-white shadow-xs'
+                        : 'text-[#475569] hover:text-[#0F172A]'
+                    }`}
+                  >
+                    <Zap className="w-3.5 h-3.5" />
+                    <span>UPI ID</span>
+                  </button>
+                </div>
+
+                {sellerSettlementType === 'BANK' ? (
+                  <div className="space-y-3.5 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                          Bank Account Number
+                        </label>
+                        <input
+                          id="field-sellerAccountNumber"
+                          type="text"
+                          value={sellerAccountNumber}
+                          onChange={(e) => setSellerAccountNumber(e.target.value.replace(/\s+/g, ''))}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#CBD5E1] focus:border-[#0066FF] text-xs font-mono text-[#0F172A] outline-hidden"
+                          placeholder="e.g., 50100482910482"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                          Bank IFSC Code
+                        </label>
+                        <input
+                          id="field-sellerIfsc"
+                          type="text"
+                          maxLength={11}
+                          value={sellerIfsc}
+                          onChange={(e) => setSellerIfsc(e.target.value.toUpperCase().replace(/\s+/g, ''))}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#CBD5E1] focus:border-[#0066FF] text-xs font-mono font-bold text-[#0F172A] outline-hidden uppercase"
+                          placeholder="e.g., HDFC0001234"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                          Account Beneficiary Name
+                        </label>
+                        <input
+                          id="field-sellerAccountName"
+                          type="text"
+                          value={sellerAccountName}
+                          onChange={(e) => setSellerAccountName(e.target.value)}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#CBD5E1] focus:border-[#0066FF] text-xs font-medium text-[#0F172A] outline-hidden"
+                          placeholder={senderName ? `e.g., ${senderName}` : 'e.g., Rohan Verma'}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                          UPI ID <span className="text-slate-400 font-normal">(Optional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={sellerUpiId}
+                          onChange={(e) => setSellerUpiId(e.target.value.trim())}
+                          className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#CBD5E1] focus:border-[#0066FF] text-xs font-mono text-[#0F172A] outline-hidden"
+                          placeholder="username@bank"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pt-1">
+                    <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                      Seller UPI ID (VPA)
+                    </label>
+                    <input
+                      id="field-sellerUpiId"
+                      type="text"
+                      value={sellerUpiId}
+                      onChange={(e) => setSellerUpiId(e.target.value.trim())}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-[#CBD5E1] focus:border-[#0066FF] text-xs font-mono text-[#0F172A] outline-hidden"
+                      placeholder="e.g., rohan@okhdfcbank or 9829012890@paytm"
+                    />
+                  </div>
+                )}
+
+                <div className="px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] text-[#64748B] flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-[#0066FF] shrink-0" />
+                    <span>Optional now &bull; Can be added anytime before delivery unboxing</span>
+                  </span>
+                  <span className="font-bold text-[#334155]">RBI Nodal Escrow</span>
+                </div>
+              </div>
+
+              {/* CARD 3: RECEIVER / DELIVERY DETAILS */}
+              <div className="bg-white rounded-[24px] p-5 sm:p-6 border border-[#E2E8F0] shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
+                  <div className="flex items-center gap-2 text-sm font-black text-[#0F172A]">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#0F172A]" />
+                    <span>Receiver / Delivery Address</span>
+                  </div>
+                  <label className="inline-flex items-center gap-2 text-xs text-[#334155] font-semibold cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={buyerWillProvideAddress}
+                      onChange={(e) => setBuyerWillProvideAddress(e.target.checked)}
+                      className="w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-[#0066FF]"
+                    />
+                    <span>Receiver fills via link</span>
+                  </label>
+                </div>
+
+                {!buyerWillProvideAddress ? (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                          Receiver Name <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          id="field-buyerName"
+                          type="text"
+                          value={buyerName}
+                          onChange={(e) => { setBuyerName(e.target.value); clearFieldError('buyerName'); }}
+                          className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-xs font-medium text-[#0F172A] outline-hidden transition ${
+                            errors.buyerName ? 'border-rose-500 bg-rose-50/20' : 'border-[#CBD5E1] focus:border-[#0066FF]'
+                          }`}
+                          placeholder="e.g., Amit Sharma"
+                        />
+                        {errors.buyerName && <p className="text-[10px] text-rose-600 mt-1 font-semibold">⚠️ {errors.buyerName}</p>}
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                          Receiver Mobile <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          id="field-buyerPhone"
+                          type="tel"
+                          maxLength={10}
+                          value={buyerPhone}
+                          onChange={(e) => { setBuyerPhone(e.target.value.replace(/\D/g, '')); clearFieldError('buyerPhone'); }}
+                          className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-xs font-mono font-semibold text-[#0F172A] outline-hidden transition ${
+                            errors.buyerPhone ? 'border-rose-500 bg-rose-50/20' : 'border-[#CBD5E1] focus:border-[#0066FF]'
+                          }`}
+                          placeholder="e.g., 9811088912"
+                        />
+                        {errors.buyerPhone && <p className="text-[10px] text-rose-600 mt-1 font-semibold">⚠️ {errors.buyerPhone}</p>}
+                      </div>
+
+                      <div>
+                        <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                          Delivery Address &amp; Landmark <span className="text-rose-500">*</span>
+                        </label>
+                        <input
+                          id="field-dropLocation"
+                          type="text"
+                          value={dropLocation}
+                          onChange={(e) => { setDropLocation(e.target.value); clearFieldError('dropLocation'); }}
+                          className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-xs font-medium text-[#0F172A] outline-hidden transition ${
+                            errors.dropLocation ? 'border-rose-500 bg-rose-50/20' : 'border-[#CBD5E1] focus:border-[#0066FF]'
+                          }`}
+                          placeholder="e.g., Unit 12B, Building 4, DLF Phase 2"
+                        />
+                        {errors.dropLocation && <p className="text-[10px] text-rose-600 mt-1 font-semibold">⚠️ {errors.dropLocation}</p>}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-end gap-3 pt-1">
+                      <div className="w-full sm:w-44">
+                        <label className="text-xs font-bold text-[#334155] block mb-1.5">
+                          Delivery PIN Code <span className="text-rose-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            id="field-dropPincode"
+                            type="text"
+                            maxLength={6}
+                            value={dropPincode}
+                            onChange={(e) => handleDropPincodeChange(e.target.value)}
+                            className={`w-full px-3.5 py-2.5 rounded-xl bg-white border text-xs text-[#0F172A] font-mono font-bold outline-hidden transition ${
+                              errors.dropPincode ? 'border-rose-500 bg-rose-50/20' : 'border-[#CBD5E1] focus:border-[#0066FF]'
+                            }`}
+                            placeholder="e.g., 110001"
+                          />
+                          {dropCity && (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 absolute right-3 top-1/2 -translate-y-1/2" />
+                          )}
+                        </div>
+                        {errors.dropPincode && <p className="text-[10px] text-rose-600 mt-1 font-semibold">⚠️ {errors.dropPincode}</p>}
+                      </div>
+
+                      <div className="flex-1">
+                        {dropCity ? (
+                          <div className="px-3.5 py-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200/90 text-xs flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <span className="font-bold text-[#0F172A] truncate">
+                                {dropCity}, {dropState} &bull; <span className="font-semibold text-emerald-800">{dropHub || 'Delhi IGI Terminal Hub'}</span>
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => scrollToField('field-dropPincode')}
+                              className="text-[11px] font-bold text-[#0066FF] hover:underline shrink-0 cursor-pointer"
+                            >
+                              Change
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] text-[11px] text-[#64748B]">
+                            Enter 6-digit PIN code to auto-resolve city &amp; logistics hub
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="p-4 rounded-2xl bg-blue-50/80 border border-blue-200 text-xs text-blue-950 space-y-1">
+                    <div className="font-bold flex items-center gap-2">
+                      <span>🔗</span>
+                      <span>Recipient Address Link Mode Enabled</span>
+                    </div>
+                    <p className="text-[11px] text-blue-800">
+                      A secure booking link will be generated. The receiver will enter their verified delivery address and PIN code.
+                    </p>
+                  </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                    Sender Name <span className="text-rose-500">*</span>:
-                  </label>
-                  <input
-                    id="field-senderName"
-                    type="text"
-                    value={senderName}
-                    onChange={(e) => { setSenderName(e.target.value); clearFieldError('senderName'); }}
-                    className={`w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
-                      errors.senderName ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                    }`}
-                    placeholder="e.g., Rohan Verma"
-                  />
-                  {errors.senderName && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.senderName}</p>}
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                    Sender Mobile <span className="text-rose-500">*</span>:
-                  </label>
-                  <input
-                    id="field-senderPhone"
-                    type="tel"
-                    maxLength={10}
-                    value={senderPhone}
-                    onChange={(e) => { setSenderPhone(e.target.value.replace(/\D/g, '')); clearFieldError('senderPhone'); }}
-                    className={`w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] font-mono outline-hidden ${
-                      errors.senderPhone ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                    }`}
-                    placeholder="e.g., 9829012890"
-                  />
-                  {errors.senderPhone && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.senderPhone}</p>}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                  Email for Pickup Alerts &amp; Tracking <span className="text-slate-400 font-normal">(Optional &bull; receives 4-digit pickup code)</span>:
-                </label>
-                <input
-                  id="field-senderEmail"
-                  type="email"
-                  value={senderEmail}
-                  onChange={(e) => setSenderEmail(e.target.value.trim())}
-                  className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0066FF] text-xs text-[#0F172A] outline-hidden"
-                  placeholder="e.g., yourname@gmail.com"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                  Pickup Street Address &amp; Landmarks <span className="text-rose-500">*</span>:
-                </label>
-                <input
-                  id="field-pickupLocation"
-                  type="text"
-                  value={pickupLocation}
-                  onChange={(e) => { setPickupLocation(e.target.value); clearFieldError('pickupLocation'); }}
-                  className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
-                    errors.pickupLocation ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                  }`}
-                  placeholder="e.g., Flat 402, Block B, Malviya Nagar"
-                />
-                {errors.pickupLocation && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.pickupLocation}</p>}
-              </div>
-
-              <div className="flex gap-2">
-                <div className="w-36">
-                  <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                    Pickup PIN <span className="text-rose-500">*</span>:
-                  </label>
-                  <input
-                    id="field-pickupPincode"
-                    type="text"
-                    maxLength={6}
-                    value={pickupPincode}
-                    onChange={(e) => handlePickupPincodeChange(e.target.value)}
-                    className={`w-full px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] text-center font-mono font-bold outline-hidden ${
-                      errors.pickupPincode ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                    }`}
-                    placeholder="e.g., 302017"
-                  />
-                  {errors.pickupPincode && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.pickupPincode}</p>}
-                </div>
-
-                <div className="flex-1 flex flex-col justify-end">
-                  {pickupCity ? (
-                    <div className="px-3 py-2 rounded-xl bg-blue-50/70 border border-blue-200 text-slate-900 text-[11px] flex items-center justify-between">
-                      <span className="font-bold">
-                        {pickupCity}, {pickupState}
-                      </span>
-                      <span className="text-[10px] font-mono text-white bg-black px-1.5 py-0.5 rounded shrink-0">{pickupHub || 'Hub Active'}</span>
-                    </div>
-                  ) : (
-                    <span className="text-[11px] text-[#94A3B8] italic pb-2">Enter 6-digit PIN code to auto-resolve city &amp; hub</span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* OPTIONAL SELLER SETTLEMENT DETAILS (BANK ACCOUNT / UPI) */}
-            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3.5">
-              <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A]">
-                  <CreditCard className="w-4 h-4 text-[#0066FF]" />
-                  <span>Seller Escrow Settlement Details</span>
-                  <span className="text-[10px] text-slate-400 font-normal">(Optional)</span>
-                </div>
-                <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">
-                  Where you get paid
-                </span>
-              </div>
-
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                Where should SafeShip transfer the {declaredValue > 0 ? `₹${declaredValue.toLocaleString('en-IN')}` : 'item value'} payout once the buyer approves doorstep open-box inspection?
-              </p>
-
-              {/* Toggle: Bank Account vs UPI */}
-              <div className="grid grid-cols-2 gap-2">
+              {/* Desktop Inline Navigation */}
+              <div className="hidden sm:flex items-center justify-between pt-1">
                 <button
                   type="button"
-                  onClick={() => setSellerSettlementType('BANK')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                    sellerSettlementType === 'BANK'
-                      ? 'bg-blue-50 border-[#0066FF] text-[#0066FF] shadow-2xs'
-                      : 'bg-[#F8FAFC] border-slate-200 text-slate-600 hover:bg-slate-100'
-                  }`}
+                  onClick={() => goToStep(2)}
+                  className="py-3 px-5 rounded-xl bg-white border border-[#E2E8F0] hover:bg-slate-50 text-[#334155] font-bold text-xs transition active:scale-95 inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
                 >
-                  <CreditCard className="w-3.5 h-3.5" />
-                  <span>Bank Account</span>
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Back</span>
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSellerSettlementType('UPI')}
-                  className={`py-2 px-3 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                    sellerSettlementType === 'UPI'
-                      ? 'bg-blue-50 border-[#0066FF] text-[#0066FF] shadow-2xs'
-                      : 'bg-[#F8FAFC] border-slate-200 text-slate-600 hover:bg-slate-100'
-                  }`}
+                  onClick={handleNextStep}
+                  className="py-3.5 px-7 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md shadow-[#0066FF]/20 transition active:scale-95 inline-flex items-center gap-2 cursor-pointer"
                 >
-                  <Zap className="w-3.5 h-3.5" />
-                  <span>UPI ID</span>
+                  <span>Review Quote &amp; Schedule</span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
-              </div>
-
-              {sellerSettlementType === 'BANK' ? (
-                <div className="space-y-2.5 pt-0.5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                        Bank Account Number:
-                      </label>
-                      <input
-                        id="field-sellerAccountNumber"
-                        type="text"
-                        value={sellerAccountNumber}
-                        onChange={(e) => setSellerAccountNumber(e.target.value.replace(/\s+/g, ''))}
-                        className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0066FF] text-xs font-mono text-[#0F172A] outline-hidden"
-                        placeholder="e.g., 50100482910482"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                        Bank IFSC Code:
-                      </label>
-                      <input
-                        id="field-sellerIfsc"
-                        type="text"
-                        maxLength={11}
-                        value={sellerIfsc}
-                        onChange={(e) => setSellerIfsc(e.target.value.toUpperCase().replace(/\s+/g, ''))}
-                        className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0066FF] text-xs font-mono font-bold text-[#0F172A] outline-hidden uppercase"
-                        placeholder="e.g., HDFC0001234"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                      Account Beneficiary Name:
-                    </label>
-                    <input
-                      id="field-sellerAccountName"
-                      type="text"
-                      value={sellerAccountName}
-                      onChange={(e) => setSellerAccountName(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0066FF] text-xs text-[#0F172A] outline-hidden"
-                      placeholder={senderName ? `e.g., ${senderName}` : 'e.g., Rohan Verma (as per passbook)'}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <div className="pt-0.5">
-                  <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                    Seller UPI ID (VPA):
-                  </label>
-                  <input
-                    id="field-sellerUpiId"
-                    type="text"
-                    value={sellerUpiId}
-                    onChange={(e) => setSellerUpiId(e.target.value.trim())}
-                    className="w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] focus:border-[#0066FF] text-xs font-mono text-[#0F172A] outline-hidden"
-                    placeholder="e.g., rohan@okhdfcbank or 9829012890@paytm"
-                  />
-                </div>
-              )}
-
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[10px] text-slate-500 flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
-                  <span>Optional now &bull; Can be added anytime before delivery unboxing</span>
-                </span>
-                <span className="font-semibold text-slate-700">RBI Nodal Escrow</span>
               </div>
             </div>
 
-            {/* RECEIVER / DELIVERY DETAILS */}
-            <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-xs space-y-3.5">
-              <div className="flex items-center justify-between pb-2 border-b border-[#F1F5F9]">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F172A]">
-                  <span className="w-2 h-2 rounded-full bg-black" />
-                  <span>Receiver / Delivery Address</span>
+            {/* RIGHT SIDEBAR (4 Columns on Desktop): Live Item & Route Summary + Trust Card */}
+            <div className="lg:col-span-4 space-y-5 lg:sticky lg:top-28">
+              {/* Card 1: Shipment & Route Summary */}
+              <div className="bg-white rounded-[24px] p-5 border border-[#E2E8F0] shadow-sm space-y-4">
+                {/* Item Row */}
+                <div className="flex items-start justify-between gap-3 pb-4 border-b border-[#F1F5F9]">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-12 h-12 rounded-xl bg-[#F8FAFC] border border-[#E2E8F0] overflow-hidden flex items-center justify-center shrink-0 p-1">
+                      <img
+                        src={
+                          uploadedPhotos[0] ||
+                          categories.find((c) => c.id === selectedCategory)?.image ||
+                          '/images/preset_phones.webp'
+                        }
+                        alt={itemName || 'Shipment Item'}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="text-sm font-black text-[#0F172A] truncate">
+                        {itemName || 'iPhone 16 Pro Max (256GB)'}
+                      </h3>
+                      <p className="text-xs text-[#64748B] mt-0.5">
+                        {condition} &bull; <strong className="text-[#0F172A]">₹{(declaredValue || 0).toLocaleString('en-IN')}</strong>
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => goToStep(2)}
+                    className="text-xs font-bold text-[#0066FF] hover:underline shrink-0 cursor-pointer"
+                  >
+                    Edit
+                  </button>
                 </div>
-                <label className="flex items-center gap-1.5 text-[11px] text-[#0066FF] font-semibold cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={buyerWillProvideAddress}
-                    onChange={(e) => setBuyerWillProvideAddress(e.target.checked)}
-                    className="w-3.5 h-3.5 rounded border-slate-300 text-[#0066FF]"
-                  />
-                  <span>Receiver fills via link</span>
-                </label>
+
+                {/* Route Timeline */}
+                <div className="space-y-3 pb-4 border-b border-[#F1F5F9]">
+                  <span className="text-xs font-bold text-[#64748B] block">Route</span>
+                  <div className="relative pl-5 space-y-3.5 before:content-[''] before:absolute before:left-[7px] before:top-2 before:bottom-2 before:w-[2px] before:bg-slate-200">
+                    <div className="relative flex items-start justify-between gap-2">
+                      <span className="w-3.5 h-3.5 rounded-full bg-[#0066FF] ring-4 ring-blue-50 absolute -left-5 top-0.5" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-[#0F172A] truncate">
+                          Pickup: {pickupPincode || '302017'} {pickupCity ? `${pickupCity}, ${pickupState}` : 'Jaipur, Rajasthan'}
+                        </p>
+                        <p className="text-[11px] text-[#64748B] truncate">
+                          {pickupLocation || 'Malviya Nagar'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => scrollToField('field-pickupPincode')}
+                        className="text-[11px] font-bold text-[#0066FF] hover:underline shrink-0 cursor-pointer"
+                      >
+                        Change
+                      </button>
+                    </div>
+
+                    <div className="relative flex items-start justify-between gap-2">
+                      <span className="w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-emerald-50 absolute -left-5 top-0.5" />
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-[#0F172A] truncate">
+                          Delivery: {dropPincode || '110001'} {dropCity ? `${dropCity}, ${dropState}` : 'New Delhi, Delhi'}
+                        </p>
+                        <p className="text-[11px] text-[#64748B] truncate">
+                          {buyerWillProvideAddress ? 'Receiver fills via link' : dropLocation || 'DLF Phase 2'}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => scrollToField('field-dropPincode')}
+                        className="text-[11px] font-bold text-[#0066FF] hover:underline shrink-0 cursor-pointer"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Price Breakdown */}
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between text-[#475569]">
+                    <span>Item Value (Declared)</span>
+                    <span className="font-mono font-bold text-[#0F172A]">₹{(declaredValue || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[#475569]">
+                    <span>Shipping Charge (Est.)</span>
+                    <span className="font-mono font-bold text-[#0F172A]">₹{upfrontShippingCharge.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="pt-2 border-t border-[#F1F5F9] flex items-baseline justify-between">
+                    <span className="text-sm font-black text-[#0F172A]">Total Payable</span>
+                    <span className="text-lg font-black text-[#0066FF] font-mono">
+                      ₹{((declaredValue || 0) + upfrontShippingCharge).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Escrow Pill */}
+                <div className="p-3.5 rounded-2xl bg-[#F0F7FF] border border-blue-200/80 flex items-start gap-2.5">
+                  <ShieldCheck className="w-4 h-4 text-[#0066FF] shrink-0 mt-0.5" />
+                  <div className="text-[11px] leading-relaxed">
+                    <span className="font-bold text-[#0F172A] block">Payment will be held in secure escrow</span>
+                    <span className="text-[#475569]">
+                      Released to seller only after open-box inspection &amp; approval.
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              {!buyerWillProvideAddress ? (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                        Receiver Name <span className="text-rose-500">*</span>:
-                      </label>
-                      <input
-                        id="field-buyerName"
-                        type="text"
-                        value={buyerName}
-                        onChange={(e) => { setBuyerName(e.target.value); clearFieldError('buyerName'); }}
-                        className={`w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
-                          errors.buyerName ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                        }`}
-                        placeholder="e.g., Amit Sharma"
-                      />
-                      {errors.buyerName && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.buyerName}</p>}
-                    </div>
-
-                    <div>
-                      <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                        Receiver Mobile <span className="text-rose-500">*</span>:
-                      </label>
-                      <input
-                        id="field-buyerPhone"
-                        type="tel"
-                        maxLength={10}
-                        value={buyerPhone}
-                        onChange={(e) => { setBuyerPhone(e.target.value.replace(/\D/g, '')); clearFieldError('buyerPhone'); }}
-                        className={`w-full px-3 py-2 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] font-mono outline-hidden ${
-                          errors.buyerPhone ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                        }`}
-                        placeholder="e.g., 9811088912"
-                      />
-                      {errors.buyerPhone && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.buyerPhone}</p>}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                      Delivery Street Address &amp; Landmarks <span className="text-rose-500">*</span>:
-                    </label>
-                    <input
-                      id="field-dropLocation"
-                      type="text"
-                      value={dropLocation}
-                      onChange={(e) => { setDropLocation(e.target.value); clearFieldError('dropLocation'); }}
-                      className={`w-full px-3.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] outline-hidden ${
-                        errors.dropLocation ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                      }`}
-                      placeholder="e.g., Unit 12B, Building 4, DLF Phase 2"
-                    />
-                    {errors.dropLocation && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.dropLocation}</p>}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <div className="w-36">
-                      <label className="text-[11px] font-bold text-[#475569] block mb-1">
-                        Delivery PIN <span className="text-rose-500">*</span>:
-                      </label>
-                      <input
-                        id="field-dropPincode"
-                        type="text"
-                        maxLength={6}
-                        value={dropPincode}
-                        onChange={(e) => handleDropPincodeChange(e.target.value)}
-                        className={`w-full px-2.5 py-2.5 rounded-xl bg-[#F8FAFC] border text-xs text-[#0F172A] text-center font-mono font-bold outline-hidden ${
-                          errors.dropPincode ? 'border-rose-500 bg-rose-50/20' : 'border-[#E2E8F0] focus:border-[#0066FF]'
-                        }`}
-                        placeholder="e.g., 110001"
-                      />
-                      {errors.dropPincode && <p className="text-[10px] text-rose-600 mt-0.5">⚠️ {errors.dropPincode}</p>}
-                    </div>
-
-                    <div className="flex-1 flex flex-col justify-end">
-                      {dropCity ? (
-                        <div className="px-3 py-2 rounded-xl bg-blue-50/70 border border-blue-200 text-slate-900 text-[11px] flex items-center justify-between">
-                          <span className="font-bold">
-                            {dropCity}, {dropState}
-                          </span>
-                          <span className="text-[10px] font-mono text-white bg-black px-1.5 py-0.5 rounded shrink-0">{dropHub || 'Hub Active'}</span>
+              {/* Card 2: Why it's safe with SafeShip */}
+              <div className="bg-white rounded-[24px] p-5 border border-[#E2E8F0] shadow-sm space-y-3.5">
+                <h3 className="text-sm font-black text-[#0F172A]">Why it&apos;s safe with SafeShip</h3>
+                <div className="space-y-3">
+                  {[
+                    {
+                      icon: PackageCheck,
+                      title: 'Open-box inspection',
+                      sub: 'Buyer verifies item at delivery before paying',
+                    },
+                    {
+                      icon: Lock,
+                      title: 'Secure escrow payments',
+                      sub: 'Funds held safely until buyer confirmation',
+                    },
+                    {
+                      icon: Truck,
+                      title: 'PAN India delivery',
+                      sub: '19,000+ pin codes covered across India',
+                    },
+                    {
+                      icon: Headphones,
+                      title: '24/7 human support',
+                      sub: 'Dedicated assistance throughout shipping',
+                    },
+                  ].map((item) => {
+                    const TrustIcon = item.icon;
+                    return (
+                      <div key={item.title} className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#0066FF] flex items-center justify-center shrink-0 mt-0.5">
+                          <TrustIcon className="w-4 h-4" />
                         </div>
-                      ) : (
-                        <span className="text-[11px] text-[#94A3B8] italic pb-2">Enter 6-digit PIN code to auto-resolve city &amp; hub</span>
-                      )}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <div className="p-3.5 rounded-2xl bg-blue-50 border border-blue-200 text-xs text-blue-900 space-y-1">
-                  <div className="font-bold flex items-center gap-1.5">
-                    <span>🔗</span>
-                    <span>Recipient Address Link Mode Enabled</span>
-                  </div>
-                  <p className="text-[11px] text-blue-700">
-                    A secure booking link will be generated. The receiver will enter their verified delivery address and PIN code.
-                  </p>
+                        <div>
+                          <span className="text-xs font-bold text-[#0F172A] block">{item.title}</span>
+                          <span className="text-[11px] text-[#64748B] block">{item.sub}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              )}
-            </div>
-
-            {/* Desktop Inline Navigation */}
-            <div className="hidden sm:flex items-center justify-between pt-3">
-              <button
-                type="button"
-                onClick={() => goToStep(2)}
-                className="py-3 px-5 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 font-bold text-xs transition active:scale-95 inline-flex items-center gap-1.5 cursor-pointer"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                <span>Back</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleNextStep}
-                className="py-3 px-6 rounded-xl bg-[#0066FF] hover:bg-[#0052FF] text-white font-bold text-sm shadow-md shadow-[#0066FF]/20 transition active:scale-95 inline-flex items-center gap-2 cursor-pointer"
-              >
-                <span>Review Quote &amp; Schedule</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              </div>
             </div>
           </div>
         )}
@@ -2878,59 +3399,82 @@ function CreateShipmentContent() {
         {/* STEP 4: SERVICE TIER SELECTION, SCHEDULE & SHIPPING FEE            */}
         {/* =================================================================== */}
         {currentStep === 4 && (
-          <div className="space-y-6 animate-in fade-in">
-            {/* Clean SafeShip Branded Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-4 border-b border-slate-200/80">
+          <div className="space-y-5 animate-in fade-in">
+            {/* Top Header Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
-                <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#0F172A]">
+                <h2 className="text-xl sm:text-2xl font-black tracking-tight text-[#0F172A]">
                   {mode === 'exchange' ? 'Review & Schedule Exchange' : 'Review & Schedule Shipment'}
                 </h2>
-                <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                <p className="text-xs sm:text-[13px] text-[#64748B] mt-0.5">
                   Select delivery speed, schedule pickup, and pay shipping charge to book courier.
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-[#0066FF] text-xs font-semibold self-start sm:self-auto">
-                <ShieldCheck className="w-3.5 h-3.5 text-[#0066FF]" />
-                <span>Verified Courier Dispatch</span>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white border border-[#E2E8F0] text-[#0F172A] text-xs font-bold self-start sm:self-auto shadow-2xs">
+                <ShieldCheck className="w-4 h-4 text-[#0066FF]" />
+                <span>Verified Courier &amp; Secure Payment</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-              {/* LEFT COLUMN */}
-              <div className="lg:col-span-7 space-y-5">
-                {/* 1. Minimal Device Summary */}
-                <div className="bg-white rounded-2xl p-4 border border-slate-200/90 shadow-2xs flex items-center justify-between gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              {/* LEFT COLUMN (8 Columns on Desktop) */}
+              <div className="lg:col-span-8 space-y-5">
+                {/* 1. Device & Route Summary Banner Card */}
+                <div className="bg-white rounded-[24px] p-4 sm:p-5 border border-[#E2E8F0] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0066FF] flex items-center justify-center shrink-0">
-                      <Smartphone className="w-5 h-5" />
+                    <div className="w-13 h-13 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] overflow-hidden flex items-center justify-center shrink-0 p-1.5">
+                      <img
+                        src={
+                          uploadedPhotos[0] ||
+                          categories.find((c) => c.id === selectedCategory)?.image ||
+                          '/images/preset_phones.webp'
+                        }
+                        alt={itemName || 'Device'}
+                        className="w-full h-full object-contain"
+                      />
                     </div>
                     <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-[#0F172A] truncate">{itemName || 'Device'}</span>
-                        <span className="text-xs font-mono font-bold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
-                          ₹{declaredValue.toLocaleString('en-IN')}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-black text-base text-[#0F172A] truncate">
+                          {itemName || 'iPhone 16 Pro Max (256GB)'}
+                        </span>
+                        <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 inline-flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          <span>Open-Box Eligible</span>
                         </span>
                       </div>
-                      <div className="text-xs text-slate-500 truncate mt-0.5">
-                        {pickupCity || 'Origin'} &rarr; {dropCity || 'Destination'} ({(distanceKm || effectiveDistance).toLocaleString('en-IN')} km) &bull; Serial: {manualImei || 'Verified'}
+                      <div className="text-xs text-[#64748B] truncate mt-1">
+                        {categories.find((c) => c.id === selectedCategory)?.label || 'Smartphones & Tablets'} &bull; {condition} &bull; Declared Value: <strong className="text-[#0F172A]">₹{declaredValue.toLocaleString('en-IN')}</strong>
                       </div>
                     </div>
                   </div>
-                  <span className="text-[11px] text-[#0066FF] font-semibold bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200/80 shrink-0 hidden sm:inline-flex items-center gap-1">
-                    <Check className="w-3 h-3 text-[#0066FF]" />
-                    <span>Open-Box Verified</span>
-                  </span>
+
+                  <div className="sm:text-right shrink-0 flex sm:flex-col items-center sm:items-end justify-between gap-1 pt-3 sm:pt-0 border-t sm:border-t-0 border-[#F1F5F9]">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F8FAFC] border border-[#E2E8F0] text-xs font-bold text-[#0F172A]">
+                      <span className="w-2 h-2 rounded-full bg-[#0066FF]" />
+                      <span>{pickupCity || 'Jaipur'}</span>
+                      <span className="text-slate-400">&rarr;</span>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                      <span>{dropCity || 'New Delhi'}</span>
+                    </div>
+                    <span className="text-[11px] text-[#64748B] font-medium">
+                      ~{(distanceKm || effectiveDistance).toLocaleString('en-IN')} km &bull; Est. Delivery: <strong className="text-[#0F172A]">{deliveryDateFormatted}</strong>
+                    </span>
+                  </div>
                 </div>
 
-                {/* 2. Delivery Speed (3-Tier Shipping Options) */}
-                <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-[#E2E8F0] shadow-xs space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#334155] uppercase tracking-wider flex items-center gap-1.5">
-                      <Zap className="w-4 h-4 text-[#0066FF]" />
-                      <span>1. Select Delivery Speed</span>
-                    </span>
-                    <span className="text-[11px] text-slate-400">
-                      Est. {deliveryDateFormatted}
+                {/* 2. Section 1: Select Delivery Speed */}
+                <div className="bg-white rounded-[24px] p-5 sm:p-6 border border-[#E2E8F0] shadow-sm space-y-4">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-6 h-6 rounded-full bg-[#0066FF] text-white text-xs font-black flex items-center justify-center">
+                        1
+                      </span>
+                      <h3 className="text-base font-black text-[#0F172A]">Select Delivery Speed</h3>
+                    </div>
+                    <span className="text-xs font-semibold text-[#475569] inline-flex items-center gap-1.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      <span>Doorstep Open-Box Inspection Included</span>
                     </span>
                   </div>
 
@@ -2942,45 +3486,62 @@ function CreateShipmentContent() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-1">
                     {/* Tier 1: Standard Ground */}
                     <div
                       id="tier-card-STANDARD_GROUND"
                       onClick={() => setSelectedTier('STANDARD_GROUND')}
-                      className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
+                      className={`p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-3 ${
                         selectedTier === 'STANDARD_GROUND'
-                          ? 'bg-blue-50/70 border-[#0066FF] ring-2 ring-blue-300 shadow-sm'
+                          ? 'bg-[#F0F7FF] border-[#0066FF] ring-2 ring-[#0066FF]/20 shadow-xs'
                           : 'bg-white border-[#E2E8F0] hover:border-blue-300'
                       }`}
                     >
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                          <span className="text-sm font-black text-slate-900">📦 Standard Ground</span>
-                          <span className="text-[9px] font-bold bg-slate-100 text-slate-800 border border-slate-200 px-2 py-0.5 rounded-full uppercase">
-                            Delivers {getDeliveryDateShort('STANDARD_GROUND')} ({getTransitDays('STANDARD_GROUND', distanceKm || effectiveDistance)} Days)
-                          </span>
+                      <div className="space-y-2.5">
+                        <div className="flex items-start gap-2.5">
+                          <div
+                            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                              selectedTier === 'STANDARD_GROUND' ? 'border-[#0066FF] bg-[#0066FF]' : 'border-slate-300 bg-white'
+                            }`}
+                          >
+                            {selectedTier === 'STANDARD_GROUND' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <Package className="w-4 h-4 text-amber-700 shrink-0" />
+                              <span className="text-sm font-black text-[#0F172A]">Standard Ground</span>
+                            </div>
+                            <span className="text-[11px] font-semibold text-[#64748B] block mt-0.5">
+                              Delivers in {getTransitDays('STANDARD_GROUND', distanceKm || effectiveDistance)} Days
+                            </span>
+                          </div>
                         </div>
-                        <p className="text-[11px] text-slate-500 leading-tight">
+
+                        <p className="text-xs text-[#64748B] leading-relaxed">
                           Reliable surface linehaul network with doorstep unboxing.
                         </p>
-                      </div>
-                      <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                        <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
-                        <div className="text-right shrink-0">
-                          <div className="flex items-baseline gap-1.5 justify-end">
-                            {isFirstOrder ? (
-                              <>
-                                <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
-                                <span className="text-base font-black text-slate-900 font-mono">₹{Math.max(1, tierPricing.STANDARD_GROUND.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
-                              </>
-                            ) : (
-                              <span className="text-base font-black text-slate-900 font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-[#0066FF] font-semibold block">
-                            {isFirstOrder ? '₹99 First Order Off' : 'Surface Linehaul'}
-                          </span>
+
+                        <div className="space-y-1.5 pt-1">
+                          {['Surface Linehaul', 'Open-Box Verified', 'Live Tracking'].map((feat) => (
+                            <div key={feat} className="flex items-center gap-1.5 text-[11px] font-semibold text-[#334155]">
+                              <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              <span>{feat}</span>
+                            </div>
+                          ))}
                         </div>
+                      </div>
+
+                      <div className="pt-2.5 border-t border-slate-200/70 flex items-baseline justify-end gap-1.5">
+                        {isFirstOrder ? (
+                          <>
+                            <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
+                            <span className="text-xl font-black text-[#0F172A] font-mono">
+                              ₹{Math.max(1, tierPricing.STANDARD_GROUND.totalUpfront - FIRST_ORDER_DISCOUNT)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-xl font-black text-[#0F172A] font-mono">₹{tierPricing.STANDARD_GROUND.totalUpfront}</span>
+                        )}
                       </div>
                     </div>
 
@@ -2988,40 +3549,60 @@ function CreateShipmentContent() {
                     <div
                       id="tier-card-PRIORITY_EXPRESS"
                       onClick={() => setSelectedTier('PRIORITY_EXPRESS')}
-                      className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
+                      className={`p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-3 ${
                         selectedTier === 'PRIORITY_EXPRESS'
-                          ? 'bg-blue-50/70 border-[#0066FF] ring-2 ring-blue-300 shadow-sm'
+                          ? 'bg-[#F0F7FF] border-[#0066FF] ring-2 ring-[#0066FF]/20 shadow-xs'
                           : 'bg-white border-[#E2E8F0] hover:border-blue-300'
                       }`}
                     >
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                          <span className="text-sm font-black text-slate-900">🚀 Priority Express</span>
-                          <span className="text-[9px] font-bold bg-blue-100 text-[#0066FF] border border-blue-200 px-2 py-0.5 rounded-full uppercase">
-                            Delivers {getDeliveryDateShort('PRIORITY_EXPRESS')} ({getTransitDays('PRIORITY_EXPRESS', distanceKm || effectiveDistance)} Days)
-                          </span>
+                      <span className="absolute -top-2.5 right-3 bg-[#0066FF] text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-2xs">
+                        Most Popular
+                      </span>
+                      <div className="space-y-2.5">
+                        <div className="flex items-start gap-2.5">
+                          <div
+                            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                              selectedTier === 'PRIORITY_EXPRESS' ? 'border-[#0066FF] bg-[#0066FF]' : 'border-slate-300 bg-white'
+                            }`}
+                          >
+                            {selectedTier === 'PRIORITY_EXPRESS' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <Truck className="w-4 h-4 text-[#0066FF] shrink-0" />
+                              <span className="text-sm font-black text-[#0F172A]">Priority Express</span>
+                            </div>
+                            <span className="text-[11px] font-bold text-[#0066FF] block mt-0.5">
+                              Delivers in {getTransitDays('PRIORITY_EXPRESS', distanceKm || effectiveDistance)} Days
+                            </span>
+                          </div>
                         </div>
-                        <p className="text-[11px] text-slate-500 leading-tight">
+
+                        <p className="text-xs text-[#64748B] leading-relaxed">
                           Priority expressway &amp; commercial air corridor.
                         </p>
-                      </div>
-                      <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                        <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
-                        <div className="text-right shrink-0">
-                          <div className="flex items-baseline gap-1.5 justify-end">
-                            {isFirstOrder ? (
-                              <>
-                                <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
-                                <span className="text-base font-black text-[#0066FF] font-mono">₹{Math.max(1, tierPricing.PRIORITY_EXPRESS.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
-                              </>
-                            ) : (
-                              <span className="text-base font-black text-[#0066FF] font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
-                            )}
-                          </div>
-                          <span className="text-[10px] text-[#0066FF] font-semibold block">
-                            {isFirstOrder ? '₹99 First Order Off' : 'Express Linehaul'}
-                          </span>
+
+                        <div className="space-y-1.5 pt-1">
+                          {['Express Air + Surface', 'Open-Box Verified', 'Priority Handling'].map((feat) => (
+                            <div key={feat} className="flex items-center gap-1.5 text-[11px] font-semibold text-[#334155]">
+                              <Check className="w-3.5 h-3.5 text-[#0066FF] shrink-0" />
+                              <span>{feat}</span>
+                            </div>
+                          ))}
                         </div>
+                      </div>
+
+                      <div className="pt-2.5 border-t border-blue-200/60 flex items-baseline justify-end gap-1.5">
+                        {isFirstOrder ? (
+                          <>
+                            <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
+                            <span className="text-xl font-black text-[#0066FF] font-mono">
+                              ₹{Math.max(1, tierPricing.PRIORITY_EXPRESS.totalUpfront - FIRST_ORDER_DISCOUNT)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-xl font-black text-[#0066FF] font-mono">₹{tierPricing.PRIORITY_EXPRESS.totalUpfront}</span>
+                        )}
                       </div>
                     </div>
 
@@ -3029,264 +3610,326 @@ function CreateShipmentContent() {
                     <div
                       id="tier-card-FASTEST_AIR_RUSH"
                       onClick={() => setSelectedTier('FASTEST_AIR_RUSH')}
-                      className={`p-3.5 sm:p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-2.5 ${
+                      className={`p-4 rounded-2xl border transition cursor-pointer relative flex flex-col justify-between gap-3 ${
                         selectedTier === 'FASTEST_AIR_RUSH'
-                          ? 'bg-blue-50/70 border-[#0066FF] ring-2 ring-blue-300 shadow-sm'
+                          ? 'bg-[#F0F7FF] border-[#0066FF] ring-2 ring-[#0066FF]/20 shadow-xs'
                           : 'bg-white border-[#E2E8F0] hover:border-blue-300'
                       }`}
                     >
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex items-center justify-between gap-1.5 flex-wrap">
-                          <span className="text-sm font-black text-slate-900">⚡ Express Air</span>
-                          <span className="text-[9px] font-black bg-black text-white px-2 py-0.5 rounded-full shadow-2xs uppercase">
-                            Delivers {getDeliveryDateShort('FASTEST_AIR_RUSH')} ({getTransitDays('FASTEST_AIR_RUSH', distanceKm || effectiveDistance)} Days)
-                          </span>
+                      <div className="space-y-2.5">
+                        <div className="flex items-start gap-2.5">
+                          <div
+                            className={`w-4 h-4 rounded-full border flex items-center justify-center shrink-0 mt-0.5 ${
+                              selectedTier === 'FASTEST_AIR_RUSH' ? 'border-[#0066FF] bg-[#0066FF]' : 'border-slate-300 bg-white'
+                            }`}
+                          >
+                            {selectedTier === 'FASTEST_AIR_RUSH' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+                              <span className="text-sm font-black text-[#0F172A]">Express Air</span>
+                            </div>
+                            <span className="text-[11px] font-semibold text-[#64748B] block mt-0.5">
+                              Delivers in {getTransitDays('FASTEST_AIR_RUSH', distanceKm || effectiveDistance)} Days
+                            </span>
+                          </div>
                         </div>
-                        <p className="text-[11px] text-slate-500 leading-tight">
+
+                        <p className="text-xs text-[#64748B] leading-relaxed">
                           Next commercial cargo flight &amp; express dispatch.
                         </p>
+
+                        <div className="space-y-1.5 pt-1">
+                          {['Direct Air Cargo', 'Open-Box Verified', 'Fastest Dispatch'].map((feat) => (
+                            <div key={feat} className="flex items-center gap-1.5 text-[11px] font-semibold text-[#334155]">
+                              <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                              <span>{feat}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                      <div className="pt-2 border-t border-slate-100 flex items-baseline justify-between">
-                        <span className="text-[10px] text-slate-400 font-semibold">Doorstep Verified</span>
-                        <div className="text-right shrink-0">
-                          <div className="flex items-baseline gap-1.5 justify-end">
-                            {isFirstOrder ? (
-                              <>
-                                <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
-                                <span className="text-base font-black text-slate-900 font-mono">₹{Math.max(1, tierPricing.FASTEST_AIR_RUSH.totalUpfront - FIRST_ORDER_DISCOUNT)}</span>
-                              </>
-                            ) : (
-                              <span className="text-base font-black text-slate-900 font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
-                            )}
+
+                      <div className="pt-2.5 border-t border-slate-200/70 flex items-baseline justify-end gap-1.5">
+                        {isFirstOrder ? (
+                          <>
+                            <span className="text-xs text-slate-400 line-through font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
+                            <span className="text-xl font-black text-[#0F172A] font-mono">
+                              ₹{Math.max(1, tierPricing.FASTEST_AIR_RUSH.totalUpfront - FIRST_ORDER_DISCOUNT)}
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-xl font-black text-[#0F172A] font-mono">₹{tierPricing.FASTEST_AIR_RUSH.totalUpfront}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. Section 2: Pickup & Delivery Schedule */}
+                <div className="bg-white rounded-[24px] p-5 sm:p-6 border border-[#E2E8F0] shadow-sm space-y-5">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2.5">
+                      <span className="w-6 h-6 rounded-full bg-[#0066FF] text-white text-xs font-black flex items-center justify-center">
+                        2
+                      </span>
+                      <h3 className="text-base font-black text-[#0F172A]">Pickup &amp; Delivery Schedule</h3>
+                    </div>
+                    <span className="text-xs font-bold text-[#0066FF] bg-blue-50 px-3 py-1 rounded-full border border-blue-200/80 inline-flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>Live Slot Availability</span>
+                    </span>
+                  </div>
+
+                  {/* 2 Side-by-Side Schedule Sub-Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Left Sub-Card: Pickup */}
+                    <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC]/60 p-4 space-y-4">
+                      <div className="pb-2.5 border-b border-[#E2E8F0]">
+                        <div className="flex items-center gap-2 text-xs font-black text-[#0F172A]">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#0066FF]" />
+                          <span>Pickup from {pickupCity || 'Jaipur'}</span>
+                        </div>
+                        <p className="text-[11px] text-[#64748B] mt-0.5 pl-4.5 truncate">
+                          {pickupPincode || '302017'} &bull; {pickupLocation || 'Malviya Nagar'}
+                        </p>
+                      </div>
+
+                      {/* Select Pickup Date */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#334155] block">
+                          Select Pickup Date
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {realisticPickupDateOptions.map((d) => {
+                            const active = effectivePickupDayChoice === d.id;
+                            return (
+                              <button
+                                key={d.id}
+                                type="button"
+                                onClick={() => {
+                                  setPickupDayChoice(d.id);
+                                  if (d.id === 'CUSTOM' && !customPickupDate) {
+                                    setCustomPickupDate(tomorrowIsoMin);
+                                  }
+                                }}
+                                className={`py-2.5 px-3 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${
+                                  active
+                                    ? 'border-[#0066FF] bg-blue-50/70 text-[#0F172A] ring-1 ring-[#0066FF]'
+                                    : 'border-[#CBD5E1] bg-white text-slate-700 hover:border-slate-400'
+                                }`}
+                              >
+                                <div className="min-w-0">
+                                  <span className="text-xs font-bold block truncate">{d.label}</span>
+                                  <span className="text-[10px] text-[#64748B] block truncate">{d.dateText}</span>
+                                </div>
+                                {active ? (
+                                  <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                                ) : (
+                                  <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {effectivePickupDayChoice === 'CUSTOM' && (
+                          <div className="pt-1 flex items-center gap-2">
+                            <span className="text-xs font-semibold text-slate-600 shrink-0">Date:</span>
+                            <input
+                              type="date"
+                              value={customPickupDate || tomorrowIsoMin}
+                              min={tomorrowIsoMin}
+                              onChange={(e) => setCustomPickupDate(e.target.value)}
+                              className="w-full px-3 py-1.5 rounded-xl border border-[#0066FF] text-xs font-mono font-semibold text-[#0F172A] bg-white outline-hidden cursor-pointer"
+                            />
                           </div>
-                          <span className="text-[10px] text-[#0066FF] font-semibold block">
-                            {isFirstOrder ? '₹99 First Order Off' : 'Air Linehaul'}
-                          </span>
+                        )}
+                      </div>
+
+                      {/* Pickup Time Window */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#334155] block">
+                          Pickup Time Window
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {realisticPickupTimeOptions.map((slot) => {
+                            const active = effectivePickupSlot === slot.id;
+                            return (
+                              <button
+                                key={slot.id}
+                                type="button"
+                                onClick={() => setPickupSlot(slot.id)}
+                                className={`py-2.5 px-3 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${
+                                  active
+                                    ? 'border-[#0066FF] bg-blue-50/70 text-[#0F172A] ring-1 ring-[#0066FF]'
+                                    : 'border-[#CBD5E1] bg-white text-slate-700 hover:border-slate-400'
+                                }`}
+                              >
+                                <div className="min-w-0">
+                                  <span className="text-[11px] font-bold block truncate">{slot.label}</span>
+                                  <span className="text-[10px] text-[#64748B] block truncate">{slot.sub}</span>
+                                </div>
+                                {active && <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Sub-Card: Delivery */}
+                    <div className="rounded-2xl border border-[#E2E8F0] bg-[#F8FAFC]/60 p-4 space-y-4">
+                      <div className="pb-2.5 border-b border-[#E2E8F0]">
+                        <div className="flex items-center gap-2 text-xs font-black text-[#0F172A]">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                          <span>Delivery to {dropCity || 'New Delhi'}</span>
+                        </div>
+                        <p className="text-[11px] text-[#64748B] mt-0.5 pl-4.5 truncate">
+                          {dropPincode || '110001'} &bull; {buyerWillProvideAddress ? 'Receiver fills via link' : dropLocation || 'DLF Phase 2'}
+                        </p>
+                      </div>
+
+                      {/* Estimated Delivery Date */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#334155] block">
+                          Estimated Delivery Date
+                        </label>
+                        <div className="py-2.5 px-3.5 rounded-xl bg-[#F0F7FF] border border-blue-200/80 flex items-center gap-2.5">
+                          <Calendar className="w-4 h-4 text-[#0066FF] shrink-0" />
+                          <div>
+                            <span className="text-xs font-black text-[#0F172A] block">
+                              Arrives {deliveryDateFormatted}
+                            </span>
+                            <span className="text-[10px] text-[#64748B] block">
+                              Based on {activeTierBreakdown.tierLabel}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Preferred Delivery Time */}
+                      <div className="space-y-2">
+                        <label className="text-xs font-bold text-[#334155] block">
+                          Preferred Delivery Time
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {realisticBuyerDeliveryOptions.map((del) => {
+                            const active = effectiveBuyerDeliverySlot === del.id;
+                            return (
+                              <button
+                                key={del.id}
+                                type="button"
+                                onClick={() => setBuyerPreferredDeliverySlot(del.id)}
+                                className={`py-2.5 px-3 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${
+                                  active
+                                    ? 'border-[#0066FF] bg-blue-50/70 text-[#0F172A] ring-1 ring-[#0066FF]'
+                                    : 'border-[#CBD5E1] bg-white text-slate-700 hover:border-slate-400'
+                                }`}
+                              >
+                                <div className="min-w-0">
+                                  <span className="text-[11px] font-bold block truncate">{del.label}</span>
+                                  <span className="text-[10px] text-[#64748B] block truncate">{del.sub}</span>
+                                </div>
+                                {active && <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* 3. Schedule — Only 2 Realistic Options for Pickup Date, Pickup Time & Delivery Time */}
-                <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/90 shadow-2xs space-y-5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
-                      2. Pickup &amp; Delivery Schedule
-                    </span>
-                    <span className="text-[11px] font-medium text-[#0066FF] bg-blue-50 px-2.5 py-0.5 rounded-full">
-                      Live Slot Availability
-                    </span>
-                  </div>
-
-                  {/* A. Pickup Date (Tomorrow or Custom Date) */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-semibold text-slate-700">
-                        Pickup Date ({pickupCity || 'Seller Origin'})
-                      </label>
-                      <span className="text-[11px] font-medium text-slate-500">
-                        {pickupDateFormatted}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      {realisticPickupDateOptions.map((d) => {
-                        const active = effectivePickupDayChoice === d.id;
-                        return (
-                          <button
-                            key={d.id}
-                            type="button"
-                            onClick={() => {
-                              setPickupDayChoice(d.id);
-                              if (d.id === 'CUSTOM' && !customPickupDate) {
-                                setCustomPickupDate(tomorrowIsoMin);
-                              }
-                            }}
-                            className={`py-2.5 px-3.5 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${
-                              active
-                                ? 'border-[#0066FF] bg-blue-50/40 text-[#0F172A] ring-1 ring-[#0066FF]'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                            }`}
-                          >
-                            <div>
-                              <span className="text-xs font-bold block">{d.label}</span>
-                              <span className="text-[11px] text-slate-500 block">{d.dateText}</span>
-                            </div>
-                            {active && <Check className="w-4 h-4 text-[#0066FF] shrink-0" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {effectivePickupDayChoice === 'CUSTOM' && (
-                      <div className="pt-1 flex items-center gap-2.5">
-                        <span className="text-xs font-semibold text-slate-600 shrink-0">Select Date:</span>
-                        <input
-                          type="date"
-                          value={customPickupDate || tomorrowIsoMin}
-                          min={tomorrowIsoMin}
-                          onChange={(e) => setCustomPickupDate(e.target.value)}
-                          className="px-3 py-2 rounded-xl border border-[#0066FF]/50 text-xs font-mono font-semibold text-[#0F172A] bg-blue-50/20 focus:border-[#0066FF] outline-hidden cursor-pointer"
-                        />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* B. Pickup Time Window (Only 2 Realistic Options) */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold text-slate-700 block">
-                      Pickup Time Window
-                    </label>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      {realisticPickupTimeOptions.map((slot) => {
-                        const active = effectivePickupSlot === slot.id;
-                        return (
-                          <button
-                            key={slot.id}
-                            type="button"
-                            onClick={() => setPickupSlot(slot.id)}
-                            className={`py-2.5 px-3.5 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${
-                              active
-                                ? 'border-[#0066FF] bg-blue-50/40 text-[#0F172A] ring-1 ring-[#0066FF]'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                            }`}
-                          >
-                            <div>
-                              <span className="text-xs font-bold block">{slot.label}</span>
-                              <span className="text-[11px] text-slate-500 block">{slot.sub}</span>
-                            </div>
-                            {active && <Check className="w-4 h-4 text-[#0066FF] shrink-0" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* C. Buyer Delivery Window (Only 2 Realistic Options) */}
-                  <div className="space-y-2 pt-3 border-t border-slate-100">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-semibold text-slate-700">
-                        Buyer Delivery Time ({dropCity || 'Destination'})
-                      </label>
-                      <span className="text-[11px] font-medium text-[#0066FF]">
-                        Arrives {deliveryDateFormatted}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2.5">
-                      {realisticBuyerDeliveryOptions.map((del) => {
-                        const active = effectiveBuyerDeliverySlot === del.id;
-                        return (
-                          <button
-                            key={del.id}
-                            type="button"
-                            onClick={() => setBuyerPreferredDeliverySlot(del.id)}
-                            className={`py-2.5 px-3.5 rounded-xl border text-left transition cursor-pointer flex items-center justify-between ${
-                              active
-                                ? 'border-[#0066FF] bg-blue-50/40 text-[#0F172A] ring-1 ring-[#0066FF]'
-                                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
-                            }`}
-                          >
-                            <div>
-                              <span className="text-xs font-bold block">{del.label}</span>
-                              <span className="text-[11px] text-slate-500 block">{del.sub}</span>
-                            </div>
-                            {active && <Check className="w-4 h-4 text-[#0066FF] shrink-0" />}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4. Optional Transit Protection */}
-                <div
-                  id="card-transit-insurance"
-                  onClick={() => setIncludeInsurance(!includeInsurance)}
-                  className={`bg-white rounded-2xl p-4 border flex items-center justify-between gap-3 cursor-pointer select-none transition ${
-                    includeInsurance
-                      ? 'border-[#0066FF]/40 bg-blue-50/20'
-                      : 'border-slate-200/90 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      id="chk-transit-insurance"
-                      checked={includeInsurance}
-                      onChange={(e) => setIncludeInsurance(e.target.checked)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-[#0066FF] cursor-pointer"
-                    />
-                    <div>
-                      <span className="text-xs font-bold text-[#0F172A] block">
-                        Transit Damage &amp; Loss Protection
-                      </span>
-                      <span className="text-[11px] text-slate-500 block">
-                        Insures full ₹{declaredValue.toLocaleString('en-IN')} device value during transit
-                      </span>
-                    </div>
-                  </div>
-                  <span className={`text-xs font-mono font-bold ${includeInsurance ? 'text-[#0066FF]' : 'text-slate-400 line-through'}`}>
-                    +₹{calculatedInsuranceFee}
-                  </span>
-                </div>
-
-                <div className="hidden sm:block">
-                  <button
-                    type="button"
-                    onClick={() => goToStep(3)}
-                    className="py-2 px-3.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-semibold text-xs transition cursor-pointer hover:bg-slate-50 inline-flex items-center gap-1.5"
+                  {/* Transit Damage & Loss Protection Bar */}
+                  <div
+                    id="card-transit-insurance"
+                    onClick={() => setIncludeInsurance(!includeInsurance)}
+                    className={`rounded-2xl p-4 border flex items-center justify-between gap-3 cursor-pointer select-none transition ${
+                      includeInsurance
+                        ? 'border-[#0066FF]/40 bg-[#F0F7FF]'
+                        : 'border-[#E2E8F0] bg-[#F8FAFC] hover:border-slate-300'
+                    }`}
                   >
-                    <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Back to Addresses</span>
-                  </button>
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-blue-100/80 text-[#0066FF] flex items-center justify-center shrink-0">
+                        <ShieldCheck className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs sm:text-sm font-black text-[#0F172A]">
+                            Transit Damage &amp; Loss Protection
+                          </span>
+                          <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                            Recommended
+                          </span>
+                        </div>
+                        <span className="text-[11px] text-[#64748B] block mt-0.5">
+                          Covers 100% of declared value (₹{declaredValue.toLocaleString('en-IN')}) against damage or loss in transit
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className={`text-sm font-mono font-black ${includeInsurance ? 'text-[#0F172A]' : 'text-slate-400 line-through'}`}>
+                        + ₹{calculatedInsuranceFee}
+                      </span>
+                      <input
+                        type="checkbox"
+                        id="chk-transit-insurance"
+                        checked={includeInsurance}
+                        onChange={(e) => setIncludeInsurance(e.target.checked)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-5 h-5 rounded border-slate-300 text-[#0066FF] focus:ring-[#0066FF] cursor-pointer"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* RIGHT COLUMN: SafeShip Branded Payment Summary */}
-              <div className="lg:col-span-5 space-y-4 lg:sticky lg:top-20">
-                <div className="bg-white rounded-2xl p-5 border border-slate-200/90 shadow-xs space-y-4">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                    <span className="text-xs font-bold text-[#0F172A] uppercase tracking-wider">
+              {/* RIGHT COLUMN (4 Columns on Desktop): Sticky Payment Summary */}
+              <div className="lg:col-span-4 space-y-4 lg:sticky lg:top-28">
+                <div className="bg-white rounded-[24px] p-5 sm:p-6 border border-[#E2E8F0] shadow-sm space-y-4">
+                  <div className="flex items-center justify-between pb-3 border-b border-[#F1F5F9]">
+                    <h3 className="text-base font-black text-[#0F172A]">
                       Payment Summary
-                    </span>
-                    <span className="text-[11px] font-semibold text-[#0066FF] bg-blue-50 px-2 py-0.5 rounded-md">
-                      Shipping Charge
+                    </h3>
+                    <span className="text-xs font-semibold text-[#64748B]">
+                      Price breakup
                     </span>
                   </div>
 
                   {/* Cost Breakdown */}
-                  <div className="space-y-2 text-xs">
-                    <div className="flex justify-between text-slate-600">
+                  <div className="space-y-2.5 text-xs">
+                    <div className="flex justify-between text-[#475569]">
                       <span>Courier Shipping ({activeTierBreakdown.tierLabel})</span>
-                      <span className="font-mono font-semibold text-[#0F172A]">₹{fullDeliveryFee}</span>
+                      <span className="font-mono font-bold text-[#0F172A]">₹{fullDeliveryFee}</span>
                     </div>
                     {isFirstOrder && firstOrderDiscount > 0 && (
-                      <div className="flex justify-between text-[#0066FF] font-medium">
+                      <div className="flex justify-between text-[#0066FF] font-semibold">
                         <span>First-Order Discount</span>
                         <span className="font-mono">-₹{firstOrderDiscount}</span>
                       </div>
                     )}
-                    <div className="flex justify-between text-slate-600">
-                      <span>Transit Protection</span>
-                      <span className="font-mono font-semibold text-[#0F172A]">
+                    <div className="flex justify-between text-[#475569]">
+                      <span>Transit Protection (₹{declaredValue.toLocaleString('en-IN')} cover)</span>
+                      <span className="font-mono font-bold text-[#0F172A]">
                         {includeInsurance ? `₹${calculatedInsuranceFee}` : '₹0'}
                       </span>
                     </div>
-                    <div className="flex justify-between text-slate-600">
-                      <span>Doorstep Open-Box Audit</span>
-                      <span className="text-[#0F172A] font-semibold">Included</span>
+                    <div className="flex justify-between text-[#475569]">
+                      <span>Doorstep Open-Box Inspection</span>
+                      <span className="text-emerald-600 font-bold">Included</span>
                     </div>
                   </div>
 
                   {/* Total Shipping Charge Due Now */}
-                  <div className="pt-3 border-t border-slate-100 space-y-1">
+                  <div className="pt-3.5 border-t border-[#F1F5F9]">
                     <div className="flex items-baseline justify-between">
                       <div>
-                        <span className="text-sm font-bold text-[#0F172A] block">
+                        <span className="text-sm font-black text-[#0F172A] block">
                           Total Shipping Charge
                         </span>
-                        <span className="text-[11px] text-slate-500">
+                        <span className="text-[11px] text-[#64748B]">
                           Locks courier pickup slot &amp; generates AWB
                         </span>
                       </div>
@@ -3294,6 +3937,14 @@ function CreateShipmentContent() {
                         ₹{upfrontShippingCharge.toLocaleString('en-IN')}
                       </span>
                     </div>
+                  </div>
+
+                  {/* Escrow Item Value Info Pill */}
+                  <div className="p-3 rounded-xl bg-[#F0F7FF] border border-blue-200/70 flex items-start gap-2.5 text-[11px] text-[#334155] leading-relaxed">
+                    <ShieldCheck className="w-4 h-4 text-[#0066FF] shrink-0 mt-0.5" />
+                    <span>
+                      Item value of <strong className="text-[#0F172A]">₹{declaredValue.toLocaleString('en-IN')}</strong> is collected from the buyer at delivery via SafeShip Escrow and transferred to the seller after open-box approval.
+                    </span>
                   </div>
 
                   {paymentGatewayError && (
@@ -3317,25 +3968,18 @@ function CreateShipmentContent() {
                       onChange={(e) => setAgreeTerms(e.target.checked)}
                       className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#0066FF] focus:ring-[#0066FF] cursor-pointer shrink-0"
                     />
-                    <span className="text-[11px] text-slate-500 leading-relaxed">
-                      I confirm the pickup schedule and agree to pay the ₹{upfrontShippingCharge.toLocaleString('en-IN')} shipping charge to book the courier.
+                    <span className="text-[11px] text-[#475569] leading-relaxed">
+                      I confirm the pickup schedule and agree to the <span className="text-[#0066FF] font-semibold">Terms of Service</span> and <span className="text-[#0066FF] font-semibold">Open-Box Shipping Policy</span>.
                     </span>
                   </label>
 
-                  <div className="hidden sm:flex gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => goToStep(3)}
-                      className="py-3.5 px-4 rounded-xl bg-white border border-slate-200 text-slate-800 font-semibold text-xs transition cursor-pointer hover:bg-slate-50 shrink-0"
-                    >
-                      Back
-                    </button>
+                  <div className="hidden sm:block pt-1">
                     <button
                       type="button"
                       id="btn-confirm-booking"
                       disabled={payingWithGateway || isTestProcessing || !agreeTerms}
                       onClick={handleConfirmBooking}
-                      className={`flex-1 py-3.5 px-5 rounded-xl text-white font-bold text-sm transition flex items-center justify-center gap-2 cursor-pointer ${
+                      className={`w-full py-3.5 px-5 rounded-xl text-white font-bold text-sm transition flex items-center justify-center gap-2 cursor-pointer ${
                         payingWithGateway || isTestProcessing || !agreeTerms
                           ? 'bg-slate-300 cursor-not-allowed text-slate-500'
                           : 'bg-[#0066FF] hover:bg-[#0052FF] shadow-md shadow-blue-500/20 active:scale-99'
@@ -3348,6 +3992,7 @@ function CreateShipmentContent() {
                         </>
                       ) : (
                         <>
+                          <Lock className="w-4 h-4" />
                           <span>Pay ₹{upfrontShippingCharge.toLocaleString('en-IN')} Shipping Charge</span>
                           <ArrowRight className="w-4 h-4" />
                         </>
@@ -3355,11 +4000,45 @@ function CreateShipmentContent() {
                     </button>
                   </div>
 
+                  {/* Payment Partner Strip */}
+                  <div className="pt-2 border-t border-[#F1F5F9] flex items-center justify-center gap-2 flex-wrap text-[10px] font-bold text-[#64748B]">
+                    <span>100% Secure Payments</span>
+                    <span className="text-slate-300">|</span>
+                    <span className="text-[#0F172A]">Razorpay</span>
+                    <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[#334155]">UPI</span>
+                    <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[#334155]">VISA</span>
+                    <span className="px-1.5 py-0.5 rounded bg-slate-100 text-[#334155]">Mastercard</span>
+                  </div>
+
+                  {/* Green RBI Escrow Assurance Box */}
+                  <div className="p-3.5 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 flex items-start gap-2.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <div className="text-[11px] leading-relaxed">
+                      <span className="font-bold text-emerald-950 block">
+                        100% RBI-Compliant Escrow Protection
+                      </span>
+                      <span className="text-emerald-800">
+                        Buyer inspects item for 10 minutes at doorstep. Zero return shipping fee if rejected.
+                      </span>
+                    </div>
+                  </div>
+
                   {SIMULATE_PAID_FOR_TESTING && (
                     <p className="text-[11px] text-center text-slate-400">
                       Localhost test mode active — payment gateway bypassed
                     </p>
                   )}
+                </div>
+
+                <div className="hidden sm:block">
+                  <button
+                    type="button"
+                    onClick={() => goToStep(3)}
+                    className="w-full py-3 px-4 rounded-xl bg-white border border-[#E2E8F0] hover:bg-slate-50 text-[#334155] font-bold text-xs transition cursor-pointer inline-flex items-center justify-center gap-2 shadow-2xs"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back to Addresses</span>
+                  </button>
                 </div>
               </div>
             </div>
